@@ -149,7 +149,7 @@
 
     <div class="container">
         <div class="main-header">
-            <h1>課表暨調課查詢系統</h1>
+            <h1>金山高中 114學年第1學期課表暨調課查詢系統</h1>
             <div class="selector-container">
                 <label for="class-selector">查詢班級課表：</label>
                 <select id="class-selector">
@@ -3147,7 +3147,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         const classSchedule = classSchedules.get(className);
         if (!classSchedule) return;
 
-        for (let p = 0; p < 8; p++) {
+        for (let p = 0; p < 7; p++) {
             for (let d = 0; d < 5; d++) {
                 if (!ownSchedule[p] || !ownSchedule[p][d]) {
                     const lessonAtTargetInClass = classSchedule[p] ? classSchedule[p][d] : null;
@@ -3210,7 +3210,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         const teacherASchedule = teacherSchedules.get(teacherOfClickedLesson);
         if (!teacherASchedule) return;
 
-        for (let p = 0; p < 8; p++) {
+        for (let p = 0; p < 7; p++) {
             for (let d = 0; d < 5; d++) {
                 if (p === originalPeriod && d === originalDay) continue;
                 const lessonAtTargetSlot = classSchedule[p] ? classSchedule[p][d] : null;
@@ -3254,6 +3254,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         if (event.target == modal) modal.style.display = 'none';
     };
 });
+
 </script>
 
 </body>
