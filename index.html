@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>課表暨調課查詢系統</title>
     <style>
-        :root {
+:root {
             --primary-bg: #f8f9fa;
             --header-bg: #005a87;
             --text-color: #333;
@@ -48,7 +48,6 @@
         }
         .selector-container {
             position: absolute;
-            left: 0;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
@@ -57,9 +56,16 @@
         }
         .selector-container label {
             font-size: 1.2em;
-            color: #800080; <!-- var(--text-color); -->
+            color: var(--text-color);
         }
         #class-selector {
+            font-size: 1em;
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-family: inherit;
+        }
+        #class-selector2 {
             font-size: 1em;
             padding: 5px 8px;
             border-radius: 4px;
@@ -106,12 +112,12 @@
 
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal-content { 
-            margin: 1% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 90%; max-width: 1000px; 
+            margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 90%; max-width: 1000px; 
             border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
         }
         .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close-button:hover, .close-button:focus { color: #333; }
-        #modal-title { text-align: center; margin-top: 0; margin-bottom: 20px; color: var(--header-bg); }
+        #modal-title { text-align: center; margin-top: 0; margin-bottom: 15px; color: var(--header-bg); }
         
         .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         
@@ -121,18 +127,18 @@
             word-wrap: break-word; box-sizing: border-box;
             position: relative;
         }
-        .schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 35px; }
+        .schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 20px; }
         .schedule-table th:first-child,
         .schedule-table td:first-child { width: 6%; }
         .schedule-table td { 
-            font-size: 16px; height: 70px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg);
+            font-size: 16px; height: 60px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg);
         }
         .schedule-table td.empty-cell { background-color: var(--cleared-bg); }
         .schedule-table td:hover { background-color: #f0f0f0; }
         .schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
         .schedule-table .period-header { font-weight: bold; background-color: var(--table-header-bg); }
         .schedule-table .subject { font-weight: normal; display: block; }
-        .schedule-table .details { font-size: 14px; color: #555; display: block; line-height: 1; }
+        .schedule-table .details { font-size: 14px; color: #555; display: block; line-height: 0.8; }
         .highlight { background-color: var(--highlight-bg) !important; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
         
         .swap-suggestion { 
@@ -143,6 +149,51 @@
         }
         .swap-suggestion .subject, .swap-suggestion .details { color: #0f5132; }
         .cleared-cell { background-color: var(--cleared-bg); }
+
+        /* --- 新增：手機版響應式樣式 --- */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 5px;
+                -webkit-text-size-adjust: 100%;
+            }
+            .container {
+                padding: 10px;
+            }
+            .main-header {
+                position: static;
+                text-align: center;
+                margin-bottom: 2em;
+            }
+            h1 {
+               font-size: 1.5em;
+               display: block;
+               width: 100%;
+            }
+            .selector-container {
+                position: static;
+                transform: none;
+                margin-top: 15px;
+                justify-content: center;
+                width: 100%;
+            }
+            #teacher-list-container {
+                flex-direction: column;
+                width: 100%;
+            }
+            .teacher-display-column {
+                width: 100%;
+            }
+            .department-table {
+                font-size: 14px;
+            }
+            .schedule-table td {
+                font-size: 12px;
+                height: 70px;
+            }
+             .schedule-table .details {
+                font-size: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -152,12 +203,10 @@
             <!-- 
 		<p align="left "style="font-size: 30px; color: #800080;"><b>金山高中 114-1課表暨調課查詢系統</b></p>   -->
             	<div class="selector-container">
-                <!-- <label for="class-selector">&#9733;教師課表&darr;(點教師名)　&#9733;班級課表&rarr;</label> -->
-		<label for="class-selector">&#9733;點教師名看課表&darr;　</label>
+		<label for="class-selector2">&darr;教師課表點名字&darr;　　</label>
                 <select id="class-selector">
-                    <option value="" disabled selected>班級課表選單</option>
+                    <option value="" disabled selected>&#9733;班級課表選這裡&#9733;</option>
                 </select>
-		<!-- <label for="class-selector">　&#9733;調課：<i>點課表內任一節課</i></label> -->
             	</div>
 		
         </div>
@@ -171,6 +220,7 @@
         <div class="modal-content">
             <span class="close-button">&times;</span>
             <h2 id="modal-title"></h2>
+            <h3 id="modal-title2"></h3>
             <div id="modal-body"></div>
         </div>
     </div>
@@ -3064,12 +3114,13 @@ t623,星期一,星期二,星期三,星期四,星期五
     function showSchedule(type, name) {
         const modal = document.getElementById('schedule-modal');
         const titleEl = document.getElementById('modal-title');
+        const titleEl2 = document.getElementById('modal-title2');
         const bodyEl = document.getElementById('modal-body');
         let schedule, title;
 
         if (type === 'teacher' && teacherSchedules.has(name)) {
             schedule = teacherSchedules.get(name);
-            title = `${name} 課表 (點任一節課查看調課選擇)`;
+            title = `${name} 課表`;
         } else if (type === 'class' && classSchedules.has(name)) {
             schedule = classSchedules.get(name);
             title = `${name} 班級課表`;
@@ -3081,6 +3132,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         }
 
         titleEl.textContent = title;
+        titleEl2.textContent = '* 點課表可看調課選擇 *';
         const days = ['星期一', '星期二', '星期三', '星期四', '星期五'];
         let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
         days.forEach(day => tableHtml += `<th>${day}</th>`);
