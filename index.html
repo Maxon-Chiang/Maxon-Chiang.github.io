@@ -3194,6 +3194,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         const ownSchedule = teacherSchedules.get(teacherName);
         const clickedLesson = ownSchedule[originalPeriod] ? ownSchedule[originalPeriod][originalDay] : null;
 
+	if (originalPeriod>=7) return;
         if (!clickedLesson) return;
 
         cell.classList.add('highlight');
