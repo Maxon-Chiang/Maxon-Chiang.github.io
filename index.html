@@ -48,7 +48,7 @@
         }
         .selector-container {
             position: absolute;
-            right: 0;
+            left: 0;
             top: 50%;
             transform: translateY(-50%);
             display: flex;
@@ -56,8 +56,8 @@
             gap: 10px;
         }
         .selector-container label {
-            font-size: 1.1em;
-            color: var(--text-color);
+            font-size: 1.4em;
+            color: blue; <!-- var(--text-color); -->
         }
         #class-selector {
             font-size: 1em;
@@ -149,9 +149,9 @@
 
     <div class="container">
         <div class="main-header">
-            <p align="left "style="font-size: 30px; color: #800080;"><b>金山高中 114-1課表暨調課查詢系統</b></p>
+            <!-- <p align="left "style="font-size: 30px; color: #800080;"><b>金山高中 114-1課表暨調課查詢系統</b></p>  -->
             <div class="selector-container">
-                <label for="class-selector">查詢班級課表：</label>
+                <label for="class-selector">1.點<b>教師名</b>可查"教師課表"　2.點<b>課表</b>可查"互調課選項"　3.班級課表查詢請由此選擇 <b>>>></b></label>
                 <select id="class-selector">
                     <option value="" disabled selected>請選擇班級</option>
                 </select>
