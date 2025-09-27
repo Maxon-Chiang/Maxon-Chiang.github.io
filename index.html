@@ -56,7 +56,7 @@
             gap: 10px;
         }
         .selector-container label {
-            font-size: 1.4em;
+            font-size: 1.2em;
             color: #800080; <!-- var(--text-color); -->
         }
         #class-selector {
@@ -111,7 +111,7 @@
         }
         .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close-button:hover, .close-button:focus { color: #333; }
-        #modal-title { text-align: center; margin-top: 0; margin-bottom: 15px; color: var(--header-bg); }
+        #modal-title { text-align: center; margin-top: 0; margin-bottom: 20px; color: var(--header-bg); }
         
         .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         
@@ -121,9 +121,9 @@
             word-wrap: break-word; box-sizing: border-box;
             position: relative;
         }
-        .schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 40px; }
+        .schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 35px; }
         .schedule-table th:first-child,
-        .schedule-table td:first-child { width: 8%; }
+        .schedule-table td:first-child { width: 6%; }
         .schedule-table td { 
             font-size: 16px; height: 70px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg);
         }
@@ -149,14 +149,17 @@
 
     <div class="container">
         <div class="main-header">
-            <!-- <p align="left "style="font-size: 30px; color: #800080;"><b>金山高中 114-1課表暨調課查詢系統</b></p>  -->
-            <div class="selector-container">
-                <label for="class-selector">&#10148;教師課表&darr;(點教師名)　&#10148;班級課表&rarr;</label>
+            <!-- 
+		<p align="left "style="font-size: 30px; color: #800080;"><b>金山高中 114-1課表暨調課查詢系統</b></p>   -->
+            	<div class="selector-container">
+                <!-- <label for="class-selector">&#9733;教師課表&darr;(點教師名)　&#9733;班級課表&rarr;</label> -->
+		<label for="class-selector">&#9733;點教師名看課表&darr;　</label>
                 <select id="class-selector">
-                    <option value="" disabled selected>請選擇班級</option>
+                    <option value="" disabled selected>班級課表選單</option>
                 </select>
-		<label for="class-selector">　&#10148;調課：<i>點課表內任一節課</i></label>
-            </div>
+		<!-- <label for="class-selector">　&#9733;調課：<i>點課表內任一節課</i></label> -->
+            	</div>
+		
         </div>
         
         <div id="teacher-list-column">
@@ -3066,7 +3069,7 @@ t623,星期一,星期二,星期三,星期四,星期五
 
         if (type === 'teacher' && teacherSchedules.has(name)) {
             schedule = teacherSchedules.get(name);
-            title = `${name} 課表`;
+            title = `${name} 課表 (點任一節課查看調課選擇)`;
         } else if (type === 'class' && classSchedules.has(name)) {
             schedule = classSchedules.get(name);
             title = `${name} 班級課表`;
