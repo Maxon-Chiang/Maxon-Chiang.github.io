@@ -112,7 +112,7 @@
         .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
         .close-button:hover, .close-button:focus { color: #333; }
         #modal-title { text-align: right; margin-top: 0; margin-bottom: 15px; color: var(--header-bg); }
-        #modal-title2 { text-align: center; margin-top: 0; font-size: 20px; margin-bottom: 15px; color: red; }
+        #modal-title2 { text-align: center; margin-top: 0; font-size: 20px; margin-bottom: 15px; color: blue; }
        
         .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         
@@ -154,7 +154,9 @@
             .container {
                 padding: 10px;
             }
-            .main-header {
+          .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-button:hover, .close-button:focus { color: #333; }
+          .main-header {
                 position: static;
                 text-align: center;
                 margin-bottom: 2em;
@@ -172,7 +174,12 @@
                 justify-content: center;
                 width: 100%;
             }
-        #modal-title2 { text-align: left; margin-top: 0; font-size: 16px; margin-bottom: 15px; color: red; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { 
+            margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 90%; max-width: 1000px; 
+            border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
+        }
+        #modal-title2 { text-align: left; margin-top: 0; font-size: 16px; margin-bottom: 15px; color: blue; }
             #teacher-list-container {
                 flex-direction: column;
                 width: 100%;
@@ -202,16 +209,10 @@
             	<div class="selector-container">
 		<table width="800px">
 		<tr>
-		<td style="text-align: left; color:blue; ">&darr;教師課表點名字&darr;</td>
-		<td style="text-align: right;"><select id="class-selector"><option value="" disabled selected>&#9733;班級課表選這裡&#9733;</option></select></td>
+		<td style="text-align: left; color:blue; ">&darr;點教師名字看課表&darr;</td>
+		<td style="text-align: right;"><select id="class-selector"><option value="" disabled selected>&#9733;選這裡看班課表&#9733;</option></select></td>
 		</tr>
 		</table>
-		<!--
-		<label for="teacher-list-column">&darr;教師課表點名字&darr;　　</label>
-                <select id="class-selector">
-                    <option value="" disabled selected>&#9733;班級課表選這裡&#9733;</option>
-                </select>
-		-->
             	</div>
 		
         </div>
