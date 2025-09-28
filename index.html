@@ -174,6 +174,15 @@
                 justify-content: center;
                 width: 100%;
             }
+            .img-container {
+                font-size: 1em;
+                position: static;
+                transform: none;
+                margin-top: 5px;
+                justify-content: center;
+                width: 5%;
+            }
+
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal-content { 
             margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 90%; max-width: 1000px; 
@@ -209,7 +218,9 @@
             	<div class="selector-container">
 		<table width="800px">
 		<tr>
-		<td style="text-align: left; color:blue; ">&darr;看教師課表請點名字&darr;</td>
+		<td style="text-align: left; color:blue; ">
+		<img class="img-container" src="https://github.com/Maxon-Chiang/Maxon-Chiang.github.io/blob/main/darr.gif?raw=true" width="15px">看教師課表請點名字
+		<img class="img-container" src="https://github.com/Maxon-Chiang/Maxon-Chiang.github.io/blob/main/darr.gif?raw=true" width="15px"></td>
 		<td style="text-align: right; font-size: 14px;"><select id="class-selector"><option value="" disabled selected>&#9733;班級課表&#9733;</option></select></td>
 		</tr>
 		</table>
