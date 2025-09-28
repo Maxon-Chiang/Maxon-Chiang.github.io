@@ -126,14 +126,14 @@
         .schedule-table th:first-child,
         .schedule-table td:first-child { width: 6%; }
         .schedule-table td { 
-            font-size: 16px; height: 60px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg);
+            font-size: 16px; height: 68px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg);
         }
         .schedule-table td.empty-cell { background-color: var(--cleared-bg); }
         .schedule-table td:hover { background-color: #f0f0f0; }
         .schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
         .schedule-table .period-header { font-weight: bold; background-color: var(--table-header-bg); }
         .schedule-table .subject { font-weight: normal; display: block; }
-        .schedule-table .details { font-size: 14px; color: #555; display: block; line-height: 0.8; }
+        .schedule-table .details { font-size: 14px; color: #555; display: block; line-height: 1.1; }
         .highlight { background-color: var(--highlight-bg) !important; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
         
         .swap-suggestion { 
@@ -142,7 +142,9 @@
             outline: 2px dashed var(--suggestion-border); 
             outline-offset: -2px; 
         }
-        .swap-suggestion .subject, .swap-suggestion .details { color: #0f5132; }
+        .swap-suggestion .subject, .swap-suggestion .details { color: #0f5132;  line-height: 1.1;}
+	.swap-suggestion .ext-details,  .swap-suggestion .teacher-details { display: inline; font-size: 14px; color: #0f5132;  line-height: 1.1; }
+	.swap-suggestion .class-details { display: block; font-size: 14px; color: #0f5132;  line-height: 1.1; }
         .cleared-cell { background-color: var(--cleared-bg); }
 
         /* --- 新增：手機版響應式樣式 --- */
@@ -183,12 +185,12 @@
                 width: 5%;
             }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal-content { 
-            margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 90%; max-width: 1000px; 
-            border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
-        }
-        #modal-title2 { text-align: left; margin-top: 0; font-size: 16px; margin-bottom: 15px; color: blue; }
+            .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+            .modal-content { 
+            	margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 90%; max-width: 1000px; 
+            	border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
+            }
+            #modal-title2 { text-align: left; margin-top: 0; font-size: 16px; margin-bottom: 15px; color: blue; }
             #teacher-list-container {
                 flex-direction: column;
                 width: 100%;
@@ -201,11 +203,18 @@
             }
             .schedule-table td {
                 font-size: 12px;
-                height: 70px;
+                height: 72px;
             }
              .schedule-table .details {
                 font-size: 10px;
             }
+            .swap-suggestion .details {
+               display: block;
+               margin-left: 0px;
+	       color: #0f5132;
+               line-height: 1.1; /* 調整行高避免太擠 */            
+     	    }
+	    .swap-suggestion .ext-details,  .swap-suggestion .teacher-details, .swap-suggestion .class-details { display: block; font-size: 10px; color: #0f5132;  line-height: 1.1; }
         }
     </style>
 </head>
@@ -3132,7 +3141,8 @@ t623,星期一,星期二,星期三,星期四,星期五
     }
 
     function showSchedule(type, name) {
-        const modal = document.getElementById('schedule-modal');
+        localStorage.setItem('lastSchedule', JSON.stringify({ type: type, name: name }));
+     	const modal = document.getElementById('schedule-modal');
         const titleEl = document.getElementById('modal-title');
         const titleEl2 = document.getElementById('modal-title2');
         const bodyEl = document.getElementById('modal-body');
@@ -3143,7 +3153,7 @@ t623,星期一,星期二,星期三,星期四,星期五
             title = `${name} 課表`;
         } else if (type === 'class' && classSchedules.has(name)) {
             schedule = classSchedules.get(name);
-            title = `${name} 班級課表`;
+            title = `${name} 班課表`;
         } else {
             bodyEl.innerHTML = `<p style="text-align:center;">找不到 ${name} 的課表資料。</p>`;
             titleEl.textContent = "資料錯誤";
@@ -3215,6 +3225,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         const clickedLesson = ownSchedule[originalPeriod] ? ownSchedule[originalPeriod][originalDay] : null;
 
 	if (originalPeriod>=7) return;
+	if (originalDay==4 && originalPeriod>=5) return;
         if (!clickedLesson) return;
 
         cell.classList.add('highlight');
@@ -3226,6 +3237,7 @@ t623,星期一,星期二,星期三,星期四,星期五
 
         for (let p = 0; p < 7; p++) {
             for (let d = 0; d < 5; d++) {
+		if (d==4 && p>=5) continue;
                 if (!ownSchedule[p] || !ownSchedule[p][d]) {
                     const lessonAtTargetInClass = classSchedule[p] ? classSchedule[p][d] : null;
                     if (lessonAtTargetInClass && lessonAtTargetInClass.teacher && lessonAtTargetInClass.teacher !== teacherName) {
@@ -3236,12 +3248,10 @@ t623,星期一,星期二,星期三,星期四,星期五
                              if (targetCell) {
                                 targetCell.classList.add('swap-suggestion');
                                 targetCell.dataset.originalText = targetCell.innerHTML;
-                                
-                                const ext = teacherExtensions.get(otherTeacherName);
-                                const extension = ext ? ` (分機 ${ext})` : '';
-                                
-                                targetCell.innerHTML = `<span class="subject">${lessonAtTargetInClass.subject}</span><span class="details">${className}</span><span class="details">${otherTeacherName}${extension}</span>`;
-                             }
+				const ext = teacherExtensions.get(otherTeacherName);
+    				const extension = ext ? `<span class="ext-details">(分機 ${ext})</span>` : '';
+    				targetCell.innerHTML = `<span class="subject">${lessonAtTargetInClass.subject}</span><span class="class-details">${className}</span><span class="teacher-details">${otherTeacherName}</span>${extension}`;
+			     }
                         }
                     }
                 }
@@ -3274,6 +3284,8 @@ t623,星期一,星期二,星期三,星期四,星期五
         const clickedLesson = classSchedule[originalPeriod] ? classSchedule[originalPeriod][originalDay] : null;
 
         if (!clickedLesson || !clickedLesson.teacher) return;
+	if (originalPeriod>=7) return;
+	if (originalDay==4 && originalPeriod>=5) return;
 
         freshTable.querySelectorAll('tbody td:not(.period-header)').forEach(td => {
             if (td !== freshCell) {
@@ -3290,7 +3302,8 @@ t623,星期一,星期二,星期三,星期四,星期五
         for (let p = 0; p < 7; p++) {
             for (let d = 0; d < 5; d++) {
                 if (p === originalPeriod && d === originalDay) continue;
-                const lessonAtTargetSlot = classSchedule[p] ? classSchedule[p][d] : null;
+ 		if (d==4 && p>=5) continue;
+               	const lessonAtTargetSlot = classSchedule[p] ? classSchedule[p][d] : null;
                 if (lessonAtTargetSlot && lessonAtTargetSlot.teacher) {
                     const teacherAtTargetSlot = lessonAtTargetSlot.teacher;
                     if (teacherAtTargetSlot === teacherOfClickedLesson) continue;
@@ -3300,14 +3313,13 @@ t623,星期一,星期二,星期三,星期四,星期五
                     if (teacherBSchedule && (!teacherASchedule[p] || !teacherASchedule[p][d]) && (!teacherBSchedule[originalPeriod] || !teacherBSchedule[originalPeriod][originalDay])) {
                         const targetCell = freshTable.querySelector(`td[data-period="${p}"][data-day="${d}"]`);
                         if (targetCell) {
-                            targetCell.classList.remove('cleared-cell');
-                            targetCell.classList.add('swap-suggestion');
+                           	targetCell.classList.remove('cleared-cell');
+				targetCell.classList.add('swap-suggestion');
 
-                            const ext = teacherExtensions.get(teacherAtTargetSlot);
-                            const extension = ext ? ` (分機 ${ext})` : '';
-                            
-                            targetCell.innerHTML = `<span class="subject">${lessonAtTargetSlot.subject}</span><span class="details">${className}</span><span class="details">${teacherAtTargetSlot}${extension}</span>`;
-                        }
+				const ext = teacherExtensions.get(teacherAtTargetSlot);
+   				const extension = ext ? `<span class="ext-details">(分機 ${ext})</span>` : '';
+    				targetCell.innerHTML = `<span class="subject">${lessonAtTargetSlot.subject}</span><span class="class-details">${className}</span><span class="teacher-details">${teacherAtTargetSlot}</span>${extension}`;
+			}
                     }
                 }
             }
@@ -3318,6 +3330,17 @@ t623,星期一,星期二,星期三,星期四,星期五
     try {
         const allTeachersWithSchedule = deriveTeacherSchedules();
         populateSelectors(allTeachersWithSchedule);
+
+        // --- 新增功能：自動載入上次瀏覽的課表 ---
+        const lastScheduleJSON = localStorage.getItem('lastSchedule');
+        if (lastScheduleJSON) {
+            const lastSchedule = JSON.parse(lastScheduleJSON);
+            if (lastSchedule && lastSchedule.type && lastSchedule.name) {
+                showSchedule(lastSchedule.type, lastSchedule.name);
+            }
+        }
+        // --- 新增功能結束 ---
+
     } catch (e) {
         console.error("程式執行時發生嚴重錯誤:", e);
         alert("程式執行時發生嚴重錯誤，請檢查主控台(F12)獲取更多資訊。");
