@@ -4,219 +4,242 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>課表暨調課查詢系統</title>
-    <style>
+<style>
 :root {
-            --primary-bg: #f8f9fa;
-            --header-bg: #005a87;
-            --text-color: #333;
-            --border-color: #dee2e6;
-            --accent-color: #007bff;
-            --modal-bg: #fff;
-            --modal-shadow: rgba(0,0,0,0.2);
-            --table-header-bg: #e9ecef;
-            --highlight-bg: #fff3cd;
-            --suggestion-bg: #d1e7dd;
-            --suggestion-border: #a3cfbb;
-            --cleared-bg: #fdfdfd;
-            --list-item-hover-bg: #e9ecef;
-        }
-        body {
-            font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif;
-            background-color: var(--primary-bg);
-            color: var(--text-color);
-            margin: 0;
-            padding: 10px;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 1500px;
-            margin: 0 auto;
-            background: var(--modal-bg);
-            padding: 20px 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px var(--modal-shadow);
-        }
-        .main-header {
-            position: relative;
-            text-align: center;
-            margin-bottom: 2em;
-        }
-        h1 {
-            margin: 0;
-            display: inline-block;
-            color: var(--header-bg);
-        }
-        .selector-container {
-            position: absolute;
-            font-size: 1.4em;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .selector-container label {
-            font-size: 1.2em;
-            color: var(--text-color);
-        }
-        #class-selector {
-            font-size: 1em;
-            padding: 5px 8px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            font-family: inherit;
-        }
-        
-        #teacher-list-container {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        .teacher-display-column {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .department-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 15px;
-        }
-        .department-table th {
-            background-color: var(--header-bg);
-            color: white;
-            padding: 8px;
-            text-align: center;
-            font-weight: normal; 
-        }
-        .department-table td {
-            border: 1px solid var(--border-color);
-            padding: 4px 6px;
-            white-space: nowrap;
-            text-align: center;
-        }
-        .department-table .name-cell {
-            width: 80px; 
-            cursor: pointer;
-        }
-        .department-table .ext-cell {
-            width: 50px;
-        }
+    --primary-bg: #f8f9fa;
+    --header-bg: #005a87;
+    --text-color: #333;
+    --border-color: #dee2e6;
+    --accent-color: #007bff;
+    --modal-bg: #fff;
+    --modal-shadow: rgba(0,0,0,0.2);
+    --table-header-bg: #e9ecef;
+    --highlight-bg: #fff3cd;
+    --suggestion-bg: #d1e7dd;
+    --suggestion-border: #a3cfbb;
+    --cleared-bg: #fdfdfd;
+    --list-item-hover-bg: #e9ecef;
+}
+body {
+    font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif;
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    margin: 0;
+    padding: 10px;
+    line-height: 1.6;
+}
+.container {
+    max-width: 1500px;
+    margin: 0 auto;
+    background: var(--modal-bg);
+    padding: 20px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px var(--modal-shadow);
+}
+.main-header {
+    position: relative;
+    text-align: center;
+    margin-bottom: 2em;
+}
+h1 {
+    margin: 0;
+    display: inline-block;
+    color: var(--header-bg);
+}
+.selector-container {
+    position: absolute;
+    font-size: 1.4em;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.selector-container label {
+    font-size: 1.2em;
+    color: var(--text-color);
+}
+#class-selector {
+    font-size: 1em;
+    padding: 5px 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-family: inherit;
+}
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal-content { 
-            margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 100%; max-width: 1000px; 
-            border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
-        }
-        .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close-button:hover, .close-button:focus { color: #333; }
-        #modal-title { text-align: right; margin-top: 0; margin-bottom: 15px; color: var(--header-bg); }
-        #modal-title2 { text-align: center; margin-top: 0; font-size: 20px; margin-bottom: 15px; color: blue; }
-       
-        .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        
-        .schedule-table th, .schedule-table td { 
-            border: 1px solid #999; 
-            padding: 4px; text-align: center; vertical-align: middle; 
-            word-wrap: break-word; box-sizing: border-box;
-            position: relative;
-        }
-        .schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 20px; }
-        .schedule-table th:first-child,
-        .schedule-table td:first-child { width: 6%; }
-        .schedule-table td { 
-            font-size: 16px; height: 68px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg);
-        }
-        .schedule-table td.empty-cell { background-color: var(--cleared-bg); }
-        .schedule-table td:hover { background-color: #f0f0f0; }
-        .schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
-        .schedule-table .period-header { font-weight: bold; background-color: var(--table-header-bg); }
-        .schedule-table .subject { font-weight: normal; display: block; }
-        .schedule-table .details { font-size: 14px; color: #555; display: block; line-height: 1.1; }
-        .highlight { background-color: var(--highlight-bg) !important; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
-        
-        .swap-suggestion { 
-            background-color: var(--suggestion-bg) !important;
-            color: #0f5132;
-            outline: 2px dashed var(--suggestion-border); 
-            outline-offset: -2px; 
-        }
-        .swap-suggestion .subject, .swap-suggestion .details { color: #0f5132;  line-height: 1.1;}
-	.swap-suggestion .ext-details,  .swap-suggestion .teacher-details { display: inline; font-size: 14px; color: #0f5132;  line-height: 1.1; }
-	.swap-suggestion .class-details { display: block; font-size: 14px; color: #0f5132;  line-height: 1.1; }
-        .cleared-cell { background-color: var(--cleared-bg); }
+/* --- 按鈕樣式 --- */
+.view-toggle-btn {
+    padding: 5px 10px;
+    border: 1px solid var(--header-bg);
+    background-color: white;
+    color: var(--header-bg);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+}
+.view-toggle-btn.active {
+    background-color: var(--header-bg);
+    color: white;
+}
 
-        /* --- 新增：手機版響應式樣式 --- */
-        @media screen and (max-width: 768px) {
-            body {
-                padding: 5px;
-                -webkit-text-size-adjust: 100%;
-            }
-            .container {
-                padding: 10px;
-            }
-          .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
-        .close-button:hover, .close-button:focus { color: #333; }
-          .main-header {
-                position: static;
-                text-align: center;
-                margin-bottom: 2em;
-            }
-            h1 {
-               font-size: 1.5em;
-               display: block;
-               width: 100%;
-            }
-            .selector-container {
-                font-size: 1em;
-                position: static;
-                transform: none;
-                margin-top: 15px;
-                justify-content: center;
-                width: 100%;
-            }
-            .img-container {
-                font-size: 1em;
-                position: static;
-                transform: none;
-                margin-top: 5px;
-                justify-content: center;
-                width: 5%;
-            }
+/* --- 核心排版樣式 (最終修正版) --- */
+#teacher-list-container, #teacher-list-by-subject-container {
+    column-count: 6; /* 設定為五個欄位 */
+    column-gap: 6px; /* 設定欄位間距 */
+}
+.department-table {
+    break-inside: avoid; /* 避免單個表格被從中間切斷 */
+    margin-bottom: 15px; /* 增加表格之間的垂直間距 */
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+}
 
-            .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-            .modal-content { 
-            	margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 90%; max-width: 1000px; 
-            	border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
-            }
-            #modal-title2 { text-align: left; margin-top: 0; font-size: 16px; margin-bottom: 15px; color: blue; }
-            #teacher-list-container {
-                flex-direction: column;
-                width: 100%;
-            }
-            .teacher-display-column {
-                width: 100%;
-            }
-            .department-table {
-                font-size: 14px;
-            }
-            .schedule-table td {
-                font-size: 12px;
-                height: 72px;
-            }
-             .schedule-table .details {
-                font-size: 10px;
-            }
-            .swap-suggestion .details {
-               display: block;
-               margin-left: 0px;
-	       color: #0f5132;
-               line-height: 1.1; /* 調整行高避免太擠 */            
-     	    }
-	    .swap-suggestion .ext-details,  .swap-suggestion .teacher-details, .swap-suggestion .class-details { display: block; font-size: 10px; color: #0f5132;  line-height: 1.1; }
-        }
-    </style>
+.department-table th {
+    background-color: var(--header-bg);
+    color: white;
+    padding: 0px;
+    text-align: center;
+    font-weight: normal; 
+}
+.department-table td {
+    border: 1px solid var(--border-color);
+    padding: 2px 6px;
+    white-space: normal; /* 【關鍵修正】允許文字正常換行，解決重疊問題 */
+    text-align: center;
+}
+.department-table .name-cell {
+    width: 80px; 
+    cursor: pointer;
+    color: var(--accent-color); /* 新增：使用系統定義的藍色 */
+    text-decoration: underline; /* 新增：加上底線 */
+}
+.department-table .ext-cell {
+    width: 50px;
+}
+
+/* --- Modal 彈出視窗相關樣式 --- */
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+.modal-content { 
+    margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 100%; max-width: 1000px; 
+    border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
+}
+.close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
+.close-button:hover, .close-button:focus { color: #333; }
+#modal-title { text-align: right; margin-top: 0; margin-bottom: 15px; color: var(--header-bg); }
+#modal-title2 { text-align: center; margin-top: 0; font-size: 20px; margin-bottom: 15px; color: blue; }
+
+/* --- 課表表格相關樣式 --- */
+.schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.schedule-table th, .schedule-table td { 
+    border: 1px solid #999; 
+    padding: 4px; text-align: center; vertical-align: middle; 
+    word-wrap: break-word; box-sizing: border-box;
+    position: relative;
+}
+.schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 20px; }
+.schedule-table th:first-child,
+.schedule-table td:first-child { width: 6%; }
+.schedule-table td { 
+    font-size: 16px; height: 68px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg);
+}
+.schedule-table td.empty-cell { background-color: var(--cleared-bg); }
+.schedule-table td:hover { background-color: #f0f0f0; }
+.schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
+.schedule-table .period-header { font-weight: bold; background-color: var(--table-header-bg); }
+.schedule-table .subject { font-weight: normal; display: block; }
+.schedule-table .details { font-size: 14px; color: #555; display: block; line-height: 1.1; }
+.highlight { background-color: var(--highlight-bg) !important; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+
+/* --- 調課建議相關樣式 --- */
+.swap-suggestion { 
+    background-color: var(--suggestion-bg) !important;
+    color: #0f5132;
+    outline: 2px dashed var(--suggestion-border); 
+    outline-offset: -2px; 
+}
+.swap-suggestion .subject, .swap-suggestion .details { color: #0f5132;  line-height: 1.1;}
+.swap-suggestion .teacher-detail,
+.swap-suggestion .ext-detail {
+    display: inline;
+    margin-left: 4px;
+}
+.swap-suggestion .class-detail {
+    display: block;
+}
+.swap-suggestion .class-detail + .teacher-detail {
+    margin-left: 0;
+}
+.cleared-cell { background-color: var(--cleared-bg); }
+
+/* --- 手機版響應式樣式 --- */
+@media screen and (max-width: 768px) {
+    body {
+        padding: 5px;
+        -webkit-text-size-adjust: 100%;
+    }
+    .container {
+        padding: 10px;
+    }
+    .close-button { top: 10px; right: 25px; font-size: 28px; font-weight: bold; }
+    .main-header {
+        position: static;
+        text-align: center;
+        margin-bottom: 2em;
+    }
+    h1 {
+       font-size: 1.5em;
+       display: block;
+       width: 100%;
+    }
+    .selector-container {
+        font-size: 1em;
+        position: static;
+        transform: none;
+        margin-top: 15px;
+        justify-content: center;
+        width: 100%;
+        flex-wrap: wrap; /* 允許換行 */
+    }
+    .img-container {
+        font-size: 1em;
+        position: static;
+        transform: none;
+        margin-top: 5px;
+        justify-content: center;
+        width: 5%;
+    }
+
+    .modal-content { 
+        width: 90%;
+    }
+    #modal-title2 { font-size: 16px; }
+
+    /* 修正手機版主頁面排版 */
+    #teacher-list-container, #teacher-list-by-subject-container {
+        column-count: 1; /* 在窄螢幕下，強制所有列表變為單欄佈局 */
+    }
+    .department-table {
+        font-size: 14px;
+    }
+    
+    /* 修正手機版課表排版 */
+    .schedule-table td {
+        font-size: 12px;
+        height: 72px;
+    }
+     .schedule-table .details {
+        font-size: 10px;
+    }
+    .swap-suggestion .details {
+       display: block;
+       margin-left: 0px;
+       line-height: 1.2;
+    }
+}
+</style>
+
 </head>
 <body>
 
@@ -228,9 +251,14 @@
 		<table width="800px">
 		<tr>
 		<td style="text-align: left; color:blue; ">
-		<img class="img-container" src="https://github.com/Maxon-Chiang/Maxon-Chiang.github.io/blob/main/darr.gif?raw=true" width="15px">看教師課表請點名字
-		<img class="img-container" src="https://github.com/Maxon-Chiang/Maxon-Chiang.github.io/blob/main/darr.gif?raw=true" width="15px"></td>
-		<td style="text-align: right; font-size: 14px;"><select id="class-selector"><option value="" disabled selected>&#9733;班級課表&#9733;</option></select></td>
+		<!-- <img class="img-container" src="https://github.com/Maxon-Chiang/Maxon-Chiang.github.io/blob/main/darr.gif?raw=true" width="15px">&#9733;看教師課表請點名字&#9733;
+		<img class="img-container" src="https://github.com/Maxon-Chiang/Maxon-Chiang.github.io/blob/main/darr.gif?raw=true" width="15px"></td> -->
+		<td style="text-align: left; font-size: 14px; padding-left: 15px; white-space: nowrap;">教師名單：
+			<button id="view-by-dept-btn" class="view-toggle-btn active">依單位</button>
+			<button id="view-by-subject-btn" class="view-toggle-btn">依領域</button>
+		</td>
+		<td style="text-align: right; font-size: 14px;"><select id="class-selector"><option value="" disabled selected>班級課表</option></select></td>
+
 		</tr>
 		</table>
             	</div>
@@ -239,6 +267,7 @@
         
         <div id="teacher-list-column">
             <div id="teacher-list-container"></div>
+            <div id="teacher-list-by-subject-container" style="display: none;"></div>
         </div>
     </div>
 
@@ -2713,6 +2742,105 @@ t623,星期一,星期二,星期三,星期四,星期五
 懷劭法努司",,,,
 8,,,,,
 `;
+
+// --- ▼▼▼ 請將這整段資料貼在 csvStaffDirectory 的前面 ▼▼▼ ---
+    const csvSubjectData = `國文,張耕翰,專任教師 
+國文,游麗萍,104導師 
+國文,陳映伶,303導師 
+國文,黃耀慧,102導師 
+國文,何新梅,專任教師 
+國文,許雅玲,試務組長 
+國文,劉芝妤,202導師 
+國文,陳映如,總務主任 
+國文,范麗萍,專任教師 
+國文,許亮昇,405導師 
+國文,李佳樺,503導師 
+國文,蔡千慧,406導師 
+國文,梁榕真,協助行政 
+國文,張嘉雯,協助行政 
+英文,方淑貞,103導師 
+英文,黃政榕,302導師 
+英文,高晉強,教務主任 
+英文,江紹瑄,協助行政 
+英文,曾翔蔚,兼任教師 
+英文,許仲璦,兼任教師 
+英文,曾國誌,601導師 
+英文,張淑粉,輔導組長 
+英文,謝佳琪,505導師 
+英文,陳毓珍,採編組長 
+英文,莊世爵,專任教師 
+英文,周正忠,專任教師 
+英文,游娟鐶,兼任教師 
+英文,外籍教師,專任教師 
+數學,蘇威光,201導師 
+數學,蔡佳樺,204導師 
+數學,王莉婷,衛生組長 
+數學,林宏譯,生輔組長 
+數學,陳銘漢,兼任教師 
+數學,吳銘川,501導師 
+數學,林恩宇,502導師 
+數學,張惟智,402導師 
+數學,游靜玟,603導師 
+數學,陳昭宏,401導師 
+數學,連昱衡,資訊組長 
+社會,林嘉慧,訓育組長 
+社會,徐紹青,體育組長 
+社會,方瑋樺,304導師 
+社會,郭仲怡,教學組長 
+社會,黃曉慧,圖書主任 
+社會,謝依萍,602導師 
+社會,陳靜誼,504導師 
+社會,王怡文,404導師 
+社會,歐姿儀,讀服組長 
+社會,林孟儒,專任教師 
+科技,吳建璿,科技主任 
+科技,蔣銘宗,專任教師 
+自然,高建國,專任教師 
+自然,王皓正,學務主任 
+自然,鄭雅茵,生發組長 
+自然,李承修,專任教師 
+自然,黃婉婷,兼任教師 
+自然,簡秀萍,實研組長 
+自然,林文杰,506導師 
+自然,李政學,活動組長 
+自然,蔡維騰,設備組長 
+自然,蘇家逸,兼任教師 
+自然,自然師1,兼任教師 
+自然,自然師2,兼任教師 
+健體,鍾育倫,專任教師 
+健體,陳毅芬,301導師 
+健體,潘薇安,專任教師 
+健體,高慧芳,605導師 
+健體,周桂英,專任教師 
+健體,黃思綺,協助行政 
+健體,傅君然,衝浪社 
+健體,吳裕隆,籃球社 
+綜合,黃美玲,協助行政 
+綜合,李清波,註冊組長 
+綜合,龔偉遜,專任教師 
+綜合,劉庭瑜,專任教師 
+商管,李金龍,輔導主任 
+商管,李孟達,604導師 
+商管,洪華欣,專任教師 
+商管,汪麗鈴,專任教師 
+商管,龔進庭,專任教師 
+商管,余玥林,403導師 
+商管,陳淑芬,606導師 
+商管,邱歆喻,協助行政 
+商管,鐘坤賜,兼任教師 
+商管,潘翌展,兼任教師 
+藝術,陳信全,101導師 
+藝術,洪婉郡,203導師 
+藝術,譚雅婷,協助行政 
+藝術,張詩佳,專任教師 
+藝術,懷劭法努司,兼任教師 
+藝術,黃瑋瑤,兼任教師 
+藝術,蔡芸琤,兼任教師 
+其他,簡富源,國防教官 
+其他,吳嬋娜,社團 
+`;
+    // --- ▲▲▲ 新增資料結束 ▲▲▲ ---
+    
     
     // --- 修正後的資料區 ---
     const csvStaffDirectory = `處室,單位,職稱,姓名,分機
@@ -2864,6 +2992,7 @@ t623,星期一,星期二,星期三,星期四,星期五
     const teacherExtensions = new Map();
     let teacherViewSelectedCell = null;
     let classViewSelectedCell = null;
+    let currentView = 'department'; // <-- 請新增這一行
 
     function parseFullCsv(csvString) {
         const rows = [];
@@ -3140,8 +3269,64 @@ t623,星期一,星期二,星期三,星期四,星期五
         };
     }
 
+
+function populateTeacherListBySubject(allTeachersWithSchedule) {
+        const container = document.getElementById('teacher-list-by-subject-container');
+        container.innerHTML = '';
+
+        const subjectMap = new Map();
+        const rows = csvSubjectData.trim().split('\n').map(row => row.split(','));
+
+        rows.forEach(row => {
+            if (row.length >= 2) {
+                const subject = row[0].trim();
+                const name = row[1].trim();
+                
+                // 【關鍵修正】採用更穩定、更明確的方式讀取教師身分
+                let role = '專任'; // 先設定預設值
+                if (row[2] && row[2].trim() !== '') { // 檢查第三欄是否存在且不是空字串
+                    role = row[2].trim();
+                }
+
+                if (!allTeachersWithSchedule.has(name)) return;
+                if (!subjectMap.has(subject)) {
+                    subjectMap.set(subject, []);
+                }
+                subjectMap.get(subject).push({ name, role });
+            }
+        });
+        
+        const subjectsInOrder = [...subjectMap.keys()];
+
+        subjectsInOrder.forEach(subject => {
+            const table = document.createElement('table');
+            table.className = 'department-table';
+            
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const th = document.createElement('th');
+            th.colSpan = 3;
+            th.textContent = subject;
+            headerRow.appendChild(th);
+            
+            const tbody = table.createTBody();
+            const members = subjectMap.get(subject);
+            members.forEach(member => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = member.role;
+                const nameCell = row.insertCell();
+                nameCell.className = 'name-cell';
+                nameCell.textContent = member.name;
+                nameCell.onclick = () => showSchedule('teacher', member.name);
+                row.insertCell().textContent = teacherExtensions.get(member.name) || '';
+            });
+            container.appendChild(table);
+        });
+    }
+
+
     function showSchedule(type, name) {
-        localStorage.setItem('lastSchedule', JSON.stringify({ type: type, name: name }));
+        localStorage.setItem('lastSchedule', JSON.stringify({ view: currentView, type: type, name: name }));
      	const modal = document.getElementById('schedule-modal');
         const titleEl = document.getElementById('modal-title');
         const titleEl2 = document.getElementById('modal-title2');
@@ -3327,32 +3512,98 @@ t623,星期一,星期二,星期三,星期四,星期五
     }
 
     // --- MAIN EXECUTION ---
+// --- MAIN EXECUTION ---
     try {
         const allTeachersWithSchedule = deriveTeacherSchedules();
-        populateSelectors(allTeachersWithSchedule);
+        // 確保兩個列表的內容都先產生
+        populateTeacherList(allTeachersWithSchedule);
+        populateTeacherListBySubject(allTeachersWithSchedule);
+        // 產生完列表內容後，再處理其他UI元件
+        populateClassList();
 
-        // --- 新增功能：自動載入上次瀏覽的課表 ---
         const lastScheduleJSON = localStorage.getItem('lastSchedule');
+        let lastSchedule = {};
         if (lastScheduleJSON) {
-            const lastSchedule = JSON.parse(lastScheduleJSON);
-            if (lastSchedule && lastSchedule.type && lastSchedule.name) {
-                showSchedule(lastSchedule.type, lastSchedule.name);
-            }
+            lastSchedule = JSON.parse(lastScheduleJSON);
         }
-        // --- 新增功能結束 ---
+
+        // 依據儲存的紀錄，設定正確的初始分頁
+        if (lastSchedule.view === 'subject') {
+            // 如果紀錄是 'subject'，則切換到 subject 視圖
+            currentView = 'subject';
+            document.getElementById('teacher-list-container').style.display = 'none';
+            document.getElementById('teacher-list-by-subject-container').style.display = 'block';
+            document.getElementById('view-by-dept-btn').classList.remove('active');
+            document.getElementById('view-by-subject-btn').classList.add('active');
+        } else {
+            // 否則，一律預設為 department 視圖
+            currentView = 'department';
+            document.getElementById('teacher-list-container').style.display = 'block';
+            document.getElementById('teacher-list-by-subject-container').style.display = 'none';
+            document.getElementById('view-by-dept-btn').classList.add('active');
+            document.getElementById('view-by-subject-btn').classList.remove('active');
+        }
+
+        // 如果紀錄中有課表資訊，則在短暫延遲後開啟課表
+        if (lastSchedule && lastSchedule.type && lastSchedule.name) {
+            setTimeout(() => showSchedule(lastSchedule.type, lastSchedule.name), 100);
+        }
 
     } catch (e) {
         console.error("程式執行時發生嚴重錯誤:", e);
         alert("程式執行時發生嚴重錯誤，請檢查主控台(F12)獲取更多資訊。");
     }
 
-    // Event Listeners
+
+
+// Event Listeners
     const modal = document.getElementById('schedule-modal');
     const closeButton = document.querySelector('.close-button');
+    const deptBtn = document.getElementById('view-by-dept-btn');
+    const subjectBtn = document.getElementById('view-by-subject-btn');
+    const deptContainer = document.getElementById('teacher-list-container');
+    const subjectContainer = document.getElementById('teacher-list-by-subject-container');
+
     closeButton.onclick = () => modal.style.display = 'none';
     window.onclick = (event) => {
         if (event.target == modal) modal.style.display = 'none';
     };
+
+    // 建立一個統一的、更安全的視圖更新函式
+    const updateView = (newView) => {
+        // 1. 先從 localStorage 讀取現有的完整紀錄
+        const lastScheduleJSON = localStorage.getItem('lastSchedule');
+        let lastSchedule = {};
+        if (lastScheduleJSON) {
+            lastSchedule = JSON.parse(lastScheduleJSON);
+        }
+        
+        // 2. 只更新 view 屬性，保留其他如 type 和 name 的資訊
+        lastSchedule.view = newView;
+        
+        // 3. 將更新後的完整紀錄存回去
+        localStorage.setItem('lastSchedule', JSON.stringify(lastSchedule));
+
+        // 4. 更新頁面顯示
+        if (newView === 'department') {
+            currentView = 'department';
+            subjectContainer.style.display = 'none';
+            subjectBtn.classList.remove('active');
+            deptContainer.style.display = 'block';
+            deptBtn.classList.add('active');
+        } else { // newView === 'subject'
+            currentView = 'subject';
+            deptContainer.style.display = 'none';
+            deptBtn.classList.remove('active');
+            subjectContainer.style.display = 'block';
+            subjectBtn.classList.add('active');
+        }
+    };
+
+    // 讓按鈕點擊時呼叫這個新的安全函式
+    deptBtn.onclick = () => updateView('department');
+    subjectBtn.onclick = () => updateView('subject');
+
 });
 
 </script>
