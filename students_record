@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生平時表現紀錄系統</title>
+
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f5f5;
+            --font-color: #333;
+            --border-color: #ddd;
+            --danger-color: #d0021b;
+            --success-color: #7ed321;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--secondary-color);
+            color: var(--font-color);
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.6rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 1.6em;
+            margin: 0;
+        }
+
+        #app-container {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .class-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .class-title {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+            font-size: 1.5em;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .class-score-span {
+            font-size: 0.8em;
+            font-weight: normal;
+            color: #666;
+            margin-left: 8px;
+        }
+
+        .student-select {
+            width: 100%;
+            padding: 12px;
+            font-size: 1em;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+        }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 10px; position: relative; }
+        .close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-btn:hover { color: #000; }
+        #modal-student-info { font-size: 1.2em; margin-bottom: 1.5rem; padding: 1rem; background-color: var(--secondary-color); border-radius: 5px; }
+        .form-container, .records-container { margin-top: 1.5rem; }
+        
+        #add-record-form { 
+            display: flex; 
+            gap: 10px; 
+        }
+
+        #add-record-form input { 
+            padding: 10px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        
+        #record-points {
+            width: 90px;
+        }
+
+        #record-text {
+            flex-grow: 1;
+            width: 100%;
+        }
+
+        #add-record-form button { 
+            padding: 10px 15px; 
+            background-color: var(--primary-color); 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
+
+        #records-list { max-height: 300px; overflow-y: auto; border-top: 1px solid var(--border-color); margin-top: 1rem; }
+        .record-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color); }
+        .record-details { flex-grow: 1; }
+        .record-points { font-weight: bold; font-size: 1.1em; margin-right: 15px; }
+        .record-points.positive { color: var(--success-color); }
+        .record-points.negative { color: var(--danger-color); }
+        .record-text { color: #555; }
+        .record-timestamp { font-size: 0.8em; color: #999; margin-top: 4px; }
+        .record-actions button { background: none; border: none; cursor: pointer; margin-left: 8px; font-size: 1em; }
+        .delete-btn { color: var(--danger-color); }
+
+        @media (max-width: 600px) {
+            #app-container {
+                padding: 1rem;
+            }
+            .class-card {
+                padding: 1rem;
+            }
+            header h1 {
+                font-size: 1.3em;
+            }
+            .class-title {
+                font-size: 1.3em;
+            }
+            .student-select {
+                padding: 10px;
+                font-size: 0.95em;
+            }
+            .modal-content {
+                margin: 5% auto;
+            }
+        }
+    </style>
+    </head>
+<body>
+    <header>
+        <h1>學生平時表現紀錄系統</h1>
+    </header>
+    
+    <main id="app-container">
+        </main>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="modal-title">學生紀錄</h2>
+            <div id="modal-student-info"></div>
+            
+            <div class="form-container">
+                <h3>新增紀錄</h3>
+                <form id="add-record-form">
+                    <input type="number" id="record-points" placeholder="加/減分">
+                    <input type="text" id="record-text" placeholder="文字紀錄">
+                    <button type="submit">新增</button>
+                </form>
+            </div>
+
+            <div class="records-container">
+                <h3>歷史紀錄</h3>
+                <div id="records-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script>
+        // =================================================================
+        // 1. Firebase 設定 (已直接使用您提供的 Key)
+        // =================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA",
+            authDomain: "stu001-e72fa.firebaseapp.com",
+            projectId: "stu001-e72fa",
+            storageBucket: "stu001-e72fa.appspot.com",
+            messagingSenderId: "852359717475",
+            appId: "1:852359717475:web:db9a6a5d737978874c8e56",
+            measurementId: "G-5BHH3R9N2D"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // =================================================================
+        // 2. 學生資料 (【【【根據您提供的文字檔，100%準確修正】】】)
+        // =================================================================
+        const studentsData = [
+            { id: '70101', name: '陳宥炘' }, { id: '70102', name: '廖翊暟' }, { id: '70103', name: '陳信安' }, { id: '70104', name: '許丞翔' }, { id: '70105', name: '簡廷澔' }, { id: '70106', name: '朱峻頡' }, { id: '70107', name: '簡詠哲' }, { id: '70108', name: '許睿恩' }, { id: '70109', name: '高哲宇' }, { id: '70110', name: '余尚齊' }, { id: '70121', name: '林芯柔' }, { id: '70122', name: '邱貞瑜' }, { id: '70123', name: '陳昀希' }, { id: '70124', name: '吳美拉' }, { id: '70125', name: '劉欣雨' }, { id: '70126', name: '余樂樂' }, { id: '70127', name: '郭品妍' }, { id: '70128', name: '宋釩君' }, { id: '70129', name: '邱莉蓉' }, { id: '70130', name: '李苡寧' },
+            { id: '70201', name: '林宗尹' }, { id: '70202', name: '林宥緯' }, { id: '70204', name: '謝昕霖' }, { id: '70205', name: '黃震武' }, { id: '70206', name: '黃棖致' }, { id: '70207', name: '嚴禾翔' }, { id: '70208', name: '林子騰' }, { id: '70209', name: '簡儀安' }, { id: '70210', name: '李睿煬' }, { id: '70221', name: '鄭羽彤' }, { id: '70222', name: '盧沛瑜' }, { id: '70223', name: '李欣瞳' }, { id: '70224', name: '蕭心愉' }, { id: '70225', name: '游姿紜' }, { id: '70226', name: '李宜昀' }, { id: '70227', name: '李宜昕' }, { id: '70228', name: '李佳穎' }, { id: '70229', name: '蔡昀彤' }, { id: '70230', name: '林譽書' }, { id: '70231', name: '林紫湄' },
+            { id: '70301', name: '葉銘濬' }, { id: '70302', name: '李侑宸' }, { id: '70303', name: '郭宸愷' }, { id: '70304', name: '張仲廷' }, { id: '70305', name: '潘逸愷' }, { id: '70306', name: '黃予樂' }, { id: '70307', name: '高士祐' }, { id: '70308', name: '林俊豪' }, { id: '70309', name: '李御銘' }, { id: '70310', name: '郭光浩' }, { id: '70311', name: '郭育綸' }, { id: '70321', name: '蔡媁絜' }, { id: '70322', name: '吳蕥吟' }, { id: '70323', name: '許喻媗' }, { id: '70324', name: '黃韻晨' }, { id: '70325', name: '江佳紜' }, { id: '70326', name: '陳翌歆' }, { id: '70327', name: '童于恩' }, { id: '70328', name: '簡苡安' }, { id: '70329', name: '張媃涵' }, { id: '70330', name: '黃詩婷' },
+            { id: '70401', name: '高紹齊' }, { id: '70402', name: '林宏叡' }, { id: '70403', name: '曹令緯' }, { id: '70404', name: '簡韋翔' }, { id: '70405', name: '羅承尉' }, { id: '70406', name: '阮瑋凱' }, { id: '70407', name: '柳孝謙' }, { id: '70408', name: '李朋諺' }, { id: '70409', name: '郭宇喆' }, { id: '70410', name: '陳何軒' }, { id: '70411', name: '高家塏' }, { id: '70421', name: '鄧心榆' }, { id: '70422', name: '江貞誼' }, { id: '70423', name: '張淳媗' }, { id: '70424', name: '許淨賢' }, { id: '70425', name: '簡子晏' }, { id: '70426', name: '林琦恩' }, { id: '70427', 'name': '李芷瑄' }, { id: '70428', name: '黃文怡' }, { id: '70429', name: '劉可靚' }, { id: '70430', name: '李羿蓁' },
+            { id: '80101', name: '李詳翊' }, { id: '80102', name: '練烜赫' }, { id: '80103', name: '林奕丞' }, { id: '80104', name: '陳信至' }, { id: '80105', name: '蔡政峰' }, { id: '80106', name: '吳岷恩' }, { id: '80107', name: '徐永澤' }, { id: '80108', name: '柳宇恩' }, { id: '80109', name: '周李洧' }, { id: '80110', name: '李家宏' }, { id: '80111', name: '羅昱順' }, { id: '80112', name: '余崇聖' }, { id: '80113', name: '葉育辰' }, { id: '80121', name: '季可婕' }, { id: '80123', name: '高詠緹' }, { id: '80124', name: '蔡宇晴' }, { id: '80125', name: '林詩凡' }, { id: '80126', name: '簡子芹' }, { id: '80127', name: '周舒晴' }, { id: '80128', name: '鄭晴勻' }, { id: '80129', name: '王湘菱' }, { id: '80130', name: '洪品文' }, { id: '80131', name: '徐貝鎷' }, { id: '80132', name: '許芸蓁' },
+            { id: '80201', name: '王浚丞' }, { id: '80202', name: '李泰睿' }, { id: '80203', name: '何翰昇' }, { id: '80204', name: '賴柏丞' }, { id: '80205', name: '林熙恩' }, { id: '80206', name: '賴品穎' }, { id: '80208', name: '施韋彤' }, { id: '80209', name: '許哲銘' }, { id: '80210', name: '張天宥' }, { id: '80211', name: '陳俊銘' }, { id: '80221', name: '簡妤亘' }, { id: '80222', name: '游雨綺' }, { id: '80223', name: '賴翎云' }, { id: '80224', name: '許安儀' }, { id: '80225', name: '許芸婕' }, { id: '80226', name: '張杏卉' }, { id: '80227', name: '李雅雯' }, { id: '80228', name: '郭郁穎' }, { id: '80229', name: '許芯慈' }, { id: '80230', name: '楊紫翎' }, { id: '80231', name: '李雨倩' },
+            { id: '80301', name: '李龍允' }, { id: '80302', name: '施韋呈' }, { id: '80303', name: '高翊宸' }, { id: '80304', name: '李子旭' }, { id: '80305', name: '劉丞祐' }, { id: '80306', name: '許承暘' }, { id: '80307', name: '徐睿謄' }, { id: '80308', name: '簡楷倫' }, { id: '80309', name: '林以恩' }, { id: '80310', name: '吳明倫' }, { id: '80311', name: '羅浚瑋' }, { id: '80312', name: '蔡斯帆' }, { id: '80321', name: '簡筱宜' }, { id: '80322', name: '柳佩宜' }, { id: '80323', name: '李禹葳' }, { id: '80324', name: '陳昱吟' }, { id: '80325', name: '王宇安' }, { id: '80326', name: '朱怡穎' }, { id: '80327', name: '李柔漪' }, { id: '80328', name: '簡曉彤' }, { id: '80329', name: '朱巧馨' }, { id: '80330', name: '張芸婕' }, { id: '80331', name: '許燕君' }, { id: '80332', name: '陳苡雯' },
+            { id: '80401', name: '郭宥良' }, { id: '80402', name: '張宸瑀' }, { id: '80403', name: '華翊承' }, { id: '80404', name: '許維宸' }, { id: '80405', name: '張桀紳' }, { id: '80406', name: '許棖熙' }, { id: '80407', name: '林脩桀' }, { id: '80408', name: '林睿彥' }, { id: '80409', name: '何冠昱' }, { id: '80410', name: '何韋軍' }, { id: '80411', name: '潘大鑫' }, { id: '80421', name: '林子晴' }, { id: '80422', name: '許晏甄' }, { id: '80423', name: '許謹安' }, { id: '80424', name: '王姳' }, { id: '80425', name: '李苡瑄' }, { id: '80426', name: '林怡希' }, { id: '80427', name: '劉庭瑜' }, { id: '80428', name: '劉宸瑜' }, { id: '80429', name: '張佳榕' }, { id: '80430', name: '郭恩妤' }, { id: '80431', name: '何雅茹' },
+            { id: '90102', name: '李禹威' }, { id: '90103', name: '林余祐' }, { id: '90104', name: '諶家彬' }, { id: '90105', name: '高立崴' }, { id: '90106', name: '黃家瑋' }, { id: '90107', name: '游智棠' }, { id: '90108', name: '羅楷崴' }, { id: '90109', name: '許逢文' }, { id: '90110', name: '陳品翔' }, { id: '90111', name: '邱品承' }, { id: '90121', name: '簡棠羽' }, { id: '90122', name: '吳昀豈' }, { id: '90123', name: '易佳慧' }, { id: '90124', name: '徐嘉妤' }, { id: '90125', name: '高詩晴' }, { id: '90126', name: '林韋杉' }, { id: '90127', name: '張芠嫙' }, { id: '90128', name: '陳語桐' }, { id: '90129', name: '蕭品嫙' },
+            { id: '90201', name: '賴政銘' }, { id: '90202', name: '林宥亨' }, { id: '90203', name: '李宥承' }, { id: '90204', name: '蔡承家' }, { id: '90205', name: '李柏叡' }, { id: '90206', name: '許書鳴' }, { id: '90207', name: '許茗棨' }, { id: '90208', name: '賴柏睿' }, { id: '90209', name: '邱梓倫' }, { id: '90221', name: '游卉蕎' }, { id: '90222', name: '朱奕禎' }, { id: '90223', name: '鄭欣庭' }, { id: '90224', name: '賴昱瑄' }, { id: '90225', name: '賴紫嫣' }, { id: '90226', name: '李榳恩' }, { id: '90227', name: '李婕廷' }, { id: '90228', name: '郭伊璇' },
+            { id: '90301', name: '謝東益' }, { id: '90302', name: '黃士軒' }, { id: '90304', name: '蔡旻呈' }, { id: '90305', name: '楊畯程' }, { id: '90306', name: '簡廷宇' }, { id: '90307', name: '郭子洋' }, { id: '90309', name: '謝宗洋' }, { id: '90310', name: '徐鼎硯' }, { id: '90321', name: '陳鈺欣' }, { id: '90322', name: '張婺涵' }, { id: '90323', name: '江佳欣' }, { id: '90324', name: '謝蓁葶' }, { id: '90325', name: '楊棠甯' }, { id: '90326', name: '梁軒瑜' }, { id: '90327', name: '陳昀蓳' }, { id: '90328', name: '張芷綺' }, { id: '90329', name: '李家妤' }, { id: '90330', name: '呂燕妮' }, { id: '90331', name: '陳喬萱' },
+            { id: '90401', name: '謝昊均' }, { id: '90402', name: '李漢昇' }, { id: '90403', name: '李嘉哲' }, { id: '90404', name: '江長恩' }, { id: '90405', name: '李嘉恩' }, { id: '90406', name: '林宥頡' }, { id: '90407', name: '吳瑞恩' }, { id: '90410', name: '陳彥霖' }, { id: '90411', name: '林弦叡' }, { id: '90421', name: '江雨潔' }, { id: '90423', name: '張綺真' }, { id: '90424', name: '李睿涵' }, { id: '90427', name: '江培瑀' }, { id: '90428', name: '王品甯' }, { id: '90429', name: '吳育彤' }, { id: '90430', name: '陳如筠' }, { id: '90431', name: '葉宥岑' }
+        ];
+        
+        const appContainer = document.getElementById('app-container');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalStudentInfo = document.getElementById('modal-student-info');
+        const recordsList = document.getElementById('records-list');
+        const addRecordForm = document.getElementById('add-record-form');
+        const closeBtn = document.querySelector('.close-btn');
+
+        let currentStudentId = null;
+        let studentScores = {}; 
+
+        async function initialize() {
+            await fetchAllScores(); 
+            renderLayout();         
+        }
+
+        async function fetchAllScores() {
+            const recordsSnapshot = await db.collection('records').get();
+            studentScores = {}; 
+
+            recordsSnapshot.forEach(doc => {
+                const record = doc.data();
+                if (!studentScores[record.studentId]) {
+                    studentScores[record.studentId] = 0;
+                }
+                studentScores[record.studentId] += record.points || 0;
+            });
+        }
+
+        function renderLayout() {
+            appContainer.innerHTML = ''; 
+
+            const groupedByClass = studentsData.reduce((acc, student) => {
+                const className = student.id.substring(0, 3);
+                if (!acc[className]) acc[className] = [];
+                acc[className].push(student);
+                return acc;
+            }, {});
+
+            const classScores = {};
+            for (const studentId in studentScores) {
+                const className = studentId.substring(0, 3);
+                if (!classScores[className]) classScores[className] = 0;
+                classScores[className] += studentScores[studentId];
+            }
+
+            const sortedClasses = Object.keys(groupedByClass).sort();
+
+            sortedClasses.forEach(className => {
+                const classCard = document.createElement('div');
+                classCard.className = 'class-card';
+
+                const totalScore = classScores[className] || 0;
+                const scoreColor = totalScore > 0 ? 'var(--success-color)' : (totalScore < 0 ? 'var(--danger-color)' : '#666');
+
+                const title = document.createElement('h2');
+                title.className = 'class-title';
+                title.innerHTML = `${className} 班 <span class="class-score-span" style="color: ${scoreColor}">(總分: ${totalScore})</span>`;
+                classCard.appendChild(title);
+
+                const select = document.createElement('select');
+                select.className = 'student-select';
+                select.dataset.className = className;
+
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = '--- 請選擇學生 ---';
+                select.appendChild(defaultOption);
+
+                groupedByClass[className].forEach(student => {
+                    const score = studentScores[student.id] || 0;
+                    const option = document.createElement('option');
+                    option.value = student.id;
+                    const seatNumber = student.id.substring(3);
+                    
+                    let displayText = `${seatNumber} ${student.name}`;
+                    if (score !== 0) {
+                        displayText += ` (${score}分)`;
+                    }
+                    option.textContent = displayText;
+                    select.appendChild(option);
+                });
+                
+                select.addEventListener('change', (event) => {
+                    const selectedStudentId = event.target.value;
+                    if (selectedStudentId) {
+                        openModal(selectedStudentId);
+                    }
+                });
+
+                classCard.appendChild(select);
+                appContainer.appendChild(classCard);
+            });
+        }
+
+        function openModal(studentId) {
+            currentStudentId = studentId;
+            const student = studentsData.find(s => s.id === studentId);
+            modalTitle.textContent = `${student.name} (${student.id}) 的表現紀錄`;
+            modalStudentInfo.innerHTML = `目前總分: <strong>${studentScores[studentId] || 0}</strong>`;
+            loadRecords(studentId);
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            if (currentStudentId) {
+                const className = currentStudentId.substring(0, 3);
+                const select = document.querySelector(`.student-select[data-class-name="${className}"]`);
+                if (select) select.value = '';
+            }
+            currentStudentId = null;
+            addRecordForm.reset();
+        }
+
+        function loadRecords(studentId) {
+            recordsList.innerHTML = '載入中...';
+            db.collection('records')
+              .where('studentId', '==', studentId)
+              .orderBy('timestamp', 'desc')
+              .onSnapshot(snapshot => {
+                  recordsList.innerHTML = '';
+                  if (snapshot.empty) {
+                      recordsList.innerHTML = '尚無紀錄。';
+                      return;
+                  }
+                  snapshot.forEach(doc => {
+                      const record = doc.data();
+                      const recordItem = document.createElement('div');
+                      recordItem.className = 'record-item';
+                      const pointsClass = record.points > 0 ? 'positive' : (record.points < 0 ? 'negative' : '');
+                      
+                      recordItem.innerHTML = `
+                          <div class="record-details">
+                              <div>
+                                  <span class="record-points ${pointsClass}">${record.points || 0}分</span>
+                                  <span class="record-text">${record.text || ''}</span>
+                              </div>
+                              <div class="record-timestamp">${new Date(record.timestamp.seconds * 1000).toLocaleString()}</div>
+                          </div>
+                          <div class="record-actions">
+                              <button class="delete-btn" data-id="${doc.id}">🗑️</button>
+                          </div>
+                      `;
+                      recordsList.appendChild(recordItem);
+                  });
+              });
+        }
+
+        async function handleAddRecord(e) {
+            e.preventDefault();
+            const pointsInput = document.getElementById('record-points');
+            const textInput = document.getElementById('record-text');
+            const points = parseInt(pointsInput.value, 10) || 0;
+            const text = textInput.value.trim();
+
+            if (points === 0 && text === '') {
+                alert('請至少輸入分數或文字紀錄！');
+                return;
+            }
+
+            const newRecord = {
+                studentId: currentStudentId,
+                points: points,
+                text: text,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                await db.collection('records').add(newRecord);
+                addRecordForm.reset();
+                await fetchAllScores(); 
+                renderLayout();         
+                modalStudentInfo.innerHTML = `目前總分: <strong>${studentScores[currentStudentId] || 0}</strong>`;
+            } catch (error) {
+                console.error("新增紀錄失敗: ", error);
+                alert('新增失敗！');
+            }
+        }
+
+        async function handleDeleteRecord(e) {
+            if (e.target.classList.contains('delete-btn')) {
+                const recordId = e.target.dataset.id;
+                if (confirm('確定要刪除這筆紀錄嗎？')) {
+                    try {
+                        await db.collection('records').doc(recordId).delete();
+                        await fetchAllScores(); 
+                        renderLayout();         
+                        modalStudentInfo.innerHTML = `目前總分: <strong>${studentScores[currentStudentId] || 0}</strong>`;
+                    } catch (error) {
+                        console.error("刪除紀錄失敗: ", error);
+                        alert('刪除失敗！');
+                    }
+                }
+            }
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        addRecordForm.addEventListener('submit', handleAddRecord);
+        recordsList.addEventListener('click', handleDeleteRecord);
+
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+    </body>
+</html>
