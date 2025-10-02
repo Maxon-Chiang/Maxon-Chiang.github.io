@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>報告查詢 - 學生平時表現紀錄系統</title>
+    <style>
+        :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+        header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        header h1 { font-size: 1.6em; margin: 0; }
+        #user-info button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; }
+        main { padding: 20px; max-width: 1200px; margin: auto; }
+        .section { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end; }
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+        .filter-group input, .filter-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; }
+        #class-filter-container { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 5px; }
+        .class-checkbox { display: flex; align-items: center; }
+        #action-buttons { margin-top: 20px; }
+        #action-buttons button { font-size: 1.1em; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; }
+        #run-query-btn { background-color: var(--primary-color); color: white; }
+        #export-csv-btn { background-color: #28a745; color: white; margin-left: 10px; }
+        #export-csv-btn:disabled { background-color: #aaa; cursor: not-allowed; }
+        #results-container { min-height: 100px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>數據報告</h1>
+        <div id="user-info">
+            <a href="./teacher.html" style="color: white; text-decoration: none;"><button>返回主頁</button></a>
+            <button id="logout-btn">登出</button>
+        </div>
+    </header>
+    <main>
+        <div class="section">
+            <h2>查詢條件</h2>
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="start-date">開始日期:</label>
+                    <input type="date" id="start-date">
+                </div>
+                <div class="filter-group">
+                    <label for="end-date">結束日期:</label>
+                    <input type="date" id="end-date">
+                </div>
+                <div class="filter-group">
+                    <label>事件類型:</label>
+                    <select id="event-type-filter">
+                        <option value="all">全部事件</option>
+                        <option value="with_points">僅有分數</option>
+                        <option value="text_only">僅純文字</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-group" style="margin-top: 20px;">
+                <label>班級 (可複選):</label>
+                <div id="class-filter-container">
+                    <div class="class-checkbox"><input type="checkbox" id="select-all-classes"> <label for="select-all-classes">全選</label></div>
+                </div>
+            </div>
+            <div id="action-buttons">
+                <button id="run-query-btn">執行查詢</button>
+                <button id="export-csv-btn" disabled>匯出 CSV</button>
+            </div>
+        </div>
+        <div class="section">
+            <h2>查詢結果</h2>
+            <div id="results-container"><p>請設定條件後執行查詢。</p></div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let currentUser = null;
+        let studentsData = []; // 用來查詢學生姓名
+        let currentResults = []; // 存放當前查詢結果
+
+        const resultsContainer = document.getElementById('results-container');
+        const runQueryBtn = document.getElementById('run-query-btn');
+        const exportCsvBtn = document.getElementById('export-csv-btn');
+        const classFilterContainer = document.getElementById('class-filter-container');
+        const selectAllClassesCheckbox = document.getElementById('select-all-classes');
+        
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'teacher') {
+                    await initializeReportPage(userDoc.data());
+                } else {
+                    alert('權限不足或帳號設定錯誤。');
+                    window.location.href = 'login.html';
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        async function initializeReportPage(userData) {
+            if (!userData.rosterId) { alert('帳號未綁定名冊'); return; }
+            const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get();
+            if (!rosterDoc.exists) { alert('找不到名冊'); return; }
+            studentsData = rosterDoc.data().students;
+            
+            // 動態產生班級複選框
+            const classes = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
+            classes.forEach(className => {
+                const div = document.createElement('div');
+                div.className = 'class-checkbox';
+                div.innerHTML = `<input type="checkbox" id="class-${className}" value="${className}" class="class-selector"> <label for="class-${className}">${className}</label>`;
+                classFilterContainer.appendChild(div);
+            });
+        }
+        
+        selectAllClassesCheckbox.addEventListener('change', (e) => {
+            document.querySelectorAll('.class-selector').forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        });
+
+        runQueryBtn.addEventListener('click', async () => {
+            resultsContainer.innerHTML = '查詢中...';
+            exportCsvBtn.disabled = true;
+
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            if (!startDate || !endDate) {
+                resultsContainer.innerHTML = '<p style="color:red;">請選擇開始與結束日期！</p>';
+                return;
+            }
+
+            const startTimestamp = new Date(startDate);
+            const endTimestamp = new Date(endDate);
+            endTimestamp.setHours(23, 59, 59, 999); // 包含結束當天的所有時間
+
+            const selectedClasses = [...document.querySelectorAll('.class-selector:checked')].map(cb => cb.value);
+            const eventType = document.getElementById('event-type-filter').value;
+            
+            try {
+                // 執行基礎查詢 (只篩選時段)
+                const query = db.collection('performanceRecords').doc(currentUser.uid).collection('records')
+                                .orderBy('timestamp', 'desc')
+                                .where('timestamp', '>=', startTimestamp)
+                                .where('timestamp', '<=', endTimestamp);
+                
+                const snapshot = await query.get();
+                let results = [];
+                snapshot.forEach(doc => results.push(doc.data()));
+
+                // 在前端進行班級和事件類型篩選
+                currentResults = results.filter(record => {
+                    const classId = (record.entityType === 'class') ? record.entityId : (record.entityId || record.studentId).substring(0, 3);
+                    const hasPoints = (record.points || 0) !== 0;
+                    const hasText = (record.text || '').trim() !== '';
+
+                    const classMatch = selectedClasses.length === 0 ? true : selectedClasses.includes(classId);
+                    let eventTypeMatch = true;
+                    if (eventType === 'with_points') eventTypeMatch = hasPoints;
+                    if (eventType === 'text_only') eventTypeMatch = !hasPoints && hasText;
+                    
+                    return classMatch && eventTypeMatch;
+                });
+
+                renderResults(currentResults);
+
+            } catch (error) {
+                console.error("查詢失敗:", error);
+                resultsContainer.innerHTML = `<p style="color:red;">查詢失敗！這通常是因為缺少 Firestore 索引。請打開 F12 Console 查看錯誤詳情，並根據提示建立索引。</p>`;
+            }
+        });
+
+        function renderResults(results) {
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<p>在指定條件下找不到任何紀錄。</p>';
+                return;
+            }
+
+            let tableHTML = '<table><thead><tr><th>日期時間</th><th>班級</th><th>對象</th><th>分數</th><th>事由</th></tr></thead><tbody>';
+            results.forEach(record => {
+                const entityId = record.entityId || record.studentId;
+                const type = record.entityType || 'student';
+                const timestamp = record.timestamp.toDate().toLocaleString('zh-TW');
+                const className = type === 'class' ? entityId : entityId.substring(0, 3);
+                
+                let targetName = `班級 (${className})`;
+                if (type === 'student') {
+                    const student = studentsData.find(s => s.id === entityId);
+                    targetName = student ? `${student.name} (${entityId})` : `學生 (${entityId})`;
+                }
+
+                tableHTML += `
+                    <tr>
+                        <td>${timestamp}</td>
+                        <td>${className}</td>
+                        <td>${targetName}</td>
+                        <td>${record.points || 0}</td>
+                        <td>${record.text || ''}</td>
+                    </tr>
+                `;
+            });
+            tableHTML += '</tbody></table>';
+            resultsContainer.innerHTML = tableHTML;
+            exportCsvBtn.disabled = false;
+        }
+
+        exportCsvBtn.addEventListener('click', () => {
+            if (currentResults.length === 0) return;
+            
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF for BOM to open in Excel correctly
+            csvContent += "日期時間,班級,對象,分數,事由\r\n"; // Header
+
+            currentResults.forEach(record => {
+                const entityId = record.entityId || record.studentId;
+                const type = record.entityType || 'student';
+                const timestamp = record.timestamp.toDate().toLocaleString('zh-TW');
+                const className = type === 'class' ? entityId : entityId.substring(0, 3);
+                let targetName = `班級-${className}`;
+                if (type === 'student') {
+                    const student = studentsData.find(s => s.id === entityId);
+                    targetName = student ? student.name : `學生-${entityId}`;
+                }
+                const points = record.points || 0;
+                const text = record.text ? `"${record.text.replace(/"/g, '""')}"` : ''; // Handle commas and quotes in text
+                
+                csvContent += [timestamp, className, targetName, points, text].join(',') + "\r\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `performance_report_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
+    </script>
+</body>
+</html>
