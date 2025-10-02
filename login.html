@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入 - 學生平時表現紀錄系統</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
+        h1 { color: #333; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
+        button { width: 100%; padding: 12px; background-color: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+        button:hover { background-color: #357abd; }
+        #error-message { color: #d0021b; margin-top: 10px; height: 20px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>學生紀錄系統</h1>
+        <form id="login-form">
+            <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
+            <input type="password" id="login-password" placeholder="密碼" required autocomplete="current-password">
+            <button type="submit">登入</button>
+        </form>
+        <p id="error-message"></p>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const loginForm = document.getElementById('login-form');
+        const loginEmailInput = document.getElementById('login-email');
+        const errorMessage = document.getElementById('error-message');
+        
+        const savedEmail = localStorage.getItem('lastLoginEmail');
+        if (savedEmail) {
+            loginEmailInput.value = savedEmail;
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginEmailInput.value;
+            const password = document.getElementById('login-password').value;
+            errorMessage.textContent = '登入中...';
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                localStorage.setItem('lastLoginEmail', email);
+                
+                const userDoc = await db.collection('users').doc(userCredential.user.uid).get();
+                if (userDoc.exists) {
+                    const role = userDoc.data().role;
+                    if (role === 'admin') {
+                        window.location.href = 'admin.html';
+                    } else if (role === 'teacher') {
+                        // 【【【核心修改處】】】
+                        window.location.href = 'teacher.html'; 
+                    } else {
+                        errorMessage.textContent = '帳號角色設定不明確，請聯繫管理者。';
+                        auth.signOut();
+                    }
+                } else {
+                    errorMessage.textContent = '找不到使用者設定，請聯繫管理者。';
+                    auth.signOut();
+                }
+
+            } catch (error) {
+                switch (error.code) {
+                    case 'auth/invalid-credential': case 'auth/invalid-login-credentials': errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。'; break;
+                    default: errorMessage.textContent = '登入時發生未知錯誤。'; break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
