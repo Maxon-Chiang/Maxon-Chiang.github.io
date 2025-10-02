@@ -11,33 +11,11 @@
         input, select, button, textarea { padding: 8px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; }
         button { background-color: #4a90e2; color: white; cursor: pointer; border: none; }
         textarea { width: 95%; height: 150px; }
-        
-        /* 【【【核心修改處】】】 - 將教師列表改為 Grid 排版 */
-        #teacher-list ul {
-            list-style-type: none;
-            padding: 0;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 15px;
-        }
-        #teacher-list li {
-            background-color: white;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            border: 1px solid #eee;
-        }
-        /* 【【【/核心修改處】】】 */
-        
+        #teacher-list ul { list-style-type: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 15px; }
+        #teacher-list li { background-color: white; padding: 15px; border-radius: 6px; margin-bottom: 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #eee; }
         #roster-list ul { list-style-type: none; padding: 0; }
         #roster-list li { background-color: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        
-        .action-buttons { flex-shrink: 0; } /* 防止按鈕換行 */
+        .action-buttons { flex-shrink: 0; }
         .action-buttons button { margin-left: 10px; }
         .delete-btn { background-color: #d0021b; }
         .reset-btn { background-color: #f5a623; }
@@ -85,18 +63,42 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script>
-        // JavaScript 邏輯與前一版完全相同，此處為求完整性而全部貼上
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-
         let allTeachers = [];
-
         const adminPanel = document.getElementById('admin-panel'), adminEmailSpan = document.getElementById('admin-email'), logoutBtn = document.getElementById('logout-btn'), rosterSection = document.getElementById('roster-section'), teacherSection = document.getElementById('teacher-section'), rosterListDiv = document.getElementById('roster-list'), rosterSelect = document.getElementById('roster-select'), teacherListDiv = document.getElementById('teacher-list'), rosterUploadForm = document.getElementById('roster-upload-form'), teacherCreateForm = document.getElementById('teacher-create-form'), batchRosterSelect = document.getElementById('batch-roster-select'), batchTeacherForm = document.getElementById('batch-teacher-form'), teacherFilterRoster = document.getElementById('teacher-filter-roster');
 
-        auth.onAuthStateChanged(async (user) => { if (user) { const userDoc = await db.collection('users').doc(user.uid).get(); if (userDoc.exists && userDoc.data().role === 'admin') { adminEmailSpan.textContent = user.email; adminPanel.style.display = 'block'; rosterSection.style.display = 'block'; teacherSection.style.display = 'block'; loadRosters(); loadTeachers(); } else { alert('權限不足！'); auth.signOut(); } } else { const email = prompt('請輸入管理者 Email:'); const password = prompt('請輸入管理者密碼:'); if (email && password) { try { await auth.signInWithEmailAndPassword(email, password); } catch (error) { alert('登入失敗: ' + error.message); } } } });
-        logoutBtn.addEventListener('click', () => { auth.signOut(); window.location.reload(); });
+        auth.onAuthStateChanged(async (user) => { 
+            if (user) { 
+                const userDoc = await db.collection('users').doc(user.uid).get(); 
+                if (userDoc.exists && userDoc.data().role === 'admin') { 
+                    adminEmailSpan.textContent = user.email; 
+                    adminPanel.style.display = 'block'; 
+                    rosterSection.style.display = 'block'; 
+                    teacherSection.style.display = 'block'; 
+                    loadRosters(); 
+                    loadTeachers(); 
+                } else { 
+                    alert('權限不足或帳號設定錯誤，將導向登入頁。'); 
+                    window.location.href = 'login.html';
+                } 
+            } else { 
+                // 當沒有登入時，直接導向登入頁
+                window.location.href = 'login.html';
+            } 
+        });
+
+        // 【【【核心修改處】】】 - 登出後跳轉回 login.html
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut().then(() => {
+                // 登出成功後，明確地導向 login.html
+                window.location.href = 'login.html';
+            }).catch((error) => {
+                console.error("登出失敗:", error);
+            });
+        });
         
         async function loadRosters() {
             rosterListDiv.innerHTML = '...'; rosterSelect.innerHTML = ''; batchRosterSelect.innerHTML = ''; teacherFilterRoster.innerHTML = '<option value="all">顯示全部</option>';
