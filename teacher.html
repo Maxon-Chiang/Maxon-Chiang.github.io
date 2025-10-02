@@ -12,10 +12,11 @@
         #user-info { font-size: 0.9em; text-align: right; }
         #user-info button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-top: 4px; margin-left: 5px; }
         main { padding: 2rem; }
-        .class-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        .class-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
         .class-card { background-color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
-        .class-title { margin-top: 0; margin-bottom: 1rem; color: var(--primary-color); font-size: 1.5em; border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem; }
-        .class-score-span { font-size: 0.8em; font-weight: normal; color: #666; margin-left: 8px; }
+        .class-title { margin-top: 0; margin-bottom: 1rem; color: var(--primary-color); font-size: 1.5em; border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem; cursor: pointer; transition: background-color 0.2s; }
+        .class-title:hover { background-color: #f0f8ff; }
+        .class-score-span { font-size: 0.75em; font-weight: normal; color: #666; margin-left: 8px; display: block; margin-top: 5px; }
         .student-select { width: 100%; padding: 12px; border-radius: 5px; background-color: #fff; cursor: pointer; border: 1px solid #ccc; font-size: 1em; }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
         .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 10px; position: relative; }
@@ -29,69 +30,24 @@
         .record-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color); }
         #password-reset-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
         .password-reset-box { background-color: white; padding: 40px; border-radius: 8px; text-align: center; width: 90%; max-width: 400px; }
-        .password-reset-box button { width: 100%; padding: 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; background-color: var(--success-color); color: white; }
         #cp-error-message, #password-error-message { color: var(--danger-color); height: 20px; font-size: 0.9em; margin-top: 10px; }
         @media (max-width: 600px) { header { flex-direction: column; padding-bottom: 1rem; } header h1 { font-size: 1.3em; margin-bottom: 0.5rem; } main { padding: 1rem; } }
     </style>
 </head>
 <body>
     <header>
-        <h1>學生平時表現紀錄系統</h1>
-        <div id="user-info">
-            <span id="user-email"></span><br>
-            <button id="change-password-btn">修改密碼</button>
-            <button id="logout-btn">登出</button>
-        </div>
+   	<h1>學生平時表現紀錄系統</h1>
+	<div id="user-info">
+        	<span id="user-email"></span><br>
+	        <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
+        	<button id="change-password-btn">修改密碼</button>
+	        <button id="logout-btn">登出</button>
+	    </div>
     </header>
     <main id="app-container" class="class-grid"><h2>正在驗證登入狀態...</h2></main>
-    
-    <div id="modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2 id="modal-title"></h2>
-            <div id="modal-student-info"></div>
-            <div class="form-container">
-                <h3>新增紀錄</h3>
-                <form id="add-record-form">
-                    <input type="number" id="record-points" placeholder="加/減分">
-                    <input type="text" id="record-text" placeholder="文字紀錄">
-                    <button type="submit">新增</button>
-                </form>
-            </div>
-            <div class="records-container">
-                <h3>歷史紀錄</h3>
-                <div id="records-list"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="password-reset-overlay">
-        <div class="password-reset-box">
-            <h2>初次登入，請重設密碼</h2>
-            <p>為了帳號安全，請設定一組您自己的新密碼。</p>
-            <form id="password-reset-form">
-                <input type="password" id="new-password" placeholder="請輸入新密碼" required minlength="6">
-                <input type="password" id="confirm-password" placeholder="請再次輸入新密碼" required>
-                <button type="submit">設定新密碼</button>
-            </form>
-            <p id="password-error-message"></p>
-        </div>
-    </div>
-
-    <div id="change-password-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>修改密碼</h2>
-            <form id="change-password-form">
-                <p>請輸入您的新密碼（至少6個字元）。</p>
-                <input type="password" id="cp-new-password" placeholder="新密碼" required minlength="6">
-                <input type="password" id="cp-confirm-password" placeholder="確認新密碼" required>
-                <button type="submit">確認修改</button>
-                <p id="cp-error-message"></p>
-            </form>
-        </div>
-    </div>
-
+    <div id="modal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h2 id="modal-title"></h2><div id="modal-student-info"></div><div class="form-container"><h3>新增紀錄</h3><form id="add-record-form"><input type="number" id="record-points" placeholder="加/減分"><input type="text" id="record-text" placeholder="文字紀錄"><button type="submit">新增</button></form></div><div class="records-container"><h3>歷史紀錄</h3><div id="records-list"></div></div></div></div>
+    <div id="password-reset-overlay"><div class="password-reset-box"><h2>初次登入，請重設密碼</h2><p>為了帳號安全，請設定一組您自己的新密碼。</p><form id="password-reset-form"><input type="password" id="new-password" placeholder="請輸入新密碼" required minlength="6"><input type="password" id="confirm-password" placeholder="請再次輸入新密碼" required><button type="submit">設定新密碼</button></form><p id="password-error-message"></p></div></div>
+    <div id="change-password-modal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>修改密碼</h2><form id="change-password-form"><p>請輸入您的新密碼（至少6個字元）。</p><input type="password" id="cp-new-password" placeholder="新密碼" required minlength="6"><input type="password" id="cp-confirm-password" placeholder="確認新密碼" required><button type="submit">確認修改</button><p id="cp-error-message"></p></form></div></div>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -100,38 +56,97 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-        let currentUser = null, studentsData = [], studentScores = {}, currentStudentId = null;
         
-        const appContainer = document.getElementById('app-container'), modal = document.getElementById('modal'), modalTitle = document.getElementById('modal-title'), modalStudentInfo = document.getElementById('modal-student-info'), closeBtn = modal.querySelector('.close-btn'), addRecordForm = document.getElementById('add-record-form'), recordsList = document.getElementById('records-list'), passwordResetOverlay = document.getElementById('password-reset-overlay'), passwordResetForm = document.getElementById('password-reset-form'), changePasswordModal = document.getElementById('change-password-modal'), changePasswordBtn = document.getElementById('change-password-btn'), changePasswordForm = document.getElementById('change-password-form'), cpErrorMessage = document.getElementById('cp-error-message'), cpCloseBtn = changePasswordModal.querySelector('.close-btn');
+        let currentUser = null, studentsData = [], studentScores = {}, classEventScores = {}, currentEntity = null;
         
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                const userDoc = await db.collection('users').doc(currentUser.uid).get();
-                if (userDoc.exists && userDoc.data().role === 'teacher') {
-                    const userData = userDoc.data();
-                    document.getElementById('user-email').textContent = userData.displayName || user.email;
-                    if (userData.passwordNeedsReset === true) {
-                        document.querySelector('header').style.display = 'none'; appContainer.style.display = 'none'; passwordResetOverlay.style.display = 'flex';
-                    } else { await initialize(userData); }
-                } else { alert('權限不足或帳號設定錯誤，將導向登入頁。'); window.location.href = 'login.html'; }
-            } else { window.location.href = 'login.html'; }
-        });
-        async function initialize(userData) { appContainer.innerHTML = '<h2>正在載入您的學生資料...</h2>'; try { if (!userData.rosterId) { appContainer.innerHTML = '<h2>帳號尚未綁定名冊</h2>'; return; } const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get(); if (!rosterDoc.exists) { appContainer.innerHTML = `<h2>找不到指定名冊</h2>`; return; } studentsData = rosterDoc.data().students; await fetchAllScores(); renderLayout(); } catch (error) { console.error(error); appContainer.innerHTML = '<h2>載入失敗...</h2>'; } }
-        async function fetchAllScores() { const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get(); studentScores = {}; snapshot.forEach(doc => { const r = doc.data(); if (!studentScores[r.studentId]) studentScores[r.studentId] = 0; studentScores[r.studentId] += r.points || 0; }); }
-        function renderLayout(selectedStudentId = null) { appContainer.innerHTML = ''; const groupedByClass = studentsData.reduce((acc, s) => { const c = s.id.substring(0, 3); if (!acc[c]) acc[c] = []; acc[c].push(s); return acc; }, {}); const classScores = {}; for (const sid in studentScores) { const c = sid.substring(0, 3); if (!classScores[c]) classScores[c] = 0; classScores[c] += studentScores[sid]; } const sortedClasses = Object.keys(groupedByClass).sort(); sortedClasses.forEach(cName => { const card = document.createElement('div'); card.className = 'class-card'; const totalScore = classScores[cName] || 0; const scoreColor = totalScore > 0 ? 'var(--success-color)' : (totalScore < 0 ? 'var(--danger-color)' : '#666'); const title = document.createElement('h2'); title.className = 'class-title'; title.innerHTML = `${cName} 班 <span class="class-score-span" style="color: ${scoreColor}">(總分: ${totalScore})</span>`; card.appendChild(title); const select = document.createElement('select'); select.className = 'student-select'; select.dataset.className = cName; select.innerHTML = '<option value="">--- 請選擇學生 ---</option>'; groupedByClass[cName].forEach(s => { const score = studentScores[s.id] || 0; let dText = `${s.id.substring(3)} ${s.name}`; if (score !== 0) { dText += ` (${score}分)`; } const opt = new Option(dText, s.id); if (s.id === selectedStudentId) { opt.selected = true; } select.add(opt); }); select.addEventListener('change', (e) => { if (e.target.value) openModal(e.target.value); }); card.appendChild(select); appContainer.appendChild(card); }); }
-        function openModal(studentId) { currentStudentId = studentId; const student = studentsData.find(s => s.id === studentId); modalTitle.textContent = `${student.name} (${student.id}) 的紀錄`; modalStudentInfo.innerHTML = `總分: <strong>${studentScores[studentId] || 0}</strong>`; loadRecords(studentId); modal.style.display = 'block'; }
-        function closeModal() { modal.style.display = 'none'; addRecordForm.reset(); renderLayout(); currentStudentId = null; }
-        function loadRecords(studentId) { recordsList.innerHTML = '...'; db.collection('performanceRecords').doc(currentUser.uid).collection('records').where('studentId', '==', studentId).orderBy('timestamp', 'desc').onSnapshot(snap => { recordsList.innerHTML = ''; if (snap.empty) { recordsList.innerHTML = '尚無紀錄'; return; } snap.forEach(doc => { const r = doc.data(); const item = document.createElement('div'); item.className = 'record-item'; const pClass = r.points > 0 ? 'positive' : (r.points < 0 ? 'negative' : ''); item.innerHTML = `<div class="record-details"><div><span style="font-weight:bold;font-size:1.1em;margin-right:15px;" class="${pClass}">${r.points||0}分</span><span>${r.text||''}</span></div><div style="font-size:0.8em;color:#999;margin-top:4px;">${new Date(r.timestamp.seconds*1000).toLocaleString()}</div></div><div class="action-buttons"><button class="delete-btn" data-id="${doc.id}">🗑️</button></div>`; recordsList.appendChild(item); }); }); }
-        async function handleAddRecord(e) { e.preventDefault(); const p = parseInt(document.getElementById('record-points').value, 10) || 0; const t = document.getElementById('record-text').value.trim(); if (p === 0 && t === '') return; const sid = currentStudentId; const n = { studentId: sid, points: p, text: t, timestamp: firebase.firestore.FieldValue.serverTimestamp() }; try { await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n); closeModal(); await fetchAllScores(); renderLayout(sid); } catch (err) { console.error(err); } }
-        async function handleDeleteRecord(e) { if (e.target.classList.contains('delete-btn')) { const rid = e.target.dataset.id; if (confirm('確定刪除？')) { const sid = currentStudentId; try { await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete(); closeModal(); await fetchAllScores(); renderLayout(sid); } catch (err) { console.error(err); } } } }
+        const appContainer = document.getElementById('app-container'), 
+              modal = document.getElementById('modal'), 
+              modalTitle = document.getElementById('modal-title'), 
+              modalStudentInfo = document.getElementById('modal-student-info'), 
+              closeBtn = modal.querySelector('.close-btn'), 
+              addRecordForm = document.getElementById('add-record-form'), 
+              recordsList = document.getElementById('records-list'), 
+              passwordResetOverlay = document.getElementById('password-reset-overlay'), 
+              passwordResetForm = document.getElementById('password-reset-form'), 
+              changePasswordModal = document.getElementById('change-password-modal'), 
+              changePasswordBtn = document.getElementById('change-password-btn'), 
+              changePasswordForm = document.getElementById('change-password-form'), 
+              cpErrorMessage = document.getElementById('cp-error-message'), 
+              cpCloseBtn = changePasswordModal.querySelector('.close-btn');
+        
+        auth.onAuthStateChanged(async (user) => { if (user) { currentUser = user; const userDoc = await db.collection('users').doc(currentUser.uid).get(); if (userDoc.exists && userDoc.data().role === 'teacher') { const userData = userDoc.data(); document.getElementById('user-email').textContent = userData.displayName || user.email; if (userData.passwordNeedsReset === true) { document.querySelector('header').style.display = 'none'; appContainer.style.display = 'none'; passwordResetOverlay.style.display = 'flex'; } else { await initialize(userData); } } else { alert('權限不足或帳號設定錯誤，將導向登入頁。'); window.location.href = 'login.html'; } } else { window.location.href = 'login.html'; } });
+        
+        async function initialize(userData) { /* ... 內容不變 ... */ }
+        async function fetchAllScores() { /* ... 內容不變 ... */ }
+        function renderLayout(selectedStudentId = null) { /* ... 內容不變 ... */ }
+        function openModal(id, type = 'student') { /* ... 內容不變 ... */ }
+        function closeModal() { modal.style.display = 'none'; addRecordForm.reset(); currentEntity = null; }
+        async function loadRecords(id, type) { /* ... 內容不變 ... */ }
+        async function handleAddRecord(e) { /* ... 內容不變 ... */ }
+        async function handleDeleteRecord(e) { /* ... 內容不變 ... */ }
+        
+        // --- 事件監聽 Events Listeners ---
+
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut(); });
-        closeBtn.addEventListener('click', closeModal); window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); }); addRecordForm.addEventListener('submit', handleAddRecord); recordsList.addEventListener('click', handleDeleteRecord);
+        closeBtn.addEventListener('click', closeModal);
+        addRecordForm.addEventListener('submit', handleAddRecord);
+        recordsList.addEventListener('click', handleDeleteRecord);
+        
+        // 密碼重設 (強制)
         passwordResetForm.addEventListener('submit', async (e) => { e.preventDefault(); const p1 = document.getElementById('new-password').value; const p2 = document.getElementById('confirm-password').value; document.getElementById('password-error-message').textContent = ''; if (p1.length < 6) { document.getElementById('password-error-message').textContent = '密碼至少6字元'; return; } if (p1 !== p2) { document.getElementById('password-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(p1); await db.collection('users').doc(currentUser.uid).update({ passwordNeedsReset: false }); alert('密碼更新成功！'); auth.signOut(); } catch (err) { document.getElementById('password-error-message').textContent = '更新失敗: ' + err.message; } });
-        changePasswordBtn.addEventListener('click', () => { changePasswordModal.style.display = 'block'; });
-        cpCloseBtn.addEventListener('click', () => { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; });
-        window.addEventListener('click', (e) => { if (e.target === changePasswordModal) { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; } });
-        changePasswordForm.addEventListener('submit', async (e) => { e.preventDefault(); const newPassword = document.getElementById('cp-new-password').value; const confirmPassword = document.getElementById('cp-confirm-password').value; cpErrorMessage.textContent = ''; if (newPassword.length < 6) { cpErrorMessage.textContent = '密碼至少6字元'; return; } if (newPassword !== confirmPassword) { cpErrorMessage.textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(newPassword); alert('密碼更新成功！'); changePasswordModal.style.display = 'none'; changePasswordForm.reset(); } catch (error) { if (error.code === 'auth/requires-recent-login') { cpErrorMessage.textContent = '此為敏感操作，請先登出再重新登入後再試。'; } else { cpErrorMessage.textContent = '更新失敗：' + error.message; } } });
+        
+        // 【【【核心修改處】】】 - 確保修改密碼的事件監聽都正確綁定
+        changePasswordBtn.addEventListener('click', () => {
+            changePasswordModal.style.display = 'block';
+        });
+
+        cpCloseBtn.addEventListener('click', () => {
+            changePasswordModal.style.display = 'none';
+            changePasswordForm.reset();
+            cpErrorMessage.textContent = '';
+        });
+
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('cp-new-password').value;
+            const confirmPassword = document.getElementById('cp-confirm-password').value;
+            cpErrorMessage.textContent = '';
+            if (newPassword.length < 6) { cpErrorMessage.textContent = '密碼長度至少需要6個字元。'; return; }
+            if (newPassword !== confirmPassword) { cpErrorMessage.textContent = '兩次輸入的密碼不相符！'; return; }
+            try {
+                await currentUser.updatePassword(newPassword);
+                alert('密碼更新成功！');
+                changePasswordModal.style.display = 'none';
+                changePasswordForm.reset();
+            } catch (error) {
+                if (error.code === 'auth/requires-recent-login') {
+                    cpErrorMessage.textContent = '此為敏感操作，請先登出再重新登入後再試。';
+                } else {
+                    cpErrorMessage.textContent = '更新失敗：' + error.message;
+                }
+            }
+        });
+
+        // 統一處理點擊 Modal 以外區域的關閉事件
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+            if (e.target === changePasswordModal) {
+                changePasswordModal.style.display = 'none';
+                changePasswordForm.reset();
+                cpErrorMessage.textContent = '';
+            }
+        });
+        
+        // --- 為了確保檔案完整，再次貼上所有功能函式 ---
+        async function initialize(userData) { appContainer.innerHTML = '<h2>正在載入您的學生資料...</h2>'; try { if (!userData.rosterId) { appContainer.innerHTML = '<h2>帳號尚未綁定名冊</h2>'; return; } const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get(); if (!rosterDoc.exists) { appContainer.innerHTML = `<h2>找不到指定名冊</h2>`; return; } studentsData = rosterDoc.data().students; await fetchAllScores(); renderLayout(); } catch (error) { console.error("初始化失敗:", error); appContainer.innerHTML = '<h2>載入資料失敗，請檢查網路連線或聯繫管理員。</h2>'; } }
+        async function fetchAllScores() { const recordsSnapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get(); studentScores = {}; classEventScores = {}; recordsSnapshot.forEach(doc => { const record = doc.data(); const points = record.points || 0; const type = record.entityType || 'student'; const id = record.entityId || record.studentId; if (!id) return; if (type === 'student') { if (!studentScores[id]) studentScores[id] = 0; studentScores[id] += points; } else if (type === 'class') { if (!classEventScores[id]) classEventScores[id] = 0; classEventScores[id] += points; } }); }
+        function renderLayout(selectedStudentId = null) { appContainer.innerHTML = ''; const groupedByClass = studentsData.reduce((acc, s) => { const c = s.id.substring(0, 3); if (!acc[c]) acc[c] = []; acc[c].push(s); return acc; }, {}); const sortedClasses = Object.keys(groupedByClass).sort(); sortedClasses.forEach(className => { const classCard = document.createElement('div'); classCard.className = 'class-card'; let studentTotalForClass = 0; groupedByClass[className].forEach(student => { studentTotalForClass += studentScores[student.id] || 0; }); const classTotal = classEventScores[className] || 0; const title = document.createElement('h2'); title.className = 'class-title'; title.innerHTML = `${className} 班 <span class="class-score-span">(學生總分: ${studentTotalForClass} | 班級總分: ${classTotal})</span>`; title.addEventListener('click', () => openModal(className, 'class')); classCard.appendChild(title); const select = document.createElement('select'); select.className = 'student-select'; select.innerHTML = '<option value="">--- 請選擇學生 ---</option>'; groupedByClass[className].forEach(s => { const score = studentScores[s.id] || 0; let dText = `${s.id.substring(3)} ${s.name}`; if (score !== 0) { dText += ` (${score}分)`; } const opt = new Option(dText, s.id); if (s.id === selectedStudentId) { opt.selected = true; } select.add(opt); }); select.addEventListener('change', (e) => { if (e.target.value) openModal(e.target.value, 'student'); }); classCard.appendChild(select); appContainer.appendChild(classCard); }); }
+        function openModal(id, type = 'student') { currentEntity = { id, type }; let titleText = ''; let infoText = ''; if (type === 'student') { const student = studentsData.find(s => s.id === id); titleText = `${student.name} (${id}) 的表現紀錄`; infoText = `目前個人總分: <strong>${studentScores[id] || 0}</strong>`; } else { titleText = `班級事件紀錄 (${id} 班)`; infoText = `目前班級事件總分: <strong>${classEventScores[id] || 0}</strong>`; } modalTitle.textContent = titleText; modalStudentInfo.innerHTML = infoText; loadRecords(id, type); modal.style.display = 'block'; }
+        async function loadRecords(id, type) { recordsList.innerHTML = '載入中...'; try { let allRecords = []; const recordsRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records'); if (type === 'class') { const snapshot = await recordsRef.where('entityId', '==', id).where('entityType', '==', type).orderBy('timestamp', 'desc').get(); snapshot.forEach(doc => allRecords.push({ id: doc.id, ...doc.data() })); } else { const newRecordsPromise = recordsRef.where('entityId', '==', id).where('entityType', '==', 'student').get(); const oldRecordsPromise = recordsRef.where('studentId', '==', id).get(); const [newSnapshot, oldSnapshot] = await Promise.all([newRecordsPromise, oldRecordsPromise]); const seenIds = new Set(); newSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } }); oldSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } }); } allRecords.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds); recordsList.innerHTML = ''; if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; } allRecords.forEach(record => { const recordItem = document.createElement('div'); recordItem.className = 'record-item'; const pointsClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : ''); recordItem.innerHTML = `<div style="flex-grow: 1;"><div><span style="font-weight:bold;font-size:1.1em;margin-right:15px;" class="${pointsClass}">${record.points||0}分</span><span>${record.text||''}</span></div><div style="font-size:0.8em;color:#999;margin-top:4px;">${new Date(record.timestamp.seconds * 1000).toLocaleString()}</div></div><div><button class="delete-btn" data-id="${record.id}">🗑️</button></div>`; recordsList.appendChild(recordItem); }); } catch (error) { console.error("讀取歷史紀錄失敗:", error); recordsList.innerHTML = '讀取紀錄時發生錯誤。'; } }
+        async function handleAddRecord(e) { e.preventDefault(); const p = parseInt(document.getElementById('record-points').value, 10) || 0; const t = document.getElementById('record-text').value.trim(); if (p === 0 && t === '') return; const sid = currentEntity.id; const n = { entityId: currentEntity.id, entityType: currentEntity.type, points: p, text: t, timestamp: firebase.firestore.FieldValue.serverTimestamp(), studentId: currentEntity.type === 'student' ? currentEntity.id : null }; try { await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n); closeModal(); await fetchAllScores(); renderLayout(sid); } catch (err) { console.error("新增紀錄失敗:", err); } }
+        async function handleDeleteRecord(e) { if (e.target.classList.contains('delete-btn')) { const recordId = e.target.dataset.id; if (confirm('確定刪除這筆紀錄嗎？')) { const entityToKeepSelected = currentEntity; try { await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(recordId).delete(); closeModal(); await fetchAllScores(); renderLayout(entityToKeepSelected && entityToKeepSelected.type === 'student' ? entityToKeepSelected.id : null); } catch (err) { console.error("刪除紀錄失敗:", err); alert('刪除失敗，請檢查網路連線。'); } } } }
     </script>
 </body>
 </html>
