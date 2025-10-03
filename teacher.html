@@ -3,109 +3,603 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>平時表現紀錄系統</title>
+    <title>班級綜合成績紀錄系統</title>
     <style>
-        :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; --danger-color: #d0021b; --success-color: #7ed321; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
-        header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        header h1 { font-size: 1.6em; margin: 0; flex-grow: 1; text-align: left; }
-        #user-info { font-size: 0.9em; text-align: right; flex-shrink: 0; }
-        #user-info button, #user-info a button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-top: 4px; margin-left: 5px; font-size: 1em; }
-        main { padding: 2rem; }
-        .class-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
-        .class-card { background-color: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; }
-        .card-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem; margin-bottom: 10px; }
-        .class-title { margin: 0; color: var(--primary-color); font-size: 1.5em; cursor: pointer; flex-grow: 1; }
-        .class-title:hover { text-decoration: underline; }
-        .score-info { font-size: 0.8em; font-weight: normal; color: #666; margin-bottom: 15px; }
-        .card-actions .action-btn { background-color: #5bc0de; color: white; padding: 8px 15px; border-radius: 4px; border: none; cursor: pointer; text-decoration: none; font-size: 0.9em; flex-shrink: 0; }
-        .student-select { width: 100%; padding: 12px; border-radius: 5px; background-color: #fff; cursor: pointer; border: 1px solid #ccc; font-size: 1em; }
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 10px; position: relative; }
-        .modal-content input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
-        .close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
-        #add-record-form { display: flex; gap: 10px; }
-        #record-points { width: 90px; }
-        #record-text { flex-grow: 1; width: 100%; }
-        #records-list { max-height: 300px; overflow-y: auto; border-top: 1px solid var(--border-color); margin-top: 1rem; }
-        .record-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-color); }
-        #password-reset-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
-        .password-reset-box { background-color: white; padding: 40px; border-radius: 8px; text-align: center; width: 90%; max-width: 400px; }
-        @media (max-width: 768px) { header { flex-direction: column; padding-bottom: 1rem; } header h1 { margin-bottom: 0.5rem; text-align: center; width: 100%;} main { padding: 1rem; } }
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f5ff;
+            --font-color: #333;
+            --border-color: #ddd;
+            --danger-color: #d0021b;
+            --success-color: #7ed321;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: var(--secondary-color);
+            color: var(--font-color);
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.6rem 1rem;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            font-size: 1.6em;
+            margin: 0;
+            flex-grow: 1;
+            text-align: left;
+        }
+
+        #user-info {
+            font-size: 0.9em;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        #user-info button,
+        #user-info a button {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 4px;
+            margin-left: 5px;
+            font-size: 1em;
+        }
+
+        main {
+            padding: 2rem;
+        }
+
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .class-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 0.5rem;
+            margin-bottom: 10px;
+        }
+
+        .class-title {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 1.5em;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+        .class-title:hover {
+            text-decoration: underline;
+        }
+
+        .score-info {
+            font-size: 0.8em;
+            font-weight: normal;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .card-actions .action-btn {
+            background-color: #5bc0de;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
+
+        .student-select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 5px;
+            background-color: #fff;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 2% auto;
+            padding: 25px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        .close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+	#class-settings-controls {
+    		border-bottom: 1px solid #eee;
+    		padding-bottom: 15px;
+    		margin-bottom: 15px;
+    		display: flex;
+    		align-items: center;
+    		gap: 8px;
+    		/* 關鍵！讓容器寬度只等於內容寬度，不再被拉伸 */
+    		width: max-content; 
+	}
+
+	#class-settings-controls label {
+   	 /* 關鍵！強制文字不換行 */
+   		 white-space: nowrap; 
+	}
+#class-settings-list {
+    display: flex; /* 改為 Flexbox */
+    flex-wrap: wrap; /* 允許項目自動換行 */
+    gap: 10px; /* 控制每個選項之間的間距 */
+    background: none;
+    border: none;
+    padding: 0;
+    margin-top: 15px;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.class-setting-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background-color: white;
+    white-space: nowrap; /* 強制文字不換行 */
+}
+        #save-class-settings-btn {
+            margin-top: 20px;
+            background-color: #28a745;
+            padding: 12px 25px;
+            color: white; /* 修正文字顏色 */
+        }
+        /* 【【【/核心修改處】】】 */
+        #password-reset-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .password-reset-box {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        #cp-error-message,
+        #password-error-message {
+            color: var(--danger-color);
+            height: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                padding-bottom: 1rem;
+            }
+            header h1 {
+                margin-bottom: 0.5rem;
+                text-align: center;
+                width: 100%;
+            }
+            main {
+                padding: 1rem;
+            }
+            #class-settings-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
     </style>
 </head>
+
 <body>
     <header>
-        <h1>平時表現紀錄系統</h1>
+        <h1>班級綜合成績紀錄系統</h1>
         <div id="user-info">
             <span id="user-email"></span><br>
+            <button id="class-settings-btn">班級顯示設定</button>
             <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
             <button id="change-password-btn">修改密碼</button>
             <button id="logout-btn">登出</button>
         </div>
     </header>
-    <main id="app-container" class="class-grid"><h2>正在驗證登入狀態...</h2></main>
-    <div id="modal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h2 id="modal-title"></h2><div id="modal-student-info"></div><div class="form-container"><h3>新增紀錄</h3><form id="add-record-form"><input type="number" id="record-points" placeholder="加/減分"><input type="text" id="record-text" placeholder="文字紀錄"><button type="submit">新增</button></form></div><div class="records-container"><h3>歷史紀錄</h3><div id="records-list"></div></div></div></div>
-    <div id="password-reset-overlay"><div class="password-reset-box"><h2>初次登入，請重設密碼</h2><p>為了帳號安全，請設定一組您自己的新密碼。</p><form id="password-reset-form"><input type="password" id="new-password" placeholder="請輸入新密碼" required minlength="6"><input type="password" id="confirm-password" placeholder="請再次輸入新密碼" required><button type="submit">設定新密碼</button></form><p id="password-error-message"></p></div></div>
-    <div id="change-password-modal" class="modal"><div class="modal-content"><span class="close-btn">&times;</span><h2>修改密碼</h2><form id="change-password-form"><p>請輸入您的新密碼（至少6個字元）。</p><input type="password" id="cp-new-password" placeholder="新密碼" required minlength="6"><input type="password" id="cp-confirm-password" placeholder="確認新密碼" required><button type="submit">確認修改</button><p id="cp-error-message"></p></form></div></div>
-    
+
+    <main id="app-container" class="class-grid">
+        <h2>正在驗證登入狀態...</h2>
+    </main>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2 id="modal-title"></h2>
+            <div id="modal-student-info"></div>
+            <div class="form-container">
+                <h3>新增紀錄</h3>
+                <form id="add-record-form">
+                    <input type="number" id="record-points" placeholder="加/減分">
+                    <input type="text" id="record-text" placeholder="文字紀錄">
+                    <button type="submit">新增</button>
+                </form>
+            </div>
+            <div class="records-container">
+                <h3>歷史紀錄</h3>
+                <div id="records-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="password-reset-overlay">
+        <div class="password-reset-box">
+            <h2>初次登入，請重設密碼</h2>
+            <p>為了帳號安全，請設定一組您自己的新密碼。</p>
+            <form id="password-reset-form">
+                <input type="password" id="new-password" placeholder="請輸入新密碼" required minlength="6">
+                <input type="password" id="confirm-password" placeholder="請再次輸入新密碼" required>
+                <button type="submit">設定新密碼</button>
+            </form>
+            <p id="password-error-message"></p>
+        </div>
+    </div>
+
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>修改密碼</h2>
+            <form id="change-password-form">
+                <p>請輸入您的新密碼（至少6個字元）。</p>
+                <input type="password" id="cp-new-password" placeholder="新密碼" required minlength="6">
+                <input type="password" id="cp-confirm-password" placeholder="確認新密碼" required>
+                <button type="submit">確認修改</button>
+                <p id="cp-error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="class-settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>班級顯示設定</h2>
+            <p>請勾選您想在主畫面上顯示的班級。</p>
+            <div id="class-settings-controls">
+                <input type="checkbox" id="select-all-visible-classes">
+                <label for="select-all-visible-classes">全選 / 全取消</label>
+            </div>
+            <div id="class-settings-list"></div>
+            <button id="save-class-settings-btn">儲存設定</button>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+        const firebaseConfig = {
+            apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA",
+            authDomain: "stu001-e72fa.firebaseapp.com",
+            projectId: "stu001-e72fa",
+            storageBucket: "stu001-e72fa.appspot.com",
+            messagingSenderId: "852359717475",
+            appId: "1:852359717475:web:db9a6a5d737978874c8e56"
+        };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-        let currentUser = null, studentsData = [], studentScores = {}, classEventScores = {}, currentEntity = null;
-        const appContainer = document.getElementById('app-container'), modal = document.getElementById('modal'), modalTitle = document.getElementById('modal-title'), modalStudentInfo = document.getElementById('modal-student-info'), closeBtn = modal.querySelector('.close-btn'), addRecordForm = document.getElementById('add-record-form'), recordsList = document.getElementById('records-list'), passwordResetOverlay = document.getElementById('password-reset-overlay'), passwordResetForm = document.getElementById('password-reset-form'), changePasswordModal = document.getElementById('change-password-modal'), changePasswordBtn = document.getElementById('change-password-btn'), changePasswordForm = document.getElementById('change-password-form'), cpErrorMessage = document.getElementById('cp-error-message'), cpCloseBtn = changePasswordModal.querySelector('.close-btn');
-        auth.onAuthStateChanged(async (user) => { if (user) { currentUser = user; const userDoc = await db.collection('users').doc(currentUser.uid).get(); if (userDoc.exists && userDoc.data().role === 'teacher') { const userData = userDoc.data(); document.getElementById('user-email').textContent = userData.displayName || user.email; if (userData.passwordNeedsReset === true) { document.querySelector('header').style.display = 'none'; appContainer.style.display = 'none'; passwordResetOverlay.style.display = 'flex'; } else { await initialize(userData); } } else { window.location.href = `login.html?from=teacher`; } } else { window.location.href = `login.html?from=teacher`; } });
-        
+
+        let currentUser = null,
+            studentsData = [],
+            studentScores = {},
+            classEventScores = {},
+            currentEntity = null,
+            allClassList = [],
+            visibleClassList = [];
+
+        const appContainer = document.getElementById('app-container'),
+            modal = document.getElementById('modal'),
+            modalTitle = document.getElementById('modal-title'),
+            modalStudentInfo = document.getElementById('modal-student-info'),
+            closeBtn = modal.querySelector('.close-btn'),
+            addRecordForm = document.getElementById('add-record-form'),
+            recordsList = document.getElementById('records-list'),
+            passwordResetOverlay = document.getElementById('password-reset-overlay'),
+            passwordResetForm = document.getElementById('password-reset-form'),
+            changePasswordModal = document.getElementById('change-password-modal'),
+            changePasswordBtn = document.getElementById('change-password-btn'),
+            changePasswordForm = document.getElementById('change-password-form'),
+            cpErrorMessage = document.getElementById('cp-error-message'),
+            cpCloseBtn = changePasswordModal.querySelector('.close-btn'),
+            classSettingsModal = document.getElementById('class-settings-modal'),
+            classSettingsBtn = document.getElementById('class-settings-btn'),
+            classSettingsList = document.getElementById('class-settings-list'),
+            saveClassSettingsBtn = document.getElementById('save-class-settings-btn'),
+            csCloseBtn = classSettingsModal.querySelector('.close-btn'),
+            selectAllVisibleClasses = document.getElementById('select-all-visible-classes');
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                if (currentUser && currentUser.uid === user.uid) return;
+                currentUser = user;
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'teacher') {
+                    const userData = userDoc.data();
+                    document.getElementById('user-email').textContent = userData.displayName || user.email;
+                    visibleClassList = userData.visibleClasses || [];
+                    if (userData.passwordNeedsReset === true) {
+                        showPasswordResetUI();
+                    } else {
+                        await initialize(userData);
+                    }
+                } else {
+                    window.location.href = `login.html?from=teacher`;
+                }
+            } else {
+                window.location.href = `login.html?from=teacher`;
+            }
+        });
+
+        function showPasswordResetUI() {
+            document.querySelector('header').style.display = 'none';
+            appContainer.style.display = 'none';
+            passwordResetOverlay.style.display = 'flex';
+        }
+
+        async function initialize(userData) {
+            try {
+                if (!userData.rosterId) {
+                    appContainer.innerHTML = '<h2>帳號尚未綁定名冊</h2>';
+                    return;
+                }
+                const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get();
+                if (!rosterDoc.exists) {
+                    appContainer.innerHTML = `<h2>找不到指定名冊</h2>`;
+                    return;
+                }
+                studentsData = rosterDoc.data().students;
+                allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
+                if (visibleClassList.length === 0 && allClassList.length > 0) {
+                    visibleClassList = allClassList;
+                }
+                await fetchAllScores();
+                renderLayout();
+            } catch (error) {
+                console.error("初始化失敗:", error);
+                appContainer.innerHTML = '<h2>載入資料失敗...</h2>';
+            }
+        }
+
+        async function fetchAllScores() {
+            const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+            studentScores = {};
+            classEventScores = {};
+            snapshot.forEach(doc => {
+                const r = doc.data();
+                const p = r.points || 0;
+                const type = r.entityType || 'student';
+                const id = r.entityId || r.studentId;
+                if (!id) return;
+                if (type === 'student') {
+                    if (!studentScores[id]) studentScores[id] = 0;
+                    studentScores[id] += p;
+                } else if (type === 'class') {
+                    if (!classEventScores[id]) classEventScores[id] = 0;
+                    classEventScores[id] += p;
+                }
+            });
+        }
+
         function renderLayout(selectedStudentId = null) {
-            appContainer.innerHTML = ''; 
-            const groupedByClass = studentsData.reduce((acc, s) => { const c = s.id.substring(0, 3); if (!acc[c]) acc[c] = []; acc[c].push(s); return acc; }, {});
-            const sortedClasses = Object.keys(groupedByClass).sort();
-            sortedClasses.forEach(className => {
-                const classCard = document.createElement('div'); classCard.className = 'class-card';
-                let sTotal = 0; groupedByClass[className].forEach(s => { sTotal += studentScores[s.id] || 0; });
+            appContainer.innerHTML = '';
+            const classesToRender = allClassList.filter(className => visibleClassList.includes(className));
+            if (classesToRender.length === 0 && allClassList.length > 0) {
+                appContainer.innerHTML = '<h3>沒有設定要顯示的班級。請點擊「班級顯示設定」。</h3>';
+                return;
+            }
+            const groupedByClass = studentsData.reduce((acc, s) => {
+                const c = s.id.substring(0, 3);
+                if (!acc[c]) acc[c] = [];
+                acc[c].push(s);
+                return acc;
+            }, {});
+            classesToRender.forEach(className => {
+                const classCard = document.createElement('div');
+                classCard.className = 'class-card';
+                let sTotal = 0;
+                (groupedByClass[className] || []).forEach(s => {
+                    sTotal += studentScores[s.id] || 0;
+                });
                 const cTotal = classEventScores[className] || 0;
-                
-                const headerDiv = document.createElement('div'); headerDiv.className = 'card-header';
-                const title = document.createElement('div'); title.className = 'class-title'; title.innerHTML = `${className} 班`; title.addEventListener('click', () => openModal(className, 'class'));
-                const actionsDiv = document.createElement('div'); actionsDiv.className = 'card-actions';
-                
-                // 【【【核心修正處】】】
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'card-header';
+                const title = document.createElement('div');
+                title.className = 'class-title';
+                title.innerHTML = `${className} 班`;
+                title.addEventListener('click', () => openModal(className, 'class'));
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'card-actions';
                 actionsDiv.innerHTML = `<a href="./grades.html?class=${className}" class="action-btn">成績登錄</a>`;
-
-                headerDiv.appendChild(title); headerDiv.appendChild(actionsDiv);
+                headerDiv.appendChild(title);
+                headerDiv.appendChild(actionsDiv);
                 classCard.appendChild(headerDiv);
-
-                const scoreDiv = document.createElement('div'); scoreDiv.className = 'score-info'; scoreDiv.textContent = `(學生總分: ${sTotal} | 班級總分: ${cTotal})`;
+                const scoreDiv = document.createElement('div');
+                scoreDiv.className = 'score-info';
+                scoreDiv.textContent = `(學生總分: ${sTotal} | 班級總分: ${cTotal})`;
                 classCard.appendChild(scoreDiv);
-                
-                const select = document.createElement('select'); select.className = 'student-select'; select.innerHTML = '<option value="">--- 請選擇學生 ---</option>';
-                groupedByClass[className].forEach(s => { const score = studentScores[s.id] || 0; let dText = `${s.id.substring(3)} ${s.name}`; if (score !== 0) { dText += ` (${score}分)`; } const opt = new Option(dText, s.id); if (s.id === selectedStudentId) { opt.selected = true; } select.add(opt); });
-                select.addEventListener('change', (e) => { if (e.target.value) openModal(e.target.value, 'student'); });
-                classCard.appendChild(select); 
+                const select = document.createElement('select');
+                select.className = 'student-select';
+                select.innerHTML = '<option value="">--- 請選擇學生 ---</option>';
+                (groupedByClass[className] || []).forEach(s => {
+                    const score = studentScores[s.id] || 0;
+                    let dText = `${s.id.substring(3)} ${s.name}`;
+                    if (score !== 0) {
+                        dText += ` (${score}分)`;
+                    }
+                    const opt = new Option(dText, s.id);
+                    if (s.id === selectedStudentId) {
+                        opt.selected = true;
+                    }
+                    select.add(opt);
+                });
+                select.addEventListener('change', (e) => {
+                    if (e.target.value) openModal(e.target.value, 'student');
+                });
+                classCard.appendChild(select);
                 appContainer.appendChild(classCard);
             });
         }
-        
-        // --- 以下所有功能函式與前一版相同 ---
-        async function initialize(userData) { appContainer.innerHTML = '<h2>...</h2>'; if (!userData.rosterId) { appContainer.innerHTML = '<h2>帳號尚未綁定名冊</h2>'; return; } const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get(); if (!rosterDoc.exists) { appContainer.innerHTML = `<h2>找不到指定名冊</h2>`; return; } studentsData = rosterDoc.data().students; await fetchAllScores(); renderLayout(); }
-        async function fetchAllScores() { const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get(); studentScores = {}; classEventScores = {}; snapshot.forEach(doc => { const r = doc.data(); const p = r.points || 0; const type = r.entityType || 'student'; const id = r.entityId || r.studentId; if (!id) return; if (type === 'student') { if (!studentScores[id]) studentScores[id] = 0; studentScores[id] += p; } else if (type === 'class') { if (!classEventScores[id]) classEventScores[id] = 0; classEventScores[id] += p; } }); }
-        function openModal(id, type = 'student') { currentEntity = { id, type }; let titleText = ''; let infoText = ''; if (type === 'student') { const student = studentsData.find(s => s.id === id); titleText = `${student.name} (${id}) 的紀錄`; infoText = `目前個人總分: <strong>${studentScores[id] || 0}</strong>`; } else { titleText = `班級事件紀錄 (${id} 班)`; infoText = `目前班級事件總分: <strong>${classEventScores[id] || 0}</strong>`; } modalTitle.textContent = titleText; modalStudentInfo.innerHTML = infoText; loadRecords(id, type); modal.style.display = 'block'; }
-        function closeModal() { modal.style.display = 'none'; addRecordForm.reset(); currentEntity = null; }
-        async function loadRecords(id, type) { recordsList.innerHTML = '載入中...'; try { let allRecords = []; const recordsRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records'); if (type === 'class') { const snapshot = await recordsRef.where('entityId', '==', id).where('entityType', '==', type).orderBy('timestamp', 'desc').get(); snapshot.forEach(doc => allRecords.push({ id: doc.id, ...doc.data() })); } else { const newRecordsPromise = recordsRef.where('entityId', '==', id).where('entityType', '==', 'student').get(); const oldRecordsPromise = recordsRef.where('studentId', '==', id).get(); const [newSnapshot, oldSnapshot] = await Promise.all([newRecordsPromise, oldRecordsPromise]); const seenIds = new Set(); newSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } }); oldSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } }); } allRecords.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds); recordsList.innerHTML = ''; if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; } allRecords.forEach(record => { const recordItem = document.createElement('div'); recordItem.className = 'record-item'; const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : ''); recordItem.innerHTML = `<div style="flex-grow: 1;"><div><span style="font-weight:bold;font-size:1.1em;margin-right:15px;" class="${pClass}">${record.points||0}分</span><span>${record.text||''}</span></div><div style="font-size:0.8em;color:#999;margin-top:4px;">${new Date(record.timestamp.seconds * 1000).toLocaleString()}</div></div><div><button class="delete-btn" data-id="${record.id}">🗑️</button></div>`; recordsList.appendChild(recordItem); }); } catch (error) { console.error("讀取歷史紀錄失敗:", error); recordsList.innerHTML = '讀取紀錄時發生錯誤。'; } }
+
+        function openModal(id, type = 'student') {
+            currentEntity = { id, type };
+            let titleText = '', infoText = '';
+            if (type === 'student') {
+                const student = studentsData.find(s => s.id === id);
+                titleText = `${student.name} (${id}) 的紀錄`;
+                infoText = `目前個人總分: <strong>${studentScores[id] || 0}</strong>`;
+            } else {
+                titleText = `班級事件紀錄 (${id} 班)`;
+                infoText = `目前班級事件總分: <strong>${classEventScores[id] || 0}</strong>`;
+            }
+            modalTitle.textContent = titleText;
+            modalStudentInfo.innerHTML = infoText;
+            loadRecords(id, type);
+            modal.style.display = 'block';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            addRecordForm.reset();
+            currentEntity = null;
+        }
+
+        async function loadRecords(id, type) {
+            recordsList.innerHTML = '載入中...';
+            try {
+                let allRecords = [];
+                const recordsRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
+                if (type === 'class') {
+                    const snapshot = await recordsRef.where('entityId', '==', id).where('entityType', '==', type).orderBy('timestamp', 'desc').get();
+                    snapshot.forEach(doc => allRecords.push({ id: doc.id, ...doc.data() }));
+                } else {
+                    const newRecordsPromise = recordsRef.where('entityId', '==', id).where('entityType', '==', 'student').get();
+                    const oldRecordsPromise = recordsRef.where('studentId', '==', id).get();
+                    const [newSnapshot, oldSnapshot] = await Promise.all([newRecordsPromise, oldRecordsPromise]);
+                    const seenIds = new Set();
+                    newSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } });
+                    oldSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } });
+                }
+                allRecords.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+                recordsList.innerHTML = '';
+                if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; }
+                allRecords.forEach(record => {
+                    const recordItem = document.createElement('div');
+                    recordItem.className = 'record-item';
+                    const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
+                    recordItem.innerHTML = `<div style="flex-grow: 1;"><div><span style="font-weight:bold;font-size:1.1em;margin-right:15px;" class="${pClass}">${record.points||0}分</span><span>${record.text||''}</span></div><div style="font-size:0.8em;color:#999;margin-top:4px;">${new Date(record.timestamp.seconds * 1000).toLocaleString()}</div></div><div><button class="delete-btn" data-id="${record.id}">🗑️</button></div>`;
+                    recordsList.appendChild(recordItem);
+                });
+            } catch (error) {
+                console.error("讀取歷史紀錄失敗:", error);
+                recordsList.innerHTML = '讀取紀錄時發生錯誤。';
+            }
+        }
         async function handleAddRecord(e) { e.preventDefault(); const p = parseInt(document.getElementById('record-points').value, 10) || 0; const t = document.getElementById('record-text').value.trim(); if (p === 0 && t === '') return; const sid = currentEntity; const n = { entityId: sid.id, entityType: sid.type, points: p, text: t, timestamp: firebase.firestore.FieldValue.serverTimestamp(), studentId: sid.type === 'student' ? sid.id : null }; try { await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n); closeModal(); await fetchAllScores(); renderLayout(sid.type === 'student' ? sid.id : null); } catch (err) { console.error(err); } }
         async function handleDeleteRecord(e) { if (e.target.classList.contains('delete-btn')) { const rid = e.target.dataset.id; if (confirm('確定刪除？')) { const sid = currentEntity; try { await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete(); closeModal(); await fetchAllScores(); renderLayout(sid && sid.type === 'student' ? sid.id : null); } catch (err) { console.error(err); } } } }
+        
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
-        closeBtn.addEventListener('click', closeModal); window.addEventListener('click', (e) => { if (e.target === modal) closeModal(); }); addRecordForm.addEventListener('submit', handleAddRecord); recordsList.addEventListener('click', handleDeleteRecord);
+        closeBtn.addEventListener('click', closeModal);
+        addRecordForm.addEventListener('submit', handleAddRecord);
+        recordsList.addEventListener('click', handleDeleteRecord);
+        
         passwordResetForm.addEventListener('submit', async (e) => { e.preventDefault(); const p1 = document.getElementById('new-password').value; const p2 = document.getElementById('confirm-password').value; document.getElementById('password-error-message').textContent = ''; if (p1.length < 6) { document.getElementById('password-error-message').textContent = '密碼至少6字元'; return; } if (p1 !== p2) { document.getElementById('password-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(p1); await db.collection('users').doc(currentUser.uid).update({ passwordNeedsReset: false }); alert('密碼更新成功！'); auth.signOut(); } catch (err) { document.getElementById('password-error-message').textContent = '更新失敗: ' + err.message; } });
+        
         changePasswordBtn.addEventListener('click', () => { changePasswordModal.style.display = 'block'; });
         cpCloseBtn.addEventListener('click', () => { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; });
-        window.addEventListener('click', (e) => { if (e.target === changePasswordModal) { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; } });
         changePasswordForm.addEventListener('submit', async (e) => { e.preventDefault(); const newPassword = document.getElementById('cp-new-password').value; const confirmPassword = document.getElementById('cp-confirm-password').value; cpErrorMessage.textContent = ''; if (newPassword.length < 6) { cpErrorMessage.textContent = '密碼至少6字元'; return; } if (newPassword !== confirmPassword) { cpErrorMessage.textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(newPassword); alert('密碼更新成功！'); changePasswordModal.style.display = 'none'; changePasswordForm.reset(); } catch (error) { if (error.code === 'auth/requires-recent-login') { cpErrorMessage.textContent = '此為敏感操作，請先登出再重新登入後再試。'; } else { cpErrorMessage.textContent = '更新失敗：' + error.message; } } });
+        
+        classSettingsBtn.addEventListener('click', () => { classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${className} 班</label>`; classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; classSettingsModal.style.display = 'block'; });
+        selectAllVisibleClasses.addEventListener('change', (e) => { document.querySelectorAll('.visible-class-checkbox').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
+        csCloseBtn.addEventListener('click', () => { classSettingsModal.style.display = 'none'; });
+        saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); classSettingsModal.style.display = 'none'; alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+            if (e.target === changePasswordModal) { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; }
+            if (e.target === classSettingsModal) { classSettingsModal.style.display = 'none'; }
+        });
     </script>
 </body>
 </html>
