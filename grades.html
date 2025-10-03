@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>成績登錄 - 平時表現紀錄系統</title>
+    <title>成績登錄 - 班級綜合成績紀錄系統</title>
     <style>
         :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
@@ -31,12 +31,27 @@
         .history-item-stats { font-size: 0.9em; color: #333; border-left: 1px solid #ccc; padding-left: 15px; }
         .history-item-comment { font-size: 0.9em; color: #555; margin-top: 10px; background: #fff; padding: 8px; border-left: 3px solid var(--border-color); }
         .history-item-actions .delete-btn { background-color: #e74c3c; font-size: 0.8em; padding: 5px 8px; }
+
+        /* 【【【核心修改處】】】 */
+        @media (max-width: 600px) {
+            .score-entry-header, .score-entry {
+                grid-template-columns: 30px 1fr 70px 1.5fr; /* 座號 | 姓名(彈性) | 分數(固定) | 註解(彈性) */
+                gap: 10px;
+                font-size: 0.9em; /* 稍微縮小整體字體 */
+            }
+            .score-entry input {
+                padding: 8px 4px; /* 縮小輸入框內距 */
+            }
+            main {
+                padding: 10px;
+            }
+        }
     </style>
 </head>
 <body>
     <header>
         <h1 id="header-title">成績登錄</h1>
-        <div><a href="./teacher.html"><button>返回主頁</button></a><button id="logout-btn">登出</button></div>
+        <div><a href="./teacher.html" style="color: white; text-decoration: none;"><button>返回主頁</button></a><button id="logout-btn">登出</button></div>
     </header>
     <main id="app-container" style="display: none;">
         <div id="create-section" class="section">
@@ -72,6 +87,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script>
+        // --- JavaScript 邏輯與前一版完全相同 ---
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); const auth = firebase.auth();
@@ -81,31 +97,10 @@
         async function initializeGradesPage(userData) { const urlParams = new URLSearchParams(window.location.search); classId = urlParams.get('class'); if (!classId) { appContainer.innerHTML = '<h2>錯誤：未指定班級。</h2>'; appContainer.style.display = 'block'; return; } document.getElementById('class-header').textContent = `${classId} 班 成績管理`; if (!userData.rosterId) { alert('帳號未綁定名冊'); return; } const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get(); if (!rosterDoc.exists) { alert('找不到名冊'); return; } studentsInClass = rosterDoc.data().students.filter(s => s.id.startsWith(classId)).sort((a,b) => a.id.localeCompare(b.id)); setupKeyboardNavigation(); loadHistory(); appContainer.style.display = 'block'; }
         function setupKeyboardNavigation() { scoresContainer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('score-input')) { e.preventDefault(); const allScoreInputs = Array.from(scoresContainer.querySelectorAll('.score-input')); const currentIndex = allScoreInputs.indexOf(e.target); if (currentIndex > -1 && currentIndex < allScoreInputs.length - 1) { const nextInput = allScoreInputs[currentIndex + 1]; nextInput.focus(); nextInput.select(); } else { saveBtns[1].focus(); } } }); }
         function toggleCreateSection(enabled) { createSection.style.opacity = enabled ? '1' : '0.5'; createSection.style.pointerEvents = enabled ? 'auto' : 'none'; }
-        function displayGradeEntry(assignmentName, generalComment = '', scoresData = {}) {
-            currentAssignmentTitle.textContent = currentAssignmentId ? `編輯成績：${assignmentName}` : `登錄新成績：${assignmentName}`;
-            editAssignmentNameInput.value = assignmentName;
-            editGeneralCommentInput.value = generalComment;
-            scoresContainer.innerHTML = '<div class="score-entry-header"><span>座號</span><span>姓名</span><span>分數</span><span>個別註解 (選填)</span></div>';
-            studentsInClass.forEach(student => { const scoreInfo = scoresData[student.id] || {}; const entryDiv = document.createElement('div'); entryDiv.className = 'score-entry'; entryDiv.innerHTML = `<span>${student.id.substring(3)}</span><label>${student.name}</label><input type="number" class="score-input" data-student-id="${student.id}" value="${scoreInfo.score ?? ''}" placeholder="分數"><input type="text" class="comment-input" data-student-id="${student.id}" value="${scoreInfo.comment || ''}" placeholder="個別註解">`; scoresContainer.appendChild(entryDiv); });
-            gradeEntrySection.style.display = 'block';
-            toggleCreateSection(false);
-        }
+        function displayGradeEntry(assignmentName, generalComment = '', scoresData = {}) { currentAssignmentTitle.textContent = currentAssignmentId ? `編輯成績：${assignmentName}` : `登錄新成績：${assignmentName}`; editAssignmentNameInput.value = assignmentName; editGeneralCommentInput.value = generalComment; scoresContainer.innerHTML = '<div class="score-entry-header"><span>座號</span><span>姓名</span><span>分數</span><span>個別註解 (選填)</span></div>'; studentsInClass.forEach(student => { const scoreInfo = scoresData[student.id] || {}; const entryDiv = document.createElement('div'); entryDiv.className = 'score-entry'; entryDiv.innerHTML = `<span>${student.id.substring(3)}</span><label>${student.name}</label><input type="number" class="score-input" data-student-id="${student.id}" value="${scoreInfo.score ?? ''}" placeholder="分數"><input type="text" class="comment-input" data-student-id="${student.id}" value="${scoreInfo.comment || ''}" placeholder="個別註解">`; scoresContainer.appendChild(entryDiv); }); gradeEntrySection.style.display = 'block'; toggleCreateSection(false); }
         createBtn.addEventListener('click', () => { const newAssignmentName = newAssignmentNameInput.value.trim(); if (!newAssignmentName) { alert('請先輸入成績項目名稱！'); return; } currentAssignmentId = null; displayGradeEntry(newAssignmentName, newGeneralCommentInput.value.trim()); saveBtns.forEach(btn => btn.textContent = '儲存新成績'); });
         cancelBtns.forEach(btn => btn.addEventListener('click', () => { gradeEntrySection.style.display = 'none'; newAssignmentNameInput.value = ''; newGeneralCommentInput.value = ''; currentAssignmentId = null; toggleCreateSection(true); }));
-        saveBtns.forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const scoresData = {};
-                scoresContainer.querySelectorAll('.score-entry').forEach(entry => { const studentId = entry.querySelector('.score-input').dataset.studentId; const score = entry.querySelector('.score-input').value.trim(); const comment = entry.querySelector('.comment-input').value.trim(); if (score !== '' || comment !== '') { scoresData[studentId] = {}; if (score !== '') scoresData[studentId].score = parseFloat(score); if (comment !== '') scoresData[studentId].comment = comment; } });
-                const assignmentName = editAssignmentNameInput.value.trim(); if (!assignmentName) { alert('成績項目名稱不可為空！'); return; }
-                const assignmentData = { assignmentName, className: classId, date: firebase.firestore.FieldValue.serverTimestamp(), generalComment: editGeneralCommentInput.value.trim(), scores: scoresData };
-                try {
-                    const assignmentsRef = db.collection('gradebooks').doc(currentUser.uid).collection('assignments');
-                    if (currentAssignmentId) { await assignmentsRef.doc(currentAssignmentId).update(assignmentData); alert(`已更新成績項目：${assignmentName}`); }
-                    else { await assignmentsRef.add(assignmentData); alert(`已儲存新成績項目：${assignmentName}`); }
-                    cancelBtns[0].click(); // 模擬點擊取消按鈕
-                } catch (error) { console.error("儲存成績失敗:", error); alert("儲存失敗！"); }
-            });
-        });
+        saveBtns.forEach(btn => { btn.addEventListener('click', async () => { const scoresData = {}; scoresContainer.querySelectorAll('.score-entry').forEach(entry => { const studentId = entry.querySelector('.score-input').dataset.studentId; const score = entry.querySelector('.score-input').value.trim(); const comment = entry.querySelector('.comment-input').value.trim(); if (score !== '' || comment !== '') { scoresData[studentId] = {}; if (score !== '') scoresData[studentId].score = parseFloat(score); if (comment !== '') scoresData[studentId].comment = comment; } }); const assignmentName = editAssignmentNameInput.value.trim(); if (!assignmentName) { alert('成績項目名稱不可為空！'); return; } const assignmentData = { assignmentName, className: classId, date: firebase.firestore.FieldValue.serverTimestamp(), generalComment: editGeneralCommentInput.value.trim(), scores: scoresData }; try { const assignmentsRef = db.collection('gradebooks').doc(currentUser.uid).collection('assignments'); if (currentAssignmentId) { await assignmentsRef.doc(currentAssignmentId).update(assignmentData); alert(`已更新成績項目：${assignmentName}`); } else { await assignmentsRef.add(assignmentData); alert(`已儲存新成績項目：${assignmentName}`); } cancelBtns[0].click(); } catch (error) { console.error("儲存成績失敗:", error); alert("儲存失敗！"); } }); });
         function loadHistory() { db.collection('gradebooks').doc(currentUser.uid).collection('assignments').where('className', '==', classId).orderBy('date', 'desc').onSnapshot(snapshot => { historyList.innerHTML = ''; if (snapshot.empty) { historyList.innerHTML = '<li>尚無歷史成績項目。</li>'; return; } snapshot.forEach(doc => { const a = doc.data(); const li = document.createElement('li'); li.className = 'history-item'; li.dataset.id = doc.id; let studentCount = 0; let totalScore = 0; if (a.scores) { for(const studentId in a.scores) { if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null) { studentCount++; totalScore += a.scores[studentId].score; } } } const averageScore = studentCount > 0 ? (totalScore / studentCount).toFixed(1) : 'N/A'; const dateString = a.date ? a.date.toDate().toLocaleDateString() : '日期未知'; const generalCommentHTML = a.generalComment ? `<div class="history-item-comment">${a.generalComment}</div>` : ''; li.innerHTML = `<div class="history-item-main"><div class="history-item-info"><span class="history-item-title">${a.assignmentName} (${dateString})</span><span class="history-item-stats">人數: <strong>${studentCount}</strong> | 平均: <strong>${averageScore}</strong></span></div><div class="history-item-actions"><button class="delete-btn" data-id="${doc.id}">刪除</button></div></div>${generalCommentHTML}`; li.querySelector('.history-item-main').addEventListener('click', (e) => { if (e.target.classList.contains('delete-btn')) return; currentAssignmentId = doc.id; displayGradeEntry(a.assignmentName, a.generalComment, a.scores); saveBtns.forEach(btn => btn.textContent = '更新儲存'); }); historyList.appendChild(li); }); }, error => { console.error("讀取歷史成績失敗:", error); historyList.innerHTML = '<li>讀取歷史紀錄時發生錯誤。</li>'; }); }
         historyList.addEventListener('click', async (e) => { if (e.target.closest('.delete-btn')) { e.stopPropagation(); const docId = e.target.closest('.delete-btn').dataset.id; if(confirm('確定要刪除這個成績項目及其所有成績嗎？')) { try { await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete(); alert('刪除成功！'); if(currentAssignmentId === docId) { cancelBtns[0].click(); } } catch(error) { alert("刪除失敗！"); } } } });
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
