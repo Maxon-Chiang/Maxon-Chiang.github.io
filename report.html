@@ -87,8 +87,8 @@
         const auth = firebase.auth();
 
         let currentUser = null;
-        let studentsData = []; // 用來查詢學生姓名
-        let currentResults = []; // 存放當前查詢結果
+        let studentsData = [];
+        let currentResults = [];
 
         const resultsContainer = document.getElementById('results-container');
         const runQueryBtn = document.getElementById('run-query-btn');
@@ -112,12 +112,24 @@
         });
 
         async function initializeReportPage(userData) {
+            // 【【【新增程式碼】】】
+            // 預設日期為今天
+            const today = new Date();
+            // 考慮到時區問題，使用 getFullYear, getMonth, getDate 來取得本地日期
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0'); // 月份是 0-11，所以要+1
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayString = `${year}-${month}-${day}`;
+
+            document.getElementById('start-date').value = todayString;
+            document.getElementById('end-date').value = todayString;
+            // 【【【/新增程式碼】】】
+
             if (!userData.rosterId) { alert('帳號未綁定名冊'); return; }
             const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get();
             if (!rosterDoc.exists) { alert('找不到名冊'); return; }
             studentsData = rosterDoc.data().students;
             
-            // 動態產生班級複選框
             const classes = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
             classes.forEach(className => {
                 const div = document.createElement('div');
@@ -146,13 +158,12 @@
 
             const startTimestamp = new Date(startDate);
             const endTimestamp = new Date(endDate);
-            endTimestamp.setHours(23, 59, 59, 999); // 包含結束當天的所有時間
+            endTimestamp.setHours(23, 59, 59, 999);
 
             const selectedClasses = [...document.querySelectorAll('.class-selector:checked')].map(cb => cb.value);
             const eventType = document.getElementById('event-type-filter').value;
             
             try {
-                // 執行基礎查詢 (只篩選時段)
                 const query = db.collection('performanceRecords').doc(currentUser.uid).collection('records')
                                 .orderBy('timestamp', 'desc')
                                 .where('timestamp', '>=', startTimestamp)
@@ -162,12 +173,10 @@
                 let results = [];
                 snapshot.forEach(doc => results.push(doc.data()));
 
-                // 在前端進行班級和事件類型篩選
                 currentResults = results.filter(record => {
                     const classId = (record.entityType === 'class') ? record.entityId : (record.entityId || record.studentId).substring(0, 3);
                     const hasPoints = (record.points || 0) !== 0;
                     const hasText = (record.text || '').trim() !== '';
-
                     const classMatch = selectedClasses.length === 0 ? true : selectedClasses.includes(classId);
                     let eventTypeMatch = true;
                     if (eventType === 'with_points') eventTypeMatch = hasPoints;
@@ -189,29 +198,18 @@
                 resultsContainer.innerHTML = '<p>在指定條件下找不到任何紀錄。</p>';
                 return;
             }
-
             let tableHTML = '<table><thead><tr><th>日期時間</th><th>班級</th><th>對象</th><th>分數</th><th>事由</th></tr></thead><tbody>';
             results.forEach(record => {
                 const entityId = record.entityId || record.studentId;
                 const type = record.entityType || 'student';
-                const timestamp = record.timestamp.toDate().toLocaleString('zh-TW');
+                const timestamp = record.timestamp.toDate().toLocaleString('zh-TW', { hour12: false });
                 const className = type === 'class' ? entityId : entityId.substring(0, 3);
-                
                 let targetName = `班級 (${className})`;
                 if (type === 'student') {
                     const student = studentsData.find(s => s.id === entityId);
                     targetName = student ? `${student.name} (${entityId})` : `學生 (${entityId})`;
                 }
-
-                tableHTML += `
-                    <tr>
-                        <td>${timestamp}</td>
-                        <td>${className}</td>
-                        <td>${targetName}</td>
-                        <td>${record.points || 0}</td>
-                        <td>${record.text || ''}</td>
-                    </tr>
-                `;
+                tableHTML += `<tr><td>${timestamp}</td><td>${className}</td><td>${targetName}</td><td>${record.points || 0}</td><td>${record.text || ''}</td></tr>`;
             });
             tableHTML += '</tbody></table>';
             resultsContainer.innerHTML = tableHTML;
@@ -220,14 +218,12 @@
 
         exportCsvBtn.addEventListener('click', () => {
             if (currentResults.length === 0) return;
-            
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF for BOM to open in Excel correctly
-            csvContent += "日期時間,班級,對象,分數,事由\r\n"; // Header
-
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "日期時間,班級,對象,分數,事由\r\n";
             currentResults.forEach(record => {
                 const entityId = record.entityId || record.studentId;
                 const type = record.entityType || 'student';
-                const timestamp = record.timestamp.toDate().toLocaleString('zh-TW');
+                const timestamp = record.timestamp.toDate().toLocaleString('zh-TW', { hour12: false });
                 const className = type === 'class' ? entityId : entityId.substring(0, 3);
                 let targetName = `班級-${className}`;
                 if (type === 'student') {
@@ -235,11 +231,9 @@
                     targetName = student ? student.name : `學生-${entityId}`;
                 }
                 const points = record.points || 0;
-                const text = record.text ? `"${record.text.replace(/"/g, '""')}"` : ''; // Handle commas and quotes in text
-                
+                const text = record.text ? `"${record.text.replace(/"/g, '""')}"` : '';
                 csvContent += [timestamp, className, targetName, points, text].join(',') + "\r\n";
             });
-
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
