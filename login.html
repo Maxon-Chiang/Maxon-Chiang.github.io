@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登入 - 學生平時表現紀錄系統</title>
+    <title>登入 - 平時表現紀錄系統</title>
     <style>
         body { font-family: sans-serif; background-color: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-container { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
         h1 { color: #333; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
         button { width: 100%; padding: 12px; background-color: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
-        button:hover { background-color: #357abd; }
         #error-message { color: #d0021b; margin-top: 10px; height: 20px; font-size: 0.9em; }
         .options-container { display: flex; justify-content: center; align-items: center; margin: 15px 0; font-size: 0.9em; color: #555; }
         #remember-me { margin-right: 8px; width: 16px; height: 16px; }
@@ -20,115 +19,35 @@
     </style>
 </head>
 <body>
-    <div id="splash-screen">
-        <div class="spinner"></div>
-        <p style="margin-top: 20px; color: #555;">載入中...</p>
-    </div>
-
+    <div id="splash-screen"><div class="spinner"></div><p style="margin-top: 20px; color: #555;">載入中...</p></div>
     <div id="login-view" style="display: none;">
         <div class="login-container">
-            <h1>學生紀錄系統</h1>
+            <h1>平時表現紀錄系統</h1>
             <form id="login-form">
                 <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
                 <input type="password" id="login-password" placeholder="密碼" required autocomplete="current-password">
-                
-                <div class="options-container">
-                    <input type="checkbox" id="remember-me">
-                    <label for="remember-me">保持登入狀態</label>
-                </div>
-
+                <div class="options-container"><input type="checkbox" id="remember-me"><label for="remember-me">保持登入狀態</label></div>
                 <button type="submit">登入</button>
             </form>
             <p id="error-message"></p>
         </div>
     </div>
-
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script>
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        const loginView = document.getElementById('login-view');
-        const loginForm = document.getElementById('login-form');
-        const loginEmailInput = document.getElementById('login-email');
-        const errorMessage = document.getElementById('error-message');
-        const rememberMeCheckbox = document.getElementById('remember-me');
-        const splashScreen = document.getElementById('splash-screen');
-
-        // 自動填入上次登入的 Email
+        const auth = firebase.auth(); const db = firebase.firestore();
+        const loginView = document.getElementById('login-view'), loginForm = document.getElementById('login-form'), loginEmailInput = document.getElementById('login-email'), errorMessage = document.getElementById('error-message'), rememberMeCheckbox = document.getElementById('remember-me'), splashScreen = document.getElementById('splash-screen');
         const savedEmail = localStorage.getItem('lastLoginEmail');
-        if (savedEmail) {
-            loginEmailInput.value = savedEmail;
-        }
-
-        // 【【【修改處 2】】】 - 恢復上次 checkbox 的勾選狀態
+        if (savedEmail) { loginEmailInput.value = savedEmail; }
         const savedRememberState = localStorage.getItem('rememberMeState');
-        // 如果上次儲存的是 'true'，就設為勾選，否則不勾選。預設為勾選。
         rememberMeCheckbox.checked = (savedRememberState === 'true' || savedRememberState === null);
-
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                routeUser(user.uid);
-            } else {
-                splashScreen.style.display = 'none';
-                loginView.style.display = 'flex';
-            }
-        });
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = loginEmailInput.value;
-            const password = document.getElementById('login-password').value;
-            errorMessage.textContent = '登入中...';
-            splashScreen.style.display = 'flex';
-            
-            // 【【【修改處 3】】】 - 在登入前，就先儲存 checkbox 的狀態
-            localStorage.setItem('rememberMeState', rememberMeCheckbox.checked);
-
-            try {
-                const persistence = rememberMeCheckbox.checked 
-                    ? firebase.auth.Auth.Persistence.LOCAL
-                    : firebase.auth.Auth.Persistence.SESSION;
-                await auth.setPersistence(persistence);
-
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                
-                localStorage.setItem('lastLoginEmail', email);
-                
-                // 成功後 onAuthStateChanged 會自動處理跳轉
-            } catch (error) {
-                splashScreen.style.display = 'none';
-                switch (error.code) {
-                    case 'auth/invalid-credential': case 'auth/invalid-login-credentials': errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。'; break;
-                    default: errorMessage.textContent = '登入時發生未知錯誤。'; break;
-                }
-            }
-        });
-        
-        async function routeUser(uid) {
-            try {
-                const userDoc = await db.collection('users').doc(uid).get();
-                if (userDoc.exists) {
-                    const role = userDoc.data().role;
-                    if (role === 'admin') {
-                        window.location.href = 'admin.html';
-                    } else if (role === 'teacher') {
-                        window.location.href = 'teacher.html';
-                    } else { showLoginError('帳號角色設定不明確。'); }
-                } else { showLoginError('找不到使用者設定。'); }
-            } catch (error) { showLoginError("讀取角色失敗"); }
-        }
-
-        function showLoginError(msg) {
-            splashScreen.style.display = 'none';
-            loginView.style.display = 'flex';
-            errorMessage.textContent = msg;
-            auth.signOut();
-        }
+        auth.onAuthStateChanged((user) => { if (user) { routeUser(user.uid); } else { splashScreen.style.display = 'none'; loginView.style.display = 'flex'; } });
+        loginForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = loginEmailInput.value; const password = document.getElementById('login-password').value; errorMessage.textContent = '登入中...'; splashScreen.style.display = 'flex'; localStorage.setItem('rememberMeState', rememberMeCheckbox.checked); try { const persistence = rememberMeCheckbox.checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION; await auth.setPersistence(persistence); const userCredential = await auth.signInWithEmailAndPassword(email, password); localStorage.setItem('lastLoginEmail', email); } catch (error) { splashScreen.style.display = 'none'; switch (error.code) { case 'auth/invalid-credential': case 'auth/invalid-login-credentials': errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。'; break; default: errorMessage.textContent = '登入時發生未知錯誤。'; break; } } });
+        async function routeUser(uid) { try { const userDoc = await db.collection('users').doc(uid).get(); if (userDoc.exists) { const role = userDoc.data().role; if (role === 'admin') { window.location.href = 'admin.html'; } else if (role === 'teacher') { window.location.href = 'teacher.html'; } else { showLoginError('帳號角色設定不明確。'); } } else { showLoginError('找不到使用者設定。'); } } catch (error) { showLoginError("讀取角色失敗"); } }
+        function showLoginError(msg) { splashScreen.style.display = 'none'; loginView.style.display = 'flex'; errorMessage.textContent = msg; auth.signOut(); }
     </script>
 </body>
 </html>
