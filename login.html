@@ -10,7 +10,8 @@
         h1 { color: #333; }
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
         button { width: 100%; padding: 12px; background-color: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
-        #error-message { color: #d0021b; margin-top: 10px; height: 20px; font-size: 0.9em; }
+        button:hover { background-color: #357abd; }
+        #error-message { color: #d0021b; margin-top: 10px; min-height: 40px; font-size: 0.9em; }
         .options-container { display: flex; justify-content: center; align-items: center; margin: 15px 0; font-size: 0.9em; color: #555; }
         #remember-me { margin-right: 8px; width: 16px; height: 16px; }
         #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f5f5f5; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
@@ -38,14 +39,90 @@
     <script>
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(); const db = firebase.firestore();
-        const loginView = document.getElementById('login-view'), loginForm = document.getElementById('login-form'), loginEmailInput = document.getElementById('login-email'), errorMessage = document.getElementById('error-message'), rememberMeCheckbox = document.getElementById('remember-me'), splashScreen = document.getElementById('splash-screen');
-        const savedEmail = localStorage.getItem('lastLoginEmail'); if (savedEmail) { loginEmailInput.value = savedEmail; }
-        const savedRememberState = localStorage.getItem('rememberMeState'); rememberMeCheckbox.checked = (savedRememberState === 'true' || savedRememberState === null);
-        auth.onAuthStateChanged((user) => { if (user) { routeUser(user.uid); } else { splashScreen.style.display = 'none'; loginView.style.display = 'flex'; } });
-        loginForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = loginEmailInput.value; const password = document.getElementById('login-password').value; errorMessage.textContent = '登入中...'; splashScreen.style.display = 'flex'; localStorage.setItem('rememberMeState', rememberMeCheckbox.checked); try { const persistence = rememberMeCheckbox.checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION; await auth.setPersistence(persistence); await auth.signInWithEmailAndPassword(email, password); localStorage.setItem('lastLoginEmail', email); } catch (error) { splashScreen.style.display = 'none'; switch (error.code) { case 'auth/invalid-credential': case 'auth/invalid-login-credentials': errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。'; break; default: errorMessage.textContent = '登入時發生未知錯誤。'; break; } } });
-        async function routeUser(uid) { try { const userDoc = await db.collection('users').doc(uid).get(); if (userDoc.exists) { const role = userDoc.data().role; if (role === 'admin') { window.location.href = 'admin.html'; } else if (role === 'teacher') { window.location.href = 'teacher.html'; } else { showLoginError('帳號角色設定不明確。'); } } else { showLoginError('找不到使用者設定。'); } } catch (error) { showLoginError("讀取角色失敗"); } }
-        function showLoginError(msg) { splashScreen.style.display = 'none'; loginView.style.display = 'flex'; errorMessage.textContent = msg; auth.signOut(); }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        const loginView = document.getElementById('login-view'), 
+              loginForm = document.getElementById('login-form'), 
+              loginEmailInput = document.getElementById('login-email'), 
+              errorMessage = document.getElementById('error-message'), 
+              rememberMeCheckbox = document.getElementById('remember-me'), 
+              splashScreen = document.getElementById('splash-screen');
+        
+        const savedEmail = localStorage.getItem('lastLoginEmail');
+        if (savedEmail) { loginEmailInput.value = savedEmail; }
+        const savedRememberState = localStorage.getItem('rememberMeState');
+        rememberMeCheckbox.checked = (savedRememberState === 'true' || savedRememberState === null);
+
+        auth.onAuthStateChanged(async (user) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromPage = urlParams.get('from');
+
+            if (user) {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (!userDoc.exists) { 
+                    showLoginError("找不到您的使用者設定，將為您登出。"); 
+                    return; 
+                }
+                
+                const userRole = userDoc.data().role;
+
+                if (fromPage && userRole !== fromPage) {
+                    splashScreen.style.display = 'none';
+                    loginView.style.display = 'flex';
+                    const currentRoleText = userRole === 'teacher' ? '教師' : '管理者';
+                    const targetRoleText = fromPage === 'admin' ? '管理' : '教師';
+                    errorMessage.textContent = `您目前以 ${currentRoleText} 身份登入，無法進入 ${targetRoleText} 頁面。請在此登入正確帳號以切換身份。`;
+                } else {
+                    routeUser(userRole);
+                }
+            } else {
+                splashScreen.style.display = 'none';
+                loginView.style.display = 'flex';
+                if (fromPage) {
+                     errorMessage.textContent = `欲進入${fromPage === 'admin' ? '管理' : '教師'}頁面，請先登入。`;
+                }
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginEmailInput.value;
+            const password = document.getElementById('login-password').value;
+            errorMessage.textContent = '登入中...';
+            splashScreen.style.display = 'flex';
+            
+            localStorage.setItem('rememberMeState', rememberMeCheckbox.checked);
+            try {
+                const persistence = rememberMeCheckbox.checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+                await auth.setPersistence(persistence);
+                await auth.signInWithEmailAndPassword(email, password);
+                localStorage.setItem('lastLoginEmail', email);
+                // 成功後 onAuthStateChanged 會自動處理跳轉
+            } catch (error) {
+                splashScreen.style.display = 'none';
+                loginView.style.display = 'flex';
+                switch (error.code) {
+                    case 'auth/invalid-credential': case 'auth/invalid-login-credentials': errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。'; break;
+                    default: errorMessage.textContent = '登入時發生未知錯誤。'; break;
+                }
+            }
+        });
+        
+        function routeUser(role) {
+            if (role === 'admin') {
+                window.location.href = 'admin.html';
+            } else if (role === 'teacher') {
+                window.location.href = 'teacher.html';
+            }
+        }
+
+        function showLoginError(msg) {
+            splashScreen.style.display = 'none';
+            loginView.style.display = 'flex';
+            errorMessage.textContent = msg;
+            auth.signOut();
+        }
     </script>
 </body>
 </html>
