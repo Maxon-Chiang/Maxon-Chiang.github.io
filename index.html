@@ -101,7 +101,7 @@ h1 {
     color: white;
     padding: 0px;
     text-align: center;
-    font-weight: normal; 
+    font-weight: normal;
 }
 .department-table td {
     border: 1px solid var(--border-color);
@@ -110,7 +110,7 @@ h1 {
     text-align: center;
 }
 .department-table .name-cell {
-    width: 80px; 
+    width: 80px;
     cursor: pointer;
     color: var(--accent-color); /* 新增：使用系統定義的藍色 */
     text-decoration: underline; /* 新增：加上底線 */
@@ -121,8 +121,8 @@ h1 {
 
 /* --- Modal 彈出視窗相關樣式 --- */
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-.modal-content { 
-    margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 100%; max-width: 1000px; 
+.modal-content {
+    margin: 2% auto; padding: 15px 20px; border: 1px solid var(--border-color); width: 100%; max-width: 1000px;
     border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
 }
 .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -130,18 +130,85 @@ h1 {
 #modal-title { text-align: right; margin-top: 0; margin-bottom: 15px; color: var(--header-bg); }
 #modal-title2 { text-align: center; margin-top: 0; font-size: 20px; margin-bottom: 15px; color: blue; }
 
+/* --- 提醒功能 UI 樣式 --- */
+#toggle-reminder-btn {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    background-color: var(--table-header-bg);
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: 1em;
+    cursor: pointer;
+    border-radius: 4px;
+}
+#reminder-controls {
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--primary-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+#reminder-controls .control-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+#reminder-controls label {
+    margin: 0;
+}
+#reminder-controls input[type="number"] {
+    width: 50px;
+    text-align: center;
+    font-size: 1em;
+    font-family: inherit;
+    padding: 4px;
+}
+#reminder-controls input[type="text"] {
+    width: 200px;
+    font-size: 1em;
+    font-family: inherit;
+    padding: 4px;
+}
+#reminder-controls select {
+    font-size: 1em;
+    font-family: inherit;
+    padding: 4px;
+}
+#reminder-controls button {
+    padding: 6px 12px;
+    border: 1px solid var(--header-bg);
+    background-color: white;
+    color: var(--header-bg);
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    margin: 0 5px;
+}
+#reminder-controls button:hover {
+    background-color: #f0f0f0;
+}
+
+
 /* --- 課表表格相關樣式 --- */
 .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.schedule-table th, .schedule-table td { 
-    border: 1px solid #999; 
-    padding: 4px; text-align: center; vertical-align: middle; 
+.schedule-table th, .schedule-table td {
+    border: 1px solid #999;
+    padding: 4px; text-align: center; vertical-align: middle;
     word-wrap: break-word; box-sizing: border-box;
     position: relative;
 }
 .schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 20px; }
 .schedule-table th:first-child,
 .schedule-table td:first-child { width: 6%; }
-.schedule-table td { 
+.schedule-table td {
     font-size: 16px; height: 68px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg);
 }
 .schedule-table td.empty-cell { background-color: var(--cleared-bg); }
@@ -153,11 +220,11 @@ h1 {
 .highlight { background-color: var(--highlight-bg) !important; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
 
 /* --- 調課建議相關樣式 --- */
-.swap-suggestion { 
+.swap-suggestion {
     background-color: var(--suggestion-bg) !important;
     color: #0f5132;
-    outline: 2px dashed var(--suggestion-border); 
-    outline-offset: -2px; 
+    outline: 2px dashed var(--suggestion-border);
+    outline-offset: -2px;
 }
 .swap-suggestion .subject, .swap-suggestion .details { color: #0f5132;  line-height: 1.1;}
 .swap-suggestion .teacher-detail,
@@ -211,7 +278,7 @@ h1 {
         width: 5%;
     }
 
-    .modal-content { 
+    .modal-content {
         width: 90%;
     }
     #modal-title2 { font-size: 16px; }
@@ -223,7 +290,7 @@ h1 {
     .department-table {
         font-size: 14px;
     }
-    
+
     /* 修正手機版課表排版 */
     .schedule-table td {
         font-size: 12px;
@@ -258,9 +325,9 @@ h1 {
 		</tr>
 		</table>
             	</div>
-		
+
         </div>
-        
+
         <div id="teacher-list-column">
             <div id="teacher-list-container"></div>
             <div id="teacher-list-by-subject-container" style="display: none;"></div>
@@ -273,8 +340,8 @@ h1 {
 	    <table style="width:100%; ">
 		<tr><td style="text-align:right;"><h2 id="modal-title"></h2></td><td style="text-align:left;"><h2 id="modal-title2"></h2></td></tr>
 	    </table>
-            
-            
+
+            <div id="reminder-container"></div>
             <div id="modal-body"></div>
         </div>
     </div>
@@ -283,6 +350,11 @@ h1 {
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- 1. RAW DATA ---
+    const classStartTimes = {
+        1: '08:10', 2: '09:10', 3: '10:10', 4: '11:10',
+        5: '13:10', 6: '14:10', 7: '15:10', 8: '16:10'
+    };
+
     const csvClassSchedule = `"101
 陳信全",星期一,星期二,星期三,星期四,星期五
 1,"英語文
@@ -2212,7 +2284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 6,"手工餅乾
 邱歆喻
 烹飪教室1",,,,
-7,"手工餅館
+7,"手工餅乾
 邱歆喻
 烹飪教室1",,,,
 8,,,,,
@@ -2741,104 +2813,104 @@ t623,星期一,星期二,星期三,星期四,星期五
 `;
 
 // --- ▼▼▼ 請將這整段資料貼在 csvStaffDirectory 的前面 ▼▼▼ ---
-    const csvSubjectData = `國文,張耕翰,專任教師 
-國文,游麗萍,104導師 
-國文,陳映伶,303導師 
-國文,黃耀慧,102導師 
-國文,何新梅,專任教師 
-國文,許雅玲,試務組長 
-國文,劉芝妤,202導師 
-國文,陳映如,總務主任 
-國文,范麗萍,專任教師 
-國文,許亮昇,405導師 
-國文,李佳樺,503導師 
-國文,蔡千慧,406導師 
-國文,梁榕真,協助行政 
-國文,張嘉雯,協助行政 
-英文,方淑貞,103導師 
-英文,黃政榕,302導師 
-英文,高晉強,教務主任 
-英文,江紹瑄,協助行政 
-英文,曾翔蔚,兼任教師 
-英文,許仲璦,兼任教師 
-英文,曾國誌,601導師 
-英文,張淑粉,輔導組長 
-英文,謝佳琪,505導師 
-英文,陳毓珍,採編組長 
-英文,莊世爵,專任教師 
-英文,周正忠,專任教師 
-英文,游娟鐶,兼任教師 
-英文,外籍教師,專任教師 
-數學,蘇威光,201導師 
-數學,蔡佳樺,204導師 
-數學,王莉婷,衛生組長 
-數學,林宏譯,生輔組長 
-數學,陳銘漢,兼任教師 
-數學,吳銘川,501導師 
-數學,林恩宇,502導師 
-數學,張惟智,402導師 
-數學,游靜玟,603導師 
-數學,陳昭宏,401導師 
-數學,連昱衡,資訊組長 
-社會,林嘉慧,訓育組長 
-社會,徐紹青,體育組長 
-社會,方瑋樺,304導師 
-社會,郭仲怡,教學組長 
-社會,黃曉慧,圖書主任 
-社會,謝依萍,602導師 
-社會,陳靜誼,504導師 
-社會,王怡文,404導師 
-社會,歐姿儀,讀服組長 
-社會,林孟儒,專任教師 
-科技,吳建璿,科技主任 
-科技,蔣銘宗,專任教師 
-自然,高建國,專任教師 
-自然,王皓正,學務主任 
-自然,鄭雅茵,生發組長 
-自然,李承修,專任教師 
-自然,黃婉婷,兼任教師 
-自然,簡秀萍,實研組長 
-自然,林文杰,506導師 
-自然,李政學,活動組長 
-自然,蔡維騰,設備組長 
-自然,蘇家逸,兼任教師 
-自然,自然師1,兼任教師 
-自然,自然師2,兼任教師 
-健體,鍾育倫,專任教師 
-健體,陳毅芬,301導師 
-健體,潘薇安,專任教師 
-健體,高慧芳,605導師 
-健體,周桂英,專任教師 
-健體,黃思綺,協助行政 
-健體,傅君然,衝浪社 
-健體,吳裕隆,籃球社 
-綜合,黃美玲,協助行政 
-綜合,李清波,註冊組長 
-綜合,龔偉遜,專任教師 
-綜合,劉庭瑜,專任教師 
-商管,李金龍,輔導主任 
-商管,李孟達,604導師 
-商管,洪華欣,專任教師 
-商管,汪麗鈴,專任教師 
-商管,龔進庭,專任教師 
-商管,余玥林,403導師 
-商管,陳淑芬,606導師 
-商管,邱歆喻,協助行政 
-商管,鐘坤賜,兼任教師 
-商管,潘翌展,兼任教師 
-藝術,陳信全,101導師 
-藝術,洪婉郡,203導師 
-藝術,譚雅婷,協助行政 
-藝術,張詩佳,專任教師 
-藝術,懷劭法努司,兼任教師 
-藝術,黃瑋瑤,兼任教師 
-藝術,蔡芸琤,兼任教師 
-其他,簡富源,國防教官 
-其他,吳嬋娜,社團 
+    const csvSubjectData = `國文,張耕翰,專任教師
+國文,游麗萍,104導師
+國文,陳映伶,303導師
+國文,黃耀慧,102導師
+國文,何新梅,專任教師
+國文,許雅玲,試務組長
+國文,劉芝妤,202導師
+國文,陳映如,總務主任
+國文,范麗萍,專任教師
+國文,許亮昇,405導師
+國文,李佳樺,503導師
+國文,蔡千慧,406導師
+國文,梁榕真,協助行政
+國文,張嘉雯,協助行政
+英文,方淑貞,103導師
+英文,黃政榕,302導師
+英文,高晉強,教務主任
+英文,江紹瑄,協助行政
+英文,曾翔蔚,兼任教師
+英文,許仲璦,兼任教師
+英文,曾國誌,601導師
+英文,張淑粉,輔導組長
+英文,謝佳琪,505導師
+英文,陳毓珍,採編組長
+英文,莊世爵,專任教師
+英文,周正忠,專任教師
+英文,游娟鐶,兼任教師
+英文,外籍教師,專任教師
+數學,蘇威光,201導師
+數學,蔡佳樺,204導師
+數學,王莉婷,衛生組長
+數學,林宏譯,生輔組長
+數學,陳銘漢,兼任教師
+數學,吳銘川,501導師
+數學,林恩宇,502導師
+數學,張惟智,402導師
+數學,游靜玟,603導師
+數學,陳昭宏,401導師
+數學,連昱衡,資訊組長
+社會,林嘉慧,訓育組長
+社會,徐紹青,體育組長
+社會,方瑋樺,304導師
+社會,郭仲怡,教學組長
+社會,黃曉慧,圖書主任
+社會,謝依萍,602導師
+社會,陳靜誼,504導師
+社會,王怡文,404導師
+社會,歐姿儀,讀服組長
+社會,林孟儒,專任教師
+科技,吳建璿,科技主任
+科技,蔣銘宗,專任教師
+自然,高建國,專任教師
+自然,王皓正,學務主任
+自然,鄭雅茵,生發組長
+自然,李承修,專任教師
+自然,黃婉婷,兼任教師
+自然,簡秀萍,實研組長
+自然,林文杰,506導師
+自然,李政學,活動組長
+自然,蔡維騰,設備組長
+自然,蘇家逸,兼任教師
+自然,自然師1,兼任教師
+自然,自然師2,兼任教師
+健體,鍾育倫,專任教師
+健體,陳毅芬,301導師
+健體,潘薇安,專任教師
+健體,高慧芳,605導師
+健體,周桂英,專任教師
+健體,黃思綺,協助行政
+健體,傅君然,衝浪社
+健體,吳裕隆,籃球社
+綜合,黃美玲,協助行政
+綜合,李清波,註冊組長
+綜合,龔偉遜,專任教師
+綜合,劉庭瑜,專任教師
+商管,李金龍,輔導主任
+商管,李孟達,604導師
+商管,洪華欣,專任教師
+商管,汪麗鈴,專任教師
+商管,龔進庭,專任教師
+商管,余玥林,403導師
+商管,陳淑芬,606導師
+商管,邱歆喻,協助行政
+商管,鐘坤賜,兼任教師
+商管,潘翌展,兼任教師
+藝術,陳信全,101導師
+藝術,洪婉郡,203導師
+藝術,譚雅婷,協助行政
+藝術,張詩佳,專任教師
+藝術,懷劭法努司,兼任教師
+藝術,黃瑋瑤,兼任教師
+藝術,蔡芸琤,兼任教師
+其他,簡富源,國防教官
+其他,吳嬋娜,社團
 `;
     // --- ▲▲▲ 新增資料結束 ▲▲▲ ---
-    
-    
+
+
     // --- 修正後的資料區 ---
     const csvStaffDirectory = `處室,單位,職稱,姓名,分機
 校長室,,校長,陳玉桂,100
@@ -2989,7 +3061,7 @@ t623,星期一,星期二,星期三,星期四,星期五
     const teacherExtensions = new Map();
     let teacherViewSelectedCell = null;
     let classViewSelectedCell = null;
-    let currentView = 'department'; // <-- 請新增這一行
+    let currentView = 'department';
 
     function parseFullCsv(csvString) {
         const rows = [];
@@ -3031,7 +3103,7 @@ t623,星期一,星期二,星期三,星期四,星期五
     function parseClassSchedules(allTeachers) {
         const rows = parseFullCsv(csvClassSchedule);
         const classHeaderRegex = /^\d{3}/;
-        
+
         const tempClassData = new Map();
         let currentClassInfo = null;
         let scheduleRowsForCurrentClass = [];
@@ -3078,7 +3150,7 @@ t623,星期一,星期二,星期三,星期四,星期五
 
     function deriveTeacherSchedules() {
         const allTeachers = new Set();
-        parseClassSchedules(allTeachers); 
+        parseClassSchedules(allTeachers);
 
         for (const [className, grid] of classSchedules.entries()) {
             for (let period = 0; period < grid.length; period++) {
@@ -3121,7 +3193,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         populateTeacherList(allTeachersWithSchedule);
         populateClassList();
     }
-    
+
     function parseStaffDirectoryForDisplay() {
         const lines = parseFullCsv(csvStaffDirectory);
         const structureMap = new Map();
@@ -3146,7 +3218,7 @@ t623,星期一,星期二,星期三,星期四,星期五
                 if (ext) { teacherExtensions.set(name, ext); }
             }
         }
-        
+
         const structure = Array.from(structureMap.values());
         return { structure, staffSet };
     }
@@ -3156,7 +3228,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         container.innerHTML = '';
 
         const { structure, staffSet } = parseStaffDirectoryForDisplay();
-        
+
         const filteredStructure = [];
         structure.forEach(dept => {
             const scheduledMembers = dept.members.filter(member => allTeachersWithSchedule.has(member.name));
@@ -3164,7 +3236,7 @@ t623,星期一,星期二,星期三,星期四,星期五
                 filteredStructure.push({ office: dept.office, members: scheduledMembers });
             }
         });
-        
+
         let otherSection = filteredStructure.find(s => s.office === '其他');
         if (otherSection) {
             otherSection.office = "專任教師";
@@ -3172,7 +3244,7 @@ t623,星期一,星期二,星期三,星期四,星期五
 
         const unlistedTeachers = [...allTeachersWithSchedule]
             .filter(name => isValidTeacher(name) && !staffSet.has(name));
-        
+
         let teacherSection = filteredStructure.find(s => s.office === '專任教師');
         if (!teacherSection && unlistedTeachers.length > 0) {
             teacherSection = { office: '專任教師', members: [] };
@@ -3185,18 +3257,18 @@ t623,星期一,星期二,星期三,星期四,星期五
                 }
             });
         }
-        
+
         const departmentOrder = ["校長室", "教務處", "學務處", "總務處", "輔導處", "圖書館", "國一導", "國二導", "國三導", "國專", "高中辦公室", "高中", "健康中心", "體育辦公室", "人事室", "會計室", "高輔中心", "科技中心"];
         let orderedStructure = departmentOrder
             .map(officeName => filteredStructure.find(s => s.office === officeName))
             .filter(Boolean);
-        
+
         const specialSection = filteredStructure.find(s => s.office === '專任教師');
-        
+
         const totalEntries = orderedStructure.reduce((sum, dept) => sum + dept.members.length, 0);
         const numColumns = 5;
         const targetHeight = totalEntries / numColumns;
-        
+
         const columnGroups = [];
         let currentGroup = [];
         let currentHeight = 0;
@@ -3220,18 +3292,18 @@ t623,星期一,星期二,星期三,星期四,星期五
         columnGroups.forEach(group => {
             const columnDiv = document.createElement('div');
             columnDiv.className = 'teacher-display-column';
-            
+
             group.forEach(dept => {
                 const table = document.createElement('table');
                 table.className = 'department-table';
-                
+
                 const thead = table.createTHead();
                 const headerRow = thead.insertRow();
                 const th = document.createElement('th');
                 th.colSpan = 3;
                 th.textContent = dept.office;
                 headerRow.appendChild(th);
-                
+
                 const tbody = table.createTBody();
                 dept.members.forEach(member => {
                     const row = tbody.insertRow();
@@ -3251,14 +3323,14 @@ t623,星期一,星期二,星期三,星期四,星期五
     function populateClassList() {
         const selector = document.getElementById('class-selector');
         const classesForList = [...classSchedules.keys()].filter(isValidClassForListing).sort();
-        
+
         classesForList.forEach(name => {
             const option = document.createElement('option');
             option.value = name;
             option.textContent = name;
             selector.appendChild(option);
         });
-        
+
         selector.onchange = function() {
             if (this.value) {
                 showSchedule('class', this.value);
@@ -3267,7 +3339,7 @@ t623,星期一,星期二,星期三,星期四,星期五
     }
 
 
-function populateTeacherListBySubject(allTeachersWithSchedule) {
+    function populateTeacherListBySubject(allTeachersWithSchedule) {
         const container = document.getElementById('teacher-list-by-subject-container');
         container.innerHTML = '';
 
@@ -3278,10 +3350,9 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
             if (row.length >= 2) {
                 const subject = row[0].trim();
                 const name = row[1].trim();
-                
-                // 【關鍵修正】採用更穩定、更明確的方式讀取教師身分
-                let role = '專任'; // 先設定預設值
-                if (row[2] && row[2].trim() !== '') { // 檢查第三欄是否存在且不是空字串
+
+                let role = '專任';
+                if (row[2] && row[2].trim() !== '') {
                     role = row[2].trim();
                 }
 
@@ -3292,20 +3363,20 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
                 subjectMap.get(subject).push({ name, role });
             }
         });
-        
+
         const subjectsInOrder = [...subjectMap.keys()];
 
         subjectsInOrder.forEach(subject => {
             const table = document.createElement('table');
             table.className = 'department-table';
-            
+
             const thead = table.createTHead();
             const headerRow = thead.insertRow();
             const th = document.createElement('th');
             th.colSpan = 3;
             th.textContent = subject;
             headerRow.appendChild(th);
-            
+
             const tbody = table.createTBody();
             const members = subjectMap.get(subject);
             members.forEach(member => {
@@ -3328,11 +3399,55 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
         const titleEl = document.getElementById('modal-title');
         const titleEl2 = document.getElementById('modal-title2');
         const bodyEl = document.getElementById('modal-body');
+        const reminderContainer = document.getElementById('reminder-container');
         let schedule, title;
+
+        reminderContainer.innerHTML = ''; // 清空提醒區
 
         if (type === 'teacher' && teacherSchedules.has(name)) {
             schedule = teacherSchedules.get(name);
             title = `${name} 課表`;
+            // 只有教師課表才顯示提醒功能
+            reminderContainer.innerHTML = `
+                <button id="toggle-reminder-btn">[+] 展開提醒設定</button>
+                <div id="reminder-controls" style="display:none;">
+                    <div class="control-group">
+                        <label for="reminder-custom-text">提醒文字：</label>
+                        <input type="text" id="reminder-custom-text" value="上課囉，記得點名！">
+                    </div>
+                    <div class="control-group">
+                        <input type="checkbox" id="reminder-sound-toggle" checked>
+                        <label for="reminder-sound-toggle">啟用聲音</label>
+                        <label>在</label>
+                        <select id="reminder-when">
+                            <option value="before" selected>上課前</option>
+                            <option value="after">上課後</option>
+                        </select>
+                        <input type="number" id="reminder-offset-minutes" value="5" min="0">
+                        <label>分鐘提醒</label>
+                    </div>
+                    <div class="control-group">
+                        <button id="start-reminders-btn">啟動網頁通知</button>
+                        <button id="download-ics-btn">將今日課程加入行事曆</button>
+                    </div>
+                </div>
+            `;
+            
+            // 設定展開/收合功能
+            const toggleBtn = document.getElementById('toggle-reminder-btn');
+            const controlsDiv = document.getElementById('reminder-controls');
+            toggleBtn.onclick = () => {
+                if (controlsDiv.style.display === 'none') {
+                    controlsDiv.style.display = 'flex';
+                    toggleBtn.textContent = '[-] 收合提醒設定';
+                } else {
+                    controlsDiv.style.display = 'none';
+                    toggleBtn.textContent = '[+] 展開提醒設定';
+                }
+            };
+
+            setupWebReminders(name, schedule);
+            setupIcsExport(name, schedule);
         } else if (type === 'class' && classSchedules.has(name)) {
             schedule = classSchedules.get(name);
             title = `${name} 班課表`;
@@ -3344,7 +3459,7 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
         }
 
         titleEl.textContent = title;
-        titleEl2.textContent = '* 點課表可看調課選擇 *';
+        titleEl2.textContent = (type === 'teacher') ? '* 點擊有課的格子可看調課建議 *' : '* 點擊有課的格子可看換課建議 *';
         const days = ['星期一', '星期二', '星期三', '星期四', '星期五'];
         let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
         days.forEach(day => tableHtml += `<th>${day}</th>`);
@@ -3377,12 +3492,150 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
         }
         modal.style.display = 'block';
     }
-    
+
+    // --- 新增：網頁通知功能 ---
+    function setupWebReminders(teacherName, teacherSchedule) {
+        const btn = document.getElementById('start-reminders-btn');
+        const offsetInput = document.getElementById('reminder-offset-minutes');
+        const whenSelect = document.getElementById('reminder-when');
+        const soundToggle = document.getElementById('reminder-sound-toggle');
+        const customTextInput = document.getElementById('reminder-custom-text');
+
+        btn.onclick = () => {
+            if (!("Notification" in window)) {
+                alert("抱歉，您的瀏覽器不支援桌面通知。");
+                return;
+            }
+
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    const offsetMinutes = parseInt(offsetInput.value, 10);
+                    const when = whenSelect.value;
+                    const silent = !soundToggle.checked;
+                    const customText = customTextInput.value;
+                    const now = new Date();
+                    const dayIndex = now.getDay() - 1; // 0=週一, 1=週二...
+                    let remindersSet = 0;
+
+                    if (dayIndex < 0 || dayIndex > 4) {
+                        alert("今天非上課日，沒有課程需要提醒。");
+                        return;
+                    }
+
+                    for (let period = 0; period < 8; period++) {
+                        const classInfo = teacherSchedule[period][dayIndex];
+                        const periodNumber = period + 1;
+                        if (classInfo && classStartTimes[periodNumber]) {
+                            const [hours, minutes] = classStartTimes[periodNumber].split(':');
+                            const notificationTime = new Date();
+                            notificationTime.setHours(hours, minutes, 0, 0);
+
+                            if (when === 'before') {
+                                notificationTime.setMinutes(notificationTime.getMinutes() - offsetMinutes);
+                            } else { // 'after'
+                                notificationTime.setMinutes(notificationTime.getMinutes() + offsetMinutes);
+                            }
+
+                            const delay = notificationTime.getTime() - now.getTime();
+
+                            if (delay > 0) {
+                                remindersSet++;
+                                setTimeout(() => {
+                                    const title = `${teacherName}老師，提醒事項`;
+                                    const body = `${customText}\n第${periodNumber}節 ${classInfo.subject} (${classInfo.class}) 地點：${classInfo.location || '無'}`;
+                                    new Notification(title, {
+                                        body: body,
+                                        silent: silent,
+                                        icon: "https://js-maxon.github.io/Class-Schedule-System/darr.gif"
+                                    });
+                                }, delay);
+                            }
+                        }
+                    }
+
+                    if (remindersSet > 0) {
+                        alert(`設定成功！接下來的 ${remindersSet} 節課將會發送通知。\n請保持瀏覽器開啟以接收提醒。`);
+                    } else {
+                        alert("今天已無更多課程需要提醒。");
+                    }
+
+                } else {
+                    alert("您已拒絕通知權限，無法設定提醒。");
+                }
+            });
+        };
+    }
+
+    // --- 新增：加入行事曆(.ics)功能 ---
+    function setupIcsExport(teacherName, teacherSchedule) {
+        const btn = document.getElementById('download-ics-btn');
+
+        btn.onclick = () => {
+            const now = new Date();
+            const dayIndex = now.getDay() - 1;
+            if (dayIndex < 0 || dayIndex > 4) {
+                alert("今天非上課日，無法產生行事曆檔案。");
+                return;
+            }
+
+            let icsContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//My Class Schedule//EN',
+            ];
+
+            let eventsFound = 0;
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+
+            const formatTime = (date) => {
+                const pad = (n) => n < 10 ? '0' + n : n;
+                return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+            }
+            
+            for (let period = 0; period < 8; period++) {
+                const classInfo = teacherSchedule[period][dayIndex];
+                const periodNumber = period + 1;
+                if (classInfo && classStartTimes[periodNumber]) {
+                    eventsFound++;
+                    const [startHours, startMinutes] = classStartTimes[periodNumber].split(':');
+
+                    const startTime = new Date(year, now.getMonth(), day, startHours, startMinutes);
+                    const endTime = new Date(startTime.getTime() + 50 * 60000); // 假設每堂課50分鐘
+
+                    icsContent.push('BEGIN:VEVENT');
+                    icsContent.push(`UID:${startTime.getTime()}@myapp.com`);
+                    icsContent.push(`DTSTAMP:${formatTime(new Date())}`);
+                    icsContent.push(`DTSTART;TZID=Asia/Taipei:${formatTime(startTime)}`);
+                    icsContent.push(`DTEND;TZID=Asia/Taipei:${formatTime(endTime)}`);
+                    icsContent.push(`SUMMARY:[${classInfo.subject}] ${classInfo.class}`);
+                    icsContent.push(`LOCATION:${classInfo.location || ''}`);
+                    icsContent.push('END:VEVENT');
+                }
+            }
+            icsContent.push('END:VCALENDAR');
+
+            if(eventsFound > 0) {
+                const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `${teacherName}-${month}${day}-課表.ics`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                alert("今天沒有課程可加入行事曆。");
+            }
+        };
+    }
+
+
     function handleTeacherCellClick(event, teacherName) {
         const cell = event.target.closest('td');
         if (!cell || cell.classList.contains('period-header')) return;
         const table = cell.closest('table');
-        
+
         const clearAllSelections = () => {
             table.querySelectorAll('.highlight, .swap-suggestion').forEach(el => {
                 el.classList.remove('highlight', 'swap-suggestion');
@@ -3398,7 +3651,7 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
             clearAllSelections();
             return;
         }
-        
+
         clearAllSelections();
 
         const originalPeriod = parseInt(cell.dataset.period);
@@ -3447,12 +3700,12 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
             if(classViewSelectedCell) showSchedule('class', className);
             return;
         }
-        
+
         if (cell === classViewSelectedCell || cell.classList.contains('empty-cell') || cell.classList.contains('cleared-cell')) {
             showSchedule('class', className);
             return;
         }
-        
+
         showSchedule('class', className);
         const freshTable = document.getElementById('modal-body').querySelector('table');
         const freshCell = freshTable.querySelector(`td[data-period="${cell.dataset.period}"][data-day="${cell.dataset.day}"]`);
@@ -3489,7 +3742,7 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
                 if (lessonAtTargetSlot && lessonAtTargetSlot.teacher) {
                     const teacherAtTargetSlot = lessonAtTargetSlot.teacher;
                     if (teacherAtTargetSlot === teacherOfClickedLesson) continue;
-                    
+
                     const teacherBSchedule = teacherSchedules.get(teacherAtTargetSlot);
 
                     if (teacherBSchedule && (!teacherASchedule[p] || !teacherASchedule[p][d]) && (!teacherBSchedule[originalPeriod] || !teacherBSchedule[originalPeriod][originalDay])) {
@@ -3509,13 +3762,10 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
     }
 
     // --- MAIN EXECUTION ---
-// --- MAIN EXECUTION ---
     try {
         const allTeachersWithSchedule = deriveTeacherSchedules();
-        // 確保兩個列表的內容都先產生
         populateTeacherList(allTeachersWithSchedule);
         populateTeacherListBySubject(allTeachersWithSchedule);
-        // 產生完列表內容後，再處理其他UI元件
         populateClassList();
 
         const lastScheduleJSON = localStorage.getItem('lastSchedule');
@@ -3524,16 +3774,13 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
             lastSchedule = JSON.parse(lastScheduleJSON);
         }
 
-        // 依據儲存的紀錄，設定正確的初始分頁
         if (lastSchedule.view === 'subject') {
-            // 如果紀錄是 'subject'，則切換到 subject 視圖
             currentView = 'subject';
             document.getElementById('teacher-list-container').style.display = 'none';
             document.getElementById('teacher-list-by-subject-container').style.display = 'block';
             document.getElementById('view-by-dept-btn').classList.remove('active');
             document.getElementById('view-by-subject-btn').classList.add('active');
         } else {
-            // 否則，一律預設為 department 視圖
             currentView = 'department';
             document.getElementById('teacher-list-container').style.display = 'block';
             document.getElementById('teacher-list-by-subject-container').style.display = 'none';
@@ -3541,7 +3788,6 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
             document.getElementById('view-by-subject-btn').classList.remove('active');
         }
 
-        // 如果紀錄中有課表資訊，則在短暫延遲後開啟課表
         if (lastSchedule && lastSchedule.type && lastSchedule.name) {
             setTimeout(() => showSchedule(lastSchedule.type, lastSchedule.name), 100);
         }
@@ -3551,9 +3797,6 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
         alert("程式執行時發生嚴重錯誤，請檢查主控台(F12)獲取更多資訊。");
     }
 
-
-
-// Event Listeners
     const modal = document.getElementById('schedule-modal');
     const closeButton = document.querySelector('.close-button');
     const deptBtn = document.getElementById('view-by-dept-btn');
@@ -3566,29 +3809,23 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
         if (event.target == modal) modal.style.display = 'none';
     };
 
-    // 建立一個統一的、更安全的視圖更新函式
     const updateView = (newView) => {
-        // 1. 先從 localStorage 讀取現有的完整紀錄
         const lastScheduleJSON = localStorage.getItem('lastSchedule');
         let lastSchedule = {};
         if (lastScheduleJSON) {
             lastSchedule = JSON.parse(lastScheduleJSON);
         }
-        
-        // 2. 只更新 view 屬性，保留其他如 type 和 name 的資訊
+
         lastSchedule.view = newView;
-        
-        // 3. 將更新後的完整紀錄存回去
         localStorage.setItem('lastSchedule', JSON.stringify(lastSchedule));
 
-        // 4. 更新頁面顯示
         if (newView === 'department') {
             currentView = 'department';
             subjectContainer.style.display = 'none';
             subjectBtn.classList.remove('active');
             deptContainer.style.display = 'block';
             deptBtn.classList.add('active');
-        } else { // newView === 'subject'
+        } else {
             currentView = 'subject';
             deptContainer.style.display = 'none';
             deptBtn.classList.remove('active');
@@ -3597,12 +3834,9 @@ function populateTeacherListBySubject(allTeachersWithSchedule) {
         }
     };
 
-    // 讓按鈕點擊時呼叫這個新的安全函式
     deptBtn.onclick = () => updateView('department');
     subjectBtn.onclick = () => updateView('subject');
-
 });
-
 </script>
 
 </body>
