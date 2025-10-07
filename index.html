@@ -3014,7 +3014,7 @@ t623,星期一,星期二,星期三,星期四,星期五
 ,,主機房,,611
 高中辦公室,,401導師,陳昭宏,944
 高中辦公室,,402導師,張惟智,946
-高中辦公室,,403導師,余玥林,944
+高中辦G室,,403導師,余玥林,944
 高中辦公室,,404導師,王怡文,941
 高中辦公室,,405導師,許亮昇,942
 高中辦公室,,406導師,蔡千慧,945
@@ -3406,7 +3406,7 @@ t623,星期一,星期二,星期三,星期四,星期五
             title = `${name} 課表`;
             // 只有教師課表才顯示提醒功能
             reminderContainer.innerHTML = `
-                <button id="toggle-reminder-btn">[+] 展開提醒設定</button>
+                <button id="toggle-reminder-btn">[+] 展開課表提醒設定</button>
                 <div id="reminder-controls" style="display:none;">
                     <div class="control-group">
                         <label for="reminder-custom-text">提醒文字：</label>
@@ -3437,12 +3437,44 @@ t623,星期一,星期二,星期三,星期四,星期五
             toggleBtn.onclick = () => {
                 if (controlsDiv.style.display === 'none') {
                     controlsDiv.style.display = 'flex';
-                    toggleBtn.textContent = '[-] 收合提醒設定';
+                    toggleBtn.textContent = '[-] 收合課表提醒設定';
                 } else {
                     controlsDiv.style.display = 'none';
-                    toggleBtn.textContent = '[+] 展開提醒設定';
+                    toggleBtn.textContent = '[+] 展開課表提醒設定';
                 }
             };
+
+            // --- [新功能] 儲存與讀取提醒設定 ---
+            const saveReminderSettings = () => {
+                const settings = {
+                    text: document.getElementById('reminder-custom-text').value,
+                    sound: document.getElementById('reminder-sound-toggle').checked,
+                    when: document.getElementById('reminder-when').value,
+                    minutes: document.getElementById('reminder-offset-minutes').value
+                };
+                localStorage.setItem('teacherReminderSettings', JSON.stringify(settings));
+            };
+
+            const loadReminderSettings = () => {
+                const savedSettingsJSON = localStorage.getItem('teacherReminderSettings');
+                if (savedSettingsJSON) {
+                    const settings = JSON.parse(savedSettingsJSON);
+                    document.getElementById('reminder-custom-text').value = settings.text;
+                    document.getElementById('reminder-sound-toggle').checked = settings.sound;
+                    document.getElementById('reminder-when').value = settings.when;
+                    document.getElementById('reminder-offset-minutes').value = settings.minutes;
+                }
+            };
+
+            loadReminderSettings(); // 載入已儲存的設定
+
+            // 為每個控制項加上事件監聽，一有變動就儲存
+            document.getElementById('reminder-custom-text').addEventListener('input', saveReminderSettings);
+            document.getElementById('reminder-sound-toggle').addEventListener('change', saveReminderSettings);
+            document.getElementById('reminder-when').addEventListener('change', saveReminderSettings);
+            document.getElementById('reminder-offset-minutes').addEventListener('input', saveReminderSettings);
+            // --- [新功能結束] ---
+
 
             setupWebReminders(name, schedule);
             
