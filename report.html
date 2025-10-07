@@ -12,7 +12,7 @@
         header a button, header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em;}
         main { padding: 20px; max-width: 1200px; margin: auto; }
         .section { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        h2 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        h2 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .tab-nav { border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
         .tab-nav button { background: none; border: none; padding: 10px 20px; font-size: 1.1em; cursor: pointer; border-bottom: 3px solid transparent; }
         .tab-nav button.active { border-bottom-color: var(--primary-color); font-weight: bold; color: var(--primary-color); }
@@ -40,6 +40,37 @@
         .sortable-header:hover, .drill-down-row:hover { background-color: #eef3f8; }
         .sortable-header .sort-arrow { margin-left: 5px; color: #999; display: inline-block; width: 1em; }
         .back-btn { background-color: #6c757d; color: white; font-size: 0.9em; padding: 5px 10px; border: none; border-radius: 4px; }
+
+        /* 【【【新增手機版響應式樣式】】】 */
+        @media (max-width: 768px) {
+            main { padding: 10px; }
+            .section { padding: 15px; }
+            header h1 { font-size: 1.2em; }
+            h2 {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .sub-nav {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
+            .sub-nav label {
+                margin-left: 0;
+            }
+            .filter-grid {
+                 grid-template-columns: 1fr;
+            }
+            .action-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .export-csv-btn {
+                margin-left: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -152,7 +183,6 @@
             } catch (error) { console.error("查詢失敗:", error); container.innerHTML = `<p style="color:red;">查詢失敗！請檢查 Console。</p>`; }
         });
 
-        // 【【【已修正此函式】】】
         function sortAndRenderPerfLog(fromDrillDown = false) { 
                 const sortedResults = [...currentPerfResults];
                 sortedResults.sort( (a, b) => {
@@ -166,7 +196,6 @@
                         valA = a.points || 0;
                         valB = b.points || 0;
                     } else if (key === 'class') {
-                        // This combines class and seat for a single numeric sort value
                         valA = parseInt(a.entityId || a.studentId || '0', 10);
                         valB = parseInt(b.entityId || b.studentId || '0', 10);
                     }
@@ -177,7 +206,6 @@
                     return 0;
                 }
                 );
-                // 修正點：將 fromDrillDown 參數傳遞下去
                 renderPerfLog(sortedResults, fromDrillDown);
         }
 
@@ -195,7 +223,12 @@
             title.innerHTML = titleText;
 
             if (fromDrillDown) {
-                document.getElementById('back-to-perf-stats').addEventListener('click', sortAndRenderPerfStats);
+                document.getElementById('back-to-perf-stats').addEventListener('click', () => {
+                    const statsRadio = document.querySelector('input[name="perf-report-type"][value="stats"]');
+                    statsRadio.checked = true;
+                    statsRadio.dispatchEvent(new Event('change'));
+                    sortAndRenderPerfStats();
+                });
             }
 
             if (results.length === 0) { container.innerHTML = '<p>找不到紀錄。</p>'; return; } 
@@ -278,7 +311,12 @@
             }
             title.innerHTML = titleText;
             if (fromDrillDown) {
-                 document.getElementById('back-to-cross-class').addEventListener('click', runGradesCrossClassQuery);
+                 document.getElementById('back-to-cross-class').addEventListener('click', () => {
+                    const crossClassRadio = document.querySelector('input[name="grades-report-type"][value="cross-class"]');
+                    crossClassRadio.checked = true;
+                    crossClassRadio.dispatchEvent(new Event('change'));
+                    runGradesCrossClassQuery();
+                 });
             }
 
             if (stats.length === 0) { container.innerHTML = '<p>找不到成績項目。</p>'; return; } 
