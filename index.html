@@ -59,12 +59,18 @@ h1 {
     font-size: 1.2em;
     color: var(--text-color);
 }
-#class-selector {
+#class-selector, #location-selector, #search-teacher {
     font-size: 1em;
     padding: 5px 8px;
     border-radius: 4px;
     border: 1px solid #ccc;
     font-family: inherit;
+}
+#search-teacher {
+    width: 150px;
+}
+.hidden {
+    display: none !important;
 }
 
 /* --- 按鈕樣式 --- */
@@ -122,13 +128,31 @@ h1 {
 /* --- Modal 彈出視窗相關樣式 --- */
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
 .modal-content {
-    margin: 2% auto; padding: 5px 15px; border: 1px solid var(--border-color); width: 100%; max-width: 1000px;
+    margin: 2% auto; padding: 5px 15px; border: 1px solid var(--border-color); width: 100%;
     border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg);
 }
+.main-modal .modal-content { max-width: 1000px; }
+.sub-modal .modal-content { max-width: 450px; text-align: center; padding: 20px; }
+
 .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
 .close-button:hover, .close-button:focus { color: #333; }
 #modal-title { text-align: center; margin-top: 0; margin-bottom: 0px; color: var(--header-bg); }
 #modal-title2 { text-align: center; margin-top: 0; font-size: 20px; margin-bottom: 0px; color: blue; }
+
+/* --- 單節課匯出 Modal --- */
+#single-event-modal h3 { margin-top: 0; color: var(--header-bg); }
+#single-event-modal p { margin: 8px 0; }
+#single-event-modal input[type="date"] {
+    font-family: inherit; font-size: 1.1em; padding: 5px;
+    border: 1px solid #ccc; border-radius: 4px; margin: 10px 0;
+}
+#single-event-modal button {
+    padding: 8px 16px; font-size: 1em; font-family: inherit;
+    border: 1px solid var(--header-bg); background-color: var(--header-bg); color: white;
+    cursor: pointer; border-radius: 4px;
+}
+#single-event-modal button:hover { background-color: #004a6e; }
+
 
 /* --- 提醒功能 UI 樣式 --- */
 #toggle-reminder-btn {
@@ -290,6 +314,7 @@ h1 {
     .department-table {
         font-size: 14px;
     }
+    #search-teacher { width: 120px; }
 
     /* 修正手機版課表排版 */
     .schedule-table td {
@@ -315,12 +340,17 @@ h1 {
             <div class="selector-container">
 		<table width="800px">
 		<tr>
-		<td style="text-align: left; color:blue; ">
-		<td style="text-align: left; font-size: 14px; padding-left: 15px; white-space: nowrap;">教師名單：
+        <td style="text-align: left; font-size: 14px; padding-left: 0px; white-space: nowrap;">
+            <input type="search" id="search-teacher" placeholder="搜尋教師...">
+        </td>
+		<td style="text-align: center; font-size: 14px; padding-left: 15px; white-space: nowrap;">教師名單：
 			<button id="view-by-dept-btn" class="view-toggle-btn active">依單位</button>
 			<button id="view-by-subject-btn" class="view-toggle-btn">依領域</button>
 		</td>
-		<td style="text-align: right; font-size: 14px;"><select id="class-selector"><option value="" disabled selected>班級課表</option></select></td>
+		<td style="text-align: right; font-size: 14px; white-space: nowrap;">
+            <select id="location-selector"><option value="" disabled selected>場地課表</option></select>
+            <select id="class-selector"><option value="" disabled selected>班級課表</option></select>
+        </td>
 
 		</tr>
 		</table>
@@ -334,12 +364,23 @@ h1 {
         </div>
     </div>
 
-    <div id="schedule-modal" class="modal">
+    <div id="schedule-modal" class="modal main-modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
 			<h2 id="modal-title"></h2><h2 id="modal-title2"></h2>
             <div id="reminder-container"></div>
             <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <div id="single-event-modal" class="modal sub-modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>新增單節課提醒</h3>
+            <p id="single-event-info"></p>
+            <label for="single-event-date">請選擇日期：</label>
+            <input type="date" id="single-event-date">
+            <p><button id="download-single-ics-btn">下載 .ics 檔案</button></p>
         </div>
     </div>
 
@@ -3014,7 +3055,7 @@ t623,星期一,星期二,星期三,星期四,星期五
 ,,主機房,,611
 高中辦公室,,401導師,陳昭宏,944
 高中辦公室,,402導師,張惟智,946
-高中辦G室,,403導師,余玥林,944
+高中辦公室,,403導師,余玥林,944
 高中辦公室,,404導師,王怡文,941
 高中辦公室,,405導師,許亮昇,942
 高中辦公室,,406導師,蔡千慧,945
@@ -3055,10 +3096,13 @@ t623,星期一,星期二,星期三,星期四,星期五
     // --- 4. DATA PROCESSING & DISPLAY ---
     const classSchedules = new Map();
     const teacherSchedules = new Map();
+    const locationSchedules = new Map(); // [新功能] 場地課表
     const teacherExtensions = new Map();
     let teacherViewSelectedCell = null;
     let classViewSelectedCell = null;
     let currentView = 'department';
+    let longPressTimer;
+    const LONG_PRESS_DURATION = 500; // 500ms for long press
 
     function parseFullCsv(csvString) {
         const rows = [];
@@ -3145,7 +3189,7 @@ t623,星期一,星期二,星期三,星期四,星期五
     }
 
 
-    function deriveTeacherSchedules() {
+    function deriveSchedules() {
         const allTeachers = new Set();
         parseClassSchedules(allTeachers);
 
@@ -3153,19 +3197,35 @@ t623,星期一,星期二,星期三,星期四,星期五
             for (let period = 0; period < grid.length; period++) {
                 for (let day = 0; day < grid[period].length; day++) {
                     const cellData = grid[period][day];
-                    if (cellData && cellData.teacher && isValidTeacher(cellData.teacher)) {
-                        const teacher = cellData.teacher;
-                        allTeachers.add(teacher);
-                        if (!teacherSchedules.has(teacher)) {
-                            teacherSchedules.set(teacher, Array.from({ length: 8 }, () => Array(5).fill(null)));
+                    if (cellData) {
+                        // Populate Teacher Schedules
+                        if (cellData.teacher && isValidTeacher(cellData.teacher)) {
+                            const teacher = cellData.teacher;
+                            allTeachers.add(teacher);
+                            if (!teacherSchedules.has(teacher)) {
+                                teacherSchedules.set(teacher, Array.from({ length: 8 }, () => Array(5).fill(null)));
+                            }
+                            const teacherGrid = teacherSchedules.get(teacher);
+                            if (teacherGrid[period][day] === null) {
+                               teacherGrid[period][day] = {
+                                    subject: cellData.subject,
+                                    class: className,
+                                    location: cellData.location
+                               };
+                            }
                         }
-                        const teacherGrid = teacherSchedules.get(teacher);
-                        if (teacherGrid[period][day] === null) {
-                           teacherGrid[period][day] = {
+                        // [新功能] Populate Location Schedules
+                        if (cellData.location) {
+                            const location = cellData.location;
+                            if (!locationSchedules.has(location)) {
+                                locationSchedules.set(location, Array.from({ length: 8 }, () => Array(5).fill(null)));
+                            }
+                            const locationGrid = locationSchedules.get(location);
+                            locationGrid[period][day] = {
                                 subject: cellData.subject,
                                 class: className,
-                                location: cellData.location
-                           };
+                                teacher: cellData.teacher
+                            };
                         }
                     }
                 }
@@ -3184,11 +3244,6 @@ t623,星期一,星期二,星期三,星期四,星期五
         if (!/^\d{3}$/.test(name)) return false;
         const lastTwoDigits = parseInt(name.substring(1), 10);
         return lastTwoDigits <= 9;
-    }
-
-    function populateSelectors(allTeachersWithSchedule) {
-        populateTeacherList(allTeachersWithSchedule);
-        populateClassList();
     }
 
     function parseStaffDirectoryForDisplay() {
@@ -3330,7 +3385,28 @@ t623,星期一,星期二,星期三,星期四,星期五
 
         selector.onchange = function() {
             if (this.value) {
+                document.getElementById('location-selector').value = ""; // Reset location selector
                 showSchedule('class', this.value);
+            }
+        };
+    }
+
+    // [新功能] 填充場地列表
+    function populateLocationList() {
+        const selector = document.getElementById('location-selector');
+        const locations = [...locationSchedules.keys()].sort();
+
+        locations.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            selector.appendChild(option);
+        });
+        
+        selector.onchange = function() {
+            if(this.value) {
+                document.getElementById('class-selector').value = ""; // Reset class selector
+                showSchedule('location', this.value);
             }
         };
     }
@@ -3404,6 +3480,7 @@ t623,星期一,星期二,星期三,星期四,星期五
         if (type === 'teacher' && teacherSchedules.has(name)) {
             schedule = teacherSchedules.get(name);
             title = `${name} 課表`;
+            titleEl2.textContent = '* 點擊格子可調課，右鍵/長按可新增單節提醒 *';
             // 只有教師課表才顯示提醒功能
             reminderContainer.innerHTML = `
                 <button id="toggle-reminder-btn">[+] 展開課表提醒設定</button>
@@ -3444,7 +3521,6 @@ t623,星期一,星期二,星期三,星期四,星期五
                 }
             };
 
-            // --- [新功能] 儲存與讀取提醒設定 ---
             const saveReminderSettings = () => {
                 const settings = {
                     text: document.getElementById('reminder-custom-text').value,
@@ -3466,19 +3542,15 @@ t623,星期一,星期二,星期三,星期四,星期五
                 }
             };
 
-            loadReminderSettings(); // 載入已儲存的設定
+            loadReminderSettings();
 
-            // 為每個控制項加上事件監聽，一有變動就儲存
             document.getElementById('reminder-custom-text').addEventListener('input', saveReminderSettings);
             document.getElementById('reminder-sound-toggle').addEventListener('change', saveReminderSettings);
             document.getElementById('reminder-when').addEventListener('change', saveReminderSettings);
             document.getElementById('reminder-offset-minutes').addEventListener('input', saveReminderSettings);
-            // --- [新功能結束] ---
-
 
             setupWebReminders(name, schedule);
             
-            // 將事件監聽器綁定到新的 ICS 按鈕
             document.getElementById('download-ics-today-btn').onclick = () => {
                 generateAndDownloadIcs(name, schedule, 'today');
             };
@@ -3489,6 +3561,11 @@ t623,星期一,星期二,星期三,星期四,星期五
         } else if (type === 'class' && classSchedules.has(name)) {
             schedule = classSchedules.get(name);
             title = `${name} 班課表`;
+            titleEl2.textContent = '* 點擊有課的格子可看換課建議 *';
+        } else if (type === 'location' && locationSchedules.has(name)) { // [新功能] 場地課表邏輯
+            schedule = locationSchedules.get(name);
+            title = `${name} 場地課表`;
+            titleEl2.textContent = '';
         } else {
             bodyEl.innerHTML = `<p style="text-align:center;">找不到 ${name} 的課表資料。</p>`;
             titleEl.textContent = "資料錯誤";
@@ -3497,7 +3574,6 @@ t623,星期一,星期二,星期三,星期四,星期五
         }
 
         titleEl.textContent = title;
-        titleEl2.textContent = (type === 'teacher') ? '* 點擊有課的格子可看調課建議 *' : '* 點擊有課的格子可看換課建議 *';
         const days = ['星期一', '星期二', '星期三', '星期四', '星期五'];
         let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
         days.forEach(day => tableHtml += `<th>${day}</th>`);
@@ -3508,9 +3584,14 @@ t623,星期一,星期二,星期三,星期四,星期五
             for (let day = 0; day < 5; day++) {
                 const cellData = schedule[period] ? schedule[period][day] : null;
                 if (cellData) {
-                    let content = (type === 'teacher')
-                        ? `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.class || ''}</span><span class="details">${cellData.location || ''}</span>`
-                        : `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.teacher || ''}</span><span class="details">${cellData.location || ''}</span>`;
+                    let content = '';
+                    if (type === 'teacher') {
+                         content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.class || ''}</span><span class="details">${cellData.location || ''}</span>`;
+                    } else if (type === 'class') {
+                         content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.teacher || ''}</span><span class="details">${cellData.location || ''}</span>`;
+                    } else if (type === 'location') { // [新功能] 場地課表內容
+                         content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.class || ''}</span><span class="details">${cellData.teacher || ''}</span>`;
+                    }
                     tableHtml += `<td data-period="${period}" data-day="${day}">${content}</td>`;
                 } else {
                     tableHtml += `<td class="empty-cell" data-period="${period}" data-day="${day}"></td>`;
@@ -3521,12 +3602,19 @@ t623,星期一,星期二,星期三,星期四,星期五
         tableHtml += '</tbody></table>';
         bodyEl.innerHTML = tableHtml;
 
+        const scheduleTable = bodyEl.querySelector('.schedule-table');
         if (type === 'teacher') {
             teacherViewSelectedCell = null;
-            bodyEl.querySelector('.schedule-table').addEventListener('click', (e) => handleTeacherCellClick(e, name));
+            scheduleTable.addEventListener('click', (e) => handleTeacherCellClick(e, name));
+            // [新功能] 為教師課表增加右鍵和長按事件
+            scheduleTable.addEventListener('contextmenu', (e) => handleTeacherCellInteraction(e, name));
+            scheduleTable.addEventListener('touchstart', (e) => handleTeacherCellInteraction(e, name), { passive: true });
+            scheduleTable.addEventListener('touchend', (e) => clearTimeout(longPressTimer));
+            scheduleTable.addEventListener('touchmove', (e) => clearTimeout(longPressTimer));
+
         } else if (type === 'class') {
             classViewSelectedCell = null;
-            bodyEl.querySelector('.schedule-table').addEventListener('click', (e) => handleClassCellClick(e, name));
+            scheduleTable.addEventListener('click', (e) => handleClassCellClick(e, name));
         }
         modal.style.display = 'block';
     }
@@ -3534,7 +3622,7 @@ t623,星期一,星期二,星期三,星期四,星期五
     // --- 網頁通知功能 ---
     function setupWebReminders(teacherName, teacherSchedule) {
         const btn = document.getElementById('start-reminders-btn');
-        if (!btn) return; // 如果找不到按鈕就直接返回
+        if (!btn) return;
         
         const offsetInput = document.getElementById('reminder-offset-minutes');
         const whenSelect = document.getElementById('reminder-when');
@@ -3554,7 +3642,7 @@ t623,星期一,星期二,星期三,星期四,星期五
                     const silent = !soundToggle.checked;
                     const customText = customTextInput.value;
                     const now = new Date();
-                    const dayIndex = now.getDay() - 1; // 0=週一, 1=週二...
+                    const dayIndex = now.getDay() - 1;
                     let remindersSet = 0;
 
                     if (dayIndex < 0 || dayIndex > 4) {
@@ -3572,7 +3660,7 @@ t623,星期一,星期二,星期三,星期四,星期五
 
                             if (when === 'before') {
                                 notificationTime.setMinutes(notificationTime.getMinutes() - offsetMinutes);
-                            } else { // 'after'
+                            } else {
                                 notificationTime.setMinutes(notificationTime.getMinutes() + offsetMinutes);
                             }
 
@@ -3630,8 +3718,8 @@ t623,星期一,星期二,星期三,星期四,星期五
                 loopDays.push({ dayIndex: dayIndex, date: now });
             }
         } else { // scope === 'week'
-            const currentDay = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-            const offset = currentDay === 0 ? -6 : 1 - currentDay; // Offset to get to Monday
+            const currentDay = now.getDay();
+            const offset = currentDay === 0 ? -6 : 1 - currentDay;
             const monday = new Date(now);
             monday.setDate(now.getDate() + offset);
 
@@ -3642,7 +3730,7 @@ t623,星期一,星期二,星期三,星期四,星期五
             }
         }
         
-        if (loopDays.length === 0) {
+        if (loopDays.length === 0 && scope === 'today') {
             alert("今天非上課日，無法產生行事曆檔案。");
             return;
         }
@@ -3822,12 +3910,112 @@ t623,星期一,星期二,星期三,星期四,星期五
         }
     }
 
+    // --- [新功能] 單節課提醒的相關處理 ---
+    function handleTeacherCellInteraction(event, teacherName) {
+        const cell = event.target.closest('td');
+        if (!cell || cell.classList.contains('empty-cell') || cell.classList.contains('period-header')) {
+            return;
+        }
+
+        const period = parseInt(cell.dataset.period);
+        const day = parseInt(cell.dataset.day);
+        const lesson = teacherSchedules.get(teacherName)[period][day];
+        if (!lesson) return;
+        
+        const showModal = () => {
+             // 傳遞 lesson 物件和星期幾的索引 (0-4)
+            showSingleEventModal(lesson, day, teacherName);
+        };
+
+        if (event.type === 'contextmenu') {
+            event.preventDefault();
+            showModal();
+        } else if (event.type === 'touchstart') {
+            clearTimeout(longPressTimer); // 清除之前的計時器
+            longPressTimer = setTimeout(showModal, LONG_PRESS_DURATION);
+        }
+    }
+
+    function showSingleEventModal(lesson, dayIndex, teacherName) {
+        const modal = document.getElementById('single-event-modal');
+        const infoEl = document.getElementById('single-event-info');
+        const dateInput = document.getElementById('single-event-date');
+        const downloadBtn = document.getElementById('download-single-ics-btn');
+
+        const days = ['星期一', '星期二', '星期三', '星期四', '星期五'];
+        infoEl.innerHTML = `${days[dayIndex]} 第 ${lesson.period + 1} 節<br><strong>${lesson.subject} (${lesson.class})</strong>`;
+
+        const today = new Date();
+        const currentDayOfWeek = today.getDay(); // 0=Sun, 1=Mon...
+        const targetDayOfWeek = dayIndex + 1;
+        const dayDifference = targetDayOfWeek - (currentDayOfWeek === 0 ? 7 : currentDayOfWeek);
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + dayDifference);
+        
+        // 格式化為 YYYY-MM-DD
+        dateInput.value = targetDate.toISOString().split('T')[0];
+
+        downloadBtn.onclick = () => {
+            generateSingleIcs(lesson, dateInput.value, teacherName);
+            modal.style.display = 'none';
+        };
+
+        modal.style.display = 'block';
+    }
+
+    function generateSingleIcs(lesson, dateString, teacherName) {
+        const eventDate = new Date(dateString);
+        const [startHours, startMinutes] = classStartTimes[lesson.period + 1].split(':');
+        
+        const startTime = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), startHours, startMinutes);
+        const endTime = new Date(startTime.getTime() + 50 * 60000);
+
+        // 從主面板讀取提醒設定
+        const reminderText = document.getElementById('reminder-custom-text').value;
+        const offsetMinutes = parseInt(document.getElementById('reminder-offset-minutes').value, 10);
+        const when = document.getElementById('reminder-when').value;
+        const triggerMinutes = (when === 'before') ? -offsetMinutes : offsetMinutes;
+
+        const formatTime = (date) => {
+            const pad = (n) => n < 10 ? '0' + n : n;
+            return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+        };
+
+        let icsContent = [
+            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//My Class Schedule//EN',
+            'BEGIN:VEVENT',
+            `UID:${startTime.getTime()}-single@myapp.com`,
+            `DTSTAMP:${formatTime(new Date())}`,
+            `DTSTART;TZID=Asia/Taipei:${formatTime(startTime)}`,
+            `DTEND;TZID=Asia/Taipei:${formatTime(endTime)}`,
+            `SUMMARY:[${lesson.subject}] ${lesson.class}`,
+            `LOCATION:${lesson.location || ''}`,
+            'BEGIN:VALARM',
+            'ACTION:DISPLAY',
+            `DESCRIPTION:${reminderText}`,
+            `TRIGGER:-PT${offsetMinutes}M`, // 這是 ICS 標準格式，但這裡為了通用性，使用上面自訂的文字
+            'END:VALARM',
+            'END:VEVENT',
+            'END:VCALENDAR'
+        ];
+
+        const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${teacherName}-${dateString}-${lesson.subject}.ics`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+
     // --- MAIN EXECUTION ---
     try {
-        const allTeachersWithSchedule = deriveTeacherSchedules();
+        const allTeachersWithSchedule = deriveSchedules();
         populateTeacherList(allTeachersWithSchedule);
         populateTeacherListBySubject(allTeachersWithSchedule);
         populateClassList();
+        populateLocationList(); // [新功能]
 
         const lastScheduleJSON = localStorage.getItem('lastSchedule');
         let lastSchedule = {};
@@ -3858,17 +4046,52 @@ t623,星期一,星期二,星期三,星期四,星期五
         alert("程式執行時發生嚴重錯誤，請檢查主控台(F12)獲取更多資訊。");
     }
 
-    const modal = document.getElementById('schedule-modal');
-    const closeButton = document.querySelector('.close-button');
+    const mainModal = document.getElementById('schedule-modal');
+    const singleEventModal = document.getElementById('single-event-modal');
+
+    document.querySelectorAll('.close-button').forEach(btn => {
+        btn.onclick = () => {
+            mainModal.style.display = 'none';
+            singleEventModal.style.display = 'none';
+        }
+    });
+
+    window.onclick = (event) => {
+        if (event.target == mainModal || event.target == singleEventModal) {
+            mainModal.style.display = 'none';
+            singleEventModal.style.display = 'none';
+        }
+    };
+    
+    // [新功能] 教師搜尋功能
+    document.getElementById('search-teacher').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const activeContainer = document.querySelector('#teacher-list-container, #teacher-list-by-subject-container');
+        
+        const tables = activeContainer.querySelectorAll('.department-table');
+        tables.forEach(table => {
+            let tableHasVisibleRow = false;
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const nameCell = row.querySelector('.name-cell');
+                if (nameCell) {
+                    const name = nameCell.textContent.toLowerCase();
+                    if (name.includes(searchTerm)) {
+                        row.classList.remove('hidden');
+                        tableHasVisibleRow = true;
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                }
+            });
+            table.classList.toggle('hidden', !tableHasVisibleRow);
+        });
+    });
+
     const deptBtn = document.getElementById('view-by-dept-btn');
     const subjectBtn = document.getElementById('view-by-subject-btn');
     const deptContainer = document.getElementById('teacher-list-container');
     const subjectContainer = document.getElementById('teacher-list-by-subject-container');
-
-    closeButton.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target == modal) modal.style.display = 'none';
-    };
 
     const updateView = (newView) => {
         const lastScheduleJSON = localStorage.getItem('lastSchedule');
@@ -3879,6 +4102,8 @@ t623,星期一,星期二,星期三,星期四,星期五
 
         lastSchedule.view = newView;
         localStorage.setItem('lastSchedule', JSON.stringify(lastSchedule));
+        document.getElementById('search-teacher').value = ''; // 清空搜尋框
+        document.querySelectorAll('.department-table, .department-table tr').forEach(el => el.classList.remove('hidden')); // 移除所有隱藏
 
         if (newView === 'department') {
             currentView = 'department';
