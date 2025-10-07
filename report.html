@@ -60,7 +60,7 @@
                 margin-left: 0;
             }
             .filter-grid {
-                 grid-template-columns: 1fr;
+                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             }
             .action-buttons {
                 display: flex;
@@ -74,7 +74,7 @@
     </style>
 </head>
 <body>
-    <header><h1>數據報告 - 班級綜合成績紀錄系統</h1><div><a href="./teacher.html"><button>返回主頁</button></a><button id="logout-btn">登出</button></div></header>
+    <header><h1>數據報告</h1><div><a href="./teacher.html"><button>返回主頁</button></a><button id="logout-btn">登出</button></div></header>
     <main>
         <div class="tab-nav">
             <button class="tab-btn active" data-tab="performance">表現紀錄報告</button>
