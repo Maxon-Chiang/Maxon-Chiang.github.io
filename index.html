@@ -1192,7 +1192,7 @@ document.addEventListener('DOMContentLoaded', () => {
 4,"數學
 游靜玟","物理
 林文杰","國語文
-張嘉雯","英語文
+張嘉wen","英語文
 英文師5","資訊科技概論
 洪華欣
 電腦教室2"
@@ -3425,7 +3425,8 @@ t623,星期一,星期二,星期三,星期四,星期五
                     </div>
                     <div class="control-group">
                         <button id="start-reminders-btn">啟動網頁通知</button>
-                        <button id="download-ics-btn">將今日課程加入行事曆</button>
+                        <button id="download-ics-today-btn">加入今日課表至行事曆</button>
+                        <button id="download-ics-week-btn">加入本週課表至行事曆</button>
                     </div>
                 </div>
             `;
@@ -3444,7 +3445,15 @@ t623,星期一,星期二,星期三,星期四,星期五
             };
 
             setupWebReminders(name, schedule);
-            setupIcsExport(name, schedule);
+            
+            // 將事件監聽器綁定到新的 ICS 按鈕
+            document.getElementById('download-ics-today-btn').onclick = () => {
+                generateAndDownloadIcs(name, schedule, 'today');
+            };
+            document.getElementById('download-ics-week-btn').onclick = () => {
+                generateAndDownloadIcs(name, schedule, 'week');
+            };
+
         } else if (type === 'class' && classSchedules.has(name)) {
             schedule = classSchedules.get(name);
             title = `${name} 班課表`;
@@ -3490,9 +3499,11 @@ t623,星期一,星期二,星期三,星期四,星期五
         modal.style.display = 'block';
     }
 
-    // --- 新增：網頁通知功能 ---
+    // --- 網頁通知功能 ---
     function setupWebReminders(teacherName, teacherSchedule) {
         const btn = document.getElementById('start-reminders-btn');
+        if (!btn) return; // 如果找不到按鈕就直接返回
+        
         const offsetInput = document.getElementById('reminder-offset-minutes');
         const whenSelect = document.getElementById('reminder-when');
         const soundToggle = document.getElementById('reminder-sound-toggle');
@@ -3563,34 +3574,53 @@ t623,星期一,星期二,星期三,星期四,星期五
         };
     }
 
-    // --- 新增：加入行事曆(.ics)功能 ---
-    function setupIcsExport(teacherName, teacherSchedule) {
-        const btn = document.getElementById('download-ics-btn');
-
-        btn.onclick = () => {
-            const now = new Date();
+    // --- 產生並下載 .ics 檔案的核心功能 ---
+    function generateAndDownloadIcs(teacherName, teacherSchedule, scope) {
+        const now = new Date();
+        
+        let icsContent = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//My Class Schedule//EN',
+        ];
+        
+        const formatTime = (date) => {
+            const pad = (n) => n < 10 ? '0' + n : n;
+            return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+        }
+        
+        let eventsFound = 0;
+        let loopDays = [];
+        
+        if (scope === 'today') {
             const dayIndex = now.getDay() - 1;
-            if (dayIndex < 0 || dayIndex > 4) {
-                alert("今天非上課日，無法產生行事曆檔案。");
-                return;
+            if (dayIndex >= 0 && dayIndex <= 4) {
+                loopDays.push({ dayIndex: dayIndex, date: now });
             }
+        } else { // scope === 'week'
+            const currentDay = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+            const offset = currentDay === 0 ? -6 : 1 - currentDay; // Offset to get to Monday
+            const monday = new Date(now);
+            monday.setDate(now.getDate() + offset);
 
-            let icsContent = [
-                'BEGIN:VCALENDAR',
-                'VERSION:2.0',
-                'PRODID:-//My Class Schedule//EN',
-            ];
-
-            let eventsFound = 0;
-            const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-
-            const formatTime = (date) => {
-                const pad = (n) => n < 10 ? '0' + n : n;
-                return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+            for (let i = 0; i < 5; i++) {
+                const day = new Date(monday);
+                day.setDate(monday.getDate() + i);
+                loopDays.push({ dayIndex: i, date: day });
             }
-            
+        }
+        
+        if (loopDays.length === 0) {
+            alert("今天非上課日，無法產生行事曆檔案。");
+            return;
+        }
+
+        loopDays.forEach(dayInfo => {
+            const { dayIndex, date } = dayInfo;
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const day = date.getDate();
+
             for (let period = 0; period < 8; period++) {
                 const classInfo = teacherSchedule[period][dayIndex];
                 const periodNumber = period + 1;
@@ -3598,7 +3628,7 @@ t623,星期一,星期二,星期三,星期四,星期五
                     eventsFound++;
                     const [startHours, startMinutes] = classStartTimes[periodNumber].split(':');
 
-                    const startTime = new Date(year, now.getMonth(), day, startHours, startMinutes);
+                    const startTime = new Date(year, month, day, startHours, startMinutes);
                     const endTime = new Date(startTime.getTime() + 50 * 60000); // 假設每堂課50分鐘
 
                     icsContent.push('BEGIN:VEVENT');
@@ -3611,20 +3641,22 @@ t623,星期一,星期二,星期三,星期四,星期五
                     icsContent.push('END:VEVENT');
                 }
             }
-            icsContent.push('END:VCALENDAR');
+        });
 
-            if(eventsFound > 0) {
-                const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `${teacherName}-${month}${day}-課表.ics`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } else {
-                alert("今天沒有課程可加入行事曆。");
-            }
-        };
+        icsContent.push('END:VCALENDAR');
+
+        if(eventsFound > 0) {
+            const fileNameScope = (scope === 'week') ? '本週' : `${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
+            const blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `${teacherName}-${fileNameScope}-課表.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            alert(scope === 'week' ? "本週沒有課程可加入行事曆。" : "今天沒有課程可加入行事曆。");
+        }
     }
 
 
