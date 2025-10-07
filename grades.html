@@ -15,7 +15,31 @@
         h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
         input, button, textarea { padding: 10px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid var(--border-color); box-sizing: border-box; }
         button { background-color: var(--primary-color); color: white; cursor: pointer; border: none; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: flex-end; }
+        
+        /* 【【【版面優化 2】】】: 調整新增區塊的佈局 */
+        .create-form-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .create-form-container .input-group {
+            flex-grow: 1;
+        }
+        .create-form-container label {
+            font-weight: bold;
+            font-size: 0.9em;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .create-form-container input {
+            width: 100%;
+        }
+        #create-assignment-btn {
+            flex-shrink: 0; /* 確保按鈕寬度不會被壓縮 */
+            height: 42px; /* 與輸入框同高 */
+        }
+        /* 【【【版面優化 2】】】: 結束 */
+
         #create-section.disabled { opacity: 0.5; pointer-events: none; }
         #student-scores-container { margin-top: 20px; }
         .score-entry-header, .score-entry { display: grid; grid-template-columns: 40px 1fr 120px 2fr; gap: 15px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; color: #555;}
@@ -23,27 +47,83 @@
         .score-entry:last-child { border-bottom: none; }
         .score-entry input { width: 100%; text-align: center; }
         #history-list { list-style-type: none; padding: 0; }
-        .history-item { background-color: #f9f9f9; border: 1px solid #eee; padding: 15px; border-radius: 5px; margin-bottom: 10px; }
+        
+        /* 【【【版面優化 2】】】: 調整歷史項目列表的樣式與間距 */
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            margin-bottom: 8px; /* 縮小間距 */
+            background-color: #f9f9f9;
+        }
         .history-item:hover { background-color: #eef; }
-        .history-item-main { display: flex; justify-content: space-between; align-items: center; cursor: pointer; flex-wrap: wrap; gap: 10px;}
-        .history-item-info { display: flex; align-items: center; flex-wrap: wrap; gap: 15px; }
-        .history-item-title { font-weight: bold; font-size: 1.1em; }
-        .history-item-stats { font-size: 0.9em; color: #333; border-left: 1px solid #ccc; padding-left: 15px; }
-        .history-item-comment { font-size: 0.9em; color: #555; margin-top: 10px; background: #fff; padding: 8px; border-left: 3px solid var(--border-color); }
-        .history-item-actions .delete-btn { background-color: #e74c3c; font-size: 0.8em; padding: 5px 8px; }
+        .history-item-content {
+            flex-grow: 1;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            min-width: 0;
+            cursor: pointer;
+        }
+        .history-item-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .history-item-comment {
+            font-size: 0.9em;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .history-item-meta, .history-item-actions {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        .history-item-stats {
+            font-size: 0.9em;
+            color: #333;
+            white-space: nowrap;
+        }
+        .history-item-actions .delete-btn {
+            background-color: #e74c3c;
+            font-size: 0.8em;
+            padding: 5px 8px;
+            margin-left: 15px;
+        }
+        /* 【【【版面優化 2】】】: 結束 */
 
-        /* 【【【核心修改處】】】 */
         @media (max-width: 600px) {
             .score-entry-header, .score-entry {
-                grid-template-columns: 30px 1fr 70px 1.5fr; /* 座號 | 姓名(彈性) | 分數(固定) | 註解(彈性) */
+                grid-template-columns: 30px 1fr 70px 1.5fr;
                 gap: 10px;
-                font-size: 0.9em; /* 稍微縮小整體字體 */
+                font-size: 0.9em;
             }
             .score-entry input {
-                padding: 8px 4px; /* 縮小輸入框內距 */
+                padding: 8px 4px;
             }
             main {
                 padding: 10px;
+            }
+            .history-item-stats {
+                display: none;
+            }
+            /* 手機上讓新增區塊換行 */
+            .create-form-container {
+                flex-wrap: wrap;
+            }
+            .create-form-container .input-group {
+                width: 100%;
+                flex-basis: 100%;
+            }
+            #create-assignment-btn {
+                width: 100%;
             }
         }
     </style>
@@ -56,11 +136,17 @@
     <main id="app-container" style="display: none;">
         <div id="create-section" class="section">
             <h2 id="class-header"></h2>
-            <div class="form-grid">
-                <div><label for="new-assignment-name"><strong>新增成績項目名稱:</strong></label><br><input type="text" id="new-assignment-name" placeholder="例如: 數習 P.10-12"></div>
-                <div><label for="new-general-comment"><strong>整體註解 (選填):</strong></label><br><input type="text" id="new-general-comment" placeholder="例如: 全班普遍不佳"></div>
+            <div class="create-form-container">
+                <div class="input-group">
+                    <label for="new-assignment-name">成績項目名稱：</label>
+                    <input type="text" id="new-assignment-name" placeholder="例如: 數習 P.10-12">
+                </div>
+                <div class="input-group">
+                    <label for="new-general-comment">成績說明 (選填)：</label>
+                    <input type="text" id="new-general-comment" placeholder="例如: 全班普遍不佳">
+                </div>
+                <button id="create-assignment-btn">建立新成績單</button>
             </div>
-             <button id="create-assignment-btn" style="height: 42px; margin-top: 10px;">建立新成績單</button>
         </div>
         <div class="section"><h3>歷史成績項目 (點擊項目內容可編輯)</h3><ul id="history-list"><li id="history-loading">載入中...</li></ul></div>
         <div id="grade-entry-section" class="section" style="display: none;">
@@ -87,7 +173,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script>
-        // --- JavaScript 邏輯與前一版完全相同 ---
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); const auth = firebase.auth();
@@ -101,7 +186,63 @@
         createBtn.addEventListener('click', () => { const newAssignmentName = newAssignmentNameInput.value.trim(); if (!newAssignmentName) { alert('請先輸入成績項目名稱！'); return; } currentAssignmentId = null; displayGradeEntry(newAssignmentName, newGeneralCommentInput.value.trim()); saveBtns.forEach(btn => btn.textContent = '儲存新成績'); });
         cancelBtns.forEach(btn => btn.addEventListener('click', () => { gradeEntrySection.style.display = 'none'; newAssignmentNameInput.value = ''; newGeneralCommentInput.value = ''; currentAssignmentId = null; toggleCreateSection(true); }));
         saveBtns.forEach(btn => { btn.addEventListener('click', async () => { const scoresData = {}; scoresContainer.querySelectorAll('.score-entry').forEach(entry => { const studentId = entry.querySelector('.score-input').dataset.studentId; const score = entry.querySelector('.score-input').value.trim(); const comment = entry.querySelector('.comment-input').value.trim(); if (score !== '' || comment !== '') { scoresData[studentId] = {}; if (score !== '') scoresData[studentId].score = parseFloat(score); if (comment !== '') scoresData[studentId].comment = comment; } }); const assignmentName = editAssignmentNameInput.value.trim(); if (!assignmentName) { alert('成績項目名稱不可為空！'); return; } const assignmentData = { assignmentName, className: classId, date: firebase.firestore.FieldValue.serverTimestamp(), generalComment: editGeneralCommentInput.value.trim(), scores: scoresData }; try { const assignmentsRef = db.collection('gradebooks').doc(currentUser.uid).collection('assignments'); if (currentAssignmentId) { await assignmentsRef.doc(currentAssignmentId).update(assignmentData); alert(`已更新成績項目：${assignmentName}`); } else { await assignmentsRef.add(assignmentData); alert(`已儲存新成績項目：${assignmentName}`); } cancelBtns[0].click(); } catch (error) { console.error("儲存成績失敗:", error); alert("儲存失敗！"); } }); });
-        function loadHistory() { db.collection('gradebooks').doc(currentUser.uid).collection('assignments').where('className', '==', classId).orderBy('date', 'desc').onSnapshot(snapshot => { historyList.innerHTML = ''; if (snapshot.empty) { historyList.innerHTML = '<li>尚無歷史成績項目。</li>'; return; } snapshot.forEach(doc => { const a = doc.data(); const li = document.createElement('li'); li.className = 'history-item'; li.dataset.id = doc.id; let studentCount = 0; let totalScore = 0; if (a.scores) { for(const studentId in a.scores) { if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null) { studentCount++; totalScore += a.scores[studentId].score; } } } const averageScore = studentCount > 0 ? (totalScore / studentCount).toFixed(1) : 'N/A'; const dateString = a.date ? a.date.toDate().toLocaleDateString() : '日期未知'; const generalCommentHTML = a.generalComment ? `<div class="history-item-comment">${a.generalComment}</div>` : ''; li.innerHTML = `<div class="history-item-main"><div class="history-item-info"><span class="history-item-title">${a.assignmentName} (${dateString})</span><span class="history-item-stats">人數: <strong>${studentCount}</strong> | 平均: <strong>${averageScore}</strong></span></div><div class="history-item-actions"><button class="delete-btn" data-id="${doc.id}">刪除</button></div></div>${generalCommentHTML}`; li.querySelector('.history-item-main').addEventListener('click', (e) => { if (e.target.classList.contains('delete-btn')) return; currentAssignmentId = doc.id; displayGradeEntry(a.assignmentName, a.generalComment, a.scores); saveBtns.forEach(btn => btn.textContent = '更新儲存'); }); historyList.appendChild(li); }); }, error => { console.error("讀取歷史成績失敗:", error); historyList.innerHTML = '<li>讀取歷史紀錄時發生錯誤。</li>'; }); }
+        
+        function loadHistory() {
+            db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
+              .where('className', '==', classId)
+              .orderBy('date', 'desc')
+              .onSnapshot(snapshot => {
+                historyList.innerHTML = '';
+                if (snapshot.empty) {
+                    historyList.innerHTML = '<li>尚無歷史成績項目。</li>';
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const a = doc.data();
+                    const li = document.createElement('li');
+                    li.className = 'history-item';
+                    li.dataset.id = doc.id;
+
+                    let studentCount = 0;
+                    let totalScore = 0;
+                    if (a.scores) {
+                        for (const studentId in a.scores) {
+                            if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null) {
+                                studentCount++;
+                                totalScore += a.scores[studentId].score;
+                            }
+                        }
+                    }
+                    const averageScore = studentCount > 0 ? (totalScore / studentCount).toFixed(1) : 'N/A';
+                    const dateString = a.date ? a.date.toDate().toLocaleDateString() : '日期未知';
+                    const commentText = a.generalComment || '';
+                    
+                    li.innerHTML = `
+                        <div class="history-item-content">
+                            <span class="history-item-title">${a.assignmentName} (${dateString})</span>
+                            <span class="history-item-comment">${commentText}</span>
+                        </div>
+                        <div class="history-item-meta">
+                            <span class="history-item-stats">人數: <strong>${studentCount}</strong> | 平均: <strong>${averageScore}</strong></span>
+                        </div>
+                        <div class="history-item-actions">
+                            <button class="delete-btn" data-id="${doc.id}">刪除</button>
+                        </div>
+                    `;
+                    
+                    li.querySelector('.history-item-content').addEventListener('click', (e) => {
+                        currentAssignmentId = doc.id;
+                        displayGradeEntry(a.assignmentName, a.generalComment, a.scores);
+                        saveBtns.forEach(btn => btn.textContent = '更新儲存');
+                    });
+                    historyList.appendChild(li);
+                });
+            }, error => {
+                console.error("讀取歷史成績失敗:", error);
+                historyList.innerHTML = '<li>讀取歷史紀錄時發生錯誤。</li>';
+            });
+        }
+
         historyList.addEventListener('click', async (e) => { if (e.target.closest('.delete-btn')) { e.stopPropagation(); const docId = e.target.closest('.delete-btn').dataset.id; if(confirm('確定要刪除這個成績項目及其所有成績嗎？')) { try { await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete(); alert('刪除成功！'); if(currentAssignmentId === docId) { cancelBtns[0].click(); } } catch(error) { alert("刪除失敗！"); } } } });
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
     </script>
