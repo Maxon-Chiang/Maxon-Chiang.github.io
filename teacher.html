@@ -260,30 +260,28 @@
             align-items: center;
         }
 
-        /* 【【【版面優化 3】】】: 再次調整輸入框比例 */
         #record-points {
-            flex: 0 1 100px; /* 不擴張, 可收縮, 基礎寬度100px */
-            max-width: 110px; /* 設定最大寬度 */
+            flex: 0 1 100px;
+            max-width: 110px;
         }
         #record-text {
-            flex: 1 1 auto; /* 擴張以填滿剩餘空間 */
+            flex: 1 1 auto;
         }
         
-        /* 【【【版面優化 3】】】: 重新調整歷史紀錄列表樣式 */
         .record-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 15px; /* 在項目間增加間距 */
+            gap: 15px;
             padding: 12px 0;
             border-bottom: 1px solid #eee;
         }
         .record-content {
-            flex-grow: 1; /* 佔用主要空間 */
+            flex-grow: 1;
             display: flex;
             align-items: center;
             gap: 15px;
-            min-width: 0; /* 允許文字部分在空間不足時被壓縮 */
+            min-width: 0;
         }
         .record-points {
             font-weight: bold;
@@ -296,12 +294,12 @@
             color: #333;
             white-space: nowrap;
             overflow: hidden;
-            text-overflow: ellipsis; /* 文字過長時顯示... */
+            text-overflow: ellipsis;
         }
         .record-timestamp {
             font-size: 0.8em;
             color: #999;
-            flex-shrink: 0; /* 不壓縮日期顯示 */
+            flex-shrink: 0;
             white-space: nowrap;
         }
         .delete-btn {
@@ -329,15 +327,8 @@
             #class-settings-list {
                 grid-template-columns: repeat(2, 1fr);
             }
-            /* 在手機上讓時間戳換行以提供更好閱讀性 */
-            .record-item {
-                flex-wrap: wrap;
-            }
-            .record-timestamp {
-                order: 3; /* 將時間戳移到最後 */
-                width: 100%;
-                margin-top: 4px;
-            }
+            
+            /* 【【【版面優化 4】】】: 移除強制換行的樣式，讓手機版繼承桌面版的單行排版 */
         }
     </style>
 </head>
@@ -658,7 +649,6 @@
                     recordItem.className = 'record-item';
                     const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
                     
-                    // 【【【版面優化 3】】】: 採用新的 HTML 結構以符合單行 Flexbox 佈局
                     recordItem.innerHTML = `
                         <div class="record-content">
                             <span class="record-points ${pClass}">${record.points||0}分</span>
