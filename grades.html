@@ -16,29 +16,22 @@
         input, button, textarea { padding: 10px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid var(--border-color); box-sizing: border-box; }
         button { background-color: var(--primary-color); color: white; cursor: pointer; border: none; }
         
-        /* 【【【版面優化 2】】】: 調整新增區塊的佈局 */
-        .create-form-container {
-            display: flex;
-            gap: 15px;
-            align-items: flex-end;
+        /* 【【【版面優化 3】】】: 調整表單佈局 */
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            align-items: flex-end; 
         }
-        .create-form-container .input-group {
-            flex-grow: 1;
-        }
-        .create-form-container label {
+        .form-grid label {
             font-weight: bold;
-            font-size: 0.9em;
             display: block;
             margin-bottom: 5px;
         }
-        .create-form-container input {
+        .form-grid input {
             width: 100%;
         }
-        #create-assignment-btn {
-            flex-shrink: 0; /* 確保按鈕寬度不會被壓縮 */
-            height: 42px; /* 與輸入框同高 */
-        }
-        /* 【【【版面優化 2】】】: 結束 */
+        /* 【【【版面優化 3】】】: 結束 */
 
         #create-section.disabled { opacity: 0.5; pointer-events: none; }
         #student-scores-container { margin-top: 20px; }
@@ -48,7 +41,6 @@
         .score-entry input { width: 100%; text-align: center; }
         #history-list { list-style-type: none; padding: 0; }
         
-        /* 【【【版面優化 2】】】: 調整歷史項目列表的樣式與間距 */
         .history-item {
             display: flex;
             align-items: center;
@@ -56,7 +48,7 @@
             padding: 15px;
             border: 1px solid #eee;
             border-radius: 5px;
-            margin-bottom: 8px; /* 縮小間距 */
+            margin-bottom: 6px; /* 【【【版面優化 3】】】: 再次縮小間距 */
             background-color: #f9f9f9;
         }
         .history-item:hover { background-color: #eef; }
@@ -97,7 +89,6 @@
             padding: 5px 8px;
             margin-left: 15px;
         }
-        /* 【【【版面優化 2】】】: 結束 */
 
         @media (max-width: 600px) {
             .score-entry-header, .score-entry {
@@ -114,17 +105,6 @@
             .history-item-stats {
                 display: none;
             }
-            /* 手機上讓新增區塊換行 */
-            .create-form-container {
-                flex-wrap: wrap;
-            }
-            .create-form-container .input-group {
-                width: 100%;
-                flex-basis: 100%;
-            }
-            #create-assignment-btn {
-                width: 100%;
-            }
         }
     </style>
 </head>
@@ -136,24 +116,30 @@
     <main id="app-container" style="display: none;">
         <div id="create-section" class="section">
             <h2 id="class-header"></h2>
-            <div class="create-form-container">
-                <div class="input-group">
+            <div class="form-grid">
+                <div>
                     <label for="new-assignment-name">成績項目名稱：</label>
                     <input type="text" id="new-assignment-name" placeholder="例如: 數習 P.10-12">
                 </div>
-                <div class="input-group">
+                <div>
                     <label for="new-general-comment">成績說明 (選填)：</label>
                     <input type="text" id="new-general-comment" placeholder="例如: 全班普遍不佳">
                 </div>
-                <button id="create-assignment-btn">建立新成績單</button>
             </div>
+            <button id="create-assignment-btn" style="margin-top: 10px;">建立新成績單</button>
         </div>
         <div class="section"><h3>歷史成績項目 (點擊項目內容可編輯)</h3><ul id="history-list"><li id="history-loading">載入中...</li></ul></div>
         <div id="grade-entry-section" class="section" style="display: none;">
             <h3 id="current-assignment-title"></h3>
             <div class="form-grid">
-                <div><label for="edit-assignment-name"><strong>成績項目名稱:</strong></label><br><input type="text" id="edit-assignment-name"></div>
-                <div><label for="edit-general-comment"><strong>整體註解 (選填):</strong></label><br><input type="text" id="edit-general-comment"></div>
+                <div>
+                    <label for="edit-assignment-name">成績項目名稱：</label>
+                    <input type="text" id="edit-assignment-name">
+                </div>
+                <div>
+                    <label for="edit-general-comment">成績說明 (選填)：</label>
+                    <input type="text" id="edit-general-comment">
+                </div>
             </div>
             <div style="margin-top: 20px;">
                 <button class="save-grades-btn" style="background-color: #28a745; padding: 12px 25px;">儲存成績</button>
@@ -175,11 +161,23 @@
     <script>
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
+// 【【【新增此函式】】】
+        function convertClassName(oldClassName) {
+            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
+            const firstDigit = oldClassName.charAt(0);
+            const restOfName = oldClassName.substring(1);
+            switch (firstDigit) {
+                case '7': return '1' + restOfName;
+                case '8': return '2' + restOfName;
+                case '9': return '3' + restOfName;
+                default: return oldClassName;
+            }
+        }
         const db = firebase.firestore(); const auth = firebase.auth();
         let currentUser = null, classId = null, studentsInClass = [], currentAssignmentId = null;
         const appContainer = document.getElementById('app-container'), createSection = document.getElementById('create-section'), createBtn = document.getElementById('create-assignment-btn'), saveBtns = document.querySelectorAll('.save-grades-btn'), cancelBtns = document.querySelectorAll('.cancel-edit-btn'), gradeEntrySection = document.getElementById('grade-entry-section'), scoresContainer = document.getElementById('student-scores-container'), newAssignmentNameInput = document.getElementById('new-assignment-name'), newGeneralCommentInput = document.getElementById('new-general-comment'), editAssignmentNameInput = document.getElementById('edit-assignment-name'), editGeneralCommentInput = document.getElementById('edit-general-comment'), currentAssignmentTitle = document.getElementById('current-assignment-title'), historyList = document.getElementById('history-list');
         auth.onAuthStateChanged(async (user) => { if (user) { currentUser = user; const userDoc = await db.collection('users').doc(user.uid).get(); if (userDoc.exists && userDoc.data().role === 'teacher') { await initializeGradesPage(userDoc.data()); } else { alert('權限不足或帳號設定錯誤。'); window.location.href = 'login.html'; } } else { window.location.href = 'login.html'; } });
-        async function initializeGradesPage(userData) { const urlParams = new URLSearchParams(window.location.search); classId = urlParams.get('class'); if (!classId) { appContainer.innerHTML = '<h2>錯誤：未指定班級。</h2>'; appContainer.style.display = 'block'; return; } document.getElementById('class-header').textContent = `${classId} 班 成績管理`; if (!userData.rosterId) { alert('帳號未綁定名冊'); return; } const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get(); if (!rosterDoc.exists) { alert('找不到名冊'); return; } studentsInClass = rosterDoc.data().students.filter(s => s.id.startsWith(classId)).sort((a,b) => a.id.localeCompare(b.id)); setupKeyboardNavigation(); loadHistory(); appContainer.style.display = 'block'; }
+        async function initializeGradesPage(userData) { const urlParams = new URLSearchParams(window.location.search); classId = urlParams.get('class'); if (!classId) { appContainer.innerHTML = '<h2>錯誤：未指定班級。</h2>'; appContainer.style.display = 'block'; return; } document.getElementById('class-header').textContent = `${convertClassName(classId)} 班 成績管理`; if (!userData.rosterId) { alert('帳號未綁定名冊'); return; } const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get(); if (!rosterDoc.exists) { alert('找不到名冊'); return; } studentsInClass = rosterDoc.data().students.filter(s => s.id.startsWith(classId)).sort((a,b) => a.id.localeCompare(b.id)); setupKeyboardNavigation(); loadHistory(); appContainer.style.display = 'block'; }
         function setupKeyboardNavigation() { scoresContainer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('score-input')) { e.preventDefault(); const allScoreInputs = Array.from(scoresContainer.querySelectorAll('.score-input')); const currentIndex = allScoreInputs.indexOf(e.target); if (currentIndex > -1 && currentIndex < allScoreInputs.length - 1) { const nextInput = allScoreInputs[currentIndex + 1]; nextInput.focus(); nextInput.select(); } else { saveBtns[1].focus(); } } }); }
         function toggleCreateSection(enabled) { createSection.style.opacity = enabled ? '1' : '0.5'; createSection.style.pointerEvents = enabled ? 'auto' : 'none'; }
         function displayGradeEntry(assignmentName, generalComment = '', scoresData = {}) { currentAssignmentTitle.textContent = currentAssignmentId ? `編輯成績：${assignmentName}` : `登錄新成績：${assignmentName}`; editAssignmentNameInput.value = assignmentName; editGeneralCommentInput.value = generalComment; scoresContainer.innerHTML = '<div class="score-entry-header"><span>座號</span><span>姓名</span><span>分數</span><span>個別註解 (選填)</span></div>'; studentsInClass.forEach(student => { const scoreInfo = scoresData[student.id] || {}; const entryDiv = document.createElement('div'); entryDiv.className = 'score-entry'; entryDiv.innerHTML = `<span>${student.id.substring(3)}</span><label>${student.name}</label><input type="number" class="score-input" data-student-id="${student.id}" value="${scoreInfo.score ?? ''}" placeholder="分數"><input type="text" class="comment-input" data-student-id="${student.id}" value="${scoreInfo.comment || ''}" placeholder="個別註解">`; scoresContainer.appendChild(entryDiv); }); gradeEntrySection.style.display = 'block'; toggleCreateSection(false); }
