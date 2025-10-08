@@ -5,9 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理後台 - 班級綜合成績紀錄系統</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 1200px; margin: auto; }
+        body { font-family: sans-serif; padding: 20px; max-width: 1200px; margin: auto; background-color: #f8f9fa; }
         h1, h2, h3 { color: #333; }
-        .section { background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        
+/* 【【【新增】】】: 頁籤導覽列樣式 (優化版) */
+        .tab-nav {
+            display: flex;
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        .tab-nav button {
+            padding: 12px 20px;
+            font-size: 1.1em;
+            border: none;
+            background-color: transparent;
+            cursor: pointer;
+            margin-bottom: -2px; /* 讓邊框可以蓋過底線 */
+            border-bottom: 2px solid transparent;
+            /* 【【【修改】】】: 設定未選中頁籤的預設文字顏色，增加可見度 */
+            color: #6c757d;
+            /* 【【【新增】】】: 增加平滑過渡效果，提升質感 */
+            transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+        }
+        .tab-nav button.active {
+            font-weight: bold;
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+        }
+
+        /* 【【【修改】】】: 強化滑鼠懸停效果，且排除已經是 active 的按鈕 */
+        .tab-nav button:hover:not(.active) {
+            /* 懸停時文字顏色變更深，更易辨識 */
+            color: #343a40;
+            /* 同時顯示一條淺灰色底線作為提示 */
+            border-bottom-color: #adb5bd;
+        }
+        
+        /* 【【【修改】】】: 讓 section 預設隱藏 */
+        .section {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border: 1px solid #dee2e6;
+            display: none; /* 預設隱藏 */
+        }
+
+        /* 【【【新增】】】: 讓啟用的 section 顯示 */
+        .section.active {
+            display: block;
+        }
+
         input, select, button, textarea { padding: 8px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; }
         button { background-color: #4a90e2; color: white; cursor: pointer; border: none; }
         textarea { width: 95%; height: 150px; }
@@ -52,22 +100,40 @@
         .reset-btn { background-color: #f5a623; }
         .info-box { background-color: #fffbe6; padding: 10px; border: 1px solid #ffe58f; border-radius: 4px; font-size: 0.9em; }
         .filter-container { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        #backup-section button { background-color: #6c757d; }
+        #restore-btn { background-color: #dc3545; }
     </style>
 </head>
 <body>
     <h1>班級綜合成績紀錄系統 - 管理後台</h1>
     <div id="admin-panel" style="display: none;"><p>歡迎，<span id="admin-email"></span>！ <button id="logout-btn">登出</button></p></div>
-    <div id="roster-section" class="section" style="display: none;">
+
+    <div class="tab-nav">
+        <button class="tab-btn" data-tab="backup-section">資料備份與還原</button>
+        <button class="tab-btn" data-tab="roster-section">學生名冊管理</button>
+        <button class="tab-btn" data-tab="teacher-section">教師帳號管理</button>
+    </div>
+
+    <div id="backup-section" class="section" data-tab="backup-section">
+        <h2>資料備份與還原</h2>
+        <p class="info-box"><strong>注意：</strong>備份功能會將目前資料庫內的所有主要資料匯出成一個 JSON 檔案。還原功能將會用您選擇的檔案**完全覆蓋**現有資料，此操作無法復原，請謹慎使用。</p>
+        <button id="backup-btn">備份所有資料</button>
+        <button id="restore-btn">從備份檔還原</button>
+        <input type="file" id="restore-file-input" accept=".json" style="display: none;">
+    </div>
+
+    <div id="roster-section" class="section" data-tab="roster-section">
         <h2>學生名冊管理</h2>
         <form id="roster-upload-form">
             <div><label for="roster-id">名冊ID (例如: NTSH_114_1):</label><br><input type="text" id="roster-id" required></div>
             <div><label for="roster-name">名冊顯示名稱:</label><br><input type="text" id="roster-name" style="width: 300px;" required></div>
-            <div><label for="roster-data">學生資料 (格式: 班級座號,姓名, 每行一位):</label><br><textarea id="roster-data" placeholder="70101,陳宥炘&#10;70102,廖翊暟&#10;..."></textarea></div>
+            <div><label for="roster-data">學生資料 (格式: 班級座號,姓名, 每行一位):</label><br><textarea id="roster-data" placeholder="10101,陳宥炘&#10;10102,廖翊暟&#10;..."></textarea></div>
             <button type="submit">上傳/更新名冊</button>
         </form>
         <hr><h3>現有名冊列表</h3><div id="roster-list"></div>
     </div>
-    <div id="teacher-section" class="section" style="display: none;">
+    
+    <div id="teacher-section" class="section" data-tab="teacher-section">
         <h2>教師帳號管理</h2><hr>
         <h3>單筆設定/綁定</h3>
         <p class="info-box"><strong>注意：</strong>請先到 Firebase > Authentication 後台建立使用者，再回到這裡進行綁定。</p>
@@ -90,7 +156,7 @@
         <form id="batch-teacher-form">
             <div><label for="batch-teacher-data">貼上從 `users.json` 複製的**完整內容**:</label><br><textarea id="batch-teacher-data" placeholder='{ "users": [ ... ] }'></textarea></div>
             <p class="info-box"><strong>步驟 2:</strong> 貼上教師課表資料 (格式: email,班級)。程式會自動為老師預選顯示班級。</p>
-            <div><label for="batch-teacher-timetable">貼上教師課表資料 (一行一筆):</label><br><textarea id="batch-teacher-timetable" placeholder="teacher01@example.com,701&#10;..."></textarea></div>
+            <div><label for="batch-teacher-timetable">貼上教師課表資料 (一行一筆):</label><br><textarea id="batch-teacher-timetable" placeholder="teacher01@example.com,101&#10;..."></textarea></div>
             <div><label for="batch-roster-select">將以上所有教師綁定到此名冊:</label><br><select id="batch-roster-select" required></select></div>
             <button type="submit">開始批次綁定</button>
         </form>
@@ -130,19 +196,79 @@
     <script>
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
+// 【【【新增此函式】】】
+        function convertClassName(oldClassName) {
+            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
+            const firstDigit = oldClassName.charAt(0);
+            const restOfName = oldClassName.substring(1);
+            switch (firstDigit) {
+                case '7': return '1' + restOfName;
+                case '8': return '2' + restOfName;
+                case '9': return '3' + restOfName;
+                default: return oldClassName;
+            }
+        }
         const db = firebase.firestore(); const auth = firebase.auth();
         let allTeachers = []; let allRostersData = {};
-        const adminPanel = document.getElementById('admin-panel'), adminEmailSpan = document.getElementById('admin-email'), logoutBtn = document.getElementById('logout-btn'), rosterSection = document.getElementById('roster-section'), teacherSection = document.getElementById('teacher-section'), rosterListDiv = document.getElementById('roster-list'), rosterSelect = document.getElementById('roster-select'), teacherListDiv = document.getElementById('teacher-list'), rosterUploadForm = document.getElementById('roster-upload-form'), teacherCreateForm = document.getElementById('teacher-create-form'), batchRosterSelect = document.getElementById('batch-roster-select'), batchTeacherForm = document.getElementById('batch-teacher-form'), teacherFilterRoster = document.getElementById('teacher-filter-roster'), singleClassSelectionContainer = document.getElementById('single-class-selection-container'), selectAllTeachersCheckbox = document.getElementById('select-all-teachers'), batchResetBtn = document.getElementById('batch-reset-btn'), batchDeleteBtn = document.getElementById('batch-delete-btn');
+        
+        // 【【【修改】】】: 移除舊的 section 變數宣告，因為我們可以用 querySelectorAll 統一處理
+        const adminPanel = document.getElementById('admin-panel'), adminEmailSpan = document.getElementById('admin-email'), logoutBtn = document.getElementById('logout-btn'), rosterListDiv = document.getElementById('roster-list'), rosterSelect = document.getElementById('roster-select'), teacherListDiv = document.getElementById('teacher-list'), rosterUploadForm = document.getElementById('roster-upload-form'), teacherCreateForm = document.getElementById('teacher-create-form'), batchRosterSelect = document.getElementById('batch-roster-select'), batchTeacherForm = document.getElementById('batch-teacher-form'), teacherFilterRoster = document.getElementById('teacher-filter-roster'), singleClassSelectionContainer = document.getElementById('single-class-selection-container'), selectAllTeachersCheckbox = document.getElementById('select-all-teachers'), batchResetBtn = document.getElementById('batch-reset-btn'), batchDeleteBtn = document.getElementById('batch-delete-btn');
         const teacherSortSelect = document.getElementById('teacher-sort-select');
+        
+        // 備份區塊的元素
+        const backupSection = document.getElementById('backup-section');
 
-        auth.onAuthStateChanged(async (user) => { if (user) { const userDoc = await db.collection('users').doc(user.uid).get(); if (userDoc.exists && userDoc.data().role === 'admin') { adminEmailSpan.textContent = user.email; adminPanel.style.display = 'block'; rosterSection.style.display = 'block'; teacherSection.style.display = 'block'; loadRosters(); loadTeachers(); } else { window.location.href = `login.html?from=admin`; } } else { window.location.href = `login.html?from=admin`; } });
+        auth.onAuthStateChanged(async (user) => { 
+            if (user) { 
+                const userDoc = await db.collection('users').doc(user.uid).get(); 
+                if (userDoc.exists && userDoc.data().role === 'admin') { 
+                    adminEmailSpan.textContent = user.email; 
+                    adminPanel.style.display = 'block'; 
+                    // 【【【修改】】】: 頁面載入後，直接觸發頁籤功能初始化
+                    initializeTabs();
+                    loadRosters(); 
+                    loadTeachers(); 
+                } else { 
+                    window.location.href = `login.html?from=admin`; 
+                } 
+            } else { 
+                window.location.href = `login.html?from=admin`; 
+            } 
+        });
         logoutBtn.addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
         
+        // 【【【新增】】】: 頁籤切換功能的核心函式
+        function initializeTabs() {
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            const tabSections = document.querySelectorAll('.section');
+
+            // 預設顯示第一個頁籤
+            if (tabButtons.length > 0) {
+                tabButtons[0].classList.add('active');
+                tabSections[0].classList.add('active');
+            }
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetTabId = button.dataset.tab;
+
+                    // 移除所有按鈕和區塊的 active class
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabSections.forEach(section => section.classList.remove('active'));
+
+                    // 為點擊的按鈕和對應的區塊加上 active class
+                    button.classList.add('active');
+                    document.getElementById(targetTabId).classList.add('active');
+                });
+            });
+        }
+
+
         async function loadRosters() {
             rosterListDiv.innerHTML = '讀取中...'; rosterSelect.innerHTML = '<option value="">請選擇</option>'; batchRosterSelect.innerHTML = ''; teacherFilterRoster.innerHTML = '<option value="all">顯示全部</option>'; allRostersData = {}; const snapshot = await db.collection('rosters').orderBy('uploadedAt', 'desc').get(); if (snapshot.empty) { rosterListDiv.innerHTML = '尚無名冊'; return; } rosterListDiv.innerHTML = '<ul></ul>'; const ul = rosterListDiv.querySelector('ul'); snapshot.forEach(doc => { const roster = doc.data(); allRostersData[doc.id] = roster.students; const li = document.createElement('li'); li.innerHTML = `<span><strong>${doc.id}</strong> (${roster.rosterName}) - ${roster.students.length}人</span><div class="action-buttons"><button class="delete-btn" data-id="${doc.id}">刪除</button></div>`; ul.appendChild(li); const option1 = new Option(`${doc.id} (${roster.rosterName})`, doc.id); rosterSelect.add(option1); batchRosterSelect.add(option1.cloneNode(true)); teacherFilterRoster.add(option1.cloneNode(true)); });
         }
 
-        rosterSelect.addEventListener('change', () => { const selectedRosterId = rosterSelect.value; singleClassSelectionContainer.innerHTML = ''; if (selectedRosterId && allRostersData[selectedRosterId]) { const students = allRostersData[selectedRosterId]; const classes = [...new Set(students.map(s => s.id.substring(0, 3)))].sort(); if (classes.length === 0) { singleClassSelectionContainer.innerHTML = '<small>此名冊中沒有班級。</small>'; } else { classes.forEach(className => { const div = document.createElement('div'); div.className = 'class-checkbox'; div.innerHTML = `<input type="checkbox" id="single-class-${className}" value="${className}" class="single-class-selector"> <label for="single-class-${className}">${className}</label>`; singleClassSelectionContainer.appendChild(div); }); } } else { singleClassSelectionContainer.innerHTML = '<small>請先選擇上方的「綁定學生名冊」。</small>'; } });
+        rosterSelect.addEventListener('change', () => { const selectedRosterId = rosterSelect.value; singleClassSelectionContainer.innerHTML = ''; if (selectedRosterId && allRostersData[selectedRosterId]) { const students = allRostersData[selectedRosterId]; const classes = [...new Set(students.map(s => s.id.substring(0, 3)))].sort(); if (classes.length === 0) { singleClassSelectionContainer.innerHTML = '<small>此名冊中沒有班級。</small>'; } else { classes.forEach(className => { const div = document.createElement('div'); div.className = 'class-checkbox'; div.innerHTML = `<input type="checkbox" id="single-class-${className}" value="${className}" class="single-class-selector"> <label for="single-class-${className}">${convertClassName(className)}</label>`; singleClassSelectionContainer.appendChild(div); }); } } else { singleClassSelectionContainer.innerHTML = '<small>請先選擇上方的「綁定學生名冊」。</small>'; } });
 
         async function loadTeachers() { const snapshot = await db.collection('users').where('role', '==', 'teacher').get(); allTeachers = []; snapshot.forEach(doc => { allTeachers.push({ uid: doc.id, ...doc.data() }); }); updateAndRenderTeachers(); }
         
@@ -176,6 +302,153 @@
         rosterUploadForm.addEventListener('submit', async (e) => { e.preventDefault(); const rid = document.getElementById('roster-id').value.trim(); const rName = document.getElementById('roster-name').value.trim(); const rData = document.getElementById('roster-data').value.trim(); if (!rid || !rName || !rData) return; const students = rData.split('\n').map(l => { const [id, n] = l.split(','); return { id: id ? id.trim() : '', name: n ? n.trim() : '' }; }).filter(s => s.id && s.name); if (students.length === 0) return; try { await db.collection('rosters').doc(rid).set({ rosterName: rName, students, uploadedAt: new Date() }); alert('成功'); rosterUploadForm.reset(); loadRosters(); } catch (err) { alert('失敗: ' + err.message); } });
         rosterListDiv.addEventListener('click', async (e) => { if (e.target.classList.contains('delete-btn')) { const rid = e.target.dataset.id; if (confirm(`刪除名冊 "${rid}"？`)) { try { await db.collection('rosters').doc(rid).delete(); alert('已刪除'); loadRosters(); } catch (err) { alert('失敗: ' + err.message); } } } });
         teacherListDiv.addEventListener('click', async (e) => { /* 這段邏輯現在由批次按鈕處理，所以留空 */ });
+
+        const collectionsToBackup = ['users', 'rosters', 'gradebooks', 'performanceRecords'];
+
+        async function backupData() {
+            if (!confirm('這將會讀取所有主要集合的資料並匯出成一個檔案，確定要開始備份嗎？')) return;
+            
+            alert('開始備份，請稍候...');
+            const backupObject = {};
+
+            try {
+                for (const collectionName of collectionsToBackup) {
+                    backupObject[collectionName] = {};
+                    const snapshot = await db.collection(collectionName).get();
+                    for (const doc of snapshot.docs) {
+                        const docData = doc.data();
+                        
+                        for (const key in docData) {
+                            if (docData[key] instanceof firebase.firestore.Timestamp) {
+                                docData[key] = { _seconds: docData[key].seconds, _nanoseconds: docData[key].nanoseconds };
+                            }
+                        }
+                        
+                        backupObject[collectionName][doc.id] = docData;
+
+                        if (collectionName === 'gradebooks' || collectionName === 'performanceRecords') {
+                            backupObject[collectionName][doc.id]._subcollections = {};
+                            const subSnapshot = await doc.ref.collection('assignments').get(); 
+                            const subSnapshot2 = await doc.ref.collection('records').get(); 
+                            
+                            if (!subSnapshot.empty) {
+                                backupObject[collectionName][doc.id]._subcollections['assignments'] = {};
+                                subSnapshot.forEach(subDoc => {
+                                    const subDocData = subDoc.data();
+                                    for (const key in subDocData) {
+                                        if (subDocData[key] instanceof firebase.firestore.Timestamp) {
+                                            subDocData[key] = { _seconds: subDocData[key].seconds, _nanoseconds: subDocData[key].nanoseconds };
+                                        }
+                                    }
+                                    backupObject[collectionName][doc.id]._subcollections['assignments'][subDoc.id] = subDocData;
+                                });
+                            }
+                            if (!subSnapshot2.empty) {
+                                backupObject[collectionName][doc.id]._subcollections['records'] = {};
+                                subSnapshot2.forEach(subDoc => {
+                                    const subDocData = subDoc.data();
+                                    for (const key in subDocData) {
+                                        if (subDocData[key] instanceof firebase.firestore.Timestamp) {
+                                            subDocData[key] = { _seconds: subDocData[key].seconds, _nanoseconds: subDocData[key].nanoseconds };
+                                        }
+                                    }
+                                    backupObject[collectionName][doc.id]._subcollections['records'][subDoc.id] = subDocData;
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                const jsonString = JSON.stringify(backupObject, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `firestore-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('備份完成！');
+            } catch (error) {
+                console.error("備份失敗:", error);
+                alert("備份失敗: " + error.message);
+            }
+        }
+
+        async function restoreData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!confirm('【【【極度危險】】】\n\n您確定要從檔案還原資料嗎？\n這將會完全覆蓋掉資料庫中現有的所有資料！\n此操作無法復原！')) {
+                event.target.value = ''; 
+                return;
+            }
+             if (!confirm('【【【最後確認】】】\n\n真的確定要覆蓋所有資料嗎？')) {
+                event.target.value = '';
+                return;
+            }
+
+            alert('開始還原，請不要關閉此頁面...');
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const backupObject = JSON.parse(e.target.result);
+                    for (const collectionName of collectionsToBackup) {
+                        if (backupObject[collectionName]) {
+                            const batch = db.batch();
+                            const collectionRef = db.collection(collectionName);
+                            
+                            const oldDocs = await collectionRef.get();
+                            oldDocs.forEach(doc => batch.delete(doc.ref));
+
+                            for (const docId in backupObject[collectionName]) {
+                                const docData = backupObject[collectionName][docId];
+                                const subcollections = docData._subcollections;
+                                delete docData._subcollections; 
+
+                                for (const key in docData) {
+                                    if (docData[key] && docData[key]._seconds !== undefined) {
+                                        docData[key] = new firebase.firestore.Timestamp(docData[key]._seconds, docData[key]._nanoseconds);
+                                    }
+                                }
+                                
+                                batch.set(collectionRef.doc(docId), docData);
+
+                                if (subcollections) {
+                                    for (const subCollectionName in subcollections) {
+                                        const subCollectionData = subcollections[subCollectionName];
+                                        for(const subDocId in subCollectionData) {
+                                            const subDocData = subCollectionData[subDocId];
+                                            for (const key in subDocData) {
+                                                if (subDocData[key] && subDocData[key]._seconds !== undefined) {
+                                                    subDocData[key] = new firebase.firestore.Timestamp(subDocData[key]._seconds, subDocData[key]._nanoseconds);
+                                                }
+                                            }
+                                            await collectionRef.doc(docId).collection(subCollectionName).doc(subDocId).set(subDocData);
+                                        }
+                                    }
+                                }
+                            }
+                            await batch.commit();
+                        }
+                    }
+                    alert('資料還原成功！建議重新整理頁面以查看最新資料。');
+                } catch (error) {
+                    console.error("還原失敗:", error);
+                    alert("還原失敗: " + error.message);
+                } finally {
+                     event.target.value = ''; 
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        document.getElementById('backup-btn').addEventListener('click', backupData);
+        document.getElementById('restore-btn').addEventListener('click', () => {
+            document.getElementById('restore-file-input').click();
+        });
+        document.getElementById('restore-file-input').addEventListener('change', restoreData);
     </script>
 </body>
 </html>
