@@ -327,8 +327,6 @@
             #class-settings-list {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
-            /* 【【【版面優化 4】】】: 移除強制換行的樣式，讓手機版繼承桌面版的單行排版 */
         }
     </style>
 </head>
@@ -456,6 +454,30 @@
             csCloseBtn = classSettingsModal.querySelector('.close-btn'),
             selectAllVisibleClasses = document.getElementById('select-all-visible-classes');
 
+        function convertClassName(oldClassName) {
+            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
+            const firstDigit = oldClassName.charAt(0);
+            const restOfName = oldClassName.substring(1);
+            switch (firstDigit) {
+                case '7': return '1' + restOfName;
+                case '8': return '2' + restOfName;
+                case '9': return '3' + restOfName;
+                default: return oldClassName;
+            }
+        }
+
+        function revertClassName(newClassName) {
+            if (typeof newClassName !== 'string' || newClassName.length < 3) return newClassName;
+            const firstDigit = newClassName.charAt(0);
+            const restOfName = newClassName.substring(1);
+            switch (firstDigit) {
+                case '1': return '7' + restOfName;
+                case '2': return '8' + restOfName;
+                case '3': return '9' + restOfName;
+                default: return newClassName;
+            }
+        }
+
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 if (currentUser && currentUser.uid === user.uid) return;
@@ -553,7 +575,7 @@
                 headerDiv.className = 'card-header';
                 const title = document.createElement('div');
                 title.className = 'class-title';
-                title.innerHTML = `${className} 班`;
+                title.innerHTML = `${convertClassName(className)} 班`;
                 title.addEventListener('click', () => openModal(className, 'class'));
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'card-actions';
@@ -570,7 +592,7 @@
                 select.innerHTML = '<option value="">--- 請選擇學生 ---</option>';
                 (groupedByClass[className] || []).forEach(s => {
                     const score = studentScores[s.id] || 0;
-                    let dText = `${s.id.substring(3)} ${s.name}`;
+                    let dText = `${convertClassName(s.id.substring(0,3))}${s.id.substring(3)} ${s.name}`;
                     if (score !== 0) {
                         dText += ` (${score.toFixed(1)}分)`;
                     }
@@ -603,11 +625,12 @@
             
             if (type === 'student') {
                 const student = studentsData.find(s => s.id === id);
-                titleText = `${student.name} (${id}) 的紀錄`;
+                const displayId = `${convertClassName(student.id.substring(0,3))}${student.id.substring(3)}`;
+                titleText = `${student.name} (${displayId}) 的紀錄`;
                 const currentScore = studentScores[id] || 0;
                 scoreText = `(目前個人總分: ${currentScore.toFixed(1)})`;
             } else {
-                titleText = `班級事件紀錄 (${id} 班)`;
+                titleText = `班級事件紀錄 (${convertClassName(id)} 班)`;
                 const currentScore = classEventScores[id] || 0;
                 scoreText = `(目前班級事件總分: ${currentScore.toFixed(1)})`;
             }
@@ -625,15 +648,33 @@
             currentEntity = null;
         }
 
+        // 【【【修改此函式】】】
         async function loadRecords(id, type) {
             recordsList.innerHTML = '載入中...';
             try {
                 let allRecords = [];
                 const recordsRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
+                
                 if (type === 'class') {
-                    const snapshot = await recordsRef.where('entityId', '==', id).where('entityType', '==', type).orderBy('timestamp', 'desc').get();
-                    snapshot.forEach(doc => allRecords.push({ id: doc.id, ...doc.data() }));
-                } else {
+                    const possibleIds = [...new Set([id, convertClassName(id), revertClassName(id)])];
+                    
+                    // 1. 先用 'in' 撈出所有可能的紀錄
+                    const snapshot = await recordsRef.where('entityId', 'in', possibleIds).get();
+
+                    let classRecords = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        // 2. 【【【放寬過濾條件】】】
+                        // 不但要找 entityType 為 'class' 的紀錄，
+                        // 也要找那些 entityId 長得像班級代號 (長度為3)，但可能沒有 entityType 欄位的舊紀錄
+                        if (data.entityType === 'class' || (data.entityId && data.entityId.length === 3 && data.entityType === undefined)) {
+                            classRecords.push({ id: doc.id, ...data });
+                        }
+                    });
+                    allRecords = classRecords;
+
+                } else { 
+                    // 學生查詢邏輯不變，因為它有備用查詢方式，比較沒問題
                     const newRecordsPromise = recordsRef.where('entityId', '==', id).where('entityType', '==', 'student').get();
                     const oldRecordsPromise = recordsRef.where('studentId', '==', id).get();
                     const [newSnapshot, oldSnapshot] = await Promise.all([newRecordsPromise, oldRecordsPromise]);
@@ -641,20 +682,28 @@
                     newSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } });
                     oldSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } });
                 }
-                allRecords.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+                
+                allRecords.sort((a, b) => {
+                    const tsA = a.timestamp ? a.timestamp.seconds : 0;
+                    const tsB = b.timestamp ? b.timestamp.seconds : 0;
+                    return tsB - tsA;
+                });
+
                 recordsList.innerHTML = '';
                 if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; }
+                
                 allRecords.forEach(record => {
                     const recordItem = document.createElement('div');
                     recordItem.className = 'record-item';
                     const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
-                    
+                    const timestamp = record.timestamp ? new Date(record.timestamp.seconds * 1000).toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' }) : '日期不明';
+
                     recordItem.innerHTML = `
                         <div class="record-content">
                             <span class="record-points ${pClass}">${record.points||0}分</span>
                             <span class="record-text">${record.text||''}</span>
                         </div>
-                        <div class="record-timestamp">${new Date(record.timestamp.seconds * 1000).toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' })}</div>
+                        <div class="record-timestamp">${timestamp}</div>
                         <button class="delete-btn" data-id="${record.id}">🗑️</button>
                     `;
                     recordsList.appendChild(recordItem);
@@ -697,7 +746,7 @@
         cpCloseBtn.addEventListener('click', () => { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; });
         changePasswordForm.addEventListener('submit', async (e) => { e.preventDefault(); const newPassword = document.getElementById('cp-new-password').value; const confirmPassword = document.getElementById('cp-confirm-password').value; cpErrorMessage.textContent = ''; if (newPassword.length < 6) { cpErrorMessage.textContent = '密碼至少6字元'; return; } if (newPassword !== confirmPassword) { cpErrorMessage.textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(newPassword); alert('密碼更新成功！'); changePasswordModal.style.display = 'none'; changePasswordForm.reset(); } catch (error) { if (error.code === 'auth/requires-recent-login') { cpErrorMessage.textContent = '此為敏感操作，請先登出再重新登入後再試。'; } else { cpErrorMessage.textContent = '更新失敗：' + error.message; } } });
         
-        classSettingsBtn.addEventListener('click', () => { classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${className} 班</label>`; classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; classSettingsModal.style.display = 'block'; });
+        classSettingsBtn.addEventListener('click', () => { classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${convertClassName(className)} 班</label>`; classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; classSettingsModal.style.display = 'block'; });
         selectAllVisibleClasses.addEventListener('change', (e) => { document.querySelectorAll('.visible-class-checkbox').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
         csCloseBtn.addEventListener('click', () => { classSettingsModal.style.display = 'none'; });
         saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); classSettingsModal.style.display = 'none'; alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
