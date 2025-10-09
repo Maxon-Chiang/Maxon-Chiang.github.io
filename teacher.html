@@ -346,7 +346,16 @@
                 font-size: 1.3em;
             }
         }
-
+        .icon-btn-main {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 2px 8px;
+            line-height: 1.2;
+        }
     </style>
 </head>
 
@@ -354,12 +363,12 @@
 	<header>
         <h1>班級綜合成績紀錄系統</h1>
         <div class="header-right-panel">
-            <div class="main-actions">
-                <button id="class-settings-btn">班級顯示設定</button>
+			<div class="main-actions">
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
                 <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
+                <button id="class-settings-btn" class="icon-btn-main" title="班級顯示設定">⚙️</button>
             </div>
-            <div class="user-profile">
+           <div class="user-profile">
                 <span id="user-email"></span>
                 <div class="dropdown">
                     <button id="dropdown-btn" class="icon-btn">⋮</button>
