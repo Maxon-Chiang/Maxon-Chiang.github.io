@@ -102,35 +102,55 @@
         tr:nth-child(even) { background-color: #f9f9f9; }
 
 		/* 【【【新增以下手機版響應式樣式】】】 */
-        @media (max-width: 768px) {
+		@media (max-width: 768px) {
             main {
                 padding: 10px;
             }
             .tab-nav button {
-                padding: 10px 12px; /* 縮小頁籤按鈕內距 */
+                padding: 10px 12px;
                 font-size: 1em;
             }
 			.section { padding: 10px; margin-bottom: 0px; margin-left: 0px; margin-top: 0px;}
             .section-header {
 	            display: flex;
-                /* flex-direction: column; 標題和按鈕改為垂直排列 */
                 align-items: flex-start;
-                gap: 10px; /* 增加標題和按鈕之間的間距 */
+                gap: 10px;
             }
             .section-header h2 {
                 font-size: 1.5em;
             }
-            /* 讓標題列中的按鈕單獨靠右對齊，更美觀 */
             .section-header button, .section-header div {
                 align-self: flex-end;
             }
-            /* 所有控制項的網格佈局改為單欄 */
+            
+            /* --- 以下為本次主要修改 --- */
+
             #calculator-tab .control-grid,
             #rules-tab .control-grid {
-                grid-template-columns: 1fr 1fr; /* 【修改】強制設定為兩欄 */
-                column-gap: 10px;              /* 【新增】縮小欄位之間的水平間距 */
+                grid-template-columns: 1fr 1fr; /* 維持兩欄佈局 */
+                column-gap: 10px;              /* 保持較小的間距 */
             }
-            /* 在規則編輯器中，規則選擇與命名輸入框也改為垂直堆疊 */
+
+            /* 【【【關鍵修正 1】】】 */
+            /* 允許網格項目被壓縮，即使內容想撐開它 */
+            .control-group {
+                min-width: 0;
+            }
+
+            .control-group label {
+                font-size: 0.8em;
+                word-break: break-word; /* 確保文字在任何情況下都能正確換行 */
+            }
+
+            /* 【【【關鍵修正 2】】】 */
+            /* 讓輸入框填滿被正確壓縮後的容器寬度 */
+            .control-group input, .control-group select {
+                padding-left: 6px;
+                padding-right: 6px;
+                font-size: 0.9em;
+                width: 100%; /* 確保輸入框寬度為100%，以適應父容器 */
+            }
+            
             #rules-tab .control-group:last-child div {
                 flex-direction: column;
                 align-items: stretch;
@@ -139,15 +159,6 @@
             #rules-tab .control-group:last-child input[type="text"] {
                 margin-left: 0 !important;
             }
-            .control-group label {
-                font-size: 0.8em; /* 【新增】稍微縮小標籤字體以適應空間 */
-            }					
-            .control-group input, .control-group select {
-                padding-left: 6px;  /* 縮小左邊內距 */
-                padding-right: 6px; /* 縮小右邊內距 */
-                font-size: 0.9em;     /* 縮小輸入框內的字體 */
-            }
-
         }
 		
     </style>
@@ -709,6 +720,7 @@
     </script>
 </body>
 </html>
+
 
 
 
