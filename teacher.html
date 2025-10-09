@@ -328,19 +328,39 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
+		/* 【【【新增以下樣式，用於調整右上角按鈕佈局】】】 */
+        #user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* 讓兩行都靠右對齊 */
+        }
+        .user-info-top-row {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* 在名字和按鈕之間增加間距 */
+        }
+        .user-info-bottom-row {
+            margin-top: 8px; /* 在兩行按鈕之間增加垂直間距 */
+        }
     </style>
 </head>
 
 <body>
     <header>
         <h1>班級綜合成績紀錄系統</h1>
-        <div id="user-info">
-            <span id="user-email"></span><br>
-            <button id="class-settings-btn">班級顯示設定</button>
-            <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
-            <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
-            <button id="change-password-btn">修改密碼</button>
-            <button id="logout-btn">登出</button>
+		<div id="user-info">
+            <div class="user-info-top-row">
+                <span id="user-email"></span>
+                <div class="user-actions">
+                    <button id="change-password-btn">修改密碼</button>
+                    <button id="logout-btn">登出</button>
+                </div>
+            </div>
+            <div class="user-info-bottom-row">
+                <button id="class-settings-btn">班級顯示設定</button>
+                <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
+                <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
+            </div>
         </div>
     </header>
 
