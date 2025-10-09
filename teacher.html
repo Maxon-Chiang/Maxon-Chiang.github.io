@@ -325,6 +325,14 @@
                 justify-content: space-around;
                 margin-left: 0;
             }
+            .header-top-row h1 {
+                white-space: nowrap;         /* 強制標題不換行 */
+                overflow: hidden;            /* 隱藏超出部分 */
+                text-overflow: ellipsis;     /* 超出部分顯示省略號 */
+            }
+            .user-profile #user-email {
+                white-space: nowrap;         /* 強制用戶名稱不換行 */
+            }
             main {
                 padding: 1rem;
             }
