@@ -99,7 +99,17 @@
         th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
         tr:nth-child(even) { background-color: #f9f9f9; }
-
+		.visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
 		/* 【【【新增以下手機版響應式樣式】】】 */
 		@media (max-width: 768px) {
             main {
@@ -229,7 +239,7 @@
                         <select id="rule-select" disabled><option value="new">-- 建立新規則 --</option></select>
                     </div>
                     <div class="control-group">
-                        <label for="rule-name">　</label>
+						<label for="rule-name" class="visually-hidden">規則名稱</label>
                         <input type="text" id="rule-name" placeholder="請為規則命名" style="flex-grow: 2; margin-left:10px;">
                    </div>
                 </div>
