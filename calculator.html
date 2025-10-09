@@ -127,8 +127,8 @@
             /* 所有控制項的網格佈局改為單欄 */
             #calculator-tab .control-grid,
             #rules-tab .control-grid {
-                /* grid-template-columns: 2fr 2fr; */
-				grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                grid-template-columns: 1fr 1fr; /* 【修改】強制設定為兩欄 */
+                column-gap: 10px;              /* 【新增】縮小欄位之間的水平間距 */
             }
             /* 在規則編輯器中，規則選擇與命名輸入框也改為垂直堆疊 */
             #rules-tab .control-group:last-child div {
@@ -139,6 +139,9 @@
             #rules-tab .control-group:last-child input[type="text"] {
                 margin-left: 0 !important;
             }
+            .control-group label {
+                font-size: 0.8em; /* 【新增】稍微縮小標籤字體以適應空間 */
+            }					
         }
 		
     </style>
