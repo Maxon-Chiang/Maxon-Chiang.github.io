@@ -127,8 +127,9 @@
             /* 所有控制項的網格佈局改為單欄 */
             #calculator-tab .control-grid,
             #rules-tab .control-grid {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 2fr 2fr;
             }
+			.control-group select { padding: 0px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; height: 40px; box-sizing: border-box; }
             /* 在規則編輯器中，規則選擇與命名輸入框也改為垂直堆疊 */
             #rules-tab .control-group:last-child div {
                 flex-direction: column;
@@ -701,5 +702,6 @@
     </script>
 </body>
 </html>
+
 
 
