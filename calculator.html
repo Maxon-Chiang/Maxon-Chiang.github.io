@@ -11,7 +11,7 @@
         header h1 { font-size: 1.6em; margin: 0; }
         header a button, header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em;}
         main { padding: 20px; max-width: 1200px; margin: auto; }
-        .section { background-color: white; padding: 0px; border-radius: 8px; margin-bottom: 20px; margin-left: 20px; margin-top: 0px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .section { background-color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
         h3 { font-size: 1.2em; border-bottom-width: 1px; margin-top: 25px; margin-bottom: 15px; }
         
@@ -32,11 +32,10 @@
             align-items: end;
         }
 
-        /* 【修改】針對「規則編輯器」頁籤，設定為 1:1:2.5 的三欄式佈局 */
         #rules-tab .control-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr 2.5fr;
-            gap: 15px 20px;
+            grid-template-columns: 1fr 1fr 2fr 2fr;
+            gap: 15px 20px;fr
             align-items: end;
         } 
         .control-group { display: flex; flex-direction: column; }
@@ -222,11 +221,12 @@
                     </div>
                     <div class="control-group">
                         <label for="rule-select">3. 選擇、建立或修改規則</label>
-						<div style="display: flex;">
-                            <select id="rule-select" style="flex-grow: 1;" disabled><option value="new">-- 建立新規則 --</option></select>
-                            <input type="text" id="rule-name" placeholder="請為規則命名" style="flex-grow: 2; margin-left:10px;">
-						</div>
+                        <select id="rule-select" disabled><option value="new">-- 建立新規則 --</option></select>
                     </div>
+                    <div class="control-group">
+                        <label for="rule-name">　</label>
+                        <input type="text" id="rule-name" placeholder="請為規則命名" style="flex-grow: 2; margin-left:10px;">
+                   </div>
                 </div>
                 <div id="rule-config-panel" style="display:none;">
                     <h3>規則內容設定(各步驟選填)</h3>
@@ -722,8 +722,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
