@@ -101,13 +101,43 @@
         th { background-color: #f2f2f2; }
         tr:nth-child(even) { background-color: #f9f9f9; }
 
-        /* 【修改】增加中螢幕的響應式斷點 */
-        @media (max-width: 1200px) {
-            .steps-container { grid-template-columns: repeat(2, 1fr); }
-        }
+		/* 【【【新增以下手機版響應式樣式】】】 */
         @media (max-width: 768px) {
-            .steps-container { grid-template-columns: 1fr; }
+            main {
+                padding: 10px;
+            }
+            .tab-nav button {
+                padding: 10px 12px; /* 縮小頁籤按鈕內距 */
+                font-size: 1em;
+            }
+            .section-header {
+                flex-direction: column; /* 標題和按鈕改為垂直排列 */
+                align-items: flex-start;
+                gap: 15px; /* 增加標題和按鈕之間的間距 */
+            }
+            .section-header h2 {
+                font-size: 1.5em;
+            }
+            /* 讓標題列中的按鈕單獨靠右對齊，更美觀 */
+            .section-header button, .section-header div {
+                align-self: flex-end;
+            }
+            /* 所有控制項的網格佈局改為單欄 */
+            #calculator-tab .control-grid,
+            #rules-tab .control-grid {
+                grid-template-columns: 1fr;
+            }
+            /* 在規則編輯器中，規則選擇與命名輸入框也改為垂直堆疊 */
+            #rules-tab .control-group:last-child div {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            #rules-tab .control-group:last-child input[type="text"] {
+                margin-left: 0 !important;
+            }
         }
+		
     </style>
 </head>
 <body>
