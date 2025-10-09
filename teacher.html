@@ -329,11 +329,6 @@
             }
         }
 		/* 【【【新增以下樣式，用於調整右上角按鈕佈局】】】 */
-        #user-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end; /* 讓兩行都靠右對齊 */
-        }
         .user-info-top-row {
             display: flex;
             align-items: center;
@@ -342,6 +337,70 @@
         .user-info-bottom-row {
             margin-top: 8px; /* 在兩行按鈕之間增加垂直間距 */
         }
+		/* 【【【新增以下樣式，用於實現下拉選單】】】 */
+        #user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px; /* 統一元素間距 */
+        }
+        #user-info a {
+            color: white;
+            text-decoration: none;
+        }
+        #user-info .main-actions button,
+        #user-info a button {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8em;
+            cursor: pointer;
+            padding: 0 10px;
+            line-height: 1;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: white;
+            min-width: 120px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 4px;
+            overflow: hidden; /* 讓圓角效果生效 */
+        }
+		#user-info .dropdown-content button {
+            color: #333; /* 文字顏色設為深色 */
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1em; /* 確保字體大小一致 */
+        }
+        .dropdown-content button:hover {
+            background-color: #f1f1f1;
+        }
+        /* 用於JS控制顯示 */
+        .show {
+            display: block;
+        }
+		
     </style>
 </head>
 
@@ -349,20 +408,21 @@
     <header>
         <h1>班級綜合成績紀錄系統</h1>
 		<div id="user-info">
-            <div class="user-info-top-row">
-                <span id="user-email"></span>
-                <div class="user-actions">
-                    <button id="change-password-btn">修改密碼</button>
-                    <button id="logout-btn">登出</button>
-                </div>
-            </div>
-            <div class="user-info-bottom-row">
+            <div class="main-actions">
                 <button id="class-settings-btn">班級顯示設定</button>
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
                 <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
             </div>
+            <span id="user-email"></span>
+            <div class="dropdown">
+                <button id="dropdown-btn" class="icon-btn">⋮</button>
+                <div id="dropdown-menu" class="dropdown-content">
+                    <button id="change-password-btn">修改密碼</button>
+                    <button id="logout-btn">登出</button>
+                </div>
+            </div>
         </div>
-    </header>
+	</header>
 
     <main id="app-container" class="class-grid">
         <h2>正在驗證登入狀態...</h2>
@@ -776,6 +836,24 @@
             if (e.target === modal) closeModal();
             if (e.target === changePasswordModal) { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; }
             if (e.target === classSettingsModal) { classSettingsModal.style.display = 'none'; }
+        });
+
+		// 【【【新增以下程式碼，用於控制下拉選單的顯示與隱藏】】】
+        const dropdownBtn = document.getElementById('dropdown-btn');
+        const dropdownMenu = document.getElementById('dropdown-menu');
+
+        dropdownBtn.addEventListener('click', function(event) {
+            event.stopPropagation(); // 防止點擊事件冒泡到 window
+            dropdownMenu.classList.toggle('show');
+        });
+
+        // 點擊頁面其他地方時，隱藏下拉選單
+        window.addEventListener('click', function(event) {
+            if (!event.target.matches('#dropdown-btn')) {
+                if (dropdownMenu.classList.contains('show')) {
+                    dropdownMenu.classList.remove('show');
+                }
+            }
         });
     </script>
 </body>
