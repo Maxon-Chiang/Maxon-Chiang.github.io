@@ -371,6 +371,27 @@
             background-color: var(--danger-color);
             color: white;
         }
+        
+        /* --- Styles for Welcome Modal (Moved from login.html) --- */
+        #welcome-modal {
+            align-items: center;
+            justify-content: center;
+        }
+        #welcome-modal .modal-content {
+            max-width: 500px;
+            line-height: 1.8;
+        }
+        #welcome-modal .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #welcome-modal ul {
+            list-style-type: disc;
+            padding-left: 25px;
+        }
+
     </style>
 </head>
 
@@ -400,6 +421,23 @@
     <main id="app-container" class="class-grid">
         <h2>正在驗證登入狀態...</h2>
     </main>
+
+    <div id="welcome-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>歡迎使用 學生綜合紀錄暨課表系統</h2>
+            <p>這是一套專為教師設計的整合性管理工具，主要包含以下核心系統：</p>
+            <ul>
+                <li><strong>主系統</strong>: 快速登記學生日常表現、管理成績項目、計算學期總分、產出數據報告。</li>
+                <li><strong>課表系統</strong>: 提供強大的智慧調課、代課與換課功能，並可將課程匯出至個人行事曆。</li>
+            </ul>
+            <p>建議您登入後，點擊頁首右上角的齒輪圖示 (⚙️) 查看更詳細的功能說明。</p>
+            <div class="modal-footer">
+                <label><input type="checkbox" id="dont-show-again-login"> 以後不要再顯示此訊息</label>
+                <button id="close-welcome-btn" style="width: auto; padding: 8px 20px;">關閉</button>
+            </div>
+        </div>
+    </div>
 
     <div id="modal" class="modal">
         <div class="modal-content">
@@ -495,6 +533,38 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        if (localStorage.getItem('welcomeMessageReset_v1') !== 'true') {
+            localStorage.removeItem('hideLoginWelcome');
+            localStorage.setItem('welcomeMessageReset_v1', 'true');
+        }
+        
+        // --- NEW: Welcome Modal Logic ---
+        const welcomeModal = document.getElementById('welcome-modal');
+        if (welcomeModal && localStorage.getItem('hideLoginWelcome') !== 'true') {
+            // Use sessionStorage to only show once per browser session
+            if (sessionStorage.getItem('welcomeShownForSession') !== 'true') {
+                // Use a small delay to ensure the page is ready
+                setTimeout(() => {
+                    welcomeModal.style.display = 'flex';
+                    sessionStorage.setItem('welcomeShownForSession', 'true');
+                }, 500);
+            }
+        }
+        
+        const closeWelcomeBtn = document.getElementById('close-welcome-btn');
+        if (closeWelcomeBtn) {
+            const closeWelcome = () => {
+                if (document.getElementById('dont-show-again-login').checked) {
+                    localStorage.setItem('hideLoginWelcome', 'true');
+                }
+                welcomeModal.style.display = 'none';
+            };
+            closeWelcomeBtn.onclick = closeWelcome;
+            welcomeModal.querySelector('.close-btn').onclick = closeWelcome;
+        }
+        // --- END of Welcome Modal Logic ---
+
+
         const firebaseConfig = {
             apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA",
             authDomain: "stu001-e72fa.firebaseapp.com",
@@ -553,18 +623,6 @@
                 case '8': return '2' + restOfName;
                 case '9': return '3' + restOfName;
                 default: return oldClassName;
-            }
-        }
-
-        function revertClassName(newClassName) {
-            if (typeof newClassName !== 'string' || newClassName.length < 3) return newClassName;
-            const firstDigit = newClassName.charAt(0);
-            const restOfName = newClassName.substring(1);
-            switch (firstDigit) {
-                case '1': return '7' + restOfName;
-                case '2': return '8' + restOfName;
-                case '3': return '9' + restOfName;
-                default: return newClassName;
             }
         }
 
@@ -835,6 +893,7 @@
         resetWelcomePrefsBtn.addEventListener('click', () => {
             localStorage.removeItem('hideLoginWelcome');
             localStorage.removeItem('hideTimetableWelcome');
+            sessionStorage.removeItem('welcomeShownForSession'); // Also reset the session flag
             alert('歡迎訊息的顯示偏好已重設！');
             infoModal.style.display = 'none';
         });
@@ -845,6 +904,11 @@
             if (e.target === classSettingsModal) { classSettingsModal.style.display = 'none'; }
             if (e.target === infoModal) {
                 infoModal.style.display = 'none';
+            }
+            if (e.target.classList.contains('modal')) { // General rule for any background click
+                if(e.target.id === 'welcome-modal' && closeWelcomeBtn) {
+                     closeWelcomeBtn.onclick();
+                }
             }
         });
 
