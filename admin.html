@@ -7,7 +7,6 @@
     <style>
         body { font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif; padding: 20px; max-width: 1200px; margin: auto; background-color: #f8f9fa; }
         h1, h2, h3 { color: #333; }
-		/* 【新增此段】強制所有表單元件繼承 body 的字體 */
         button, input, select, textarea {
             font-family: inherit;
         }        
@@ -22,11 +21,9 @@
             border: none;
             background-color: transparent;
             cursor: pointer;
-            margin-bottom: -2px; /* 讓邊框可以蓋過底線 */
+            margin-bottom: -2px;
             border-bottom: 2px solid transparent;
-            /* 【【【修改】】】: 設定未選中頁籤的預設文字顏色，增加可見度 */
             color: #6c757d;
-            /* 【【【新增】】】: 增加平滑過渡效果，提升質感 */
             transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
         }
         .tab-nav button.active {
@@ -34,26 +31,19 @@
             color: #0d6efd;
             border-bottom-color: #0d6efd;
         }
-
-        /* 【【【修改】】】: 強化滑鼠懸停效果，且排除已經是 active 的按鈕 */
         .tab-nav button:hover:not(.active) {
-            /* 懸停時文字顏色變更深，更易辨識 */
             color: #343a40;
-            /* 同時顯示一條淺灰色底線作為提示 */
             border-bottom-color: #adb5bd;
         }
         
-        /* 【【【修改】】】: 讓 section 預設隱藏 */
         .section {
             background-color: #ffffff;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 30px;
             border: 1px solid #dee2e6;
-            display: none; /* 預設隱藏 */
+            display: none;
         }
-
-        /* 【【【新增】】】: 讓啟用的 section 顯示 */
         .section.active {
             display: block;
         }
@@ -104,6 +94,22 @@
         .filter-container { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
         #backup-section button { background-color: #6c757d; }
         #restore-btn { background-color: #dc3545; }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        .status-active { background-color: #28a745; }
+        .status-pending { background-color: #ffc107; }
+
+        .last-login-time {
+            color: #007bff;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -172,12 +178,18 @@
             <div>
                 <label for="teacher-sort-select">排序方式：</label>
                 <select id="teacher-sort-select">
-                    <option value="default">預設排序</option>
+                    <option value="status">依登入狀態</option>
                     <option value="name_asc">姓名 A-Z</option>
                     <option value="name_desc">姓名 Z-A</option>
+                    <option value="default">預設排序</option>
                 </select>
             </div>
         </div>
+        <p class="info-box" style="font-size: 0.9em; padding: 10px; margin-bottom: 15px;">
+            <strong>狀態說明：</strong> 
+            <span class="status-indicator status-active"></span> 已啟用 (已登入並重設密碼)
+            <span class="status-indicator status-pending" style="margin-left: 15px;"></span> 待啟用 (尚未初次登入)
+        </p>
         <div class="list-controls">
             <div>
                 <input type="checkbox" id="select-all-teachers" style="vertical-align: middle;">
@@ -198,7 +210,6 @@
     <script>
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
-// 【【【新增此函式】】】
         function convertClassName(oldClassName) {
             if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
             const firstDigit = oldClassName.charAt(0);
@@ -213,11 +224,9 @@
         const db = firebase.firestore(); const auth = firebase.auth();
         let allTeachers = []; let allRostersData = {};
         
-        // 【【【修改】】】: 移除舊的 section 變數宣告，因為我們可以用 querySelectorAll 統一處理
         const adminPanel = document.getElementById('admin-panel'), adminEmailSpan = document.getElementById('admin-email'), logoutBtn = document.getElementById('logout-btn'), rosterListDiv = document.getElementById('roster-list'), rosterSelect = document.getElementById('roster-select'), teacherListDiv = document.getElementById('teacher-list'), rosterUploadForm = document.getElementById('roster-upload-form'), teacherCreateForm = document.getElementById('teacher-create-form'), batchRosterSelect = document.getElementById('batch-roster-select'), batchTeacherForm = document.getElementById('batch-teacher-form'), teacherFilterRoster = document.getElementById('teacher-filter-roster'), singleClassSelectionContainer = document.getElementById('single-class-selection-container'), selectAllTeachersCheckbox = document.getElementById('select-all-teachers'), batchResetBtn = document.getElementById('batch-reset-btn'), batchDeleteBtn = document.getElementById('batch-delete-btn');
         const teacherSortSelect = document.getElementById('teacher-sort-select');
         
-        // 備份區塊的元素
         const backupSection = document.getElementById('backup-section');
 
         auth.onAuthStateChanged(async (user) => { 
@@ -226,7 +235,6 @@
                 if (userDoc.exists && userDoc.data().role === 'admin') { 
                     adminEmailSpan.textContent = user.email; 
                     adminPanel.style.display = 'block'; 
-                    // 【【【修改】】】: 頁面載入後，直接觸發頁籤功能初始化
                     initializeTabs();
                     loadRosters(); 
                     loadTeachers(); 
@@ -239,12 +247,10 @@
         });
         logoutBtn.addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
         
-        // 【【【新增】】】: 頁籤切換功能的核心函式
         function initializeTabs() {
             const tabButtons = document.querySelectorAll('.tab-btn');
             const tabSections = document.querySelectorAll('.section');
 
-            // 預設顯示第一個頁籤
             if (tabButtons.length > 0) {
                 tabButtons[0].classList.add('active');
                 tabSections[0].classList.add('active');
@@ -253,18 +259,13 @@
             tabButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const targetTabId = button.dataset.tab;
-
-                    // 移除所有按鈕和區塊的 active class
                     tabButtons.forEach(btn => btn.classList.remove('active'));
                     tabSections.forEach(section => section.classList.remove('active'));
-
-                    // 為點擊的按鈕和對應的區塊加上 active class
                     button.classList.add('active');
                     document.getElementById(targetTabId).classList.add('active');
                 });
             });
         }
-
 
         async function loadRosters() {
             rosterListDiv.innerHTML = '讀取中...'; rosterSelect.innerHTML = '<option value="">請選擇</option>'; batchRosterSelect.innerHTML = ''; teacherFilterRoster.innerHTML = '<option value="all">顯示全部</option>'; allRostersData = {}; const snapshot = await db.collection('rosters').orderBy('uploadedAt', 'desc').get(); if (snapshot.empty) { rosterListDiv.innerHTML = '尚無名冊'; return; } rosterListDiv.innerHTML = '<ul></ul>'; const ul = rosterListDiv.querySelector('ul'); snapshot.forEach(doc => { const roster = doc.data(); allRostersData[doc.id] = roster.students; const li = document.createElement('li'); li.innerHTML = `<span><strong>${doc.id}</strong> (${roster.rosterName}) - ${roster.students.length}人</span><div class="action-buttons"><button class="delete-btn" data-id="${doc.id}">刪除</button></div>`; ul.appendChild(li); const option1 = new Option(`${doc.id} (${roster.rosterName})`, doc.id); rosterSelect.add(option1); batchRosterSelect.add(option1.cloneNode(true)); teacherFilterRoster.add(option1.cloneNode(true)); });
@@ -274,17 +275,79 @@
 
         async function loadTeachers() { const snapshot = await db.collection('users').where('role', '==', 'teacher').get(); allTeachers = []; snapshot.forEach(doc => { allTeachers.push({ uid: doc.id, ...doc.data() }); }); updateAndRenderTeachers(); }
         
+        // 【【【修改 JavaScript】】】
         function updateAndRenderTeachers() {
-            const filterValue = teacherFilterRoster.value; const sortValue = teacherSortSelect.value;
+            const filterValue = teacherFilterRoster.value;
+            const sortValue = teacherSortSelect.value;
+            
             let teachersToRender = (filterValue === 'all') ? [...allTeachers] : allTeachers.filter(t => t.rosterId === filterValue);
-            teachersToRender.sort((a, b) => { const nameA = a.displayName || a.email; const nameB = b.displayName || b.email; if (sortValue === 'name_asc') { return nameA.localeCompare(nameB, 'zh-Hant'); } else if (sortValue === 'name_desc') { return nameB.localeCompare(nameA, 'zh-Hant'); } return 0; });
+            
+            teachersToRender.sort((a, b) => {
+                if (sortValue === 'status') {
+                    const statusA = a.passwordNeedsReset === true ? 1 : 0; // 0: 已啟用, 1: 待啟用
+                    const statusB = b.passwordNeedsReset === true ? 1 : 0;
+                    
+                    if (statusA !== statusB) {
+                        return statusA - statusB; // 狀態不同時，已啟用的排前面
+                    }
+                    
+                    // 如果狀態相同，都是已啟用，則比較登入時間
+                    if (statusA === 0) {
+                        const timeA = a.lastLoginAt ? a.lastLoginAt.seconds : 0;
+                        const timeB = b.lastLoginAt ? b.lastLoginAt.seconds : 0;
+                        return timeB - timeA; // 時間晚的 (秒數大) 排前面
+                    }
+                    
+                    // 如果狀態相同，都是待啟用，則照姓名排序
+                    const nameA = a.displayName || a.email;
+                    const nameB = b.displayName || b.email;
+                    return nameA.localeCompare(nameB, 'zh-Hant');
+
+                } else if (sortValue === 'name_asc') {
+                    const nameA = a.displayName || a.email;
+                    const nameB = b.displayName || b.email;
+                    return nameA.localeCompare(nameB, 'zh-Hant');
+                } else if (sortValue === 'name_desc') {
+                    const nameA = a.displayName || a.email;
+                    const nameB = b.displayName || b.email;
+                    return nameB.localeCompare(nameA, 'zh-Hant');
+                }
+                
+                return 0; // 預設排序
+            });
+
             teacherListDiv.innerHTML = ''; 
-            if (teachersToRender.length === 0) { teacherListDiv.innerHTML = '找不到符合條件的教師帳號。'; return; } 
-            teacherListDiv.innerHTML = '<ul></ul>'; const ul = teacherListDiv.querySelector('ul'); 
+            if (teachersToRender.length === 0) {
+                teacherListDiv.innerHTML = '找不到符合條件的教師帳號。';
+                return;
+            } 
+            
+            teacherListDiv.innerHTML = '<ul></ul>'; 
+            const ul = teacherListDiv.querySelector('ul'); 
+            
             teachersToRender.forEach(teacher => { 
                 const displayName = teacher.displayName ? `<strong>${teacher.displayName}</strong> (${teacher.email})` : `<strong>${teacher.email}</strong>`; 
                 const li = document.createElement('li'); 
-                li.innerHTML = `<input type="checkbox" class="teacher-checkbox" value="${teacher.uid}" style="flex-shrink: 0;"><div class="teacher-info">${displayName}<br><small style="color:#777;">綁定名冊: ${teacher.rosterId}</small></div>`; 
+                
+                const status = teacher.passwordNeedsReset === true ? 'pending' : 'active';
+                const statusTitle = status === 'active' ? '已啟用 (已登入)' : '待啟用 (尚未登入)';
+                const statusIndicator = `<span class="status-indicator status-${status}" title="${statusTitle}"></span>`;
+
+                let detailsHTML = `<small style="color:#777;">綁定名冊: ${teacher.rosterId}</small>`;
+                if (status === 'active' && teacher.lastLoginAt) {
+                    const lastLoginDate = teacher.lastLoginAt.toDate();
+                    const formattedTime = lastLoginDate.toLocaleString('zh-TW', {
+                        year: 'numeric', month: 'numeric', day: 'numeric',
+                        hour: '2-digit', minute: '2-digit', hour12: false
+                    });
+                    detailsHTML += `<br><small class="last-login-time">最近登入: ${formattedTime}</small>`;
+                }
+                
+                li.innerHTML = `<input type="checkbox" class="teacher-checkbox" value="${teacher.uid}" style="flex-shrink: 0;">
+                                <div class="teacher-info">
+                                    ${statusIndicator}${displayName}<br>
+                                    ${detailsHTML}
+                                </div>`;
                 ul.appendChild(li); 
             }); 
             selectAllTeachersCheckbox.checked = false;
@@ -299,13 +362,13 @@
         batchResetBtn.addEventListener('click', () => performBatchAction('reset'));
         batchDeleteBtn.addEventListener('click', () => performBatchAction('delete'));
         
-        teacherCreateForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('teacher-email').value.trim(); const name = document.getElementById('teacher-name').value.trim(); const uid = document.getElementById('teacher-uid').value.trim(); const rid = document.getElementById('roster-select').value; if (!email || !uid || !rid) return; const selectedClasses = []; document.querySelectorAll('.single-class-selector:checked').forEach(checkbox => { selectedClasses.push(checkbox.value); }); try { const dataToSet = { email, role: 'teacher', rosterId: rid, passwordNeedsReset: true }; if (name) dataToSet.displayName = name; if (selectedClasses.length > 0) { dataToSet.visibleClasses = selectedClasses; } await db.collection('users').doc(uid).set(dataToSet); alert('成功'); teacherCreateForm.reset(); singleClassSelectionContainer.innerHTML = '<small>請先選擇上方的「綁定學生名冊」。</small>'; loadTeachers(); } catch (err) { alert('失敗: ' + err.message); } });
-        batchTeacherForm.addEventListener('submit', async (e) => { e.preventDefault(); const batchDataText = document.getElementById('batch-teacher-data').value.trim(); const timetableText = document.getElementById('batch-teacher-timetable').value.trim(); const selectedRosterId = document.getElementById('batch-roster-select').value; if (!batchDataText || !selectedRosterId) { alert('請貼上 users.json 的內容並選擇名冊！'); return; } try { const timetable = {}; if (timetableText) { timetableText.split('\n').forEach(line => { const [email, className] = line.split(','); if (email && className) { const trimmedEmail = email.trim(); const trimmedClass = className.trim(); if (!timetable[trimmedEmail]) { timetable[trimmedEmail] = []; } timetable[trimmedEmail].push(trimmedClass); } }); } let users; const parsedData = JSON.parse(batchDataText); if (Array.isArray(parsedData)) { users = parsedData; } else if (parsedData && Array.isArray(parsedData.users)) { users = parsedData.users; } else { throw new Error('貼上的資料格式不正確，找不到 "users" 陣列。'); } if (users.length === 0) throw new Error('使用者陣列為空。'); const batch = db.batch(); let count = 0; users.forEach(user => { const uid = user.localId; const email = user.email; const displayName = user.displayName; if (uid && email) { const userRef = db.collection('users').doc(uid); const dataToSet = { email, role: 'teacher', rosterId: selectedRosterId, passwordNeedsReset: true }; if (displayName) dataToSet.displayName = displayName; if (timetable[email]) { dataToSet.visibleClasses = [...new Set(timetable[email])]; } batch.set(userRef, dataToSet); count++; } }); if (count === 0) throw new Error('在貼上的資料中找不到有效的 localId 和 email。'); await batch.commit(); alert(`成功批次設定/更新 ${count} 位教師！`); document.getElementById('batch-teacher-data').value = ''; document.getElementById('batch-teacher-timetable').value = ''; loadTeachers(); } catch (error) { alert('批次綁定失敗: ' + error.message); console.error(error); } });
+        teacherCreateForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('teacher-email').value.trim(); const name = document.getElementById('teacher-name').value.trim(); const uid = document.getElementById('teacher-uid').value.trim(); const rid = document.getElementById('roster-select').value; if (!email || !uid || !rid) return; const selectedClasses = []; document.querySelectorAll('.single-class-selector:checked').forEach(checkbox => { selectedClasses.push(checkbox.value); }); try { const dataToSet = { email, role: 'teacher', rosterId: rid, passwordNeedsReset: true }; if (name) dataToSet.displayName = name; if (selectedClasses.length > 0) { dataToSet.visibleClasses = selectedClasses; } await db.collection('users').doc(uid).set(dataToSet, { merge: true }); alert('成功'); teacherCreateForm.reset(); singleClassSelectionContainer.innerHTML = '<small>請先選擇上方的「綁定學生名冊」。</small>'; loadTeachers(); } catch (err) { alert('失敗: ' + err.message); } });
+        batchTeacherForm.addEventListener('submit', async (e) => { e.preventDefault(); const batchDataText = document.getElementById('batch-teacher-data').value.trim(); const timetableText = document.getElementById('batch-teacher-timetable').value.trim(); const selectedRosterId = document.getElementById('batch-roster-select').value; if (!batchDataText || !selectedRosterId) { alert('請貼上 users.json 的內容並選擇名冊！'); return; } try { const timetable = {}; if (timetableText) { timetableText.split('\n').forEach(line => { const [email, className] = line.split(','); if (email && className) { const trimmedEmail = email.trim(); const trimmedClass = className.trim(); if (!timetable[trimmedEmail]) { timetable[trimmedEmail] = []; } timetable[trimmedEmail].push(trimmedClass); } }); } let users; const parsedData = JSON.parse(batchDataText); if (Array.isArray(parsedData)) { users = parsedData; } else if (parsedData && Array.isArray(parsedData.users)) { users = parsedData.users; } else { throw new Error('貼上的資料格式不正確，找不到 "users" 陣列。'); } if (users.length === 0) throw new Error('使用者陣列為空。'); const batch = db.batch(); let count = 0; users.forEach(user => { const uid = user.localId; const email = user.email; const displayName = user.displayName; if (uid && email) { const userRef = db.collection('users').doc(uid); const dataToSet = { email, role: 'teacher', rosterId: selectedRosterId, passwordNeedsReset: true }; if (displayName) dataToSet.displayName = displayName; if (timetable[email]) { dataToSet.visibleClasses = [...new Set(timetable[email])]; } batch.set(userRef, dataToSet, { merge: true }); count++; } }); if (count === 0) throw new Error('在貼上的資料中找不到有效的 localId 和 email。'); await batch.commit(); alert(`成功批次設定/更新 ${count} 位教師！`); document.getElementById('batch-teacher-data').value = ''; document.getElementById('batch-teacher-timetable').value = ''; loadTeachers(); } catch (error) { alert('批次綁定失敗: ' + error.message); console.error(error); } });
         rosterUploadForm.addEventListener('submit', async (e) => { e.preventDefault(); const rid = document.getElementById('roster-id').value.trim(); const rName = document.getElementById('roster-name').value.trim(); const rData = document.getElementById('roster-data').value.trim(); if (!rid || !rName || !rData) return; const students = rData.split('\n').map(l => { const [id, n] = l.split(','); return { id: id ? id.trim() : '', name: n ? n.trim() : '' }; }).filter(s => s.id && s.name); if (students.length === 0) return; try { await db.collection('rosters').doc(rid).set({ rosterName: rName, students, uploadedAt: new Date() }); alert('成功'); rosterUploadForm.reset(); loadRosters(); } catch (err) { alert('失敗: ' + err.message); } });
         rosterListDiv.addEventListener('click', async (e) => { if (e.target.classList.contains('delete-btn')) { const rid = e.target.dataset.id; if (confirm(`刪除名冊 "${rid}"？`)) { try { await db.collection('rosters').doc(rid).delete(); alert('已刪除'); loadRosters(); } catch (err) { alert('失敗: ' + err.message); } } } });
         teacherListDiv.addEventListener('click', async (e) => { /* 這段邏輯現在由批次按鈕處理，所以留空 */ });
 
-        const collectionsToBackup = ['users', 'rosters', 'gradebooks', 'performanceRecords'];
+        const collectionsToBackup = ['users', 'rosters', 'gradebooks', 'performanceRecords', 'classChanges', 'calculationRules'];
 
         async function backupData() {
             if (!confirm('這將會讀取所有主要集合的資料並匯出成一個檔案，確定要開始備份嗎？')) return;
@@ -328,35 +391,26 @@
                         
                         backupObject[collectionName][doc.id] = docData;
 
-                        if (collectionName === 'gradebooks' || collectionName === 'performanceRecords') {
-                            backupObject[collectionName][doc.id]._subcollections = {};
-                            const subSnapshot = await doc.ref.collection('assignments').get(); 
-                            const subSnapshot2 = await doc.ref.collection('records').get(); 
-                            
-                            if (!subSnapshot.empty) {
-                                backupObject[collectionName][doc.id]._subcollections['assignments'] = {};
-                                subSnapshot.forEach(subDoc => {
-                                    const subDocData = subDoc.data();
-                                    for (const key in subDocData) {
-                                        if (subDocData[key] instanceof firebase.firestore.Timestamp) {
-                                            subDocData[key] = { _seconds: subDocData[key].seconds, _nanoseconds: subDocData[key].nanoseconds };
+                        const subcollectionsToBackup = ['assignments', 'records'];
+                        if (subcollectionsToBackup.length > 0) {
+                             backupObject[collectionName][doc.id]._subcollections = {};
+                             for (const sub of subcollectionsToBackup) {
+                                 const subSnapshot = await doc.ref.collection(sub).get();
+                                 if (!subSnapshot.empty) {
+                                     if (!backupObject[collectionName][doc.id]._subcollections[sub]) {
+                                         backupObject[collectionName][doc.id]._subcollections[sub] = {};
+                                     }
+                                     subSnapshot.forEach(subDoc => {
+                                        const subDocData = subDoc.data();
+                                        for (const key in subDocData) {
+                                            if (subDocData[key] instanceof firebase.firestore.Timestamp) {
+                                                subDocData[key] = { _seconds: subDocData[key].seconds, _nanoseconds: subDocData[key].nanoseconds };
+                                            }
                                         }
-                                    }
-                                    backupObject[collectionName][doc.id]._subcollections['assignments'][subDoc.id] = subDocData;
-                                });
-                            }
-                            if (!subSnapshot2.empty) {
-                                backupObject[collectionName][doc.id]._subcollections['records'] = {};
-                                subSnapshot2.forEach(subDoc => {
-                                    const subDocData = subDoc.data();
-                                    for (const key in subDocData) {
-                                        if (subDocData[key] instanceof firebase.firestore.Timestamp) {
-                                            subDocData[key] = { _seconds: subDocData[key].seconds, _nanoseconds: subDocData[key].nanoseconds };
-                                        }
-                                    }
-                                    backupObject[collectionName][doc.id]._subcollections['records'][subDoc.id] = subDocData;
-                                });
-                            }
+                                        backupObject[collectionName][doc.id]._subcollections[sub][subDoc.id] = subDocData;
+                                     });
+                                 }
+                             }
                         }
                     }
                 }
@@ -398,16 +452,20 @@
                     const backupObject = JSON.parse(e.target.result);
                     for (const collectionName of collectionsToBackup) {
                         if (backupObject[collectionName]) {
-                            const batch = db.batch();
                             const collectionRef = db.collection(collectionName);
                             
+                            console.log(`正在清除集合: ${collectionName}`);
                             const oldDocs = await collectionRef.get();
-                            oldDocs.forEach(doc => batch.delete(doc.ref));
+                            for (const doc of oldDocs.docs) {
+                                await doc.ref.delete();
+                            }
+                            console.log(`集合 ${collectionName} 已清除。`);
 
+                            console.log(`正在寫入新資料到: ${collectionName}`);
                             for (const docId in backupObject[collectionName]) {
-                                const docData = backupObject[collectionName][docId];
+                                const docData = { ...backupObject[collectionName][docId] };
                                 const subcollections = docData._subcollections;
-                                delete docData._subcollections; 
+                                delete docData._subcollections;
 
                                 for (const key in docData) {
                                     if (docData[key] && docData[key]._seconds !== undefined) {
@@ -415,13 +473,13 @@
                                     }
                                 }
                                 
-                                batch.set(collectionRef.doc(docId), docData);
+                                await collectionRef.doc(docId).set(docData);
 
                                 if (subcollections) {
                                     for (const subCollectionName in subcollections) {
                                         const subCollectionData = subcollections[subCollectionName];
                                         for(const subDocId in subCollectionData) {
-                                            const subDocData = subCollectionData[subDocId];
+                                            const subDocData = { ...subCollectionData[subDocId] };
                                             for (const key in subDocData) {
                                                 if (subDocData[key] && subDocData[key]._seconds !== undefined) {
                                                     subDocData[key] = new firebase.firestore.Timestamp(subDocData[key]._seconds, subDocData[key]._nanoseconds);
@@ -432,10 +490,12 @@
                                     }
                                 }
                             }
-                            await batch.commit();
+                            console.log(`集合 ${collectionName} 寫入完成。`);
                         }
                     }
                     alert('資料還原成功！建議重新整理頁面以查看最新資料。');
+                    loadRosters();
+                    loadTeachers();
                 } catch (error) {
                     console.error("還原失敗:", error);
                     alert("還原失敗: " + error.message);
