@@ -15,12 +15,15 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif;
             margin: 0;
             background-color: var(--secondary-color);
             color: var(--font-color);
         }
-
+		/* 【新增此段】強制所有表單元件繼承 body 的字體 */
+        button, input, select, textarea {
+            font-family: inherit;
+        }
         /* --- 全新、已整合的 Header 樣式 --- */
         header {
             background-color: var(--primary-color);
@@ -364,6 +367,7 @@
         <h1>班級綜合成績紀錄系統</h1>
         <div class="header-right-panel">
 			<div class="main-actions">
+				<a href="./timetable.html" style="color: white; text-decoration: none;"><button>課表查詢</button></a>
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
                 <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
                 <button id="class-settings-btn" class="icon-btn-main" title="班級顯示設定">⚙️</button>
