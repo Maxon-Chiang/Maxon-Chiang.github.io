@@ -21,8 +21,38 @@
         .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4a90e2; animation: spin 1s ease infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 10px; position: relative; text-align: left; line-height: 1.8; }
+        /* --- 修改開始 (1/2) --- */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.5);
+            /* 【新增】使用 Flexbox 進行置中 */
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content { 
+            background-color: #fefefe; 
+            /* 【移除】移除舊的 margin 置中方式 */
+            /* margin: 10% auto; */
+            padding: 25px; 
+            border: 1px solid #888; 
+            width: 90%; 
+            max-width: 500px; 
+            border-radius: 10px; 
+            position: relative; 
+            text-align: left; 
+            line-height: 1.8; 
+            /* 【新增】確保在小螢幕上不會超出畫面 */
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        /* --- 修改結束 (1/2) --- */
         .close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
         .modal-content ul { list-style-type: disc; padding-left: 25px; }
         .modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -130,14 +160,20 @@
                 } else {
                     splashScreen.style.display = 'none';
                     loginView.style.display = 'flex';
-                    welcomeModal.style.display = 'block';
+                    /* --- 修改開始 (2/2) --- */
+                    // 【修改】將 'block' 改為 'flex' 來啟用新的置中樣式
+                    welcomeModal.style.display = 'flex';
+                    /* --- 修改結束 (2/2) --- */
                 }
             } else {
                 currentUserForRedirect = null;
                 splashScreen.style.display = 'none';
                 loginView.style.display = 'flex';
                 if (localStorage.getItem('hideLoginWelcome') !== 'true') {
-                    welcomeModal.style.display = 'block';
+                    /* --- 修改開始 (2/2) --- */
+                    // 【修改】將 'block' 改為 'flex' 來啟用新的置中樣式
+                    welcomeModal.style.display = 'flex';
+                    /* --- 修改結束 (2/2) --- */
                 }
                 if (fromPage) {
                      errorMessage.textContent = `欲進入${fromPage === 'admin' ? '管理' : '教師'}頁面，請先登入。`;
