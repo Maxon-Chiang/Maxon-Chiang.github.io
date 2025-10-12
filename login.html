@@ -6,7 +6,6 @@
     <title>登入 - 班級綜合成績紀錄系統</title>
     <style>
         body { font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif; background-color: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-		/* 【新增此段】強制所有表單元件繼承 body 的字體 */
         button, input, select, textarea {
             font-family: inherit;
         }
@@ -100,9 +99,23 @@
             try {
                 const persistence = rememberMeCheckbox.checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
                 await auth.setPersistence(persistence);
-                await auth.signInWithEmailAndPassword(email, password);
+                
+                // 【【【核心修改在此】】】
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+
+                if (userCredential.user) {
+                    // 登入成功後，在背景更新 lastLoginAt 欄位
+                    // 這是一個 "fire-and-forget" 操作，不需要等待它完成
+                    db.collection('users').doc(userCredential.user.uid).update({
+                        lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(err => {
+                        console.error("更新登入時間失敗:", err);
+                    });
+                }
+                
                 localStorage.setItem('lastLoginEmail', email);
-                // 成功後 onAuthStateChanged 會自動處理跳轉
+                // 成功後 onAuthStateChanged 會自動處理後續跳轉
+
             } catch (error) {
                 splashScreen.style.display = 'none';
                 loginView.style.display = 'flex';
