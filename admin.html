@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理後台 - 班級綜合成績紀錄系統</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 1200px; margin: auto; background-color: #f8f9fa; }
+        body { font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif; padding: 20px; max-width: 1200px; margin: auto; background-color: #f8f9fa; }
         h1, h2, h3 { color: #333; }
-        
-/* 【【【新增】】】: 頁籤導覽列樣式 (優化版) */
+		/* 【新增此段】強制所有表單元件繼承 body 的字體 */
+        button, input, select, textarea {
+            font-family: inherit;
+        }        
         .tab-nav {
             display: flex;
             border-bottom: 2px solid #dee2e6;
