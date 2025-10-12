@@ -6,8 +6,12 @@
     <title>成績登錄 - 班級綜合成績紀錄系統</title>
     <style>
         :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
-        header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        body { font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+        /* 【新增此段】強制所有表單元件繼承 body 的字體 */
+        button, input, select, textarea {
+            font-family: inherit;
+        }
+		header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         header h1 { font-size: 1.6em; margin: 0; }
         header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em; }
         main { padding: 20px; max-width: 1000px; margin: auto; }
