@@ -6,7 +6,11 @@
     <title>學生成績計算 - 班級綜合成績紀錄系統</title>
     <style>
         :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+        body { font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+		/* 【新增此段】強制所有表單元件繼承 body 的字體 */
+        button, input, select, textarea {
+            font-family: inherit;
+        }
         header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
         header h1 { font-size: 1.6em; margin: 0; }
         header a button, header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em;}
@@ -174,13 +178,26 @@
 			}
 
         }
-		
+		/* 【新增】用戶名稱樣式 */
+        #user-email {
+            margin-right: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        header .header-actions {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
-    <header>
+	<header>
         <h1>學生成績計算</h1>
-        <div><a href="./teacher.html"><button>返回主頁</button></a><button id="logout-btn">登出</button></div>
+        <div class="header-actions">
+            <span id="user-email"></span>
+            <a href="./teacher.html"><button>返回主頁</button></a>
+            <button id="logout-btn">登出</button>
+        </div>
     </header>
     <main id="app-container" style="display:none;">
 
@@ -305,14 +322,37 @@
         const appContainer = document.getElementById('app-container');
 
         // --- 初始化 & 資料載入 ---
-        auth.onAuthStateChanged(async (user) => {
+		auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
-                await initializePage();
-                appContainer.style.display = 'block';
-            } else { window.location.href = 'login.html'; }
-        });
+                const displayElement = document.getElementById('user-email');
 
+                try {
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    if (userDoc.exists) { 
+                        const userData = userDoc.data();
+                        if (userData.displayName) {
+                            displayElement.textContent = userData.displayName;
+                        } else {
+                            displayElement.textContent = user.email;
+                        }
+                    } else {
+                        displayElement.textContent = user.email;
+                    }
+                } catch (e) {
+                    console.error("讀取用戶資料失敗:", e);
+                    displayElement.textContent = user.email;
+                }
+
+                // 頁面主邏輯
+                initializePage(); // 確保 initializePage 在這裡被呼叫
+                appContainer.style.display = 'block';
+
+            } else { 
+                window.location.href = 'login.html'; 
+            }
+        });
+		
         async function initializePage() {
             const userDoc = await db.collection('users').doc(currentUser.uid).get();
             if (!userDoc.exists || userDoc.data().role !== 'teacher' || !userDoc.data().rosterId) {
