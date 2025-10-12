@@ -195,12 +195,11 @@ header .header-actions {
 #exchange-modal .exchange-target-cell:hover {
     background-color: #badbcc;
 }
-/* ▼▼▼ 在此處新增以下程式碼 ▼▼▼ */
 .swap-confirm-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr; /* 左側資訊區塊佔 2/3，右側日期選擇佔 1/3 */
-    gap: 15px 10px; /* 行間距 15px，欄間距 10px */
-    align-items: center; /* 垂直置中對齊 */
+    grid-template-columns: 2fr 1fr;
+    gap: 15px 10px;
+    align-items: center;
     margin-bottom: 25px;
 }
 .swap-info-box {
@@ -211,10 +210,9 @@ header .header-actions {
     line-height: 1.4;
 }
 .swap-info-box b {
-    display: block; /* 讓標題獨佔一行 */
+    display: block;
     margin-bottom: 4px;
 }
-/* ▲▲▲ 新增結束 ▲▲▲ */
 .substituted-cell {
     background-color: var(--substitution-bg) !important;
     border: 1px dashed var(--substitution-border);
@@ -233,6 +231,7 @@ header .header-actions {
     color:blue;
     font-weight: normal;
 }
+.modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
 		
 @media screen and (max-width: 768px) {
     body { padding: 0; }
@@ -330,12 +329,9 @@ header .header-actions {
             <h3>確認調課</h3>
             
             <div class="swap-confirm-grid">
-                <div id="original-class-info" class="swap-info-box">
-                    </div>
+                <div id="original-class-info" class="swap-info-box"></div>
                 <input type="date" id="original-class-date">
-
-                <div id="target-class-info" class="swap-info-box">
-                    </div>
+                <div id="target-class-info" class="swap-info-box"></div>
                 <input type="date" id="target-class-date">
             </div>
 
@@ -348,8 +344,7 @@ header .header-actions {
             <span class="close-button">&times;</span>
             <h3>指定代課 / 換課</h3>
             
-            <div id="substitution-details">
-            </div>
+            <div id="substitution-details"></div>
             <div class="date-picker-group">
                 <label for="substitution-date">請假日期：</label>
                 <input type="date" id="substitution-date">
@@ -386,6 +381,24 @@ header .header-actions {
                 </div>
             </div>
             <div id="exchange-modal-body"></div>
+        </div>
+    </div>
+    
+    <div id="welcome-modal-timetable" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: left; line-height: 1.8;">
+            <span class="close-btn">&times;</span>
+            <h2>歡迎使用 課表系統</h2>
+            <p>這是一套整合性的課表工具，您可以：</p>
+            <ul>
+                <li><strong>查詢課表</strong>: 快速查詢個人、班級、或場地的課表。</li>
+                <li><strong>智慧調課</strong>: 點擊自己課表上的課程，系統會自動以<span style="background-color: #d1e7dd; padding: 2px 4px; border-radius: 3px;">綠色</span>標示出可互相調課的時段。</li>
+                <li><strong>指定代課/換課</strong>: 點擊自己課表後，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」。</li>
+                <li><strong>加入行事曆</strong>: 在任何課表上長按 (或滑鼠右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
+            </ul>
+            <div class="modal-footer">
+                <label><input type="checkbox" id="dont-show-again-timetable"> 以後不要再顯示此訊息</label>
+                <button id="close-welcome-timetable-btn" style="width: auto; padding: 8px 20px; background-color: #4a90e2; color: white;">我了解了</button>
+            </div>
         </div>
     </div>
 
@@ -432,6 +445,23 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 
 // --- 主程式 ---
 async function main() {
+
+    const welcomeModal = document.getElementById('welcome-modal-timetable');
+    if (localStorage.getItem('hideTimetableWelcome') !== 'true') {
+        setTimeout(() => {
+            welcomeModal.style.display = 'block';
+        }, 500);
+    }
+
+    const closeWelcome = () => {
+        if (document.getElementById('dont-show-again-timetable').checked) {
+            localStorage.setItem('hideTimetableWelcome', 'true');
+        }
+        welcomeModal.style.display = 'none';
+    };
+
+    welcomeModal.querySelector('.close-btn').onclick = closeWelcome;
+    document.getElementById('close-welcome-timetable-btn').onclick = closeWelcome;
 
     console.log("正在從 Firestore 獲取資料...");
     const [scheduleSnapshot, staffSnapshot, subjectSnapshot, usersSnapshot] = await Promise.all([
@@ -497,18 +527,17 @@ async function main() {
 	
     function findNextAvailableDate(initialDate, period, day) {
         let nextAvailableDate = new Date(initialDate);
-        let safetyCounter = 0; // 防止無限迴圈
+        let safetyCounter = 0;
 
-        while (safetyCounter < 100) { // 最多往後找 100 週
+        while (safetyCounter < 100) {
             const dateString = formatDate(nextAvailableDate, 'YYYY-MM-DD');
             const dayIndex = nextAvailableDate.getDay() - 1;
             
-            // 檢查 activeChanges 中是否有衝突
             const conflict = activeChanges.find(change => {
-                if (change.type === 'substitution' || change.type === 'exchange') {
+                if (change.type === 'substitution' || (change.type === 'exchange' && change.originalLessonInfo) ) {
                     const info = change.type === 'substitution' ? change.lessonInfo : change.originalLessonInfo;
-                    const changeDayIndex = new Date(change.date).getDay() - 1;
-                    return change.date === dateString && info.period === period && dayIndex === day;
+                    const changeDate = change.type === 'substitution' ? change.date : info.date;
+                    return changeDate === dateString && info.period === period && dayIndex === day;
                 }
                 if (change.type === 'swap') {
                     const infoA = change.originalClassInfo;
@@ -520,16 +549,13 @@ async function main() {
             });
 
             if (conflict) {
-                // 如果有衝突，跳到下一週的同一天
                 nextAvailableDate.setDate(nextAvailableDate.getDate() + 7);
                 safetyCounter++;
             } else {
-                // 如果沒有衝突，這就是我們要的日期
                 return nextAvailableDate;
             }
         }
         
-        // 如果迴圈超過 100 次，返回最初的日期以避免頁面卡死
         console.warn("尋找可用日期超過 100 週，可能存在邏輯問題。");
         return new Date(initialDate);
     }
@@ -561,7 +587,6 @@ async function main() {
             return false;
         });
 
-        // 如果找到了衝突的異動，返回整個衝突物件，否則返回 null
         return conflict || null;
     }
 	
@@ -1251,13 +1276,15 @@ async function main() {
         newConfirmBtn.addEventListener('click', async () => {
             const originalDate = originalDateInput.value;
             const targetDate = targetDateInput.value;
-
-            if (isDateConflict(originalDate, swapInfo.original.period, swapInfo.original.day)) {
+            
+            const conflict1 = isDateConflict(originalDate, swapInfo.original.period, swapInfo.original.day);
+            if (conflict1) {
                 alert(`錯誤：您的原課程節次 (${originalDate} 第 ${swapInfo.original.period + 1} 節) 已有其他的課程異動，無法設定。`);
                 return;
             }
 
-            if (isDateConflict(targetDate, swapInfo.target.period, swapInfo.target.day)) {
+            const conflict2 = isDateConflict(targetDate, swapInfo.target.period, swapInfo.target.day);
+            if (conflict2) {
                 alert(`錯誤：您選擇的調換對象節次 (${targetDate} 第 ${swapInfo.target.period + 1} 節) 已有其他的課程異動，無法設定。`);
                 return;
             }
@@ -1417,7 +1444,6 @@ async function main() {
             }
         };
         
-        // 清理並重新綁定所有事件
         dateInput.onchange = null;
         dateInput.addEventListener('change', dateValidationHandler);
 
@@ -1427,8 +1453,6 @@ async function main() {
         teacherSelect.removeEventListener('change', updateButtonState);
         teacherSelect.addEventListener('change', updateButtonState);
         
-        // 為了確保 confirmBtn 的事件只被綁定一次，我們需要先移除舊的再添加新的
-        // 這裡用複製節點的方式來移除所有舊的監聽器
         const newConfirmBtn = confirmBtn.cloneNode(true);
         confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
         newConfirmBtn.addEventListener('click', confirmClickHandler);
@@ -1591,18 +1615,17 @@ async function main() {
                     return;
                 }
             }
-
-            if (confirmBtn) {
-                 confirmBtn.disabled = true;
-                 confirmBtn.textContent = '儲存中...';
-            }
+            
+            const newConfirmBtn = confirmBtn.cloneNode(true); // Re-clone to handle this specific click
+            newConfirmBtn.disabled = true;
+            newConfirmBtn.textContent = '儲存中...';
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
             const substituteTeacherId = teacherNameToId.get(substitutionInfo.substituteTeacherName);
             if (!substituteTeacherId) {
                 alert(`儲存失敗：系統中找不到教師 ${substitutionInfo.substituteTeacherName} 的帳號資訊。`);
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                }
+                newConfirmBtn.disabled = false;
+                newConfirmBtn.textContent = '確認送出';
                 return;
             }
 
@@ -1669,9 +1692,7 @@ async function main() {
                 alert('儲存失敗: ' + error.message);
                 console.error("儲存異動紀錄失敗:", error);
             } finally {
-                if (confirmBtn) {
-                    confirmBtn.disabled = false;
-                }
+                 // The button was replaced, no need to re-enable the old one.
             }
         }
     }
