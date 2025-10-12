@@ -320,19 +320,17 @@
                 align-items: center;
             }
 
-            /* --- 【【【以下為本次主要修改】】】 --- */
             .header-top-row h1 {
                 font-size: 1.2em;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                min-width: 0; /* 關鍵修正：允許標題在flex佈局中被極限壓縮 */
+                min-width: 0;
             }
             .user-profile #user-email {
                 white-space: nowrap;
-                cursor: pointer; /* 新增：讓名字看起來可以點擊 */
+                cursor: pointer;
             }
-            /* --- 以上為本次主要修改 --- */
 
             .main-actions {
                 width: 100%;
@@ -367,7 +365,7 @@
         <h1>班級綜合成績紀錄系統</h1>
         <div class="header-right-panel">
 			<div class="main-actions">
-				<a href="./timetable.html" style="color: white; text-decoration: none;"><button>課表查詢</button></a>
+				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表查詢</button></a>
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
                 <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
                 <button id="class-settings-btn" class="icon-btn-main" title="班級顯示設定">⚙️</button>
@@ -689,7 +687,6 @@
             currentEntity = null;
         }
 
-        // 【【【修改此函式】】】
         async function loadRecords(id, type) {
             recordsList.innerHTML = '載入中...';
             try {
@@ -699,15 +696,11 @@
                 if (type === 'class') {
                     const possibleIds = [...new Set([id, convertClassName(id), revertClassName(id)])];
                     
-                    // 1. 先用 'in' 撈出所有可能的紀錄
                     const snapshot = await recordsRef.where('entityId', 'in', possibleIds).get();
 
                     let classRecords = [];
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        // 2. 【【【放寬過濾條件】】】
-                        // 不但要找 entityType 為 'class' 的紀錄，
-                        // 也要找那些 entityId 長得像班級代號 (長度為3)，但可能沒有 entityType 欄位的舊紀錄
                         if (data.entityType === 'class' || (data.entityId && data.entityId.length === 3 && data.entityType === undefined)) {
                             classRecords.push({ id: doc.id, ...data });
                         }
@@ -715,7 +708,6 @@
                     allRecords = classRecords;
 
                 } else { 
-                    // 學生查詢邏輯不變，因為它有備用查詢方式，比較沒問題
                     const newRecordsPromise = recordsRef.where('entityId', '==', id).where('entityType', '==', 'student').get();
                     const oldRecordsPromise = recordsRef.where('studentId', '==', id).get();
                     const [newSnapshot, oldSnapshot] = await Promise.all([newRecordsPromise, oldRecordsPromise]);
@@ -798,23 +790,21 @@
             if (e.target === classSettingsModal) { classSettingsModal.style.display = 'none'; }
         });
 
-		// 【【【新增以下程式碼，用於控制下拉選單的顯示與隱藏】】】
         const dropdownBtn = document.getElementById('dropdown-btn');
         const dropdownMenu = document.getElementById('dropdown-menu');
 
         dropdownBtn.addEventListener('click', function(event) {
-            event.stopPropagation(); // 防止點擊事件冒泡到 window
+            event.stopPropagation();
             dropdownMenu.classList.toggle('show');
         });
 
         const userEmailSpan = document.getElementById('user-email');
 
         userEmailSpan.addEventListener('click', function(event) {
-            event.stopPropagation(); // 防止點擊事件冒泡到 window
+            event.stopPropagation();
             dropdownMenu.classList.toggle('show');
         });
 		
-        // 點擊頁面其他地方時，隱藏下拉選單
         window.addEventListener('click', function(event) {
             if (!event.target.matches('#dropdown-btn')) {
                 if (dropdownMenu.classList.contains('show')) {
@@ -823,5 +813,14 @@
             }
         });
     </script>
+	<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const timetableLink = document.getElementById('timetable-link');
+        if (timetableLink) {
+            timetableLink.href = `./timetable.html?v=${Date.now()}`;
+        }
+    });
+	</script>
+
 </body>
 </html>
