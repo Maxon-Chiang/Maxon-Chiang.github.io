@@ -87,7 +87,7 @@
         if (savedEmail) { loginEmailInput.value = savedEmail; }
         const savedRememberState = localStorage.getItem('rememberMeState');
         rememberMeCheckbox.checked = (savedRememberState === 'true' || savedRememberState === null);
-
+        
         let currentUserForRedirect = null;
 
         const closeWelcome = () => {
@@ -95,7 +95,6 @@
                 localStorage.setItem('hideLoginWelcome', 'true');
             }
             welcomeModal.style.display = 'none';
-            // 如果是在已登入狀態下關閉歡迎視窗，則立即跳轉
             if (currentUserForRedirect) {
                 routeUser(currentUserForRedirect.role);
             }
@@ -119,7 +118,6 @@
                 currentUserForRedirect = { role: userRole };
 
                 if (localStorage.getItem('hideLoginWelcome') === 'true') {
-                    // 如果設定了隱藏，且沒有角色衝突，則直接跳轉
                     if (!fromPage || userRole === fromPage) {
                         routeUser(userRole);
                     } else {
@@ -130,13 +128,11 @@
                         errorMessage.textContent = `您目前以 ${currentRoleText} 身份登入，無法進入 ${targetRoleText} 頁面。請在此登入正確帳號以切換身份。`;
                     }
                 } else {
-                    // 如果需要顯示歡迎訊息，則顯示登入頁和歡迎視窗，但不跳轉
                     splashScreen.style.display = 'none';
                     loginView.style.display = 'flex';
                     welcomeModal.style.display = 'block';
                 }
             } else {
-                // 未登入狀態
                 currentUserForRedirect = null;
                 splashScreen.style.display = 'none';
                 loginView.style.display = 'flex';
