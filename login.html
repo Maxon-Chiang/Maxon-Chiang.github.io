@@ -125,6 +125,7 @@
                 localStorage.setItem('hideLoginWelcome', 'true');
             }
             welcomeModal.style.display = 'none';
+            // 【關鍵修改】: 當用戶關閉歡迎畫面後，如果存在已登入用戶資訊，則進行跳轉
             if (currentUserForRedirect) {
                 routeUser(currentUserForRedirect.role);
             }
@@ -133,6 +134,7 @@
         welcomeModal.querySelector('.close-btn').onclick = closeWelcome;
         document.getElementById('close-welcome-btn').onclick = closeWelcome;
 
+        // 【【【 major-update-start 】】】
         auth.onAuthStateChanged(async (user) => {
             const urlParams = new URLSearchParams(window.location.search);
             const fromPage = urlParams.get('from');
@@ -145,9 +147,12 @@
                 }
                 
                 const userRole = userDoc.data().role;
+                // 先把用戶資訊存起來，供後續跳轉使用
                 currentUserForRedirect = { role: userRole };
 
+                // 檢查用戶是否設定了「不要再顯示」
                 if (localStorage.getItem('hideLoginWelcome') === 'true') {
+                    // 如果已設定，則直接跳轉 (維持舊有邏輯)
                     if (!fromPage || userRole === fromPage) {
                         routeUser(userRole);
                     } else {
@@ -158,28 +163,28 @@
                         errorMessage.textContent = `您目前以 ${currentRoleText} 身份登入，無法進入 ${targetRoleText} 頁面。請在此登入正確帳號以切換身份。`;
                     }
                 } else {
+                    // 如果沒有設定，則不論如何都先顯示歡迎畫面，而不是直接跳轉
                     splashScreen.style.display = 'none';
                     loginView.style.display = 'flex';
-                    /* --- 修改開始 (2/2) --- */
-                    // 【修改】將 'block' 改為 'flex' 來啟用新的置中樣式
-                    welcomeModal.style.display = 'flex';
-                    /* --- 修改結束 (2/2) --- */
+                    welcomeModal.style.display = 'flex'; 
+                    // 跳轉的動作將會由 closeWelcome 函式觸發
                 }
             } else {
+                // 如果用戶未登入，則顯示登入畫面
                 currentUserForRedirect = null;
                 splashScreen.style.display = 'none';
                 loginView.style.display = 'flex';
+                
+                // 同樣檢查是否要顯示歡迎畫面
                 if (localStorage.getItem('hideLoginWelcome') !== 'true') {
-                    /* --- 修改開始 (2/2) --- */
-                    // 【修改】將 'block' 改為 'flex' 來啟用新的置中樣式
                     welcomeModal.style.display = 'flex';
-                    /* --- 修改結束 (2/2) --- */
                 }
                 if (fromPage) {
                      errorMessage.textContent = `欲進入${fromPage === 'admin' ? '管理' : '教師'}頁面，請先登入。`;
                 }
             }
         });
+        // 【【【 major-update-end 】】】
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
