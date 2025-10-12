@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>班級綜合成績紀錄系統</title>
+    <title>學生綜合紀錄暨課表系統</title>
 	<style>
         :root {
             --primary-color: #4a90e2;
@@ -20,11 +20,9 @@
             background-color: var(--secondary-color);
             color: var(--font-color);
         }
-		/* 【新增此段】強制所有表單元件繼承 body 的字體 */
         button, input, select, textarea {
             font-family: inherit;
         }
-        /* --- 全新、已整合的 Header 樣式 --- */
         header {
             background-color: var(--primary-color);
             color: white;
@@ -40,7 +38,7 @@
         header h1 {
             font-size: 1.6em;
             margin: 0;
-            flex-shrink: 0; /* 防止標題被壓縮 */
+            flex-shrink: 0;
         }
         .header-right-panel {
             display: flex;
@@ -69,7 +67,6 @@
             white-space: nowrap;
         }
 
-        /* --- 下拉選單樣式 --- */
         .dropdown {
             position: relative;
             display: inline-block;
@@ -113,7 +110,6 @@
             display: block;
         }
         
-        /* --- 主內容區樣式 --- */
         main {
             padding: 2rem;
         }
@@ -175,7 +171,6 @@
             font-size: 1em;
         }
 
-        /* --- 【【【補回】】】Modal 彈出視窗樣式 --- */
         .modal {
             display: none;
             position: fixed;
@@ -319,7 +314,6 @@
                 justify-content: space-between;
                 align-items: center;
             }
-
             .header-top-row h1 {
                 font-size: 1.2em;
                 white-space: nowrap;
@@ -331,7 +325,6 @@
                 white-space: nowrap;
                 cursor: pointer;
             }
-
             .main-actions {
                 width: 100%;
                 justify-content: space-around;
@@ -357,24 +350,46 @@
             padding: 2px 8px;
             line-height: 1.2;
         }
+        #info-modal .modal-content {
+            text-align: left;
+            line-height: 1.8;
+        }
+        #info-modal h3 {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-top: 20px;
+        }
+        #info-modal h3:first-of-type {
+            margin-top: 0;
+        }
+        #info-modal ul {
+            list-style-type: disc;
+            padding-left: 25px;
+        }
+        #reset-welcome-prefs-btn {
+            margin-top: 20px;
+            background-color: var(--danger-color);
+            color: white;
+        }
     </style>
 </head>
 
 <body>
 	<header>
-        <h1>班級綜合成績紀錄系統</h1>
+        <h1>學生綜合紀錄暨課表系統</h1>
         <div class="header-right-panel">
 			<div class="main-actions">
-				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表查詢</button></a>
+				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表系統</button></a>
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
                 <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
-                <button id="class-settings-btn" class="icon-btn-main" title="班級顯示設定">⚙️</button>
+                <button id="info-btn" class="icon-btn-main" title="系統說明">⚙️</button>
             </div>
            <div class="user-profile">
                 <span id="user-email"></span>
                 <div class="dropdown">
                     <button id="dropdown-btn" class="icon-btn">⋮</button>
                     <div id="dropdown-menu" class="dropdown-content">
+                        <button id="class-settings-btn">班級顯示設定</button>
                         <button id="change-password-btn">修改密碼</button>
                         <button id="logout-btn">登出</button>
                     </div>
@@ -447,12 +462,39 @@
             <button id="save-class-settings-btn">儲存設定</button>
         </div>
     </div>
+    
+    <div id="info-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>系統功能說明</h2>
+
+            <h3>學生綜合紀錄系統 (主系統)</h3>
+            <ul>
+                <li><strong>主畫面</strong>: 快速登記學生日常表現、管理成績項目、計算學期總分、產出數據報告。</li>
+                <li><strong>成績登錄</strong>: 進入班級專頁，建立如作業、小考等不同的成績項目，並為每位學生輸入分數與註解。</li>
+                <li><strong>成績計算</strong>: 高度客製化的學期總成績計算工具，可自訂複雜的計分規則並一鍵算出最終成績。</li>
+                <li><strong>數據報告</strong>: 提供多維度的數據分析，包含日常表現紀錄與多種成績報告，並支援匯出 CSV。</li>
+            </ul>
+
+            <h3>課表系統</h3>
+            <ul>
+                <li><strong>課表查詢</strong>: 查詢個人、班級、或場地的課表。</li>
+                <li><strong>智慧調課</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段。</li>
+                <li><strong>指定代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」。</li>
+                <li><strong>加入行事曆</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
+            </ul>
+            <hr>
+            <p>您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
+            <button id="reset-welcome-prefs-btn">重設歡迎訊息</button>
+        </div>
+    </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
     <script>
+    document.addEventListener('DOMContentLoaded', function() {
         const firebaseConfig = {
             apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA",
             authDomain: "stu001-e72fa.firebaseapp.com",
@@ -472,26 +514,35 @@
             currentEntity = null,
             allClassList = [],
             visibleClassList = [];
+        
+        const appContainer = document.getElementById('app-container');
+        const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modal-title');
+        const closeBtn = modal.querySelector('.close-btn');
+        const addRecordForm = document.getElementById('add-record-form');
+        const recordsList = document.getElementById('records-list');
+        const passwordResetOverlay = document.getElementById('password-reset-overlay');
+        const passwordResetForm = document.getElementById('password-reset-form');
+        const changePasswordModal = document.getElementById('change-password-modal');
+        const changePasswordBtn = document.getElementById('change-password-btn');
+        const changePasswordForm = document.getElementById('change-password-form');
+        const cpErrorMessage = document.getElementById('cp-error-message');
+        const cpCloseBtn = changePasswordModal.querySelector('.close-btn');
+        const classSettingsModal = document.getElementById('class-settings-modal');
+        const classSettingsBtn = document.getElementById('class-settings-btn');
+        const classSettingsList = document.getElementById('class-settings-list');
+        const saveClassSettingsBtn = document.getElementById('save-class-settings-btn');
+        const csCloseBtn = classSettingsModal.querySelector('.close-btn');
+        const selectAllVisibleClasses = document.getElementById('select-all-visible-classes');
+        const infoModal = document.getElementById('info-modal');
+        const infoBtn = document.getElementById('info-btn');
+        const infoCloseBtn = infoModal.querySelector('.close-btn');
+        const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
+        const timetableLink = document.getElementById('timetable-link');
 
-        const appContainer = document.getElementById('app-container'),
-            modal = document.getElementById('modal'),
-            modalTitle = document.getElementById('modal-title'),
-            closeBtn = modal.querySelector('.close-btn'),
-            addRecordForm = document.getElementById('add-record-form'),
-            recordsList = document.getElementById('records-list'),
-            passwordResetOverlay = document.getElementById('password-reset-overlay'),
-            passwordResetForm = document.getElementById('password-reset-form'),
-            changePasswordModal = document.getElementById('change-password-modal'),
-            changePasswordBtn = document.getElementById('change-password-btn'),
-            changePasswordForm = document.getElementById('change-password-form'),
-            cpErrorMessage = document.getElementById('cp-error-message'),
-            cpCloseBtn = changePasswordModal.querySelector('.close-btn'),
-            classSettingsModal = document.getElementById('class-settings-modal'),
-            classSettingsBtn = document.getElementById('class-settings-btn'),
-            classSettingsList = document.getElementById('class-settings-list'),
-            saveClassSettingsBtn = document.getElementById('save-class-settings-btn'),
-            csCloseBtn = classSettingsModal.querySelector('.close-btn'),
-            selectAllVisibleClasses = document.getElementById('select-all-visible-classes');
+        if (timetableLink) {
+            timetableLink.href = `./timetable.html?v=${Date.now()}`;
+        }
 
         function convertClassName(oldClassName) {
             if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
@@ -593,7 +644,7 @@
             appContainer.innerHTML = '';
             const classesToRender = allClassList.filter(className => visibleClassList.includes(className));
             if (classesToRender.length === 0 && allClassList.length > 0) {
-                appContainer.innerHTML = '<h3>沒有設定要顯示的班級。請點擊「班級顯示設定」。</h3>';
+                appContainer.innerHTML = '<h3>沒有設定要顯示的班級。請點擊下拉選單中的「班級顯示設定」。</h3>';
                 return;
             }
             const groupedByClass = studentsData.reduce((acc, s) => {
@@ -629,9 +680,9 @@
                 const select = document.createElement('select');
                 select.className = 'student-select';
                 select.innerHTML = '<option value="">--- 請選擇學生 ---</option>';
-                (groupedByClass[className] || []).forEach(s => {
+                (groupedByClass[className] || []).sort((a,b) => a.id.localeCompare(b.id)).forEach(s => {
                     const score = studentScores[s.id] || 0;
-                    let dText = `${convertClassName(s.id.substring(0,3))}${s.id.substring(3)} ${s.name}`;
+                    let dText = `${s.id.substring(3)} ${s.name}`;
                     if (score !== 0) {
                         dText += ` (${score.toFixed(1)}分)`;
                     }
@@ -694,19 +745,10 @@
                 const recordsRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
                 
                 if (type === 'class') {
-                    const possibleIds = [...new Set([id, convertClassName(id), revertClassName(id)])];
-                    
-                    const snapshot = await recordsRef.where('entityId', 'in', possibleIds).get();
-
-                    let classRecords = [];
+                    const snapshot = await recordsRef.where('entityId', '==', id).where('entityType', '==', 'class').get();
                     snapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (data.entityType === 'class' || (data.entityId && data.entityId.length === 3 && data.entityType === undefined)) {
-                            classRecords.push({ id: doc.id, ...data });
-                        }
+                        allRecords.push({ id: doc.id, ...doc.data() });
                     });
-                    allRecords = classRecords;
-
                 } else { 
                     const newRecordsPromise = recordsRef.where('entityId', '==', id).where('entityType', '==', 'student').get();
                     const oldRecordsPromise = recordsRef.where('studentId', '==', id).get();
@@ -784,10 +826,26 @@
         csCloseBtn.addEventListener('click', () => { classSettingsModal.style.display = 'none'; });
         saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); classSettingsModal.style.display = 'none'; alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
         
+        infoBtn.addEventListener('click', () => {
+            infoModal.style.display = 'block';
+        });
+        infoCloseBtn.addEventListener('click', () => {
+            infoModal.style.display = 'none';
+        });
+        resetWelcomePrefsBtn.addEventListener('click', () => {
+            localStorage.removeItem('hideLoginWelcome');
+            localStorage.removeItem('hideTimetableWelcome');
+            alert('歡迎訊息的顯示偏好已重設！');
+            infoModal.style.display = 'none';
+        });
+
         window.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
             if (e.target === changePasswordModal) { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; }
             if (e.target === classSettingsModal) { classSettingsModal.style.display = 'none'; }
+            if (e.target === infoModal) {
+                infoModal.style.display = 'none';
+            }
         });
 
         const dropdownBtn = document.getElementById('dropdown-btn');
@@ -806,21 +864,13 @@
         });
 		
         window.addEventListener('click', function(event) {
-            if (!event.target.matches('#dropdown-btn')) {
+            if (!event.target.matches('#dropdown-btn') && !event.target.matches('#user-email')) {
                 if (dropdownMenu.classList.contains('show')) {
                     dropdownMenu.classList.remove('show');
                 }
             }
         });
-    </script>
-	<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const timetableLink = document.getElementById('timetable-link');
-        if (timetableLink) {
-            timetableLink.href = `./timetable.html?v=${Date.now()}`;
-        }
     });
-	</script>
-
+    </script>
 </body>
 </html>
