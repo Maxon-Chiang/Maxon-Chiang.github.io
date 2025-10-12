@@ -6,7 +6,11 @@
     <title>數據報告 - 班級綜合成績紀錄系統</title>
     <style>
         :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+        body { font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+		/* 【新增此段】強制所有表單元件繼承 body 的字體 */
+        button, input, select, textarea {
+            font-family: inherit;
+        }
         header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
         header h1 { font-size: 1.6em; margin: 0; }
         header a button, header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em;}
@@ -72,10 +76,27 @@
                 margin-left: 0;
             }
         }
+		/* 【新增】用戶名稱樣式 */
+        #user-email {
+            margin-right: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        header .header-actions {
+            display: flex;
+            align-items: center;
+        }
     </style>
 </head>
 <body>
-    <header><h1>數據報告</h1><div><a href="./teacher.html"><button>返回主頁</button></a><button id="logout-btn">登出</button></div></header>
+	<header>
+        <h1>數據報告</h1>
+        <div class="header-actions">
+            <span id="user-email"></span>
+            <a href="./teacher.html"><button>返回主頁</button></a>
+            <button id="logout-btn">登出</button>
+        </div>
+    </header>
     <main>
         <div class="tab-nav">
             <button class="tab-btn active" data-tab="performance">表現紀錄報告</button>
@@ -140,8 +161,28 @@
             }
         }
         
-        auth.onAuthStateChanged(async (user) => { if (user) { currentUser = user; const userDoc = await db.collection('users').doc(user.uid).get(); if (userDoc.exists && (userDoc.data().role === 'teacher' || userDoc.data().role === 'admin')) { await initializeReportPage(userDoc.data()); } else { window.location.href = 'login.html'; } } else { window.location.href = 'login.html'; } });
-        
+		auth.onAuthStateChanged(async (user) => { 
+            if (user) { 
+                currentUser = user;
+                
+                // 新增：讀取並顯示用戶名稱
+                const displayElement = document.getElementById('user-email');
+                const userDoc = await db.collection('users').doc(user.uid).get(); 
+                if (userDoc.exists && (userDoc.data().role === 'teacher' || userDoc.data().role === 'admin')) {
+                    if (userDoc.data().displayName) {
+                        displayElement.textContent = userDoc.data().displayName;
+                    } else {
+                        displayElement.textContent = user.email;
+                    }
+                    await initializeReportPage(userDoc.data()); 
+                } else { 
+                    window.location.href = 'login.html'; 
+                } 
+            } else { 
+                window.location.href = 'login.html'; 
+            } 
+        });
+		
         async function initializeReportPage(userData) { const today = new Date().toLocaleDateString('en-CA'); document.getElementById('start-date').value = today; document.getElementById('end-date').value = today; if (!userData.rosterId) { console.warn("帳號未綁定名冊"); return; } const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get(); if (!rosterDoc.exists) { alert('找不到名冊'); return; } studentsData = rosterDoc.data().students; classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort(); const perfClassFilter = document.getElementById('class-filter-container'); const gradesClassSelect = document.getElementById('grades-class-select'); const gradesClassSelectSingle = document.getElementById('grades-class-select-single'); 
             classList.forEach(className => { 
                 const div = document.createElement('div'); 
