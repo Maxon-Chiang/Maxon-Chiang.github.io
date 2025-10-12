@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登入 - 班級綜合成績紀錄系統</title>
+    <title>登入 - 學生綜合紀錄暨課表系統</title>
     <style>
         body { font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif; background-color: #f5f5f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         button, input, select, textarea {
@@ -20,13 +20,19 @@
         #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f5f5f5; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4a90e2; animation: spin 1s ease infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 10px; position: relative; text-align: left; line-height: 1.8; }
+        .close-btn { color: #aaa; position: absolute; top: 10px; right: 20px; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .modal-content ul { list-style-type: disc; padding-left: 25px; }
+        .modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
     <div id="splash-screen"><div class="spinner"></div><p style="margin-top: 20px; color: #555;">載入中...</p></div>
     <div id="login-view" style="display: none;">
         <div class="login-container">
-            <h1>班級綜合成績紀錄系統</h1>
+            <h1>學生綜合紀錄暨課表系統</h1>
             <form id="login-form">
                 <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
                 <input type="password" id="login-password" placeholder="密碼" required autocomplete="current-password">
@@ -36,26 +42,67 @@
             <p id="error-message"></p>
         </div>
     </div>
+
+    <div id="welcome-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>歡迎使用 學生綜合紀錄暨課表系統</h2>
+            <p>這是一套專為教師設計的整合性管理工具，主要包含以下核心系統：</p>
+            <ul>
+                <li><strong>主系統</strong>: 快速登記學生日常表現、管理成績項目、計算學期總分、產出數據報告。</li>
+                <li><strong>課表系統</strong>: 提供強大的智慧調課、代課與換課功能，並可將課程匯出至個人行事曆。</li>
+            </ul>
+            <p>建議您登入後，點擊頁首右上角的齒輪圖示 (⚙️) 查看更詳細的功能說明。</p>
+            <div class="modal-footer">
+                <label><input type="checkbox" id="dont-show-again-login"> 以後不要再顯示此訊息</label>
+                <button id="close-welcome-btn" style="width: auto; padding: 8px 20px;">關閉</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (localStorage.getItem('welcomeMessageReset_v1') !== 'true') {
+            localStorage.removeItem('hideLoginWelcome');
+            localStorage.setItem('welcomeMessageReset_v1', 'true');
+        }
+
         const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const db = firebase.firestore();
+        const auth = firebase.auth();
 
-        const loginView = document.getElementById('login-view'), 
-              loginForm = document.getElementById('login-form'), 
-              loginEmailInput = document.getElementById('login-email'), 
-              errorMessage = document.getElementById('error-message'), 
-              rememberMeCheckbox = document.getElementById('remember-me'), 
-              splashScreen = document.getElementById('splash-screen');
-        
+        const loginView = document.getElementById('login-view');
+        const loginForm = document.getElementById('login-form');
+        const loginEmailInput = document.getElementById('login-email');
+        const errorMessage = document.getElementById('error-message');
+        const rememberMeCheckbox = document.getElementById('remember-me');
+        const splashScreen = document.getElementById('splash-screen');
+        const welcomeModal = document.getElementById('welcome-modal');
+
         const savedEmail = localStorage.getItem('lastLoginEmail');
         if (savedEmail) { loginEmailInput.value = savedEmail; }
         const savedRememberState = localStorage.getItem('rememberMeState');
         rememberMeCheckbox.checked = (savedRememberState === 'true' || savedRememberState === null);
+
+        let currentUserForRedirect = null;
+
+        const closeWelcome = () => {
+            if (document.getElementById('dont-show-again-login').checked) {
+                localStorage.setItem('hideLoginWelcome', 'true');
+            }
+            welcomeModal.style.display = 'none';
+            // 如果是在已登入狀態下關閉歡迎視窗，則立即跳轉
+            if (currentUserForRedirect) {
+                routeUser(currentUserForRedirect.role);
+            }
+        };
+
+        welcomeModal.querySelector('.close-btn').onclick = closeWelcome;
+        document.getElementById('close-welcome-btn').onclick = closeWelcome;
 
         auth.onAuthStateChanged(async (user) => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -69,19 +116,33 @@
                 }
                 
                 const userRole = userDoc.data().role;
+                currentUserForRedirect = { role: userRole };
 
-                if (fromPage && userRole !== fromPage) {
+                if (localStorage.getItem('hideLoginWelcome') === 'true') {
+                    // 如果設定了隱藏，且沒有角色衝突，則直接跳轉
+                    if (!fromPage || userRole === fromPage) {
+                        routeUser(userRole);
+                    } else {
+                        splashScreen.style.display = 'none';
+                        loginView.style.display = 'flex';
+                        const currentRoleText = userRole === 'teacher' ? '教師' : '管理者';
+                        const targetRoleText = fromPage === 'admin' ? '管理' : '教師';
+                        errorMessage.textContent = `您目前以 ${currentRoleText} 身份登入，無法進入 ${targetRoleText} 頁面。請在此登入正確帳號以切換身份。`;
+                    }
+                } else {
+                    // 如果需要顯示歡迎訊息，則顯示登入頁和歡迎視窗，但不跳轉
                     splashScreen.style.display = 'none';
                     loginView.style.display = 'flex';
-                    const currentRoleText = userRole === 'teacher' ? '教師' : '管理者';
-                    const targetRoleText = fromPage === 'admin' ? '管理' : '教師';
-                    errorMessage.textContent = `您目前以 ${currentRoleText} 身份登入，無法進入 ${targetRoleText} 頁面。請在此登入正確帳號以切換身份。`;
-                } else {
-                    routeUser(userRole);
+                    welcomeModal.style.display = 'block';
                 }
             } else {
+                // 未登入狀態
+                currentUserForRedirect = null;
                 splashScreen.style.display = 'none';
                 loginView.style.display = 'flex';
+                if (localStorage.getItem('hideLoginWelcome') !== 'true') {
+                    welcomeModal.style.display = 'block';
+                }
                 if (fromPage) {
                      errorMessage.textContent = `欲進入${fromPage === 'admin' ? '管理' : '教師'}頁面，請先登入。`;
                 }
@@ -100,12 +161,9 @@
                 const persistence = rememberMeCheckbox.checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
                 await auth.setPersistence(persistence);
                 
-                // 【【【核心修改在此】】】
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
 
                 if (userCredential.user) {
-                    // 登入成功後，在背景更新 lastLoginAt 欄位
-                    // 這是一個 "fire-and-forget" 操作，不需要等待它完成
                     db.collection('users').doc(userCredential.user.uid).update({
                         lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
                     }).catch(err => {
@@ -114,8 +172,6 @@
                 }
                 
                 localStorage.setItem('lastLoginEmail', email);
-                // 成功後 onAuthStateChanged 會自動處理後續跳轉
-
             } catch (error) {
                 splashScreen.style.display = 'none';
                 loginView.style.display = 'flex';
@@ -140,6 +196,7 @@
             errorMessage.textContent = msg;
             auth.signOut();
         }
+    });
     </script>
 </body>
 </html>
