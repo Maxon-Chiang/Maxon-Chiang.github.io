@@ -386,7 +386,7 @@ header .header-actions {
     
     <div id="welcome-modal-timetable" class="modal">
         <div class="modal-content" style="max-width: 500px; text-align: left; line-height: 1.8;">
-            <span class="close-btn">&times;</span>
+            <span class="close-button">&times;</span>
             <h2>歡迎使用 課表系統</h2>
             <p>這是一套整合性的課表工具，您可以：</p>
             <ul>
@@ -460,7 +460,7 @@ async function main() {
         welcomeModal.style.display = 'none';
     };
 
-    welcomeModal.querySelector('.close-btn').onclick = closeWelcome;
+    welcomeModal.querySelector('.close-button').onclick = closeWelcome;
     document.getElementById('close-welcome-timetable-btn').onclick = closeWelcome;
 
     console.log("正在從 Firestore 獲取資料...");
