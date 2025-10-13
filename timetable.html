@@ -85,8 +85,7 @@ header .header-actions button {
 .department-table .name-cell { width: 80px; cursor: pointer; color: var(--accent-color); text-decoration: underline; }
 .department-table .ext-cell { width: 50px; }
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
-.modal-content { margin: 2% auto; padding: 15px; border: 1px solid var(--border-color); width: 100%; border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg); }
-.modal-content2 { margin: 2% auto; padding: 15px; border: 1px solid var(--border-color); width: 100%; border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg); }
+.modal-content { margin: 1% auto; padding: 15px; border: 1px solid var(--border-color); width: 100%; border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg); }
 .main-modal .modal-content { max-width: 1000px; }
 .sub-modal .modal-content { max-width: 480px; text-align: center; padding: 20px; }
 .close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
@@ -126,10 +125,10 @@ header .header-actions button {
 #single-event-modal button { padding: 8px 16px; font-size: 1em; font-family: inherit; border: 1px solid var(--header-bg); background-color: var(--header-bg); color: white; cursor: pointer; border-radius: 4px; }
 #single-event-modal button:hover { background-color: #004a6e; }
 .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.schedule-table th, .schedule-table td { border: 1px solid #999; padding: 4px; text-align: center; vertical-align: middle; word-wrap: break-word; box-sizing: border-box; position: relative; }
+.schedule-table th, .schedule-table td { border: 1px solid #999; padding: 2px; text-align: center; vertical-align: middle; word-wrap: break-word; box-sizing: border-box; position: relative; }
 .schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 35px; }
-.schedule-table th:first-child, .schedule-table td:first-child { width: 6%; }
-.schedule-table td { font-size: 16px; height: 68px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg); }
+.schedule-table th:first-child, .schedule-table td:first-child { width: 5%; }
+.schedule-table td { font-size: 16px; height: 65px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg); }
 .schedule-table td.empty-cell { background-color: var(--cleared-bg); }
 .schedule-table td:hover { background-color: #f0f0f0; }
 .schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
@@ -242,8 +241,7 @@ header .header-actions {
     .close-button { top: 10px; right: 15px; }
     .controls-header { flex-direction: column; gap: 15px; }
     .modal-header { flex-direction: column; gap: 10px; }
-    .modal-content { width: 95%; margin: 5% auto; }
-	.modal-content2 { width: 90%; }
+    .modal-content { width: 90%; margin: 5% auto; }
     #modal-title2 { font-size: 14px; }
     #teacher-list-container, #teacher-list-by-subject-container { column-count: 1; }
     .department-table { font-size: 14px; }
@@ -253,6 +251,40 @@ header .header-actions {
     .schedule-table .details { font-size: 10px; }
     .swap-suggestion .details { display: block; margin-left: 0px; line-height: 1.2; }
 }
+/* --- NEW STYLES START --- */
+.subtitle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin: 0 10px 10px 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    min-height: 38px; /* 預留空間以防止版面跳動 */
+}
+#modal-title2 {
+    text-align: left;
+    margin: 0;
+    font-size: 16px;
+    color: blue;
+    font-weight: normal;
+    flex-grow: 1;
+}
+#substitution-btn {
+    display: none; /* 預設隱藏 */
+    padding: 6px 12px;
+    font-size: 0.9em;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0; /* 防止按鈕被壓縮 */
+}
+#substitution-btn.visible {
+    display: inline-block; /* 顯示按鈕 */
+}
+/* --- NEW STYLES END --- */
 </style>
 
 </head>
@@ -289,7 +321,7 @@ header .header-actions {
     </div>
 
     <div id="schedule-modal" class="modal main-modal">
-        <div class="modal-content2">
+        <div class="modal-content">
             <span class="close-button">&times;</span>
             <div class="modal-header">
                 <h2 id="modal-title"></h2>
@@ -299,12 +331,12 @@ header .header-actions {
                     <button id="next-week-btn">下一週 ›</button>
                 </div>
             </div>
-            <h3 id="modal-title2"></h3>
+			<div class="subtitle-header">
+                <h3 id="modal-title2"></h3>
+                <button id="substitution-btn">指定代課 / 換課</button>
+            </div>
             <div id="reminder-container"></div>
             <div id="modal-body"></div>
-            <div id="cell-action-container" style="display: none; padding: 15px; text-align: center; border-top: 1px solid #eee; margin-top: 10px;">
-                <button id="substitution-btn" style="padding: 10px 20px; font-size: 1.1em; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">指定代課 / 換課</button>
-            </div>
         </div>
     </div>
 
@@ -387,7 +419,7 @@ header .header-actions {
     </div>
     
     <div id="welcome-modal-timetable" class="modal">
-        <div class="modal-content2" style="max-width: 500px; text-align: left; line-height: 1.8;">
+        <div class="modal-content" style="max-width: 500px; text-align: left; line-height: 1.8;">
             <span class="close-button">&times;</span>
             <h2>歡迎使用 課表系統</h2>
             <p>這是一套整合性的課表工具，您可以：</p>
@@ -1026,8 +1058,8 @@ async function main() {
 	
 	function handleTeacherCellClick(event, teacherName) {
         const cell = event.target.closest('td');
-        const actionContainer = document.getElementById('cell-action-container');
-        actionContainer.style.display = 'none';
+		const substitutionBtn = document.getElementById('substitution-btn');
+		substitutionBtn.classList.remove('visible');
 
         if (!cell || cell.classList.contains('period-header')) return;
         
@@ -1043,8 +1075,8 @@ async function main() {
                     delete el.dataset.originalText;
                 }
             });
-            teacherViewSelectedCell = null;
-            actionContainer.style.display = 'none';
+			teacherViewSelectedCell = null;
+			substitutionBtn.classList.remove('visible');
         };
 
         if (changeId) {
@@ -1097,12 +1129,12 @@ async function main() {
         if (!clickedLesson) return;
         if (period >= 7 || (day === 4 && period >= 5)) return;
 
-        cell.classList.add('highlight');
-        teacherViewSelectedCell = cell;
-        
-        actionContainer.style.display = 'block';
-        document.getElementById('substitution-btn').onclick = () => showSubstitutionModal(clickedLesson, teacherViewSelectedCell.dataset.date, teacherName);
+		cell.classList.add('highlight');
+		teacherViewSelectedCell = cell;
 
+		substitutionBtn.classList.add('visible');
+		substitutionBtn.onclick = () => showSubstitutionModal(clickedLesson, teacherViewSelectedCell.dataset.date, teacherName);
+	
         const classSchedule = classSchedules.get(clickedLesson.class);
         if (!classSchedule) return;
 
