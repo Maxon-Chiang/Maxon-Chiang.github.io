@@ -93,7 +93,15 @@
             padding: 5px 8px;
             margin-left: 15px;
         }
-
+		header .header-actions {
+            display: flex;
+            align-items: center;
+        }
+        #user-email {
+            margin-right: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
         @media (max-width: 600px) {
             .score-entry-header, .score-entry {
                 grid-template-columns: 30px 1fr 70px 1.5fr;
@@ -113,9 +121,13 @@
     </style>
 </head>
 <body>
-    <header>
+	<header>
         <h1 id="header-title">成績登錄</h1>
-		<div><button onclick="history.back()">返回主頁</button><button id="logout-btn">登出</button></div>
+        <div class="header-actions">
+            <span id="user-email"></span>
+            <button onclick="history.back()">返回主頁</button>
+            <button id="logout-btn">登出</button>
+        </div>
     </header>
     <main id="app-container" style="display: none;">
         <div id="create-section" class="section">
@@ -180,7 +192,30 @@
         const db = firebase.firestore(); const auth = firebase.auth();
         let currentUser = null, classId = null, studentsInClass = [], currentAssignmentId = null;
         const appContainer = document.getElementById('app-container'), createSection = document.getElementById('create-section'), createBtn = document.getElementById('create-assignment-btn'), saveBtns = document.querySelectorAll('.save-grades-btn'), cancelBtns = document.querySelectorAll('.cancel-edit-btn'), gradeEntrySection = document.getElementById('grade-entry-section'), scoresContainer = document.getElementById('student-scores-container'), newAssignmentNameInput = document.getElementById('new-assignment-name'), newGeneralCommentInput = document.getElementById('new-general-comment'), editAssignmentNameInput = document.getElementById('edit-assignment-name'), editGeneralCommentInput = document.getElementById('edit-general-comment'), currentAssignmentTitle = document.getElementById('current-assignment-title'), historyList = document.getElementById('history-list');
-        auth.onAuthStateChanged(async (user) => { if (user) { currentUser = user; const userDoc = await db.collection('users').doc(user.uid).get(); if (userDoc.exists && userDoc.data().role === 'teacher') { await initializeGradesPage(userDoc.data()); } else { alert('權限不足或帳號設定錯誤。'); window.location.href = 'login.html'; } } else { window.location.href = 'login.html'; } });
+		auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'teacher') {
+                    // --- 【↓↓↓ 新增此區塊 ↓↓↓】 ---
+                    const displayElement = document.getElementById('user-email');
+                    const userData = userDoc.data();
+                    if (userData.displayName) {
+                        displayElement.textContent = userData.displayName;
+                    } else {
+                        displayElement.textContent = user.email;
+                    }
+                    // --- 【↑↑↑ 新增此區塊 ↑↑↑】 ---
+
+                    await initializeGradesPage(userData);
+                } else {
+                    alert('權限不足或帳號設定錯誤。');
+                    window.location.href = 'login.html';
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
         async function initializeGradesPage(userData) { const urlParams = new URLSearchParams(window.location.search); classId = urlParams.get('class'); if (!classId) { appContainer.innerHTML = '<h2>錯誤：未指定班級。</h2>'; appContainer.style.display = 'block'; return; } document.getElementById('class-header').textContent = `${convertClassName(classId)} 班 成績管理`; if (!userData.rosterId) { alert('帳號未綁定名冊'); return; } const rosterDoc = await db.collection('rosters').doc(userData.rosterId).get(); if (!rosterDoc.exists) { alert('找不到名冊'); return; } studentsInClass = rosterDoc.data().students.filter(s => s.id.startsWith(classId)).sort((a,b) => a.id.localeCompare(b.id)); setupKeyboardNavigation(); loadHistory(); appContainer.style.display = 'block'; }
         function setupKeyboardNavigation() { scoresContainer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('score-input')) { e.preventDefault(); const allScoreInputs = Array.from(scoresContainer.querySelectorAll('.score-input')); const currentIndex = allScoreInputs.indexOf(e.target); if (currentIndex > -1 && currentIndex < allScoreInputs.length - 1) { const nextInput = allScoreInputs[currentIndex + 1]; nextInput.focus(); nextInput.select(); } else { saveBtns[1].focus(); } } }); }
         function toggleCreateSection(enabled) { createSection.style.opacity = enabled ? '1' : '0.5'; createSection.style.pointerEvents = enabled ? 'auto' : 'none'; }
