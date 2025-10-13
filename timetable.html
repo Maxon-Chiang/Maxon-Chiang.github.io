@@ -436,6 +436,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 let currentUser = null;
+let currentUserDisplayName = '';
 
 auth.onAuthStateChanged(async (user) => {
     if (user) {
@@ -448,8 +449,10 @@ auth.onAuthStateChanged(async (user) => {
                 const userData = userDoc.data();
                 if (userData.displayName) {
                     displayElement.textContent = userData.displayName;
+                    currentUserDisplayName = userData.displayName;
                 } else {
                     displayElement.textContent = user.email;
+                    currentUserDisplayName = user.email;
                 }
             } else {
                 displayElement.textContent = user.email;
@@ -952,7 +955,11 @@ async function main() {
             title = `${name} 課表`;
 			const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             const interactionHint = isTouchDevice ? '長按' : '右鍵';
-            titleEl2.textContent = `＊點擊有課格子可進行調/代/換課，${interactionHint}可加入行事曆註記＊`;			
+            if (name === currentUserDisplayName) {
+                titleEl2.textContent = `＊點擊有課格子可進行調/代/換課，${interactionHint}可加入行事曆註記＊`;
+            } else {
+                titleEl2.textContent = `＊${interactionHint}可加入行事曆註記＊`;
+            }
         } else if (type === 'class' && classSchedules.has(name)) {
             schedule = classSchedules.get(name);
             title = `${name} 班課表`;
@@ -1049,6 +1056,9 @@ async function main() {
     }
 	
 	function handleTeacherCellClick(event, teacherName) {
+        if (teacherName !== currentUserDisplayName) {
+            return;
+        }
         const cell = event.target.closest('td');
 		const substitutionBtn = document.getElementById('substitution-btn');
 		substitutionBtn.classList.remove('visible');
