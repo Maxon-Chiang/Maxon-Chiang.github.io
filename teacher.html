@@ -372,15 +372,23 @@
             color: white;
         }
         
-        /* --- Styles for Welcome Modal (Moved from login.html) --- */
-        #welcome-modal {
-            align-items: center;
-            justify-content: center;
-        }
-        #welcome-modal .modal-content {
-            line-height: 1.8;
-        }
-        #welcome-modal .modal-footer {
+		/* --- Styles for Welcome Modal (Moved from login.html) --- */
+		#welcome-modal {
+			align-items: center;
+			justify-content: center;
+			/* 新增：確保 modal 本身不會被擠壓 */
+			padding: 0 10px; 
+			box-sizing: border-box;
+		}
+		#welcome-modal .modal-content {
+			/* 關鍵修正：不再使用百分比寬度 */
+			width: 100%; /* 先佔滿可用空間 */
+			max-width: 500px; /* 但最大不超過 500px */
+			margin: 0;
+			line-height: 1.8;
+			box-sizing: border-box;
+		}     
+		#welcome-modal .modal-footer {
             margin-top: 20px;
             display: flex;
             justify-content: space-between;
