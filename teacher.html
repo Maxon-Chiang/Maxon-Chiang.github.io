@@ -182,6 +182,17 @@
             overflow: auto;
             background-color: rgba(0, 0, 0, 0.5);
         }
+        .modal2 {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
 		.modal-notes {
             display: none;
             position: fixed;
@@ -350,6 +361,10 @@
             .class-title {
                 font-size: 1.3em;
             }
+			.modal2 {
+				width: 90%;
+				height: 90%;
+			}
 			.modal-notes {
 				width: 90%;
 				height: 90%;
@@ -494,7 +509,7 @@
         </div>
     </div>
 
-    <div id="modal" class="modal">
+    <div id="modal" class="modal2">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <h2 id="modal-title"></h2>
