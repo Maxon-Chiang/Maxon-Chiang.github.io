@@ -396,7 +396,37 @@
             list-style-type: disc;
             padding-left: 25px;
         }
-    </style>
+		/* --- Styles for Info Modal (Fixes) --- */
+        #info-modal {
+            padding: 0 10px;
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: center;
+        }
+        .info-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+			padding-right: 40px;
+        }
+        .info-modal-header h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            font-size: 1.5em;
+        }
+        #reset-welcome-prefs-btn {
+            margin: 0;
+            padding: 6px 12px;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
+	</style>
 </head>
 
 <body>
@@ -504,11 +534,14 @@
             <button id="save-class-settings-btn">儲存設定</button>
         </div>
     </div>
-    
-    <div id="info-modal" class="modal">
+
+	<div id="info-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
-            <h2>系統功能說明</h2>
+            <div class="info-modal-header">
+                <h2>系統功能說明</h2>
+                <button id="reset-welcome-prefs-btn">重設歡迎訊息</button>
+            </div>
 
             <h3>學生綜合紀錄系統 (主系統)</h3>
             <ul>
@@ -525,9 +558,7 @@
                 <li><strong>指定代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」。</li>
                 <li><strong>加入行事曆</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
             </ul>
-            <hr>
-            <p>您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
-            <button id="reset-welcome-prefs-btn">重設歡迎訊息</button>
+            <p style="font-size: 0.9em; color: #666; margin-top: 25px;">您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
         </div>
     </div>
 
