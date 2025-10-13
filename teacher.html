@@ -435,6 +435,40 @@
             margin: 0;
             box-sizing: border-box;
         }
+		        #info-modal {
+            padding: 0 15px; /* 左右內縮 15px */
+            box-sizing: border-box;
+            align-items: center;
+            justify-content: center;
+        }
+        #info-modal .modal-content {
+            width: 100%; /* 關鍵：讓內容區塊填滿上面設定的內縮空間 */
+            margin: 0; /* 關鍵：移除舊的 margin，避免衝突 */
+            box-sizing: border-box; /* 確保寬度計算正確 */
+        }
+        .info-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+			padding-right: 40px;
+        }
+        .info-modal-header h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            font-size: 1.5em;
+        }
+        #reset-welcome-prefs-btn {
+            margin: 0;
+            padding: 6px 12px;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
 	</style>
 </head>
 
@@ -1003,5 +1037,6 @@
     </script>
 </body>
 </html>
+
 
 
