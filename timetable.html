@@ -235,8 +235,27 @@ header .header-actions {
 		
 @media screen and (max-width: 768px) {
     body { padding: 0; }
-    header { flex-direction: column; gap: 15px; padding-bottom: 1rem; }
-    header h1 { font-size: 1.2em; }
+    header {
+        /* --- 以下為本次主要修改 --- */
+        flex-direction: row;            /* 恢復水平排列 */
+        justify-content: space-between; /* 讓標題和按鈕群左右對齊 */
+        align-items: center;            /* 垂直置中 */
+        gap: 10px;                      /* 標題和右側按鈕的最小間距 */
+        padding: 0.6rem 1rem;           /* 恢復正常的上下邊距 */
+    }
+    header h1 {
+        font-size: 1.6em;   /* 維持較小的標題字體 */
+        flex-shrink: 0;     /* 防止標題文字被過度壓縮而換行 */
+    }
+    #user-email {
+        font-size: 0.8em;   /* 縮小使用者名稱字體 */
+        margin-right: 8px;  /* 調整與按鈕的間距 */
+    }
+    header .header-actions button {
+        padding: 4px 8px;   /* 縮小按鈕的內距 */
+        font-size: 0.9em;   /* 縮小按鈕的字體 */
+    }
+    /* --- 修改結束 --- */
     .container { padding: 10px; margin: 10px; }
     .close-button { top: 10px; right: 15px; }
     .controls-header { flex-direction: column; gap: 15px; }
@@ -282,7 +301,7 @@ header .header-actions {
 </head>
 <body>
 	<header>
-        <h1>課表系統</h1>
+        <h1>課表暨調課系統</h1>
         <div class="header-actions">
             <span id="user-email"></span>
 			<button onclick="history.back()">返回主頁</button>
