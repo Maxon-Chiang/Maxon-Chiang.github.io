@@ -372,23 +372,21 @@
             color: white;
         }
         
-		/* --- Styles for Welcome Modal (Moved from login.html) --- */
-		#welcome-modal {
-			align-items: center;
-			justify-content: center;
-			/* 新增：確保 modal 本身不會被擠壓 */
-			padding: 0 10px; 
-			box-sizing: border-box;
-		}
-		#welcome-modal .modal-content {
-			/* 關鍵修正：不再使用百分比寬度 */
-			width: 100%; /* 先佔滿可用空間 */
-			max-width: 500px; /* 但最大不超過 500px */
-			margin: 0;
-			line-height: 1.8;
-			box-sizing: border-box;
-		}     
-		#welcome-modal .modal-footer {
+        /* --- Styles for Welcome Modal --- */
+        #welcome-modal {
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px; 
+            box-sizing: border-box;
+        }
+        #welcome-modal .modal-content {
+            width: 100%;
+            max-width: 500px;
+            margin: 0;
+            line-height: 1.8;
+            box-sizing: border-box;
+        }
+        #welcome-modal .modal-footer {
             margin-top: 20px;
             display: flex;
             justify-content: space-between;
@@ -398,7 +396,6 @@
             list-style-type: disc;
             padding-left: 25px;
         }
-
     </style>
 </head>
 
@@ -544,33 +541,6 @@
             localStorage.removeItem('hideLoginWelcome');
             localStorage.setItem('welcomeMessageReset_v1', 'true');
         }
-        
-        // --- NEW: Welcome Modal Logic ---
-        const welcomeModal = document.getElementById('welcome-modal');
-        if (welcomeModal && localStorage.getItem('hideLoginWelcome') !== 'true') {
-            // Use sessionStorage to only show once per browser session
-            if (sessionStorage.getItem('welcomeShownForSession') !== 'true') {
-                // Use a small delay to ensure the page is ready
-                setTimeout(() => {
-                    welcomeModal.style.display = 'flex';
-                    sessionStorage.setItem('welcomeShownForSession', 'true');
-                }, 500);
-            }
-        }
-        
-        const closeWelcomeBtn = document.getElementById('close-welcome-btn');
-        if (closeWelcomeBtn) {
-            const closeWelcome = () => {
-                if (document.getElementById('dont-show-again-login').checked) {
-                    localStorage.setItem('hideLoginWelcome', 'true');
-                }
-                welcomeModal.style.display = 'none';
-            };
-            closeWelcomeBtn.onclick = closeWelcome;
-            welcomeModal.querySelector('.close-btn').onclick = closeWelcome;
-        }
-        // --- END of Welcome Modal Logic ---
-
 
         const firebaseConfig = {
             apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA",
@@ -584,15 +554,14 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        let currentUser = null,
-            studentsData = [],
-            studentScores = {},
-            classEventScores = {},
-            currentEntity = null,
-            allClassList = [],
-            visibleClassList = [];
+        // --- Global Variables ---
+        let currentUser = null, studentsData = [], studentScores = {}, classEventScores = {},
+            currentEntity = null, allClassList = [], visibleClassList = [];
         
+        // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
+        const welcomeModal = document.getElementById('welcome-modal');
+        // ... (other DOM element variables remain the same)
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
         const closeBtn = modal.querySelector('.close-btn');
@@ -617,10 +586,66 @@
         const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
         const timetableLink = document.getElementById('timetable-link');
 
+
+        // --- Core Application Logic ---
+
+        // This function holds the main logic to start the application (auth, data fetching, rendering)
+        function runMainApp() {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    if (currentUser && currentUser.uid === user.uid) return;
+                    currentUser = user;
+                    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                    if (userDoc.exists && userDoc.data().role === 'teacher') {
+                        const userData = userDoc.data();
+                        document.getElementById('user-email').textContent = userData.displayName || user.email;
+                        visibleClassList = userData.visibleClasses || [];
+                        if (userData.passwordNeedsReset === true) {
+                            showPasswordResetUI();
+                        } else {
+                            await initialize(userData);
+                        }
+                    } else {
+                        window.location.href = `login.html?from=teacher`;
+                    }
+                } else {
+                    window.location.href = `login.html?from=teacher`;
+                }
+            });
+        }
+        
+        // --- Welcome Modal Logic ---
+        const shouldShowWelcome = welcomeModal &&
+                                  localStorage.getItem('hideLoginWelcome') !== 'true' &&
+                                  sessionStorage.getItem('welcomeShownForSession') !== 'true';
+
+        if (shouldShowWelcome) {
+            sessionStorage.setItem('welcomeShownForSession', 'true');
+            
+            const closeWelcome = () => {
+                if (document.getElementById('dont-show-again-login').checked) {
+                    localStorage.setItem('hideLoginWelcome', 'true');
+                }
+                welcomeModal.style.display = 'none';
+                runMainApp(); // Start the main app only after the modal is closed
+            };
+            
+            document.getElementById('close-welcome-btn').onclick = closeWelcome;
+            welcomeModal.querySelector('.close-btn').onclick = closeWelcome;
+            
+            // Show the modal over the initial "Loading..." screen
+            welcomeModal.style.display = 'flex';
+        } else {
+            // If no welcome screen is needed, run the app immediately
+            runMainApp();
+        }
+
+        // --- All other functions and event listeners ---
+
         if (timetableLink) {
             timetableLink.href = `./timetable.html?v=${Date.now()}`;
         }
-
+        
         function convertClassName(oldClassName) {
             if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
             const firstDigit = oldClassName.charAt(0);
@@ -632,28 +657,6 @@
                 default: return oldClassName;
             }
         }
-
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                if (currentUser && currentUser.uid === user.uid) return;
-                currentUser = user;
-                const userDoc = await db.collection('users').doc(currentUser.uid).get();
-                if (userDoc.exists && userDoc.data().role === 'teacher') {
-                    const userData = userDoc.data();
-                    document.getElementById('user-email').textContent = userData.displayName || user.email;
-                    visibleClassList = userData.visibleClasses || [];
-                    if (userData.passwordNeedsReset === true) {
-                        showPasswordResetUI();
-                    } else {
-                        await initialize(userData);
-                    }
-                } else {
-                    window.location.href = `login.html?from=teacher`;
-                }
-            } else {
-                window.location.href = `login.html?from=teacher`;
-            }
-        });
 
         function showPasswordResetUI() {
             document.querySelector('header').style.display = 'none';
@@ -912,9 +915,9 @@
             if (e.target === infoModal) {
                 infoModal.style.display = 'none';
             }
-            if (e.target.classList.contains('modal')) { // General rule for any background click
-                if(e.target.id === 'welcome-modal' && closeWelcomeBtn) {
-                     closeWelcomeBtn.onclick();
+            if (e.target.classList.contains('modal')) {
+                if(e.target.id === 'welcome-modal') {
+                     document.getElementById('close-welcome-btn').onclick();
                 }
             }
         });
