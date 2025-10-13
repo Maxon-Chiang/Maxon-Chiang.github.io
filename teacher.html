@@ -182,6 +182,17 @@
             overflow: auto;
             background-color: rgba(0, 0, 0, 0.5);
         }
+		.modal-notes {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 90%;
+            height: 90%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
         .modal-content {
             background-color: #fefefe;
             margin: 2% auto;
@@ -539,7 +550,7 @@
         </div>
     </div>
 
-	<div id="info-modal" class="modal">
+	<div id="info-modal" class="modal-notes">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <div class="info-modal-header">
@@ -976,3 +987,4 @@
     </script>
 </body>
 </html>
+
