@@ -350,10 +350,6 @@
             padding: 2px 8px;
             line-height: 1.2;
         }
-        #info-modal .modal-content {
-            text-align: left;
-            line-height: 1.8;
-        }
         #info-modal h3 {
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 10px;
@@ -365,11 +361,6 @@
         #info-modal ul {
             list-style-type: disc;
             padding-left: 25px;
-        }
-        #reset-welcome-prefs-btn {
-            margin-top: 20px;
-            background-color: var(--danger-color);
-            color: white;
         }
         
         /* --- Styles for Welcome Modal --- */
@@ -396,56 +387,19 @@
             list-style-type: disc;
             padding-left: 25px;
         }
+
 		/* --- Styles for Info Modal (Fixes) --- */
         #info-modal {
-            padding: 0 10px;
-            box-sizing: border-box;
-            align-items: center;
-            justify-content: center;
-        }
-        .info-modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--border-color);
-			padding-right: 40px;
-        }
-        .info-modal-header h2 {
-            margin: 0;
-            padding: 0;
-            border: none;
-            font-size: 1.5em;
-        }
-        #reset-welcome-prefs-btn {
-            margin: 0;
-            padding: 6px 12px;
-            font-size: 0.9em;
-            flex-shrink: 0;
-        }
-		/* --- Fix for Modal Layout Shift --- */
-        body.modal-open {
-            overflow: hidden;
-        }
-		#info-modal .modal-content {
-            width: 100%;
-            margin: 0;
-            box-sizing: border-box;
-        }
-		#info-modal {
             padding: 0 15px; /* 左右內縮 15px */
             box-sizing: border-box;
             align-items: center;
             justify-content: center;
         }
         #info-modal .modal-content {
-            width: 100%;
-            margin: 0;
-            box-sizing: border-box;
-            max-height: 85vh; /* 新增：限制最大高度為螢幕高度的 85% */
+            width: 100%; /* 關鍵：讓內容區塊填滿上面設定的內縮空間 */
+            margin: 0; /* 關鍵：移除旧的 margin，避免冲突 */
+            box-sizing: border-box; /* 確保寬度計算正確 */
+            max-height: 85vh; /* 新增：限制最大高度为螢幕高度的 85% */
             overflow-y: auto; /* 新增：如果內容超過此高度，則啟用內部垂直捲動 */
         }
         .info-modal-header {
@@ -470,6 +424,11 @@
             padding: 6px 12px;
             font-size: 0.9em;
             flex-shrink: 0;
+        }
+
+		/* --- Fix for Modal Layout Shift --- */
+        body.modal-open {
+            overflow: hidden;
         }
 	</style>
 </head>
@@ -637,7 +596,6 @@
         // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
         const welcomeModal = document.getElementById('welcome-modal');
-        // ... (other DOM element variables remain the same)
         const modal = document.getElementById('modal');
         const modalTitle = document.getElementById('modal-title');
         const closeBtn = modal.querySelector('.close-btn');
@@ -665,7 +623,6 @@
 
         // --- Core Application Logic ---
 
-        // This function holds the main logic to start the application (auth, data fetching, rendering)
         function runMainApp() {
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
@@ -690,7 +647,6 @@
             });
         }
         
-        // --- Welcome Modal Logic ---
         const shouldShowWelcome = welcomeModal &&
                                   localStorage.getItem('hideLoginWelcome') !== 'true' &&
                                   sessionStorage.getItem('welcomeShownForSession') !== 'true';
@@ -703,20 +659,16 @@
                     localStorage.setItem('hideLoginWelcome', 'true');
                 }
                 welcomeModal.style.display = 'none';
-                runMainApp(); // Start the main app only after the modal is closed
+                runMainApp();
             };
             
             document.getElementById('close-welcome-btn').onclick = closeWelcome;
             welcomeModal.querySelector('.close-btn').onclick = closeWelcome;
             
-            // Show the modal over the initial "Loading..." screen
             welcomeModal.style.display = 'flex';
         } else {
-            // If no welcome screen is needed, run the app immediately
             runMainApp();
         }
-
-        // --- All other functions and event listeners ---
 
         if (timetableLink) {
             timetableLink.href = `./timetable.html?v=${Date.now()}`;
@@ -845,15 +797,13 @@
         }
 
         function openModal(id, type = 'student') {
+            document.body.classList.add('modal-open');
             currentEntity = { id, type };
             let titleText = '', scoreText = '';
             
             const recordPointsInput = document.getElementById('record-points');
-            if (window.innerWidth <= 768) {
-                recordPointsInput.placeholder = '加/減分';
-            } else {
-                recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)';
-            }
+            if (window.innerWidth <= 768) { recordPointsInput.placeholder = '加/減分'; } 
+            else { recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)'; }
             
             const scoreSpan = document.getElementById('modal-current-score');
             
@@ -873,10 +823,11 @@
             scoreSpan.textContent = scoreText;
 
             loadRecords(id, type);
-            modal.style.display = 'block';
+            modal.style.display = 'flex';
         }
 
         function closeModal() {
+            document.body.classList.remove('modal-open');
             modal.style.display = 'none';
             addRecordForm.reset();
             currentEntity = null;
@@ -890,9 +841,7 @@
                 
                 if (type === 'class') {
                     const snapshot = await recordsRef.where('entityId', '==', id).where('entityType', '==', 'class').get();
-                    snapshot.forEach(doc => {
-                        allRecords.push({ id: doc.id, ...doc.data() });
-                    });
+                    snapshot.forEach(doc => { allRecords.push({ id: doc.id, ...doc.data() }); });
                 } else { 
                     const newRecordsPromise = recordsRef.where('entityId', '==', id).where('entityType', '==', 'student').get();
                     const oldRecordsPromise = recordsRef.where('studentId', '==', id).get();
@@ -961,54 +910,42 @@
 
         passwordResetForm.addEventListener('submit', async (e) => { e.preventDefault(); const p1 = document.getElementById('new-password').value; const p2 = document.getElementById('confirm-password').value; document.getElementById('password-error-message').textContent = ''; if (p1.length < 6) { document.getElementById('password-error-message').textContent = '密碼至少6字元'; return; } if (p1 !== p2) { document.getElementById('password-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(p1); await db.collection('users').doc(currentUser.uid).update({ passwordNeedsReset: false }); alert('密碼更新成功！'); auth.signOut(); } catch (err) { document.getElementById('password-error-message').textContent = '更新失敗: ' + err.message; } });
         
-        changePasswordBtn.addEventListener('click', () => { changePasswordModal.style.display = 'block'; });
-        cpCloseBtn.addEventListener('click', () => { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; });
-        changePasswordForm.addEventListener('submit', async (e) => { e.preventDefault(); const newPassword = document.getElementById('cp-new-password').value; const confirmPassword = document.getElementById('cp-confirm-password').value; cpErrorMessage.textContent = ''; if (newPassword.length < 6) { cpErrorMessage.textContent = '密碼至少6字元'; return; } if (newPassword !== confirmPassword) { cpErrorMessage.textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(newPassword); alert('密碼更新成功！'); changePasswordModal.style.display = 'none'; changePasswordForm.reset(); } catch (error) { if (error.code === 'auth/requires-recent-login') { cpErrorMessage.textContent = '此為敏感操作，請先登出再重新登入後再試。'; } else { cpErrorMessage.textContent = '更新失敗：' + error.message; } } });
+        changePasswordBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); changePasswordModal.style.display = 'flex'; });
+        cpCloseBtn.addEventListener('click', () => { document.body.classList.remove('modal-open'); changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; });
+        changePasswordForm.addEventListener('submit', async (e) => { e.preventDefault(); const newPassword = document.getElementById('cp-new-password').value; const confirmPassword = document.getElementById('cp-confirm-password').value; cpErrorMessage.textContent = ''; if (newPassword.length < 6) { cpErrorMessage.textContent = '密碼至少6字元'; return; } if (newPassword !== confirmPassword) { cpErrorMessage.textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(newPassword); alert('密碼更新成功！'); cpCloseBtn.click(); } catch (error) { if (error.code === 'auth/requires-recent-login') { cpErrorMessage.textContent = '此為敏感操作，請先登出再重新登入後再試。'; } else { cpErrorMessage.textContent = '更新失敗：' + error.message; } } });
         
-        classSettingsBtn.addEventListener('click', () => { classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${convertClassName(className)} 班</label>`; classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; classSettingsModal.style.display = 'block'; });
+        classSettingsBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${convertClassName(className)} 班</label>`; classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; classSettingsModal.style.display = 'flex'; });
         selectAllVisibleClasses.addEventListener('change', (e) => { document.querySelectorAll('.visible-class-checkbox').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
-        csCloseBtn.addEventListener('click', () => { classSettingsModal.style.display = 'none'; });
-        saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); classSettingsModal.style.display = 'none'; alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
+        csCloseBtn.addEventListener('click', () => { document.body.classList.remove('modal-open'); classSettingsModal.style.display = 'none'; });
+        saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); csCloseBtn.click(); alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
         
-        // --- NEW: Refactored Modal Controls for Info Page ---
         function openInfoModal() {
             document.body.classList.add('modal-open');
-            infoModal.style.display = 'flex'; // Use flex for consistent centering
+            infoModal.style.display = 'flex';
         }
-
         function closeInfoModal() {
             document.body.classList.remove('modal-open');
             infoModal.style.display = 'none';
         }
-
         infoBtn.addEventListener('click', openInfoModal);
         infoCloseBtn.addEventListener('click', closeInfoModal);
 
 		resetWelcomePrefsBtn.addEventListener('click', () => {
             localStorage.removeItem('hideLoginWelcome');
             localStorage.removeItem('hideTimetableWelcome');
-            sessionStorage.removeItem('welcomeShownForSession'); // Also reset the session flag
+            sessionStorage.removeItem('welcomeShownForSession');
             alert('歡迎訊息的顯示偏好已重設！');
-            infoModal.style.display = 'none';
+            closeInfoModal();
         });
 
-        // --- MODIFIED: Window Click Listener ---
         window.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
-            if (e.target === changePasswordModal) { 
-                changePasswordModal.style.display = 'none'; 
-                changePasswordForm.reset(); 
-                cpErrorMessage.textContent = ''; 
-            }
-            if (e.target === classSettingsModal) { 
-                classSettingsModal.style.display = 'none'; 
-            }
-            if (e.target === infoModal) {
-                closeInfoModal(); // Use the new close function
-            }
             if (e.target.classList.contains('modal')) {
-                if(e.target.id === 'welcome-modal') {
-                     document.getElementById('close-welcome-btn').onclick();
+                switch(e.target.id) {
+                    case 'modal': closeModal(); break;
+                    case 'change-password-modal': cpCloseBtn.click(); break;
+                    case 'class-settings-modal': csCloseBtn.click(); break;
+                    case 'info-modal': closeInfoModal(); break;
+                    case 'welcome-modal': document.getElementById('close-welcome-btn').onclick(); break;
                 }
             }
         });
@@ -1039,7 +976,3 @@
     </script>
 </body>
 </html>
-
-
-
-
