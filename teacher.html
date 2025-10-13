@@ -435,16 +435,18 @@
             margin: 0;
             box-sizing: border-box;
         }
-		        #info-modal {
+		#info-modal {
             padding: 0 15px; /* 左右內縮 15px */
             box-sizing: border-box;
             align-items: center;
             justify-content: center;
         }
         #info-modal .modal-content {
-            width: 100%; /* 關鍵：讓內容區塊填滿上面設定的內縮空間 */
-            margin: 0; /* 關鍵：移除舊的 margin，避免衝突 */
-            box-sizing: border-box; /* 確保寬度計算正確 */
+            width: 100%;
+            margin: 0;
+            box-sizing: border-box;
+            max-height: 85vh; /* 新增：限制最大高度為螢幕高度的 85% */
+            overflow-y: auto; /* 新增：如果內容超過此高度，則啟用內部垂直捲動 */
         }
         .info-modal-header {
             display: flex;
@@ -1037,6 +1039,7 @@
     </script>
 </body>
 </html>
+
 
 
 
