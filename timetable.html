@@ -952,7 +952,7 @@ async function main() {
             title = `${name} 課表`;
 			const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             const interactionHint = isTouchDevice ? '長按' : '右鍵';
-            titleEl2.textContent = `＊點擊空格以外的格子可進行調/代/換課，${interactionHint}可加入行事曆註記＊`;			
+            titleEl2.textContent = `＊點擊有課格子可進行調/代/換課，${interactionHint}可加入行事曆註記＊`;			
         } else if (type === 'class' && classSchedules.has(name)) {
             schedule = classSchedules.get(name);
             title = `${name} 班課表`;
