@@ -426,6 +426,10 @@
             font-size: 0.9em;
             flex-shrink: 0;
         }
+		/* --- Fix for Modal Layout Shift --- */
+        body.modal-open {
+            overflow: hidden;
+        }
 	</style>
 </head>
 
@@ -925,13 +929,21 @@
         csCloseBtn.addEventListener('click', () => { classSettingsModal.style.display = 'none'; });
         saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); classSettingsModal.style.display = 'none'; alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
         
-        infoBtn.addEventListener('click', () => {
-            infoModal.style.display = 'block';
-        });
-        infoCloseBtn.addEventListener('click', () => {
+        // --- NEW: Refactored Modal Controls for Info Page ---
+        function openInfoModal() {
+            document.body.classList.add('modal-open');
+            infoModal.style.display = 'flex'; // Use flex for consistent centering
+        }
+
+        function closeInfoModal() {
+            document.body.classList.remove('modal-open');
             infoModal.style.display = 'none';
-        });
-        resetWelcomePrefsBtn.addEventListener('click', () => {
+        }
+
+        infoBtn.addEventListener('click', openInfoModal);
+        infoCloseBtn.addEventListener('click', closeInfoModal);
+
+		resetWelcomePrefsBtn.addEventListener('click', () => {
             localStorage.removeItem('hideLoginWelcome');
             localStorage.removeItem('hideTimetableWelcome');
             sessionStorage.removeItem('welcomeShownForSession'); // Also reset the session flag
@@ -939,12 +951,19 @@
             infoModal.style.display = 'none';
         });
 
+        // --- MODIFIED: Window Click Listener ---
         window.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
-            if (e.target === changePasswordModal) { changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; }
-            if (e.target === classSettingsModal) { classSettingsModal.style.display = 'none'; }
+            if (e.target === changePasswordModal) { 
+                changePasswordModal.style.display = 'none'; 
+                changePasswordForm.reset(); 
+                cpErrorMessage.textContent = ''; 
+            }
+            if (e.target === classSettingsModal) { 
+                classSettingsModal.style.display = 'none'; 
+            }
             if (e.target === infoModal) {
-                infoModal.style.display = 'none';
+                closeInfoModal(); // Use the new close function
             }
             if (e.target.classList.contains('modal')) {
                 if(e.target.id === 'welcome-modal') {
@@ -952,7 +971,7 @@
                 }
             }
         });
-
+		
         const dropdownBtn = document.getElementById('dropdown-btn');
         const dropdownMenu = document.getElementById('dropdown-menu');
 
@@ -979,3 +998,4 @@
     </script>
 </body>
 </html>
+
