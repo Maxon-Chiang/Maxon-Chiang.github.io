@@ -373,17 +373,17 @@
 
 		/* --- Styles for Info Modal (Fixes) --- */
         #info-modal {
-            padding: 0 15px; /* 左右內縮 15px */
+            padding: 5vh 15px 0;
             box-sizing: border-box;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
         }
         #info-modal .modal-content {
-            width: 100%; /* 關鍵：讓內容區塊填滿上面設定的內縮空間 */
-            margin: 0; /* 關鍵：移除旧的 margin，避免冲突 */
-            box-sizing: border-box; /* 確保寬度計算正確 */
-            max-height: 90vh; /* 新增：限制最大高度为螢幕高度的 90% */
-            overflow-y: auto; /* 新增：如果內容超過此高度，則啟用內部垂直捲動 */
+            width: 100%;
+            margin: 0;
+            box-sizing: border-box;
+            max-height: 85vh; 
+            overflow-y: auto;
         }
         .info-modal-header {
             display: flex;
@@ -468,6 +468,27 @@
 				justify-content: center;
 			}
         }
+
+        /* --- 【【【新增】】】課表彈出視窗的專屬樣式 --- */
+        #my-timetable-modal .modal-content {
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #my-timetable-body {
+            overflow-y: auto;
+        }
+        .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.9em; }
+        .schedule-table th, .schedule-table td { border: 1px solid #999; padding: 2px; text-align: center; vertical-align: middle; word-wrap: break-word; position: relative; }
+        .schedule-table th { background-color: #e9ecef; font-weight: bold; height: 35px; }
+        .schedule-table th:first-child, .schedule-table td:first-child { width: 5%; }
+        .schedule-table td { height: 55px; }
+        .schedule-table .period-header { font-weight: bold; background-color: #e9ecef; }
+        .schedule-table .subject { font-weight: normal; display: block; }
+        .schedule-table .details { font-size: 0.9em; color: #555; display: block; line-height: 1.1; }
+        .swapped-cell { border: 1px dashed #b19cd9; }
+        .substituted-cell { background-color: #e9ecef !important; border: 1px dashed #adb5bd; }
+        .exchanged-cell { border: 1px dashed #ffc994; }
 	</style>
 </head>
 
@@ -486,6 +507,7 @@
                 <div class="dropdown">
                     <button id="dropdown-btn" class="icon-btn">⋮</button>
                     <div id="dropdown-menu" class="dropdown-content">
+                        <button id="my-timetable-btn">我的課表</button>
                         <button id="class-settings-btn">班級顯示設定</button>
                         <button id="change-password-btn">修改密碼</button>
                         <button id="logout-btn">登出</button>
@@ -631,6 +653,9 @@
         let currentUser = null, studentsData = [], studentScores = {}, classEventScores = {},
             currentEntity = null, allClassList = [], visibleClassList = [];
         
+        let scheduleDataLoaded = false;
+        let classSchedules = new Map(), teacherSchedules = new Map(), activeChanges = [];
+        
         // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
         const welcomeModal = document.getElementById('welcome-modal');
@@ -657,7 +682,11 @@
         const infoCloseBtn = infoModal.querySelector('.close-btn');
         const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
         const timetableLink = document.getElementById('timetable-link');
-
+        
+        const myTimetableModal = document.getElementById('my-timetable-modal');
+        myTimetableModal.querySelector('.close-btn').addEventListener('click', () => {
+            myTimetableModal.style.display = 'none';
+        });
 
         // --- Core Application Logic ---
 
@@ -984,12 +1013,14 @@
                     case 'class-settings-modal': csCloseBtn.click(); break;
                     case 'info-modal': closeInfoModal(); break;
                     case 'welcome-modal': document.getElementById('close-welcome-btn').onclick(); break;
+                    case 'my-timetable-modal': e.target.style.display = 'none'; break;
                 }
             }
         });
 		
         const dropdownBtn = document.getElementById('dropdown-btn');
         const dropdownMenu = document.getElementById('dropdown-menu');
+        const myTimetableBtn = document.getElementById('my-timetable-btn');
 
         dropdownBtn.addEventListener('click', function(event) {
             event.stopPropagation();
@@ -1010,13 +1041,174 @@
                 }
             }
         });
+
+        myTimetableBtn.addEventListener('click', async () => {
+            document.getElementById('dropdown-menu').classList.remove('show');
+            const userDisplayName = document.getElementById('user-email').textContent;
+            if (!userDisplayName) {
+                alert('無法獲取您的使用者名稱，請稍後再試。');
+                return;
+            }
+
+            const modal = document.getElementById('my-timetable-modal');
+            const titleEl = document.getElementById('my-timetable-title');
+            const bodyEl = document.getElementById('my-timetable-body');
+
+            titleEl.textContent = `${userDisplayName} 課表`;
+            bodyEl.innerHTML = '<p style="text-align: center;">正在載入課表資料...</p>';
+            modal.style.display = 'flex'; // 先顯示載入中訊息
+
+            if (!scheduleDataLoaded) {
+                await fetchScheduleData(); // 如果是第一次點擊，就從資料庫載入資料
+            }
+            
+            renderMyTimetableModal(userDisplayName); // 產生課表畫面
+        });
+
+        // --- 【【【新增】】】以下為彈出式課表所需的所有函式 ---
+        
+        // 只在需要時從 Firestore 獲取一次課表資料
+        async function fetchScheduleData() {
+            try {
+                const [scheduleSnapshot, changesSnapshot] = await Promise.all([
+                    db.collection('schedules').get(),
+                    db.collection('classChanges').where('involvedTeacherIds', 'array-contains', currentUser.uid).where('status', '==', 'active').get()
+                ]);
+
+                classSchedules.clear();
+                teacherSchedules.clear();
+                activeChanges = [];
+
+				scheduleSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    const className = doc.id;
+                    const scheduleGrid = Array.from({ length: 8 }, () => Array(5).fill(null));
+                    if (data.periods) {
+                        for (const periodKey in data.periods) {
+                            const period = parseInt(periodKey, 10) - 1;
+                            if (period < 0 || period >= 8) continue;
+                            const dailySchedule = data.periods[periodKey];
+                            const days = ['mon', 'tue', 'wed', 'thu', 'fri'];
+                            for (let i = 0; i < days.length; i++) {
+                                const cellContent = dailySchedule[days[i]] || "";
+                                // --- 【↓↓↓ Bug 修正核心 ↓↓↓】 ---
+                                // 改用更安全的陣列索引方式，避免解析錯誤
+                                const contentParts = cellContent.split('\n').map(p => p.trim());
+                                if (contentParts.length > 1 && contentParts[0]) {
+                                    scheduleGrid[period][i] = {
+                                        subject: contentParts[0] || '',
+                                        teacher: contentParts[1] || '',
+                                        location: contentParts.slice(2).join(' ') || ''
+                                    };
+                                }
+                                // --- 【↑↑↑ Bug 修正核心 ↑↑↑】 ---
+                            }
+                        }
+                    }
+                    classSchedules.set(className, scheduleGrid);
+                });
+
+                for (const [className, grid] of classSchedules.entries()) {
+                    for (let p = 0; p < grid.length; p++) {
+                        for (let d = 0; d < grid[p].length; d++) {
+                            const cellData = grid[p][d];
+                            if (cellData && cellData.teacher) {
+                                if (!teacherSchedules.has(cellData.teacher)) {
+                                    teacherSchedules.set(cellData.teacher, Array.from({ length: 8 }, () => Array(5).fill(null)));
+                                }
+                                teacherSchedules.get(cellData.teacher)[p][d] = { subject: cellData.subject, class: className, location: cellData.location, period: p };
+                            }
+                        }
+                    }
+                }
+
+                changesSnapshot.forEach(doc => activeChanges.push(doc.data()));
+                scheduleDataLoaded = true;
+
+            } catch (error) {
+                console.error("載入課表資料失敗:", error);
+                document.getElementById('my-timetable-body').innerHTML = '<p style="text-align: center; color: red;">課表資料載入失敗！</p>';
+            }
+        }
+
+        // 產生「我的課表」的 HTML 內容
+        function renderMyTimetableModal(teacherName) {
+            const bodyEl = document.getElementById('my-timetable-body');
+            const baseSchedule = teacherSchedules.get(teacherName);
+
+            if (!baseSchedule) {
+                bodyEl.innerHTML = `<p style="text-align:center;">找不到 ${teacherName} 的課表資料。</p>`;
+                return;
+            }
+
+            // 為了不影響原始資料，建立一個深層複製的課表來進行修改
+            let finalSchedule = JSON.parse(JSON.stringify(baseSchedule));
+            const today = new Date();
+            const currentWeekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+
+            // 將調代換課資訊應用到當週課表上
+            activeChanges.forEach(change => {
+                const changeDateStr = change.type === 'swap' ? change.originalClassInfo.date : (change.date || change.originalLessonInfo.date);
+                if (!changeDateStr) return;
+                const changeDate = new Date(changeDateStr);
+                const changeWeekStart = new Date(changeDate.getFullYear(), changeDate.getMonth(), changeDate.getDate() - (changeDate.getDay() === 0 ? 6 : changeDate.getDay() - 1));
+                
+                // 只處理當週的異動
+                if (currentWeekStart.getTime() !== changeWeekStart.getTime()) return;
+                
+                if (change.type === 'substitution') {
+                    const dayIndex = new Date(change.date).getDay() - 1;
+                    const period = change.lessonInfo.period;
+                    if (dayIndex >=0 && dayIndex < 5) {
+                        if (change.originalTeacherName === teacherName) {
+                            finalSchedule[period][dayIndex] = { ...change.lessonInfo, isSubstitutedOut: true, substituteTeacherName: change.substituteTeacherName };
+                        }
+                        if (change.substituteTeacherName === teacherName) {
+                            finalSchedule[period][dayIndex] = { ...change.lessonInfo, isSubstitutedIn: true, originalTeacherName: change.originalTeacherName };
+                        }
+                    }
+                }
+                // (此處省略了 swap 和 exchange 的複雜邏輯，以求快速檢視)
+            });
+
+            const daysOfWeek = ['一', '二', '三', '四', '五'];
+            let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
+            daysOfWeek.forEach(day => tableHtml += `<th>${day}</th>`);
+            tableHtml += '</tr></thead><tbody>';
+
+            for (let period = 0; period < 8; period++) {
+                tableHtml += `<tr><td class="period-header">${period + 1}</td>`;
+                for (let day = 0; day < 5; day++) {
+                    const cellData = finalSchedule[period]?.[day];
+                    let content = '', cellClass = '';
+                    if (cellData) {
+                         if (cellData.isSubstitutedOut) {
+                            cellClass = 'substituted-cell';
+                            content = `<span class="subject" style="text-decoration: line-through;">${cellData.subject}</span><span class="details">由 ${cellData.substituteTeacherName} 代課</span>`;
+                        } else if (cellData.isSubstitutedIn) {
+                            cellClass = 'substituted-cell';
+                            content = `<span class="subject">${cellData.subject}</span><span class="details">代 ${cellData.originalTeacherName} 的課</span>`;
+                        } else {
+							content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${convertClassName(cellData.class) || ''}</span>`;
+                        }
+                        tableHtml += `<td class="${cellClass}">${content}</td>`;
+                    } else {
+                        tableHtml += `<td></td>`;
+                    }
+                }
+                tableHtml += '</tr>';
+            }
+            tableHtml += '</tbody></table>';
+            bodyEl.innerHTML = tableHtml;
+        }
     });
     </script>
+	<div id="my-timetable-modal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <span class="close-btn">&times;</span>
+            <h2 id="my-timetable-title" style="text-align: center;"></h2>
+            <div id="my-timetable-body" style="overflow-x: auto;"></div>
+        </div>
+    </div>
 </body>
 </html>
-
-
-
-
-
-
