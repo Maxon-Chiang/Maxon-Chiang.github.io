@@ -1,4 +1,4 @@
-no<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -479,7 +479,7 @@ no<!DOCTYPE html>
 				height: 100%;
 			}
 			.modal-notes {
-				width: 95%;
+				width: 90%;
 				height: 100%;
 			}			
 			#info-modal {
@@ -488,19 +488,17 @@ no<!DOCTYPE html>
 				align-items: flex-start;
 				justify-content: center;
 			}
-			#my-timetable-modal .modal-content {
-            max-width: 90vw;
-            padding: 10px;
-        }
-
-.schedule-table {
+            #my-timetable-modal .modal-content {
+                max-width: 95vw; /* 設定最大寬度為螢幕可見寬度的 95% */
+                padding: 10px;   /* 稍微減少內邊距，讓內容有更多空間 */
+                box-sizing: border-box; /* 確保寬度計算正確 */
+            }
+            .schedule-table {
                 font-size: 0.8em; /* 在手機上稍微縮小課表字體 */
             }
             .schedule-table td {
                 height: 50px; /* 縮小手機版課表格子的高度 */
-            }
-       
-
+            }				
         }
 
 	</style>
