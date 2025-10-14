@@ -292,13 +292,7 @@ header .header-actions {
 		width: 100%;
 		order: -1; /* 將搜尋框移到最上面 */
 	}
-	.controls-header .control-group:nth-child(2) { /* 依單位/領域 */
-		flex-grow: 1; /* 佔滿剩餘空間 */
-	}
-	 .controls-header .control-group:nth-child(2) span { /* 隱藏「教師名單：」文字 */
-		display: none;
-	}
-	.controls-header .control-group:nth-child(3) { /* 場地/班級課表 */
+	.controls-header .control-group:nth-child(2) { /* 場地/班級課表 */
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		width: 100%;
@@ -333,8 +327,6 @@ header .header-actions {
         <div class="controls-header">
             <div class="control-group">
                 <input type="search" id="search-teacher" placeholder="搜尋教師...">
-            </div>
-            <div class="control-group">
                 <span>教師名單：</span>
                 <button id="view-by-dept-btn" class="view-toggle-btn active">依單位</button>
                 <button id="view-by-subject-btn" class="view-toggle-btn">依領域</button>
