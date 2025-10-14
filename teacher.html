@@ -44,13 +44,13 @@
         .header-right-panel {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
         }
         .user-profile {
             display: flex;
             align-items: center;
             gap: 5px;
-            font-size: 0.9em;
+            font-size: 1.0em;
             flex-shrink: 0;
         }
         .main-actions {
@@ -75,9 +75,9 @@
             background: none;
             border: none;
             color: white;
-            font-size: 1.8em;
+            font-size: 1.2em;
             cursor: pointer;
-            padding: 0 10px;
+            padding: 0 0px;
             line-height: 1;
         }
         .dropdown-content {
@@ -85,7 +85,7 @@
             position: absolute;
             right: 10px;
             background-color: white;
-            min-width: 120px;
+            min-width: 150px;
             box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
             z-index: 1;
             border-radius: 4px;
@@ -431,24 +431,25 @@
 				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表系統</button></a>
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
                 <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
-                <button id="info-btn" class="icon-btn-main" title="系統說明">⚙️</button>
             </div>
            <div class="user-profile">
                 <span id="user-email"></span>
-                <div class="dropdown">
-                    <button id="dropdown-btn" class="icon-btn">⋮</button>
-                    <div id="dropdown-menu" class="dropdown-content">
-                        <button id="my-timetable-btn">我的課表</button>
-                        <button id="class-settings-btn">班級顯示設定</button>
-                        <button id="change-password-btn">修改密碼</button>
-                        <button id="logout-btn">登出</button>
-                    </div>
+            </div>
+            <div class="dropdown">
+                <button id="dropdown-btn" class="icon-btn" title="設定與功能">⚙️</button>
+                <div id="dropdown-menu" class="dropdown-content">
+                    <button id="my-timetable-btn">我的課表</button>
+                    <button id="class-settings-btn">班級顯示設定</button>
+                    <button id="change-password-btn">修改密碼</button>
+                    <button id="info-btn-new">功能說明</button>
+                    <hr style="margin: 4px 10px; border-color: #eee; border-style: solid; border-width: 1px 0 0 0;">
+                    <button id="logout-btn">登出</button>
                 </div>
             </div>
         </div>
     </header>
     <main id="app-container" class="class-grid">
-        <h2>正在驗證登入狀態...</h2>
+        <h2>正在載入您的資料...</h2>
     </main>
 
     <div id="welcome-modal" class="modal">
@@ -609,7 +610,6 @@
         const csCloseBtn = classSettingsModal.querySelector('.close-btn');
         const selectAllVisibleClasses = document.getElementById('select-all-visible-classes');
         const infoModal = document.getElementById('info-modal');
-        const infoBtn = document.getElementById('info-btn');
         const infoCloseBtn = infoModal.querySelector('.close-btn');
         const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
         const timetableLink = document.getElementById('timetable-link');
@@ -925,7 +925,6 @@
             document.body.classList.remove('modal-open');
             infoModal.style.display = 'none';
         }
-        infoBtn.addEventListener('click', openInfoModal);
         infoCloseBtn.addEventListener('click', closeInfoModal);
 
 		resetWelcomePrefsBtn.addEventListener('click', () => {
@@ -952,6 +951,7 @@
         const dropdownBtn = document.getElementById('dropdown-btn');
         const dropdownMenu = document.getElementById('dropdown-menu');
         const myTimetableBtn = document.getElementById('my-timetable-btn');
+		const newInfoBtn = document.getElementById('info-btn-new');
 
         dropdownBtn.addEventListener('click', function(event) {
             event.stopPropagation();
@@ -1129,6 +1129,10 @@
             tableHtml += '</tbody></table>';
             bodyEl.innerHTML = tableHtml;
         }
+		newInfoBtn.addEventListener('click', () => {
+			document.getElementById('dropdown-menu').classList.remove('show');
+			openInfoModal();
+		});
     });
     </script>
 	<div id="my-timetable-modal" class="modal">
