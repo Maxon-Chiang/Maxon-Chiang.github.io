@@ -231,7 +231,32 @@ header .header-actions {
     font-weight: normal;
 }
 .modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
-		
+/* --- NEW STYLES START --- */
+.subtitle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin: 0 10px 10px 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    min-height: 38px; /* 預留空間以防止版面跳動 */
+}
+#substitution-btn {
+    display: none; /* 預設隱藏 */
+    padding: 6px 12px;
+    font-size: 0.9em;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0; /* 防止按鈕被壓縮 */
+}
+#substitution-btn.visible {
+    display: inline-block; /* 顯示按鈕 */
+}
+/* --- NEW STYLES END --- */	
 @media screen and (max-width: 768px) {
     body { padding: 0; }
     header {
@@ -261,36 +286,11 @@ header .header-actions {
     .department-table { font-size: 14px; }
     #search-teacher { width: 120px; }
     .schedule-table th { font-size: 12px; }
-    .schedule-table td { font-size: 12px; height: 72px; }
+    .schedule-table td { font-size: 12px; height: 65px; }
     .schedule-table .details { font-size: 10px; }
     .swap-suggestion .details { display: block; margin-left: 0px; line-height: 1.2; }
 }
-/* --- NEW STYLES START --- */
-.subtitle-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 15px;
-    margin: 0 10px 10px 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    min-height: 38px; /* 預留空間以防止版面跳動 */
-}
-#substitution-btn {
-    display: none; /* 預設隱藏 */
-    padding: 6px 12px;
-    font-size: 0.9em;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    flex-shrink: 0; /* 防止按鈕被壓縮 */
-}
-#substitution-btn.visible {
-    display: inline-block; /* 顯示按鈕 */
-}
-/* --- NEW STYLES END --- */
+
 </style>
 
 </head>
