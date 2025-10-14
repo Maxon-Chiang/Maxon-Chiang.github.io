@@ -284,6 +284,7 @@ header .header-actions {
 		gap: 10px 15px; /* 上下間距10px, 左右間距15px */
 		justify-content: center;
 		margin-bottom: 1.5em;
+		font-size: 0.9em;
 	}
 	.controls-header .control-group {
 		margin: 0;
@@ -297,6 +298,10 @@ header .header-actions {
 		grid-template-columns: 1fr 1fr;
 		width: 100%;
 		gap: 10px;
+	}
+	.view-toggle-btn {
+		padding: 2px 15px;
+		font-size: 12px; 
 	}
     .modal-header { flex-direction: column; gap: 10px; }
     .modal-content { width: 90%; margin: 5% auto; }
@@ -327,7 +332,7 @@ header .header-actions {
         <div class="controls-header">
             <div class="control-group">
                 <input type="search" id="search-teacher" placeholder="搜尋教師...">
-                <span>教師名單：</span>
+                <span>名單分類：</span>
                 <button id="view-by-dept-btn" class="view-toggle-btn active">依單位</button>
                 <button id="view-by-subject-btn" class="view-toggle-btn">依領域</button>
             </div>
