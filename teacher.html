@@ -411,6 +411,27 @@
             color: white;                         
         }
 
+        /* --- 【【【新增】】】課表彈出視窗的專屬樣式 --- */
+        #my-timetable-modal .modal-content {
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #my-timetable-body {
+            overflow-y: auto;
+        }
+        .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.9em; }
+        .schedule-table th, .schedule-table td { border: 1px solid #999; padding: 2px; text-align: center; vertical-align: middle; word-wrap: break-word; position: relative; }
+        .schedule-table th { background-color: #e9ecef; font-weight: bold; height: 35px; }
+        .schedule-table th:first-child, .schedule-table td:first-child { width: 5%; }
+        .schedule-table td { height: 55px; }
+        .schedule-table .period-header { font-weight: bold; background-color: #e9ecef; }
+        .schedule-table .subject { font-weight: normal; display: block; }
+        .schedule-table .details { font-size: 0.9em; color: #555; display: block; line-height: 1.1; }
+        .swapped-cell { border: 1px dashed #b19cd9; }
+        .substituted-cell { background-color: #e9ecef !important; border: 1px dashed #adb5bd; }
+        .exchanged-cell { border: 1px dashed #ffc994; }
+
 		/* --- Fix for Modal Layout Shift --- */
         body.modal-open {
             overflow: hidden;
@@ -467,28 +488,9 @@
 				align-items: flex-start;
 				justify-content: center;
 			}
+			.schedule-table { width: 90%; }
         }
 
-        /* --- 【【【新增】】】課表彈出視窗的專屬樣式 --- */
-        #my-timetable-modal .modal-content {
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-        }
-        #my-timetable-body {
-            overflow-y: auto;
-        }
-        .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.9em; }
-        .schedule-table th, .schedule-table td { border: 1px solid #999; padding: 2px; text-align: center; vertical-align: middle; word-wrap: break-word; position: relative; }
-        .schedule-table th { background-color: #e9ecef; font-weight: bold; height: 35px; }
-        .schedule-table th:first-child, .schedule-table td:first-child { width: 5%; }
-        .schedule-table td { height: 55px; }
-        .schedule-table .period-header { font-weight: bold; background-color: #e9ecef; }
-        .schedule-table .subject { font-weight: normal; display: block; }
-        .schedule-table .details { font-size: 0.9em; color: #555; display: block; line-height: 1.1; }
-        .swapped-cell { border: 1px dashed #b19cd9; }
-        .substituted-cell { background-color: #e9ecef !important; border: 1px dashed #adb5bd; }
-        .exchanged-cell { border: 1px dashed #ffc994; }
 	</style>
 </head>
 
