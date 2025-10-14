@@ -278,7 +278,32 @@ header .header-actions {
     /* --- 修改結束 --- */
     .container { padding: 10px; margin: 10px; }
     .close-button { top: 10px; right: 15px; }
-    .controls-header { flex-direction: column; gap: 15px; }
+	.controls-header {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px 15px; /* 上下間距10px, 左右間距15px */
+		justify-content: center;
+		margin-bottom: 1.5em;
+	}
+	.controls-header .control-group {
+		margin: 0;
+	}
+	.controls-header .control-group:nth-child(1) { /* 搜尋框 */
+		width: 100%;
+		order: -1; /* 將搜尋框移到最上面 */
+	}
+	.controls-header .control-group:nth-child(2) { /* 依單位/領域 */
+		flex-grow: 1; /* 佔滿剩餘空間 */
+	}
+	 .controls-header .control-group:nth-child(2) span { /* 隱藏「教師名單：」文字 */
+		display: none;
+	}
+	.controls-header .control-group:nth-child(3) { /* 場地/班級課表 */
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		width: 100%;
+		gap: 10px;
+	}
     .modal-header { flex-direction: column; gap: 10px; }
     .modal-content { width: 90%; margin: 5% auto; }
     #modal-title2 { font-size: 12px; }
