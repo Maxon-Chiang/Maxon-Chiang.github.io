@@ -99,8 +99,7 @@
         }
         #user-email {
             margin-right: 15px;
-            font-size: 0.9em;
-            font-weight: bold;
+            font-size: 1.0em;
         }
         @media (max-width: 600px) {
             .score-entry-header, .score-entry {
@@ -111,7 +110,7 @@
             .score-entry input {
                 padding: 8px 4px;
             }
-            main {
+			main {
                 padding: 10px;
             }
             .history-item-stats {
@@ -282,7 +281,35 @@
         function setupKeyboardNavigation() { scoresContainer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('score-input')) { e.preventDefault(); const allScoreInputs = Array.from(scoresContainer.querySelectorAll('.score-input')); const currentIndex = allScoreInputs.indexOf(e.target); if (currentIndex > -1 && currentIndex < allScoreInputs.length - 1) { const nextInput = allScoreInputs[currentIndex + 1]; nextInput.focus(); nextInput.select(); } else { saveBtns[1].focus(); } } }); }
         function toggleCreateSection(enabled) { createSection.style.opacity = enabled ? '1' : '0.5'; createSection.style.pointerEvents = enabled ? 'auto' : 'none'; }
         function displayGradeEntry(assignmentName, generalComment = '', scoresData = {}) { currentAssignmentTitle.textContent = currentAssignmentId ? `編輯成績：${assignmentName}` : `登錄新成績：${assignmentName}`; editAssignmentNameInput.value = assignmentName; editGeneralCommentInput.value = generalComment; scoresContainer.innerHTML = '<div class="score-entry-header"><span>座號</span><span>姓名</span><span>分數</span><span>個別註解 (選填)</span></div>'; studentsInClass.forEach(student => { const scoreInfo = scoresData[student.id] || {}; const entryDiv = document.createElement('div'); entryDiv.className = 'score-entry'; entryDiv.innerHTML = `<span>${student.id.substring(3)}</span><label>${student.name}</label><input type="number" class="score-input" data-student-id="${student.id}" value="${scoreInfo.score ?? ''}" placeholder="分數"><input type="text" class="comment-input" data-student-id="${student.id}" value="${scoreInfo.comment || ''}" placeholder="個別註解">`; scoresContainer.appendChild(entryDiv); }); gradeEntrySection.style.display = 'block'; toggleCreateSection(false); }
-        createBtn.addEventListener('click', () => { const newAssignmentName = newAssignmentNameInput.value.trim(); if (!newAssignmentName) { alert('請先輸入成績項目名稱！'); return; } currentAssignmentId = null; displayGradeEntry(newAssignmentName, newGeneralCommentInput.value.trim()); saveBtns.forEach(btn => btn.textContent = '儲存新成績'); });
+		createBtn.addEventListener('click', () => {
+            const newAssignmentName = newAssignmentNameInput.value.trim();
+            if (!newAssignmentName) {
+                alert('請先輸入成績項目名稱！');
+                return;
+            }
+
+            // --- 【↓↓↓ Bug 修正核心邏輯 ↓↓↓】 ---
+            const historyItems = Array.from(historyList.querySelectorAll('.history-item'));
+            const existingItem = historyItems.find(item => {
+                const titleElement = item.querySelector('.history-item-title');
+                // 提取括號前的名稱來比對
+                const titleText = titleElement ? titleElement.textContent.split(' (')[0] : '';
+                return titleText === newAssignmentName;
+            });
+
+            if (existingItem) {
+                // 如果找到同名項目，就模擬點擊它來載入編輯
+                alert(`提醒：已存在名為「${newAssignmentName}」的成績項目，將直接載入該項目進行編輯。`);
+                existingItem.querySelector('.history-item-content').click();
+                return; // 結束函式，不再建立新項目
+            }
+            // --- 【↑↑↑ Bug 修正結束 ↑↑↑】 ---
+
+            // 如果沒有同名項目，才執行建立新成績單的流程
+            currentAssignmentId = null;
+            displayGradeEntry(newAssignmentName, newGeneralCommentInput.value.trim());
+            saveBtns.forEach(btn => btn.textContent = '儲存新成績');
+        });
         cancelBtns.forEach(btn => btn.addEventListener('click', () => { gradeEntrySection.style.display = 'none'; newAssignmentNameInput.value = ''; newGeneralCommentInput.value = ''; currentAssignmentId = null; toggleCreateSection(true); }));
         saveBtns.forEach(btn => { btn.addEventListener('click', async () => { const scoresData = {}; scoresContainer.querySelectorAll('.score-entry').forEach(entry => { const studentId = entry.querySelector('.score-input').dataset.studentId; const score = entry.querySelector('.score-input').value.trim(); const comment = entry.querySelector('.comment-input').value.trim(); if (score !== '' || comment !== '') { scoresData[studentId] = {}; if (score !== '') scoresData[studentId].score = parseFloat(score); if (comment !== '') scoresData[studentId].comment = comment; } }); const assignmentName = editAssignmentNameInput.value.trim(); if (!assignmentName) { alert('成績項目名稱不可為空！'); return; } const assignmentData = { assignmentName, className: classId, date: firebase.firestore.FieldValue.serverTimestamp(), generalComment: editGeneralCommentInput.value.trim(), scores: scoresData, teacherId: currentUser.uid }; try { const assignmentsRef = db.collection('gradebooks').doc(currentUser.uid).collection('assignments'); if (currentAssignmentId) { await assignmentsRef.doc(currentAssignmentId).update(assignmentData); alert(`已更新成績項目：${assignmentName}`); } else { await assignmentsRef.add(assignmentData); alert(`已儲存新成績項目：${assignmentName}`); } cancelBtns[0].click(); } catch (error) { console.error("儲存成績失敗:", error); alert("儲存失敗！"); } }); });
         
@@ -342,7 +369,40 @@
             });
         }
 
-        historyList.addEventListener('click', async (e) => { if (e.target.closest('.delete-btn')) { e.stopPropagation(); const docId = e.target.closest('.delete-btn').dataset.id; if(confirm('確定要刪除這個成績項目及其所有成績嗎？')) { try { await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete(); alert('刪除成功！'); if(currentAssignmentId === docId) { cancelBtns[0].click(); } } catch(error) { alert("刪除失敗！"); } } } });
+		historyList.addEventListener('click', async (e) => {
+            if (e.target.closest('.delete-btn')) {
+                e.stopPropagation();
+                const deleteBtn = e.target.closest('.delete-btn');
+                const docId = deleteBtn.dataset.id;
+                
+                // --- 【↓↓↓ 功能強化：在確認訊息中顯示詳細資訊 ↓↓↓】 ---
+                const listItem = deleteBtn.closest('.history-item');
+                const titleElement = listItem.querySelector('.history-item-title');
+                
+                // 從標題文字中提取成績項目名稱 (移除日期部分)
+                const assignmentName = titleElement ? titleElement.textContent.split(' (')[0] : '未命名項目';
+                const className = convertClassName(classId);
+
+                const firstConfirm = confirm(`您確定要刪除【${className} 班】的成績項目：\n\n「${assignmentName}」\n\n及其所有學生成績嗎？`);
+                
+                if (firstConfirm) {
+                    const secondConfirm = confirm(`【【【最後確認】】】\n\n此操作將永久刪除「${assignmentName}」的所有成績，無法復原！\n\n真的確定要刪除嗎？`);
+                    
+                    if (secondConfirm) {
+                        try {
+                            await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete();
+                            alert(`已成功刪除「${assignmentName}」`);
+                            if (currentAssignmentId === docId) {
+                                cancelBtns[0].click();
+                            }
+                        } catch (error) {
+                            alert("刪除失敗！");
+                        }
+                    }
+                }
+                // --- 【↑↑↑ 功能強化結束 ↑↑↑】 ---
+            }
+        });
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
     </script>
 </body>
