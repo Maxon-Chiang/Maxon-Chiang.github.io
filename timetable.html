@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>課表系統</title>
+    <title>課表暨調課系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -510,6 +510,11 @@ async function main() {
 
     welcomeModal.querySelector('.close-button').onclick = closeWelcome;
     document.getElementById('close-welcome-timetable-btn').onclick = closeWelcome;
+    
+    // --- 【↓↓↓ 新增此區塊，用來檢查網址參數 ↓↓↓】 ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const teacherNameToShow = urlParams.get('teacher');
+    // --- 【↑↑↑ 新增區塊結束 ↑↑↑】 ---
 
     console.log("正在從 Firestore 獲取資料...");
     const [scheduleSnapshot, staffSnapshot, subjectSnapshot, usersSnapshot] = await Promise.all([
@@ -1875,22 +1880,38 @@ async function main() {
         populateLocationList();
         bindNavEventListeners();
 
-        const lastScheduleJSON = localStorage.getItem('lastSchedule');
-        if (lastScheduleJSON) {
-            const savedData = JSON.parse(lastScheduleJSON);
-            if (savedData.savedBy && savedData.savedBy === currentUser.uid) {
-                const lastSchedule = savedData.schedule;
-                if (lastSchedule.view === 'subject') {
-                    updateView('subject', false);
+        // --- 【↓↓↓ 修改此區塊的邏輯 ↓↓↓】 ---
+        if (teacherNameToShow) {
+            // 如果網址帶有老師名字，就直接顯示該課表
+            setTimeout(() => {
+                const decodedTeacherName = decodeURIComponent(teacherNameToShow);
+                if (teacherSchedules.has(decodedTeacherName)) {
+                    showSchedule(decodedTeacherName, 'teacher');
+                } else {
+                    alert(`找不到教師「${decodedTeacherName}」的課表資料。`);
                 }
-                if (lastSchedule?.type && lastSchedule?.name) {
-                    activeSchedule = { type: lastSchedule.type, name: lastSchedule.name };
-                    setTimeout(() => showSchedule(lastSchedule.name, lastSchedule.type), 100);
+            }, 100);
+        } else {
+            // 否則，才執行原本的讀取上次紀錄邏輯
+            const lastScheduleJSON = localStorage.getItem('lastSchedule');
+            if (lastScheduleJSON) {
+                const savedData = JSON.parse(lastScheduleJSON);
+                if (savedData.savedBy && savedData.savedBy === currentUser.uid) {
+                    const lastSchedule = savedData.schedule;
+                    if (lastSchedule.view === 'subject') {
+                        updateView('subject', false);
+                    }
+                    if (lastSchedule?.type && lastSchedule?.name) {
+                        activeSchedule = { type: lastSchedule.type, name: lastSchedule.name };
+                        setTimeout(() => showSchedule(lastSchedule.name, lastSchedule.type), 100);
+                    }
+                } else {
+                    localStorage.removeItem('lastSchedule');
                 }
-            } else {
-                localStorage.removeItem('lastSchedule');
             }
         }
+        // --- 【↑↑↑ 修改區塊結束 ↑↑↑】 ---
+
     } catch (e) {
         console.error("程式執行時發生嚴重錯誤:", e);
         if (e.code === 'permission-denied') {
