@@ -259,10 +259,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0, 0, 0, 0.9);
+            background-color: rgba(0, 0, 0, 0.7);
             z-index: 2000;
             justify-content: center;
             align-items: center;
+			padding: 15px; 
+			box-sizing: border-box;
         }
         
         .close-btn {
@@ -388,7 +390,31 @@
         .exchanged-cell { border: 1px dashed #ffc994; }
 
 		body.modal-open { overflow: hidden; }
-
+		/* 【【【新增這段 CSS】】】 */
+		.password-reset-box form {
+			display: flex;
+			flex-direction: column;
+			gap: 15px; /* 增加輸入框之間的間距 */
+			margin: 20px 0;
+		}
+		.password-reset-box input, .password-reset-box button {
+			width: 100%;
+			box-sizing: border-box; /* 確保寬度計算正確 */
+			height: 44px; /* 給定固定高度 */
+			padding: 12px;
+		}
+		.password-wrapper {
+			position: relative;
+			display: flex;
+			align-items: center;
+		}
+		.toggle-password {
+			position: absolute;
+			right: 15px;
+			cursor: pointer;
+			font-size: 1.2em;
+			color: #888;
+		}
 		@media (max-width: 768px) {
             header { gap: 10px; }
             main { padding: 1rem; }
@@ -484,12 +510,18 @@
         <div class="password-reset-box">
             <h2>初次登入，請重設密碼</h2>
             <p>為了帳號安全，請設定一組您自己的新密碼。</p>
-            <form id="password-reset-form">
-                <input type="password" id="new-password" placeholder="請輸入新密碼" required minlength="6">
-                <input type="password" id="confirm-password" placeholder="請再次輸入新密碼" required>
-                <button type="submit">設定新密碼</button>
-            </form>
-			<button type="button" id="force-logout-btn" style="margin-top: 15px; background-color: #777; font-size: 0.9em;">無法更新？點此登出並重新開始</button>
+			<form id="password-reset-form">
+				<div class="password-wrapper">
+					<input type="password" id="new-password" placeholder="請輸入新密碼" required minlength="6">
+					<span class="toggle-password" data-target="new-password">👁️</span>
+				</div>
+				<div class="password-wrapper">
+					<input type="password" id="confirm-password" placeholder="請再次輸入新密碼" required>
+					<span class="toggle-password" data-target="confirm-password">👁️</span>
+				</div>
+				<button type="submit">設定新密碼</button>
+			</form>
+			<button type="button" id="force-logout-btn" style="margin-top: 15px; background-color: #777; font-size: 0.9em; color:white;">無法更新？點此登出並重新開始</button>
             <p id="password-error-message"></p>
         </div>
     </div>
@@ -498,13 +530,19 @@
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <h2>修改密碼</h2>
-            <form id="change-password-form">
-                <p>請輸入您的新密碼（至少6個字元）。</p>
-                <input type="password" id="cp-new-password" placeholder="新密碼" required minlength="6">
-                <input type="password" id="cp-confirm-password" placeholder="確認新密碼" required>
-                <button type="submit">確認修改</button>
-                <p id="cp-error-message"></p>
-            </form>
+			<form id="change-password-form">
+				<p>請輸入您的新密碼（至少6個字元）。</p>
+				<div class="password-wrapper">
+					<input type="password" id="cp-new-password" placeholder="新密碼" required minlength="6">
+					<span class="toggle-password" data-target="cp-new-password">👁️</span>
+				</div>
+				<div class="password-wrapper">
+					<input type="password" id="cp-confirm-password" placeholder="確認新密碼" required>
+					<span class="toggle-password" data-target="cp-confirm-password">👁️</span>
+				</div>
+				<button type="submit">確認修改</button>
+				<p id="cp-error-message"></p>
+			</form>
         </div>
     </div>
 
@@ -1258,6 +1296,20 @@
 		newInfoBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
 			openInfoModal();
+		});
+		/* 【【【新增這段 JavaScript】】】 */
+		document.querySelectorAll('.toggle-password').forEach(toggle => {
+			toggle.addEventListener('click', () => {
+				const targetId = toggle.dataset.target;
+				const passwordInput = document.getElementById(targetId);
+				if (passwordInput.type === 'password') {
+					passwordInput.type = 'text';
+					toggle.textContent = '🙈'; // 可換成閉眼的圖示
+				} else {
+					passwordInput.type = 'password';
+					toggle.textContent = '👁️'; // 換回開眼的圖示
+				}
+			});
 		});
     });
     </script>
