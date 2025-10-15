@@ -135,7 +135,7 @@
         .class-block-title {
             padding: 12px 10px 5px 10px;
             font-size: 1.8em;
-            font-weight: bold;
+            font-weight: normal;
             color: var(--primary-color);
             cursor: pointer;
             flex-grow: 1;
@@ -218,6 +218,10 @@
         .student-block-name {
             font-size: 1.1em;
         }
+		/* 【【【新增這段】】】 */
+		.score-negative { background-color: #ffebee; } /* 淡紅色 */
+		.score-positive-low { background-color: #e8f5e9; } /* 淡綠色 */
+		.score-positive-high { background-color: #fff8e1; } /* 淡金黃色 */
         
         .modal, .modal2, .modal-notes {
             display: none;
@@ -462,10 +466,12 @@
                     <h3>新增紀錄 <span id="modal-current-score" style="font-weight: normal; font-size: 0.8em; color: #555;"></span></h3>
                     <button type="submit" form="add-record-form">新增</button>
                 </div>
-                <form id="add-record-form" novalidate>
-                    <input type="number" id="record-points" placeholder="加/減分" step="1">
-                    <input type="text" id="record-text" placeholder="文字紀錄 (選填)">
-                </form>
+				<form id="add-record-form" novalidate>
+					<input type="number" id="record-points" placeholder="加/減分" step="1">
+					<input type="text" id="record-text" placeholder="文字紀錄 (選填)" list="recent-texts-list">
+					
+					<datalist id="recent-texts-list"></datalist>
+				</form>
             </div>
             <div class="records-container">
                 <h3>歷史紀錄</h3>
@@ -796,17 +802,26 @@
             } else {
                 studentsInClass.forEach(student => {
                     const studentBlock = document.createElement('div');
-                    studentBlock.className = 'student-block';
+                    //studentBlock.className = 'student-block';
                     studentBlock.title = `點擊以紀錄 ${student.name} 的表現`;
                     
                     const score = studentScores[student.id] || 0;
-                    
-                    studentBlock.innerHTML = `
-                        <div class="student-block-info">
-                            ${student.id.substring(3)} <span class="score">(${score.toFixed(1)}分)</span>
-                        </div>
-                        <div class="student-block-name">${student.name}</div>
-                    `;
+                    let scoreClass = '';
+					if (score < 0) {
+						scoreClass = 'score-negative';
+					} else if (score > 0 && score < 5) {
+						scoreClass = 'score-positive-low';
+					} else if (score >= 5) {
+						scoreClass = 'score-positive-high';
+					}
+					studentBlock.className = 'student-block ' + scoreClass; // 套用class
+					
+					studentBlock.innerHTML = `
+						<div class="student-block-info">
+							${student.id.substring(3)} <span class="score">(${score.toFixed(1)}分)</span>
+						</div>
+						<div class="student-block-name">${student.name}</div>
+					`;
                     
                     studentBlock.addEventListener('click', () => {
                         studentRosterModal.style.display = 'none';
@@ -847,6 +862,8 @@
             scoreSpan.textContent = scoreText;
 
             loadRecords(id, type);
+			document.getElementById('record-points').value = 1; 
+			loadRecentTexts();
             modal.style.display = 'flex';
         }
 		
@@ -863,6 +880,37 @@
 				document.body.classList.remove('modal-open');
 			}
 			modalOrigin = null; // 重設來源標記
+		}
+
+		async function loadRecentTexts() {
+			const datalist = document.getElementById('recent-texts-list');
+			datalist.innerHTML = ''; // 先清空舊的建議
+
+			try {
+				const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records')
+					.orderBy('timestamp', 'desc')
+					.limit(50) // 先抓最近的50筆紀錄以提高效率
+					.get();
+				
+				const recentTexts = new Set(); // 使用 Set 來確保文字不重複
+				snapshot.forEach(doc => {
+					const text = doc.data().text;
+					// 如果文字存在且不為空，就加入 Set
+					if (text && text.trim() !== '') {
+						recentTexts.add(text.trim());
+					}
+				});
+
+				// 只取前10筆不重複的文字紀錄
+				Array.from(recentTexts).slice(0, 10).forEach(text => {
+					const option = document.createElement('option');
+					option.value = text;
+					datalist.appendChild(option);
+				});
+
+			} catch (error) {
+				console.error("讀取最近的文字紀錄失敗:", error);
+			}
 		}
 
         async function loadRecords(id, type) {
