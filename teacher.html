@@ -971,14 +971,53 @@
             const sid = currentEntity; 
             const n = { entityId: sid.id, entityType: sid.type, points: p, text: t, timestamp: firebase.firestore.FieldValue.serverTimestamp(), studentId: sid.type === 'student' ? sid.id : null }; 
             try { 
-                await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n); 
-                closeModal(); 
-                await fetchAllScores(); 
-                renderLayout(); 
+				const origin = modalOrigin; // 先記住是從哪裡來的
+				const className = sid.type === 'student' ? sid.id.substring(0, 3) : sid.id;
+
+				await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n);
+				
+				closeModal(); // 關閉輸入視窗
+				await fetchAllScores(); // 取得最新分數
+
+				if (origin === 'roster') {
+					// 如果是從學生名單來的，就重新打開更新後的名單
+					openStudentRosterModal(className); 
+				} else {
+					// 否則是從主畫面來的，就更新主畫面
+					renderLayout();
+					document.body.classList.remove('modal-open');
+				}
             } catch (err) { console.error(err); } 
         }
 
-        async function handleDeleteRecord(e) { if (e.target.classList.contains('delete-btn')) { const rid = e.target.dataset.id; if (confirm('確定刪除？')) { const sid = currentEntity; try { await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete(); closeModal(); await fetchAllScores(); renderLayout(); } catch (err) { console.error(err); } } } }
+        async function handleDeleteRecord(e) { 
+			if (e.target.classList.contains('delete-btn')) { 
+				const rid = e.target.dataset.id; 
+				if (confirm('確定刪除？')) { 
+					const sid = currentEntity; 
+					try { 
+						const origin = modalOrigin; // 先記住是從哪裡來的
+						const className = sid.type === 'student' ? sid.id.substring(0, 3) : sid.id;
+
+						await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
+
+						closeModal(); // 關閉輸入視窗
+						await fetchAllScores(); // 取得最新分數
+
+						if (origin === 'roster') {
+							// 如果是從學生名單來的，就重新打開更新後的名單
+							openStudentRosterModal(className);
+						} else {
+							// 否則是從主畫面來的，就更新主畫面
+							renderLayout();
+							document.body.classList.remove('modal-open');
+						}
+					} catch (err) { 
+						console.error(err); 
+					} 
+				} 
+			} 
+		}
         
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
         closeBtn.addEventListener('click', closeModal);
