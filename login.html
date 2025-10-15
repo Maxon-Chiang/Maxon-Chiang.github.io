@@ -20,6 +20,22 @@
         #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f5f5f5; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4a90e2; animation: spin 1s ease infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+		/* 【【【新增這段 CSS】】】 */
+		.password-wrapper {
+			position: relative;
+			display: flex;
+			align-items: center;
+		}
+		.password-wrapper input {
+			padding-right: 50px; /* 留出空間給眼睛圖示 */
+		}
+		.toggle-password {
+			position: absolute;
+			right: 15px;
+			cursor: pointer;
+			font-size: 1.2em;
+			color: #888;
+		}
     </style>
 </head>
 <body>
@@ -29,7 +45,10 @@
             <h1>學生綜合紀錄暨課表系統</h1>
             <form id="login-form">
                 <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
-                <input type="password" id="login-password" placeholder="密碼" required autocomplete="current-password">
+				<div class="password-wrapper">
+					<input type="password" id="login-password" placeholder="密碼" required autocomplete="current-password">
+					<span class="toggle-password" data-target="login-password">👁️</span>
+				</div>
                 <div class="options-container"><input type="checkbox" id="remember-me"><label for="remember-me">保持登入狀態</label></div>
                 <button type="submit">登入</button>
             </form>
