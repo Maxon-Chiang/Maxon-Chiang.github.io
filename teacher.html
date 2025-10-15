@@ -404,8 +404,6 @@
 			.student-block-name { font-size: 1.0em;}
 			.modal-content { padding: 15px;	}
         }
-
-        }
 	</style>
 </head>
 
@@ -582,9 +580,9 @@
         const auth = firebase.auth();
 
         // --- Global Variables ---
-        let currentUser = null, studentsData = [], studentScores = {}, classEventScores = {},
-            currentEntity = null, allClassList = [], visibleClassList = [];
-        
+		let currentUser = null, studentsData = [], studentScores = {}, classEventScores = {},
+			currentEntity = null, allClassList = [], visibleClassList = [], modalOrigin = null;
+	
         let scheduleDataLoaded = false;
         let classSchedules = new Map(), teacherSchedules = new Map(), activeChanges = [];
         
@@ -759,7 +757,7 @@
                 titleDiv.className = 'class-block-title';
                 titleDiv.textContent = `${convertClassName(className)} 班`;
                 titleDiv.title = '點擊以紀錄班級共同事件';
-                titleDiv.addEventListener('click', () => openModal(className, 'class'));
+                titleDiv.addEventListener('click', () => openModal(className, 'class', 'main')); 
 
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'class-block-actions';
@@ -812,7 +810,7 @@
                     
                     studentBlock.addEventListener('click', () => {
                         studentRosterModal.style.display = 'none';
-                        openModal(student.id, 'student');
+                        openModal(student.id, 'student', 'roster');
                     });
 
                     studentGridContainer.appendChild(studentBlock);
@@ -822,8 +820,8 @@
             studentRosterModal.style.display = 'flex';
         }
 
-        function openModal(id, type = 'student') {
-            document.body.classList.add('modal-open');
+		function openModal(id, type = 'student', origin = 'main') {
+			modalOrigin = origin;
             currentEntity = { id, type };
             let titleText = '', scoreText = '';
             
@@ -851,13 +849,21 @@
             loadRecords(id, type);
             modal.style.display = 'flex';
         }
+		
+		function closeModal() {
+			modal.style.display = 'none'; // 隱藏個人紀錄視窗
+			addRecordForm.reset();
+			currentEntity = null;
 
-        function closeModal() {
-            document.body.classList.remove('modal-open');
-            modal.style.display = 'none';
-            addRecordForm.reset();
-            currentEntity = null;
-        }
+			if (modalOrigin === 'roster') {
+				// 如果是從學生名單來的，就重新顯示學生名單
+				studentRosterModal.style.display = 'flex';
+			} else {
+				// 否則 (從主畫面來的)，才移除背景鎖定，回到主畫面
+				document.body.classList.remove('modal-open');
+			}
+			modalOrigin = null; // 重設來源標記
+		}
 
         async function loadRecords(id, type) {
             recordsList.innerHTML = '載入中...';
