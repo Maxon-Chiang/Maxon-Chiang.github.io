@@ -256,7 +256,54 @@ header .header-actions {
 #substitution-btn.visible {
     display: inline-block; /* 顯示按鈕 */
 }
-/* --- NEW STYLES END --- */	
+/* --- 【【【新增】】】最近瀏覽課表下拉選單樣式 --- */
+.title-container {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+.dropdown {
+	position: relative;
+	display: inline-block;
+}
+.icon-btn {
+	background: none;
+	border: none;
+	color: white;
+	cursor: pointer;
+	font-size: 0.8em; /* 調整箭頭大小 */
+	padding: 5px;
+	line-height: 1;
+}
+.dropdown-content {
+	display: none;
+	position: absolute;
+	background-color: white;
+	min-width: 180px;
+	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+	z-index: 1001; /* 確保在 header 之上 */
+	border-radius: 4px;
+	overflow: hidden;
+	left: 0; /* 從左邊對齊 */
+}
+.dropdown-content button {
+	color: #333;
+	padding: 10px 15px;
+	text-decoration: none;
+	display: block;
+	width: 100%;
+	text-align: left;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 0.95em;
+}
+.dropdown-content button:hover {
+	background-color: #f1f1f1;
+}
+.dropdown-content.show {
+	display: block;
+}
 @media screen and (max-width: 768px) {
     body { padding: 0; }
     header {
@@ -320,7 +367,14 @@ header .header-actions {
 </head>
 <body>
 	<header>
-        <h1>課表系統</h1>
+        <div class="title-container">
+            <h1>課表系統</h1>
+            <div class="dropdown">
+                <button id="recent-schedules-btn" class="icon-btn">▼</button>
+                <div id="recent-schedules-list" class="dropdown-content">
+                    </div>
+            </div>
+        </div>
         <div class="header-actions">
             <span id="user-email"></span>
 			<button onclick="history.back()">返回主頁</button>
@@ -473,6 +527,10 @@ const db = firebase.firestore();
 const auth = firebase.auth();
 let currentUser = null;
 let currentUserDisplayName = '';
+// --- 【【【新增】】】最近瀏覽課表功能 ---
+const recentSchedulesBtn = document.getElementById('recent-schedules-btn');
+const recentSchedulesList = document.getElementById('recent-schedules-list');
+const MAX_RECENT_ITEMS = 10;
 
 auth.onAuthStateChanged(async (user) => {
     if (user) {
@@ -510,7 +568,7 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 
 // --- 主程式 ---
 async function main() {
-
+	populateRecentList(); // <-- 加入這一行
     const welcomeModal = document.getElementById('welcome-modal-timetable');
     if (localStorage.getItem('hideTimetableWelcome') !== 'true') {
         setTimeout(() => {
@@ -970,6 +1028,10 @@ async function main() {
     }
     
 	async function showSchedule(name, type) {
+	    // 【【【修改】】】新增以下兩行，用來記錄與更新列表
+		addRecentSchedule(name, type);
+		populateRecentList();
+
         activeSchedule = { type, name };
         const dataToStore = { 
             savedBy: currentUser.uid, 
@@ -1991,6 +2053,75 @@ async function main() {
     };
     deptBtn.onclick = () => updateView('department');
     subjectBtn.onclick = () => updateView('subject');
+	
+    // 從 localStorage 讀取紀錄
+    function getRecentSchedules() {
+        try {
+            const stored = localStorage.getItem('recentSchedules');
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    // 新增一筆紀錄到列表頂端
+    function addRecentSchedule(name, type) {
+        let recents = getRecentSchedules();
+        // 移除舊的重複項目
+        recents = recents.filter(item => !(item.name === name && item.type === type));
+        // 將新項目加到最前面
+        recents.unshift({ name, type });
+        // 只保留最近的 10 筆
+        if (recents.length > MAX_RECENT_ITEMS) {
+            recents = recents.slice(0, MAX_RECENT_ITEMS);
+        }
+        localStorage.setItem('recentSchedules', JSON.stringify(recents));
+    }
+
+    // 將紀錄顯示在下拉選單中
+    function populateRecentList() {
+        const recents = getRecentSchedules();
+        recentSchedulesList.innerHTML = ''; // 清空列表
+        if (recents.length === 0) {
+            const emptyItem = document.createElement('span');
+            emptyItem.textContent = '尚無瀏覽紀錄';
+            emptyItem.style.padding = '10px 15px';
+            emptyItem.style.color = '#999';
+            emptyItem.style.fontSize = '0.9em';
+            recentSchedulesList.appendChild(emptyItem);
+            return;
+        }
+
+        recents.forEach(item => {
+            const btn = document.createElement('button');
+            let typeText = '';
+            if (item.type === 'teacher') typeText = ' (教師)';
+            if (item.type === 'class') typeText = ' (班級)';
+            if (item.type === 'location') typeText = ' (場地)';
+            btn.textContent = item.name + typeText;
+            btn.onclick = () => {
+                showSchedule(item.name, item.type);
+                recentSchedulesList.classList.remove('show'); // 點擊後關閉選單
+            };
+            recentSchedulesList.appendChild(btn);
+        });
+    }
+
+    // 綁定箭頭按鈕的點擊事件
+    recentSchedulesBtn.addEventListener('click', (event) => {
+        event.stopPropagation(); // 防止觸發 window 的點擊事件
+        populateRecentList(); // 每次點擊都重新整理列表
+        recentSchedulesList.classList.toggle('show');
+    });
+
+    // 點擊頁面其他地方時，關閉下拉選單
+    window.addEventListener('click', (event) => {
+        if (!event.target.matches('#recent-schedules-btn')) {
+            if (recentSchedulesList.classList.contains('show')) {
+                recentSchedulesList.classList.remove('show');
+            }
+        }
+    });
 }
 </script>
 
