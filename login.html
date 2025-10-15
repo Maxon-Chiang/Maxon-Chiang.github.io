@@ -155,6 +155,20 @@
             errorMessage.textContent = msg;
             auth.signOut();
         }
+		/* 【【【新增這段 JavaScript】】】 */
+		document.querySelectorAll('.toggle-password').forEach(toggle => {
+			toggle.addEventListener('click', () => {
+				const targetId = toggle.dataset.target;
+				const passwordInput = document.getElementById(targetId);
+				if (passwordInput.type === 'password') {
+					passwordInput.type = 'text';
+					toggle.textContent = '🙈';
+				} else {
+					passwordInput.type = 'password';
+					toggle.textContent = '👁️';
+				}
+			});
+		});
     });
     </script>
 </body>
