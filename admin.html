@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理後台 - 班級綜合成績紀錄系統</title>
     <style>
-        body { font-family: 'Biaukaifang TC', 'DFKai-SB', 'Kaiti', kai-serif, serif; padding: 20px; max-width: 1200px; margin: auto; background-color: #f8f9fa; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; padding: 20px; max-width: 1200px; margin: auto; background-color: #f8f9fa; }
         h1, h2, h3 { color: #333; }
         button, input, select, textarea {
             font-family: inherit;
@@ -370,52 +370,73 @@
 
         const collectionsToBackup = ['users', 'rosters', 'gradebooks', 'performanceRecords', 'classChanges', 'calculationRules'];
 
-        async function backupData() {
-            if (!confirm('這將會讀取所有主要集合的資料並匯出成一個檔案，確定要開始備份嗎？')) return;
+		async function backupData() {
+            if (!confirm('這將會讀取所有老師的資料並匯出成一個檔案，確定要開始備份嗎？\n\n(此過程將在您的瀏覽器中執行，請保持網路暢通)')) return;
             
-            alert('開始備份，請稍候...');
+            alert('開始在本機執行備份，請稍候...');
             const backupObject = {};
+            const collectionsToBackup = ['users', 'rosters', 'gradebooks', 'performanceRecords', 'classChanges', 'calculationRules', 'schedules', 'staffDirectory', 'subjectTeachers'];
 
             try {
-                for (const collectionName of collectionsToBackup) {
+                // 先備份不需要特殊處理的集合
+                const generalCollections = collectionsToBackup.filter(c => !['gradebooks', 'performanceRecords', 'calculationRules', 'classChanges'].includes(c));
+                for (const collectionName of generalCollections) {
                     backupObject[collectionName] = {};
                     const snapshot = await db.collection(collectionName).get();
-                    for (const doc of snapshot.docs) {
-                        const docData = doc.data();
-                        
-                        for (const key in docData) {
-                            if (docData[key] instanceof firebase.firestore.Timestamp) {
-                                docData[key] = { _seconds: docData[key].seconds, _nanoseconds: docData[key].nanoseconds };
-                            }
-                        }
-                        
-                        backupObject[collectionName][doc.id] = docData;
+                    snapshot.forEach(doc => {
+                        backupObject[collectionName][doc.id] = doc.data();
+                    });
+                }
 
-                        const subcollectionsToBackup = ['assignments', 'records'];
-                        if (subcollectionsToBackup.length > 0) {
-                             backupObject[collectionName][doc.id]._subcollections = {};
-                             for (const sub of subcollectionsToBackup) {
-                                 const subSnapshot = await doc.ref.collection(sub).get();
-                                 if (!subSnapshot.empty) {
-                                     if (!backupObject[collectionName][doc.id]._subcollections[sub]) {
-                                         backupObject[collectionName][doc.id]._subcollections[sub] = {};
-                                     }
-                                     subSnapshot.forEach(subDoc => {
-                                        const subDocData = subDoc.data();
-                                        for (const key in subDocData) {
-                                            if (subDocData[key] instanceof firebase.firestore.Timestamp) {
-                                                subDocData[key] = { _seconds: subDocData[key].seconds, _nanoseconds: subDocData[key].nanoseconds };
-                                            }
-                                        }
-                                        backupObject[collectionName][doc.id]._subcollections[sub][subDoc.id] = subDocData;
-                                     });
-                                 }
-                             }
-                        }
+                // 【【【核心修正：使用新的、更可靠的邏輯來備份受限集合】】】
+                const teacherUids = allTeachers.map(t => t.uid);
+
+                // 初始化備份物件
+                backupObject.gradebooks = {};
+                backupObject.performanceRecords = {};
+
+                for (const uid of teacherUids) {
+                    // --- 備份 Gradebooks ---
+                    const gradebookDocRef = db.collection('gradebooks').doc(uid);
+                    const assignmentsSnapshot = await gradebookDocRef.collection('assignments').get();
+                    
+                    if (!assignmentsSnapshot.empty) {
+                        backupObject.gradebooks[uid] = { _subcollections: { assignments: {} } };
+                        assignmentsSnapshot.forEach(subDoc => {
+                            backupObject.gradebooks[uid]._subcollections.assignments[subDoc.id] = subDoc.data();
+                        });
+                    }
+
+                    // --- 備份 PerformanceRecords ---
+                    const perfDocRef = db.collection('performanceRecords').doc(uid);
+                    const recordsSnapshot = await perfDocRef.collection('records').get();
+
+                    if (!recordsSnapshot.empty) {
+                        backupObject.performanceRecords[uid] = { _subcollections: { records: {} } };
+                        recordsSnapshot.forEach(subDoc => {
+                            backupObject.performanceRecords[uid]._subcollections.records[subDoc.id] = subDoc.data();
+                        });
                     }
                 }
                 
-                const jsonString = JSON.stringify(backupObject, null, 2);
+                // 備份 calculationRules 和 classChanges
+                const calcRulesSnapshot = await db.collection('calculationRules').get();
+                backupObject.calculationRules = {};
+                calcRulesSnapshot.forEach(doc => { backupObject.calculationRules[doc.id] = doc.data(); });
+
+                const classChangesSnapshot = await db.collection('classChanges').get();
+                backupObject.classChanges = {};
+                classChangesSnapshot.forEach(doc => { backupObject.classChanges[doc.id] = doc.data(); });
+                
+                // 將所有 Timestamp 物件轉換為可序列化的格式
+                const serializedBackup = JSON.parse(JSON.stringify(backupObject), (key, value) => {
+                    if (value && value.seconds !== undefined && value.nanoseconds !== undefined) {
+                        return { _seconds: value.seconds, _nanoseconds: value.nanoseconds };
+                    }
+                    return value;
+                });
+
+                const jsonString = JSON.stringify(serializedBackup, null, 2);
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -426,6 +447,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 alert('備份完成！');
+
             } catch (error) {
                 console.error("備份失敗:", error);
                 alert("備份失敗: " + error.message);
