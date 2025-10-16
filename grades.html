@@ -227,6 +227,7 @@
                 window.location.href = 'login.html';
             }
         });
+		// 【【【請用這整段新的函數，取代舊的 initializeGradesPage 函數】】】
 		async function initializeGradesPage(userData) {
 			const urlParams = new URLSearchParams(window.location.search);
 			classId = urlParams.get('class');
@@ -242,37 +243,44 @@
 			if (!rosterDoc.exists) { alert('找不到名冊'); return; }
 			studentsInClass = rosterDoc.data().students.filter(s => s.id.startsWith(classId)).sort((a, b) => a.id.localeCompare(b.id));
 
-			// --- 【↓↓↓ 新增此區塊，用來產生建議清單 ↓↓↓】 ---
-			const currentGrade = getGradeLevelFromClassId(classId);
-			if (currentGrade) {
-				try {
-					// 使用 collectionGroup 查詢所有子集合中的 'assignments'
-					const assignmentsSnapshot = await db.collectionGroup('assignments')
-						.where('teacherId', '==', currentUser.uid)
-						.get();
+			// --- 【【【全新的建議清單獲取邏輯】】】 ---
+			try {
+				// 1. 從學生名冊中，找出這位老師所有帶的班級
+				const allStudents = rosterDoc.data().students || [];
+				const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
 
-					const gradeAssignmentNames = new Set();
-					assignmentsSnapshot.forEach(doc => {
-						const assignment = doc.data();
-						const assignmentGrade = getGradeLevelFromClassId(assignment.className);
-						if (assignmentGrade === currentGrade) {
-							gradeAssignmentNames.add(assignment.assignmentName);
-						}
+				// 2. 為每一個班級建立一個查詢 Promise
+				const queryPromises = teacherClasses.map(cId => 
+					db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
+					  .where('className', '==', cId)
+					  .get()
+				);
+
+				// 3. 等待所有班級的查詢都完成
+				const snapshots = await Promise.all(queryPromises);
+
+				// 4. 將所有查詢結果合併，並提取不重複的項目名稱
+				const gradeAssignmentNames = new Set();
+				snapshots.forEach(snapshot => {
+					snapshot.forEach(doc => {
+						gradeAssignmentNames.add(doc.data().assignmentName);
 					});
+				});
 
-					const datalist = document.getElementById('assignment-suggestions');
-					datalist.innerHTML = ''; // 清空舊選項
-					gradeAssignmentNames.forEach(name => {
-						const option = document.createElement('option');
-						option.value = name;
-						datalist.appendChild(option);
-					});
+				// 5. 將名稱填入 datalist
+				const datalist = document.getElementById('assignment-suggestions');
+				datalist.innerHTML = ''; // 清空舊選項
+				gradeAssignmentNames.forEach(name => {
+					const option = document.createElement('option');
+					option.value = name;
+					datalist.appendChild(option);
+				});
 
-				} catch (error) {
-					console.error("讀取成績項目建議清單失敗:", error);
-				}
+			} catch (error) {
+				console.error("讀取成績項目建議清單失敗:", error);
+				// 即使失敗，也不阻礙頁面其他功能載入
 			}
-			// --- 【↑↑↑ 新增區塊結束 ↑↑↑】 ---
+			// --- 【【【新邏輯結束】】】 ---
 
 			setupKeyboardNavigation();
 			loadHistory();
