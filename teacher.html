@@ -415,6 +415,13 @@
 			font-size: 1.2em;
 			color: #888;
 		}
+		/* 【【【新增】】】課表可點擊儲存格的樣式 */
+		.timetable-clickable-cell {
+			cursor: pointer;
+		}
+		.timetable-clickable-cell:hover {
+			background-color: #eef3f8 !important;
+		}
 		@media (max-width: 768px) {
             header { gap: 10px; }
             main { padding: 1rem; }
@@ -626,7 +633,7 @@
 
         // --- Global Variables ---
 		let currentUser = null, studentsData = [], studentScores = {}, classEventScores = {},
-			currentEntity = null, allClassList = [], visibleClassList = [], modalOrigin = null;
+			currentEntity = null, allClassList = [], visibleClassList = [], modalOrigin = null, rosterModalOrigin = null;
 	
         let scheduleDataLoaded = false;
         let classSchedules = new Map(), teacherSchedules = new Map(), activeChanges = [];
@@ -660,10 +667,7 @@
         const studentRosterModal = document.getElementById('student-roster-modal');
         const studentRosterTitle = document.getElementById('student-roster-title');
         const studentGridContainer = document.getElementById('student-grid-container');
-        studentRosterModal.querySelector('.close-btn').addEventListener('click', () => {
-            document.body.classList.remove('modal-open');
-            studentRosterModal.style.display = 'none';
-        });
+		studentRosterModal.querySelector('.close-btn').addEventListener('click', closeStudentRosterModal);
 
         const myTimetableModal = document.getElementById('my-timetable-modal');
         myTimetableModal.querySelector('.close-btn').addEventListener('click', () => {
@@ -810,7 +814,7 @@
                 const studentBtn = document.createElement('button');
                 studentBtn.innerHTML = '👤';
                 studentBtn.title = '開啟學生名單';
-                studentBtn.addEventListener('click', () => openStudentRosterModal(className));
+				studentBtn.addEventListener('click', () => openStudentRosterModal(className, 'main'));
 
                 const gradesLink = document.createElement('a');
                 gradesLink.href = `./grades.html?class=${className}`;
@@ -826,26 +830,46 @@
                 appContainer.appendChild(classBlock);
             });
         }
-        
-        function openStudentRosterModal(className) {
-            document.body.classList.add('modal-open');
-            studentRosterTitle.textContent = `${convertClassName(className)} 班 學生名單`;
-            studentGridContainer.innerHTML = '';
 
-            const studentsInClass = studentsData
-                .filter(s => s.id.startsWith(className))
-                .sort((a, b) => a.id.localeCompare(b.id));
+		function openStudentRosterModal(className, origin = 'main') {
+			rosterModalOrigin = origin; // 記錄來源是 'main' 還是 'timetable'
+			document.body.classList.add('modal-open');
+			studentRosterTitle.textContent = `${convertClassName(className)} 班 學生名單`;
+			studentRosterTitle.style.cursor = 'pointer';
+			studentRosterTitle.title = '點擊以新增班級共同紀錄';
+			studentRosterTitle.onclick = () => {
+				studentRosterModal.style.display = 'none';
+				openModal(className, 'class', 'roster');
+			};
+			studentGridContainer.innerHTML = '';
 
-            if (studentsInClass.length === 0) {
-                studentGridContainer.innerHTML = '<p>此班級查無學生。</p>';
-            } else {
-                studentsInClass.forEach(student => {
-                    const studentBlock = document.createElement('div');
-                    //studentBlock.className = 'student-block';
-                    studentBlock.title = `點擊以紀錄 ${student.name} 的表現`;
-                    
-                    const score = studentScores[student.id] || 0;
-                    let scoreClass = '';
+			function convertClassNameReverse(newClassName) {
+				if (typeof newClassName !== 'string' || newClassName.length < 3) return newClassName;
+				const firstDigit = newClassName.charAt(0);
+				const restOfName = newClassName.substring(1);
+				switch (firstDigit) {
+					case '1': return '7' + restOfName;
+					case '2': return '8' + restOfName;
+					case '3': return '9' + restOfName;
+					default: return newClassName;
+				}
+			}
+
+			const originalClassId = convertClassNameReverse(className);
+
+			const studentsInClass = studentsData
+				.filter(s => s.id.startsWith(originalClassId))
+				.sort((a, b) => a.id.localeCompare(b.id));
+
+			if (studentsInClass.length === 0) {
+				studentGridContainer.innerHTML = '<p>此班級查無學生。</p>';
+			} else {
+				studentsInClass.forEach(student => {
+					const studentBlock = document.createElement('div');
+					studentBlock.title = `點擊以紀錄 ${student.name} 的表現`;
+					
+					const score = studentScores[student.id] || 0;
+					let scoreClass = '';
 					if (score < 0) {
 						scoreClass = 'score-negative';
 					} else if (score > 0 && score < 5) {
@@ -853,7 +877,7 @@
 					} else if (score >= 5) {
 						scoreClass = 'score-positive-high';
 					}
-					studentBlock.className = 'student-block ' + scoreClass; // 套用class
+					studentBlock.className = 'student-block ' + scoreClass;
 					
 					studentBlock.innerHTML = `
 						<div class="student-block-info">
@@ -861,18 +885,18 @@
 						</div>
 						<div class="student-block-name">${student.name}</div>
 					`;
-                    
-                    studentBlock.addEventListener('click', () => {
-                        studentRosterModal.style.display = 'none';
-                        openModal(student.id, 'student', 'roster');
-                    });
+					
+					studentBlock.addEventListener('click', () => {
+						studentRosterModal.style.display = 'none';
+						openModal(student.id, 'student', 'roster');
+					});
 
-                    studentGridContainer.appendChild(studentBlock);
-                });
-            }
+					studentGridContainer.appendChild(studentBlock);
+				});
+			}
 
-            studentRosterModal.style.display = 'flex';
-        }
+			studentRosterModal.style.display = 'flex';
+		}		
 
 		function openModal(id, type = 'student', origin = 'main') {
 			modalOrigin = origin;
@@ -919,6 +943,19 @@
 				document.body.classList.remove('modal-open');
 			}
 			modalOrigin = null; // 重設來源標記
+		}
+		/* 【【【新增此整個函數】】】 */
+		function closeStudentRosterModal() {
+			studentRosterModal.style.display = 'none'; // 隱藏學生名單視窗
+
+			if (rosterModalOrigin === 'timetable') {
+				// 如果是從課表來的，就重新顯示課表視窗
+				myTimetableModal.style.display = 'flex';
+			} else {
+				// 否則 (從主畫面來的)，才移除背景鎖定
+				document.body.classList.remove('modal-open');
+			}
+			rosterModalOrigin = null; // 重設來源標記
 		}
 
 		async function loadRecentTexts() {
@@ -996,7 +1033,7 @@
                     recordsList.appendChild(recordItem);
                 });
             } catch (error) {
-                console.error("讀取紀錄失敗:", error);
+                console.error("讀取歷史紀錄失敗:", error);
                 recordsList.innerHTML = '讀取紀錄時發生錯誤。';
             }
         }
@@ -1112,10 +1149,9 @@
                     case 'info-modal': closeInfoModal(); break;
                     case 'welcome-modal': document.getElementById('close-welcome-btn').onclick(); break;
                     case 'my-timetable-modal': e.target.style.display = 'none'; break;
-                    case 'student-roster-modal': 
-                        document.body.classList.remove('modal-open');
-                        e.target.style.display = 'none'; 
-                        break;
+					case 'student-roster-modal':
+						closeStudentRosterModal();
+						break;
                 }
             }
         });
@@ -1146,6 +1182,10 @@
         });
 
         myTimetableBtn.addEventListener('click', async () => {
+			if (!studentsData || studentsData.length === 0) {
+				alert('學生資料仍在載入中，請稍候再試！');
+				return; // 中斷後續操作
+			}
             document.getElementById('dropdown-menu').classList.remove('show');
             const userDisplayName = document.getElementById('user-email').textContent;
             if (!userDisplayName) {
@@ -1214,7 +1254,7 @@
                                     teacherSchedules.set(cellData.teacher, Array.from({ length: 8 }, () => Array(5).fill(null)));
                                 }
                                 teacherSchedules.get(cellData.teacher)[p][d] = { subject: cellData.subject, class: className, location: cellData.location, period: p };
-                            }
+							}
                         }
                     }
                 }
@@ -1227,72 +1267,92 @@
                 document.getElementById('my-timetable-body').innerHTML = '<p style="text-align: center; color: red;">課表資料載入失敗！</p>';
             }
         }
+		
+		// 【【【請用這整段新的函數，取代舊的 renderMyTimetableModal 函數】】】
+		function renderMyTimetableModal(teacherName) {
+			const bodyEl = document.getElementById('my-timetable-body');
+			const baseSchedule = teacherSchedules.get(teacherName);
 
-        function renderMyTimetableModal(teacherName) {
-            const bodyEl = document.getElementById('my-timetable-body');
-            const baseSchedule = teacherSchedules.get(teacherName);
+			if (!baseSchedule) {
+				bodyEl.innerHTML = `<p style="text-align:center;">找不到 ${teacherName} 的課表資料。</p>`;
+				return;
+			}
+			
+			let finalSchedule = JSON.parse(JSON.stringify(baseSchedule));
+			const today = new Date();
+			const currentWeekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
 
-            if (!baseSchedule) {
-                bodyEl.innerHTML = `<p style="text-align:center;">找不到 ${teacherName} 的課表資料。</p>`;
-                return;
-            }
-            
-            let finalSchedule = JSON.parse(JSON.stringify(baseSchedule));
-            const today = new Date();
-            const currentWeekStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+			activeChanges.forEach(change => {
+				const changeDateStr = change.type === 'swap' ? change.originalClassInfo.date : (change.date || change.originalLessonInfo.date);
+				if (!changeDateStr) return;
+				const changeDate = new Date(changeDateStr);
+				const changeWeekStart = new Date(changeDate.getFullYear(), changeDate.getMonth(), changeDate.getDate() - (changeDate.getDay() === 0 ? 6 : changeDate.getDay() - 1));
+				
+				if (currentWeekStart.getTime() !== changeWeekStart.getTime()) return;
+				
+				if (change.type === 'substitution') {
+					const dayIndex = new Date(change.date).getDay() - 1;
+					const period = change.lessonInfo.period;
+					if (dayIndex >=0 && dayIndex < 5) {
+						if (change.originalTeacherName === teacherName) {
+							finalSchedule[period][dayIndex] = { ...change.lessonInfo, isSubstitutedOut: true, substituteTeacherName: change.substituteTeacherName };
+						}
+						if (change.substituteTeacherName === teacherName) {
+							finalSchedule[period][dayIndex] = { ...change.lessonInfo, isSubstitutedIn: true, originalTeacherName: change.originalTeacherName };
+						}
+					}
+				}
+			});
 
-            activeChanges.forEach(change => {
-                const changeDateStr = change.type === 'swap' ? change.originalClassInfo.date : (change.date || change.originalLessonInfo.date);
-                if (!changeDateStr) return;
-                const changeDate = new Date(changeDateStr);
-                const changeWeekStart = new Date(changeDate.getFullYear(), changeDate.getMonth(), changeDate.getDate() - (changeDate.getDay() === 0 ? 6 : changeDate.getDay() - 1));
-                
-                if (currentWeekStart.getTime() !== changeWeekStart.getTime()) return;
-                
-                if (change.type === 'substitution') {
-                    const dayIndex = new Date(change.date).getDay() - 1;
-                    const period = change.lessonInfo.period;
-                    if (dayIndex >=0 && dayIndex < 5) {
-                        if (change.originalTeacherName === teacherName) {
-                            finalSchedule[period][dayIndex] = { ...change.lessonInfo, isSubstitutedOut: true, substituteTeacherName: change.substituteTeacherName };
-                        }
-                        if (change.substituteTeacherName === teacherName) {
-                            finalSchedule[period][dayIndex] = { ...change.lessonInfo, isSubstitutedIn: true, originalTeacherName: change.originalTeacherName };
-                        }
-                    }
-                }
-            });
+			const daysOfWeek = ['一', '二', '三', '四', '五'];
+			let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
+			daysOfWeek.forEach(day => tableHtml += `<th>${day}</th>`);
+			tableHtml += '</tr></thead><tbody>';
 
-            const daysOfWeek = ['一', '二', '三', '四', '五'];
-            let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
-            daysOfWeek.forEach(day => tableHtml += `<th>${day}</th>`);
-            tableHtml += '</tr></thead><tbody>';
+			for (let period = 0; period < 8; period++) {
+				tableHtml += `<tr><td class="period-header">${period + 1}</td>`;
+				for (let day = 0; day < 5; day++) {
+					const cellData = finalSchedule[period]?.[day];
+					let content = '', cellClass = '';
+					
+					if (cellData) {
+						// 【關鍵修正】將 data-class-name="${cellData.class}" 放在所有可點擊的 td 上
+						const dataAttribute = `data-class-name="${cellData.class || ''}"`;
 
-            for (let period = 0; period < 8; period++) {
-                tableHtml += `<tr><td class="period-header">${period + 1}</td>`;
-                for (let day = 0; day < 5; day++) {
-                    const cellData = finalSchedule[period]?.[day];
-                    let content = '', cellClass = '';
-                    if (cellData) {
-                         if (cellData.isSubstitutedOut) {
-                            cellClass = 'substituted-cell';
-                            content = `<span class="subject" style="text-decoration: line-through;">${cellData.subject}</span><span class="details">由 ${cellData.substituteTeacherName} 代課</span>`;
-                        } else if (cellData.isSubstitutedIn) {
-                            cellClass = 'substituted-cell';
-                            content = `<span class="subject">${cellData.subject}</span><span class="details">代 ${cellData.originalTeacherName} 的課</span>`;
-                        } else {
+						if (cellData.isSubstitutedOut) {
+							cellClass = 'substituted-cell';
+							content = `<span class="subject" style="text-decoration: line-through;">${cellData.subject}</span><span class="details">由 ${cellData.substituteTeacherName} 代課</span>`;
+							tableHtml += `<td class="${cellClass}">${content}</td>`;
+						} else if (cellData.isSubstitutedIn) {
+							cellClass = 'substituted-cell timetable-clickable-cell';
+							content = `<span class="subject">${cellData.subject}</span><span class="details">代 ${cellData.originalTeacherName} 的課</span><span class="details">${convertClassName(cellData.class)}</span>`;
+							tableHtml += `<td class="${cellClass}" ${dataAttribute}>${content}</td>`;
+						} else {
+							cellClass = 'timetable-clickable-cell';
 							content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${convertClassName(cellData.class) || ''}</span>`;
-                        }
-                        tableHtml += `<td class="${cellClass}">${content}</td>`;
-                    } else {
-                        tableHtml += `<td></td>`;
-                    }
-                }
-                tableHtml += '</tr>';
-            }
-            tableHtml += '</tbody></table>';
-            bodyEl.innerHTML = tableHtml;
-        }
+							tableHtml += `<td class="${cellClass}" ${dataAttribute}>${content}</td>`;
+						}
+					} else {
+						tableHtml += `<td></td>`;
+					}
+				}
+				tableHtml += '</tr>';
+			}
+			tableHtml += '</tbody></table>';
+			bodyEl.innerHTML = tableHtml;
+
+			// --- 為所有可點擊的儲存格加上事件監聽 ---
+			bodyEl.querySelectorAll('.timetable-clickable-cell').forEach(cell => {
+				cell.addEventListener('click', () => {
+					const className = cell.dataset.className;
+					if (className) {
+						myTimetableModal.style.display = 'none';
+						openStudentRosterModal(className, 'timetable');
+					}
+				});
+			});
+		}
+ 
 		newInfoBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
 			openInfoModal();
