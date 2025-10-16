@@ -153,6 +153,45 @@
 				grid-template-columns: 1fr 1fr;
 				gap: 15px; /* 可以稍微縮小間距 */
 			}
+			/* 1. 調整整個區塊的 padding */
+			#grade-entry-section.section {
+				padding: 10px;
+			}
+
+			/* 2. 讓標題和按鈕並排 */
+			.grade-entry-header-bar {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 15px;
+			}
+
+			/* 3. 縮小標題字型，並移除預設樣式 */
+			#current-assignment-title {
+				font-size: 1.2em;
+				margin: 0;
+				padding: 0;
+				border: none;
+				/* 讓標題可以被壓縮換行 */
+				min-width: 0;
+			}
+
+			/* 4. 縮小按鈕 */
+			.grade-entry-actions button {
+				padding: 6px 10px;
+				font-size: 0.9em;
+				margin-left: 5px; /* 給按鈕間一點點距離 */
+			}
+			
+			/* 5. 縮小輸入框的標題字型 */
+			.form-grid label {
+				font-size: 0.9em;
+			}
+
+			/* 6. 再次縮小學生列表的字型 */
+			.score-entry-header, .score-entry {
+				font-size: 0.85em;
+			}			
         }
     </style>
 </head>
@@ -184,31 +223,33 @@
 			</div>
 		</div>
         <div class="section"><h3>歷史成績項目 (點擊項目內容可編輯)</h3><ul id="history-list"><li id="history-loading">載入中...</li></ul></div>
-        <div id="grade-entry-section" class="section" style="display: none;">
-            <h3 id="current-assignment-title"></h3>
-            <div class="form-grid">
-                <div>
-                    <label for="edit-assignment-name">成績項目名稱：</label>
-                    <input type="text" id="edit-assignment-name">
-                </div>
-                <div>
-                    <label for="edit-general-comment">成績說明 (選填)：</label>
-                    <input type="text" id="edit-general-comment">
-                </div>
-            </div>
-            <div style="margin-top: 20px;">
-                <button class="save-grades-btn" style="background-color: #28a745; padding: 12px 25px;">儲存成績</button>
-                <button class="cancel-edit-btn" style="background-color: #777; margin-left:10px;">取消</button>
-            </div>
-            <hr>
-            <div id="student-scores-container">
-                <div class="score-entry-header"><span>座號</span><span>姓名</span><span>分數</span><span>個別註解 (選填)</span></div>
-            </div>
-            <div style="margin-top: 20px;">
-                <button class="save-grades-btn" style="background-color: #28a745; padding: 12px 25px;">儲存成績</button>
-                <button class="cancel-edit-btn" style="background-color: #777; margin-left:10px;">取消</button>
-            </div>
-        </div>
+		<div id="grade-entry-section" class="section" style="display: none;">
+			<div class="grade-entry-header-bar">
+				<h3 id="current-assignment-title"></h3>
+				<div class="grade-entry-actions">
+					<button class="save-grades-btn" style="background-color: #28a745;">更新儲存</button>
+					<button class="cancel-edit-btn" style="background-color: #777;">取消</button>
+				</div>
+			</div>
+
+			<div class="form-grid">
+				<div>
+					<label for="edit-assignment-name">成績項目名稱：</label>
+					<input type="text" id="edit-assignment-name">
+				</div>
+				<div>
+					<label for="edit-general-comment">成績說明 (選填)：</label>
+					<input type="text" id="edit-general-comment">
+				</div>
+			</div>
+			<hr>
+			<div id="student-scores-container">
+				</div>
+			<div style="margin-top: 20px;" class="grade-entry-actions">
+				<button class="save-grades-btn" style="background-color: #28a745;">更新儲存</button>
+				<button class="cancel-edit-btn" style="background-color: #777;">取消</button>
+			</div>
+		</div>
     </main>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
