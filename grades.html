@@ -168,21 +168,58 @@
                 padding: 8px 4px;
             }
 			main {
-                padding: 10px;
+                padding: 8px;
             }
-            .history-item-stats {
-                display: none;
-            }
+			.section {
+				padding: 12px; /* 縮小每個區塊的內部邊距 */
+				margin-bottom: 8px; /* 縮小區塊之間的垂直間距 */
+			}
+			/* --- 標題字體與間距調整 --- */
+			h2, .section-header h2 {
+				font-size: 1.3em; /* 縮小 h2 標題 */
+				padding-bottom: 8px;
+			}
+			h3, #current-assignment-title {
+				font-size: 1.1em; /* 縮小 h3 標題 */
+				padding-bottom: 8px;
+			}
+			/* --- 成績項目清單 (解決文字截斷問題) --- */
+			.history-item {
+				padding: 10px; /* 縮小列表項的內距 */
+				align-items: flex-start; /* 讓刪除按鈕垂直對齊頂部 */
+			}
+			.history-item-content {
+				flex-direction: column; /* 【關鍵】讓標題和說明垂直堆疊 */
+				align-items: flex-start; /* 從左邊對齊 */
+				gap: 2px; /* 縮小標題和說明的垂直間距 */
+			}
+			.history-item-title {
+				font-size: 1.05em; /* 微調標題字體 */
+			}
+			.history-item-comment {
+				white-space: normal; /* 允許說明文字換行，解決截斷問題 */
+				overflow: visible;
+				text-overflow: clip;
+				color: #666; /* 讓說明文字顏色稍淺以區分 */
+			}
+			.history-item-actions {
+				margin-top: 2px; /* 微調刪除按鈕的位置 */
+			}
+			.history-item-stats { display: none; }
+	
+			.section-header, .grade-entry-header-bar {
+				margin-bottom: 15px; /* 調整標題和內容的間距 */
+			}
 			.form-grid {
 				/* 在小螢幕上，強制設定為兩欄均分 */
 				grid-template-columns: 1fr 1fr;
-				gap: 15px; /* 可以稍微縮小間距 */
+				gap: 12px; /* 可以稍微縮小間距 */
 			}
+			.form-grid label { font-size: 0.85em; }
 			/* 1. 調整整個區塊的 padding */
 			#grade-entry-section.section {
 				padding: 10px;
 			}
-
 			/* 2. 讓標題和按鈕並排 */
 			.grade-entry-header-bar {
 				display: flex;
@@ -213,10 +250,12 @@
 				font-size: 0.9em;
 			}
 
-			/* 6. 再次縮小學生列表的字型 */
 			.score-entry-header, .score-entry {
-				font-size: 0.85em;
-			}			
+				grid-template-columns: 30px 1fr 60px 1.5fr; /* 重新分配欄寬 */
+				gap: 8px;
+				font-size: 0.8em; /* 再縮小一點字體 */
+			}
+			.score-entry input { padding: 6px 4px; }			
         }
     </style>
 </head>
