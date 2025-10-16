@@ -148,6 +148,11 @@
             .history-item-stats {
                 display: none;
             }
+			.form-grid {
+				/* 在小螢幕上，強制設定為兩欄均分 */
+				grid-template-columns: 1fr 1fr;
+				gap: 15px; /* 可以稍微縮小間距 */
+			}
         }
     </style>
 </head>
@@ -169,12 +174,12 @@
 			<div class="form-grid">
 				<div>
 					<label for="new-assignment-name">成績項目名稱：</label>
-					<input type="text" id="new-assignment-name" placeholder="例如: 數習 P.10-12" list="assignment-suggestions">
+					<input type="text" id="new-assignment-name" placeholder="例如: 習作1-1" list="assignment-suggestions">
 					<datalist id="assignment-suggestions"></datalist>
 				</div>
 				<div>
 					<label for="new-general-comment">成績說明 (選填)：</label>
-					<input type="text" id="new-general-comment" placeholder="例如: 全班普遍不佳">
+					<input type="text" id="new-general-comment" placeholder="例如: 遲交">
 				</div>
 			</div>
 		</div>
