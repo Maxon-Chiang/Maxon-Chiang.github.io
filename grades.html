@@ -176,11 +176,11 @@
 			}
 			/* --- 標題字體與間距調整 --- */
 			h2, .section-header h2 {
-				font-size: 1.3em; /* 縮小 h2 標題 */
+				font-size: 1.0em; /* 縮小 h2 標題 */
 				padding-bottom: 8px;
 			}
 			h3, #current-assignment-title {
-				font-size: 1.1em; /* 縮小 h3 標題 */
+				font-size: 1.0em; /* 縮小 h3 標題 */
 				padding-bottom: 8px;
 			}
 			/* --- 成績項目清單 (解決文字截斷問題) --- */
@@ -194,7 +194,7 @@
 				gap: 2px; /* 縮小標題和說明的垂直間距 */
 			}
 			.history-item-title {
-				font-size: 1.05em; /* 微調標題字體 */
+				font-size: 0.9em; /* 微調標題字體 */
 			}
 			.history-item-comment {
 				white-space: normal; /* 允許說明文字換行，解決截斷問題 */
@@ -213,24 +213,24 @@
 			.form-grid {
 				/* 在小螢幕上，強制設定為兩欄均分 */
 				grid-template-columns: 1fr 1fr;
-				gap: 12px; /* 可以稍微縮小間距 */
+				gap: 10px; /* 可以稍微縮小間距 */
 			}
 			.form-grid label { font-size: 0.85em; }
 			/* 1. 調整整個區塊的 padding */
 			#grade-entry-section.section {
-				padding: 10px;
+				padding: 8px;
 			}
 			/* 2. 讓標題和按鈕並排 */
 			.grade-entry-header-bar {
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
-				margin-bottom: 15px;
+				margin-bottom: 5px;
 			}
 
 			/* 3. 縮小標題字型，並移除預設樣式 */
 			#current-assignment-title {
-				font-size: 1.2em;
+				font-size: 1.0em;
 				margin: 0;
 				padding: 0;
 				border: none;
@@ -247,7 +247,7 @@
 			
 			/* 5. 縮小輸入框的標題字型 */
 			.form-grid label {
-				font-size: 0.9em;
+				font-size: 0.8em;
 			}
 
 			.score-entry-header, .score-entry {
