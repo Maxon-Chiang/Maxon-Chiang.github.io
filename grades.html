@@ -133,6 +133,30 @@
 			gap: 20px; 
 			align-items: flex-end; 
 		}
+		/* 【【【新增】】】可收合面板的樣式 */
+		.collapsible-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			cursor: pointer;
+			user-select: none; /* 防止選取文字 */
+		}
+		.collapsible-header h3 {
+			margin: 0; /* 移除 h3 的預設邊距 */
+		}
+		.collapsible-content {
+			display: none; /* 預設為隱藏 */
+			padding-top: 15px;
+			border-top: 1px solid #eee;
+			margin-top: 10px;
+		}
+		.toggle-icon {
+			font-size: 0.8em;
+			transition: transform 0.2s ease-in-out;
+		}
+		.collapsible-header.active .toggle-icon {
+			transform: rotate(180deg);
+		}
         @media (max-width: 600px) {
             .score-entry-header, .score-entry {
                 grid-template-columns: 30px 1fr 70px 1.5fr;
@@ -222,7 +246,15 @@
 				</div>
 			</div>
 		</div>
-        <div class="section"><h3>歷史成績項目 (點擊項目內容可編輯)</h3><ul id="history-list"><li id="history-loading">載入中...</li></ul></div>
+		<div class="section">
+			<div id="history-toggler" class="collapsible-header">
+				<h3>成績項目清單</h3>
+				<span class="toggle-icon">▼</span>
+			</div>
+			<div id="history-list-container" class="collapsible-content">
+				<ul id="history-list"><li id="history-loading">載入中...</li></ul>
+			</div>
+		</div>
 		<div id="grade-entry-section" class="section" style="display: none;">
 			<div class="grade-entry-header-bar">
 				<h3 id="current-assignment-title"></h3>
@@ -408,7 +440,7 @@
               .onSnapshot(snapshot => {
                 historyList.innerHTML = '';
                 if (snapshot.empty) {
-                    historyList.innerHTML = '<li>尚無歷史成績項目。</li>';
+                    historyList.innerHTML = '<li>尚無成績項目。</li>';
                     return;
                 }
                 snapshot.forEach(doc => {
@@ -452,8 +484,8 @@
                     historyList.appendChild(li);
                 });
             }, error => {
-                console.error("讀取歷史成績失敗:", error);
-                historyList.innerHTML = '<li>讀取歷史紀錄時發生錯誤。</li>';
+                console.error("讀取成績失敗:", error);
+                historyList.innerHTML = '<li>讀取項目清單時發生錯誤。</li>';
             });
         }
 
@@ -492,6 +524,16 @@
             }
         });
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
+		// 【【【新增】】】處理可收合面板的點擊事件
+		document.getElementById('history-toggler').addEventListener('click', function() {
+			this.classList.toggle('active');
+			const content = document.getElementById('history-list-container');
+			if (content.style.display === "block") {
+				content.style.display = "none";
+			} else {
+				content.style.display = "block";
+			}
+		});
     </script>
 </body>
 </html>
