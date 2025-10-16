@@ -15,7 +15,7 @@
         header h1 { font-size: 1.6em; margin: 0; }
         header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em; }
         main { padding: 20px; max-width: 1000px; margin: auto; }
-        .section { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .section { background-color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
         input, button, textarea { padding: 10px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid var(--border-color); box-sizing: border-box; }
         button { background-color: var(--primary-color); color: white; cursor: pointer; border: none; }
@@ -101,6 +101,38 @@
             margin-right: 15px;
             font-size: 1.0em;
         }
+		/* 【【【新增/修改以下樣式】】】 */
+
+		/* 1. 處理標題和按鈕並排 */
+		.section-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			border-bottom: 2px solid var(--primary-color);
+			padding-bottom: 10px;
+			margin-bottom: 20px; /* 增加標題和輸入框之間的間距 */
+		}
+
+		.section-header h2 {
+			border-bottom: none; /* 移除 h2 原本的底線 */
+			padding-bottom: 0;
+			margin: 0; /* 移除 h2 的預設邊距 */
+		}
+
+		h3 { /* 維持 h3 的樣式不變 */
+			color: #333; 
+			border-bottom: 2px solid var(--primary-color); 
+			padding-bottom: 10px; 
+		}
+
+		/* 2. 處理兩個輸入框並排 */
+		.form-grid { 
+			display: grid; 
+			/* 將最小寬度改小，讓手機螢幕也能容納兩欄 */
+			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+			gap: 20px; 
+			align-items: flex-end; 
+		}
         @media (max-width: 600px) {
             .score-entry-header, .score-entry {
                 grid-template-columns: 30px 1fr 70px 1.5fr;
@@ -129,21 +161,23 @@
         </div>
     </header>
     <main id="app-container" style="display: none;">
-        <div id="create-section" class="section">
-            <h2 id="class-header"></h2>
-            <div class="form-grid">
+		<div id="create-section" class="section">
+			<div class="section-header">
+				<h2 id="class-header"></h2>
+				<button id="create-assignment-btn">建立新成績單</button>
+			</div>
+			<div class="form-grid">
 				<div>
-                    <label for="new-assignment-name">成績項目名稱：</label>
-                    <input type="text" id="new-assignment-name" placeholder="例如: 數習 P.10-12" list="assignment-suggestions">
-                    <datalist id="assignment-suggestions"></datalist>
-                </div>
-                <div>
-                    <label for="new-general-comment">成績說明 (選填)：</label>
-                    <input type="text" id="new-general-comment" placeholder="例如: 全班普遍不佳">
-                </div>
-            </div>
-            <button id="create-assignment-btn" style="margin-top: 10px;">建立新成績單</button>
-        </div>
+					<label for="new-assignment-name">成績項目名稱：</label>
+					<input type="text" id="new-assignment-name" placeholder="例如: 數習 P.10-12" list="assignment-suggestions">
+					<datalist id="assignment-suggestions"></datalist>
+				</div>
+				<div>
+					<label for="new-general-comment">成績說明 (選填)：</label>
+					<input type="text" id="new-general-comment" placeholder="例如: 全班普遍不佳">
+				</div>
+			</div>
+		</div>
         <div class="section"><h3>歷史成績項目 (點擊項目內容可編輯)</h3><ul id="history-list"><li id="history-loading">載入中...</li></ul></div>
         <div id="grade-entry-section" class="section" style="display: none;">
             <h3 id="current-assignment-title"></h3>
