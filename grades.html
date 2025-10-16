@@ -481,6 +481,10 @@
                         currentAssignmentId = doc.id;
                         displayGradeEntry(a.assignmentName, a.generalComment, a.scores);
                         saveBtns.forEach(btn => btn.textContent = '更新儲存');
+						// 將面板的內容隱藏起來
+						document.getElementById('history-list-container').style.display = "none";
+						// 同時移除標題的 'active' 狀態，讓箭頭恢復朝下
+						document.getElementById('history-toggler').classList.remove('active');
                     });
                     historyList.appendChild(li);
                 });
