@@ -114,7 +114,6 @@
             padding: 1.5rem;
         }
         
-        /* --- 新的班級方塊網格佈局 --- */
         .class-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -172,7 +171,6 @@
             color: var(--primary-color);
         }
         
-        /* --- 學生名單彈出視窗的樣式 --- */
         #student-roster-modal .modal-content {
             max-width: 95%;
             width: 100%;
@@ -218,10 +216,9 @@
         .student-block-name {
             font-size: 1.1em;
         }
-		/* 【【【新增這段】】】 */
-		.score-negative { background-color: #ffebee; } /* 淡紅色 */
-		.score-positive-low { background-color: #e8f5e9; } /* 淡綠色 */
-		.score-positive-high { background-color: #fff8e1; } /* 淡金黃色 */
+		.score-negative { background-color: #ffebee; }
+		.score-positive-low { background-color: #e8f5e9; }
+		.score-positive-high { background-color: #fff8e1; }
         
         .modal, .modal2, .modal-notes {
             display: none;
@@ -390,17 +387,16 @@
         .exchanged-cell { border: 1px dashed #ffc994; }
 
 		body.modal-open { overflow: hidden; }
-		/* 【【【新增這段 CSS】】】 */
 		.password-reset-box form {
 			display: flex;
 			flex-direction: column;
-			gap: 15px; /* 增加輸入框之間的間距 */
+			gap: 15px;
 			margin: 20px 0;
 		}
 		.password-reset-box input, .password-reset-box button {
 			width: 100%;
-			box-sizing: border-box; /* 確保寬度計算正確 */
-			height: 44px; /* 給定固定高度 */
+			box-sizing: border-box;
+			height: 44px;
 			padding: 12px;
 		}
 		.password-wrapper {
@@ -415,7 +411,6 @@
 			font-size: 1.2em;
 			color: #888;
 		}
-		/* 【【【新增】】】課表可點擊儲存格的樣式 */
 		.timetable-clickable-cell {
 			cursor: pointer;
 		}
@@ -461,6 +456,7 @@
                 <div id="dropdown-menu" class="dropdown-content">
                     <button id="my-timetable-btn">我的課表</button>
                     <button id="class-settings-btn">班級顯示設定</button>
+                    <button id="homepage-settings-btn">首頁顯示設定</button>
                     <button id="change-password-btn">修改密碼</button>
                     <button id="info-btn-new">功能說明</button>
                     <hr style="margin: 4px 10px; border-color: #eee; border-style: solid; border-width: 1px 0 0 0;">
@@ -496,13 +492,12 @@
             <h2 id="modal-title"></h2>
             <div class="form-container">
                 <div class="form-header">
-                    <h3>新增紀錄 <span id="modal-current-score" style="font-weight: normal; font-size: 0.8em; color: #555;"></span></h3>
+                    <h3>近期紀錄 <span id="modal-current-score" style="font-weight: normal; font-size: 0.8em; color: #555;"></span></h3>
                     <button type="submit" form="add-record-form">新增</button>
                 </div>
 				<form id="add-record-form" novalidate>
 					<input type="number" id="record-points" placeholder="加/減分" step="1">
 					<input type="text" id="record-text" placeholder="文字紀錄 (選填)" list="recent-texts-list">
-					
 					<datalist id="recent-texts-list"></datalist>
 				</form>
             </div>
@@ -608,6 +603,25 @@
         </div>
     </div>
 
+    <div id="homepage-settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>首頁顯示設定</h2>
+            <p>請選擇您希望每次進入此頁面時預設顯示的畫面。</p>
+            <div style="margin-top: 20px; line-height: 2;">
+                <div>
+                    <input type="radio" id="pref-grid" name="homepage-pref" value="classGrid" checked>
+                    <label for="pref-grid">班級格子畫面 (預設)</label>
+                </div>
+                <div>
+                    <input type="radio" id="pref-timetable" name="homepage-pref" value="timetable">
+                    <label for="pref-timetable">我的課表 (自動彈出)</label>
+                </div>
+            </div>
+            <button id="save-homepage-settings-btn" style="margin-top: 25px; background-color: #28a745; padding: 12px 25px; color: white; font-size: 1.1em; ">儲存設定</button>
+        </div>
+    </div>
+
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -664,6 +678,11 @@
         const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
         const timetableLink = document.getElementById('timetable-link');
         
+		const homepageSettingsModal = document.getElementById('homepage-settings-modal');
+		const homepageSettingsBtn = document.getElementById('homepage-settings-btn');
+		const saveHomepageSettingsBtn = document.getElementById('save-homepage-settings-btn');
+		const homepageModalCloseBtn = homepageSettingsModal.querySelector('.close-btn');
+
         const studentRosterModal = document.getElementById('student-roster-modal');
         const studentRosterTitle = document.getElementById('student-roster-title');
         const studentGridContainer = document.getElementById('student-grid-container');
@@ -763,6 +782,14 @@
                 }
                 await fetchAllScores();
                 renderLayout();
+				
+				const preference = localStorage.getItem('homepagePreference');
+				if (preference === 'timetable') {
+					// 使用一個小延遲，確保頁面完全渲染後再彈出視窗
+					setTimeout(() => {
+						myTimetableBtn.click();
+					}, 100);
+				}
             } catch (error) {
                 console.error("初始化失敗:", error);
                 appContainer.innerHTML = '<h2>載入資料失敗...</h2>';
@@ -830,7 +857,7 @@
                 appContainer.appendChild(classBlock);
             });
         }
-
+        
 		function openStudentRosterModal(className, origin = 'main') {
 			rosterModalOrigin = origin; // 記錄來源是 'main' 還是 'timetable'
 			document.body.classList.add('modal-open');
@@ -843,22 +870,28 @@
 			};
 			studentGridContainer.innerHTML = '';
 
+			// 【【【最終修正核心】】】
+			// 1. 定義一個反向轉換函數
 			function convertClassNameReverse(newClassName) {
 				if (typeof newClassName !== 'string' || newClassName.length < 3) return newClassName;
 				const firstDigit = newClassName.charAt(0);
 				const restOfName = newClassName.substring(1);
 				switch (firstDigit) {
+					// 國一(1xx) -> 7xx
 					case '1': return '7' + restOfName;
+					// 國二(2xx) -> 8xx
 					case '2': return '8' + restOfName;
+					// 國三(3xx) -> 9xx
 					case '3': return '9' + restOfName;
 					default: return newClassName;
 				}
 			}
 
+			// 2. 在過濾學生前，先將收到的班級代號 (如 '101') 轉換回原始代號 (如 '701')
 			const originalClassId = convertClassNameReverse(className);
 
 			const studentsInClass = studentsData
-				.filter(s => s.id.startsWith(originalClassId))
+				.filter(s => s.id.startsWith(originalClassId)) // 使用原始代號進行過濾
 				.sort((a, b) => a.id.localeCompare(b.id));
 
 			if (studentsInClass.length === 0) {
@@ -896,10 +929,11 @@
 			}
 
 			studentRosterModal.style.display = 'flex';
-		}		
+		}
 
 		function openModal(id, type = 'student', origin = 'main') {
 			modalOrigin = origin;
+            document.body.classList.add('modal-open');
             currentEntity = { id, type };
             let titleText = '', scoreText = '';
             
@@ -944,7 +978,6 @@
 			}
 			modalOrigin = null; // 重設來源標記
 		}
-		/* 【【【新增此整個函數】】】 */
 		function closeStudentRosterModal() {
 			studentRosterModal.style.display = 'none'; // 隱藏學生名單視窗
 
@@ -1033,7 +1066,7 @@
                     recordsList.appendChild(recordItem);
                 });
             } catch (error) {
-                console.error("讀取歷史紀錄失敗:", error);
+                console.error("讀取事件紀錄失敗:", error);
                 recordsList.innerHTML = '讀取紀錄時發生錯誤。';
             }
         }
@@ -1047,19 +1080,17 @@
             const sid = currentEntity; 
             const n = { entityId: sid.id, entityType: sid.type, points: p, text: t, timestamp: firebase.firestore.FieldValue.serverTimestamp(), studentId: sid.type === 'student' ? sid.id : null }; 
             try { 
-				const origin = modalOrigin; // 先記住是從哪裡來的
+				const origin = modalOrigin; 
 				const className = sid.type === 'student' ? sid.id.substring(0, 3) : sid.id;
 
 				await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n);
 				
-				closeModal(); // 關閉輸入視窗
-				await fetchAllScores(); // 取得最新分數
+				closeModal(); 
+				await fetchAllScores(); 
 
 				if (origin === 'roster') {
-					// 如果是從學生名單來的，就重新打開更新後的名單
 					openStudentRosterModal(className); 
 				} else {
-					// 否則是從主畫面來的，就更新主畫面
 					renderLayout();
 					document.body.classList.remove('modal-open');
 				}
@@ -1072,19 +1103,17 @@
 				if (confirm('確定刪除？')) { 
 					const sid = currentEntity; 
 					try { 
-						const origin = modalOrigin; // 先記住是從哪裡來的
+						const origin = modalOrigin; 
 						const className = sid.type === 'student' ? sid.id.substring(0, 3) : sid.id;
 
 						await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
 
-						closeModal(); // 關閉輸入視窗
-						await fetchAllScores(); // 取得最新分數
+						closeModal(); 
+						await fetchAllScores(); 
 
 						if (origin === 'roster') {
-							// 如果是從學生名單來的，就重新打開更新後的名單
 							openStudentRosterModal(className);
 						} else {
-							// 否則是從主畫面來的，就更新主畫面
 							renderLayout();
 							document.body.classList.remove('modal-open');
 						}
@@ -1149,6 +1178,9 @@
                     case 'info-modal': closeInfoModal(); break;
                     case 'welcome-modal': document.getElementById('close-welcome-btn').onclick(); break;
                     case 'my-timetable-modal': e.target.style.display = 'none'; break;
+					case 'homepage-settings-modal':
+						closeHomepageSettingsModal();
+						break;
 					case 'student-roster-modal':
 						closeStudentRosterModal();
 						break;
@@ -1268,7 +1300,6 @@
             }
         }
 		
-		// 【【【請用這整段新的函數，取代舊的 renderMyTimetableModal 函數】】】
 		function renderMyTimetableModal(teacherName) {
 			const bodyEl = document.getElementById('my-timetable-body');
 			const baseSchedule = teacherSchedules.get(teacherName);
@@ -1316,7 +1347,6 @@
 					let content = '', cellClass = '';
 					
 					if (cellData) {
-						// 【關鍵修正】將 data-class-name="${cellData.class}" 放在所有可點擊的 td 上
 						const dataAttribute = `data-class-name="${cellData.class || ''}"`;
 
 						if (cellData.isSubstitutedOut) {
@@ -1341,10 +1371,10 @@
 			tableHtml += '</tbody></table>';
 			bodyEl.innerHTML = tableHtml;
 
-			// --- 為所有可點擊的儲存格加上事件監聽 ---
 			bodyEl.querySelectorAll('.timetable-clickable-cell').forEach(cell => {
 				cell.addEventListener('click', () => {
 					const className = cell.dataset.className;
+
 					if (className) {
 						myTimetableModal.style.display = 'none';
 						openStudentRosterModal(className, 'timetable');
@@ -1357,7 +1387,6 @@
 			document.getElementById('dropdown-menu').classList.remove('show');
 			openInfoModal();
 		});
-		/* 【【【新增這段 JavaScript】】】 */
 		document.querySelectorAll('.toggle-password').forEach(toggle => {
 			toggle.addEventListener('click', () => {
 				const targetId = toggle.dataset.target;
@@ -1370,6 +1399,26 @@
 					toggle.textContent = '👁️'; // 換回開眼的圖示
 				}
 			});
+		});
+		homepageSettingsBtn.addEventListener('click', () => {
+			document.getElementById('dropdown-menu').classList.remove('show');
+			const currentPref = localStorage.getItem('homepagePreference') || 'classGrid';
+			document.querySelector(`input[name="homepage-pref"][value="${currentPref}"]`).checked = true;
+			document.body.classList.add('modal-open');
+			homepageSettingsModal.style.display = 'flex';
+		});
+
+		function closeHomepageSettingsModal() {
+			document.body.classList.remove('modal-open');
+			homepageSettingsModal.style.display = 'none';
+		}
+		homepageModalCloseBtn.addEventListener('click', closeHomepageSettingsModal);
+
+		saveHomepageSettingsBtn.addEventListener('click', () => {
+			const selectedPref = document.querySelector('input[name="homepage-pref"]:checked').value;
+			localStorage.setItem('homepagePreference', selectedPref);
+			alert('首頁設定已儲存！');
+			closeHomepageSettingsModal();
 		});
     });
     </script>
