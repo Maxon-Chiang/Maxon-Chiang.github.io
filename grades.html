@@ -136,11 +136,12 @@
 		/* 【【【新增】】】可收合面板的樣式 */
 		.collapsible-header {
 			display: flex;
-			justify-content: space-between;
+			justify-content: flex-start; /* 讓所有項目都從左邊開始對齊 */
 			align-items: center;
+			gap: 10px; /* 在標題和箭頭之間增加一個固定的間距 */
 			cursor: pointer;
 			user-select: none; /* 防止選取文字 */
-		}
+		}		
 		.collapsible-header h3 {
 			margin: 0; /* 移除 h3 的預設邊距 */
 		}
