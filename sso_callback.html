@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSO 回傳資料捕獲頁面</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; background-color: #f5f5f5; padding: 20px; }
+        .container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
+        h1 { color: #333; }
+        p { line-height: 1.8; }
+        pre { background-color: #eee; padding: 15px; border-radius: 5px; white-space: pre-wrap; word-break: break-all; font-size: 1.1em; }
+        .info { background-color: #e7f3ff; border: 1px solid #b3d7ff; padding: 15px; border-radius: 5px; margin-bottom: 20px;}
+        a { color: #0d6efd; }
+        strong { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SSO 回傳資料</h1>
+        <div class="info">
+            <p>此頁面已成功捕獲從 SSO 登入頁面跳轉回來的 URL。下方顯示的就是 SSO 系統回傳的**所有**網址參數。</p>
+            <p>如果登入成功，您應該會看到一個 `code` 或 `token` 參數。如果失敗，則可能會看到 `error` 相關的參數。</p>
+        </div>
+
+        <h2>URL 查詢參數 (Query Parameters)</h2>
+        <p>這是網址中 <code>?</code> 後面的部分：</p>
+        <pre id="query-params">沒有偵測到查詢參數。</pre>
+
+        <h2>URL 片段 (Fragment)</h2>
+        <p>這是網址中 <code>#</code> 後面的部分 (常用於隱含流程的回傳)：</p>
+        <pre id="fragment-params">沒有偵測到 URL 片段。</pre>
+        
+        <hr style="margin: 30px 0;">
+        <p><strong>重要：</strong>由於您的應用程式尚未在縣市端註冊，所以看到 <strong>error</strong> 相關的參數是**正常現象**。請將上方顯示的完整內容提供給後端工程師，以利於他們完成後續的串接。</p>
+        <p><a href="login.html">返回登入頁面</a></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const queryDisplay = document.getElementById('query-params');
+            const fragmentDisplay = document.getElementById('fragment-params');
+
+            // 1. 解析查詢參數 (? 後面的)
+            const queryString = window.location.search;
+            if (queryString) {
+                const queryParams = new URLSearchParams(queryString);
+                const queryData = {};
+                for (const [key, value] of queryParams.entries()) {
+                    queryData[key] = value;
+                }
+                queryDisplay.textContent = JSON.stringify(queryData, null, 2);
+            }
+
+            // 2. 解析片段 (# 後面的)
+            const fragmentString = window.location.hash.substring(1);
+            if (fragmentString) {
+                const fragmentParams = new URLSearchParams(fragmentString);
+                const fragmentData = {};
+                for (const [key, value] of fragmentParams.entries()) {
+                    fragmentData[key] = value;
+                }
+                fragmentDisplay.textContent = JSON.stringify(fragmentData, null, 2);
+            }
+        });
+    </script>
+</body>
+</html>
