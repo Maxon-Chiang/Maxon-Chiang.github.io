@@ -10,23 +10,24 @@
             font-family: inherit;
         }
         .login-container { background-color: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
-        h1 { color: #333; margin-top: 0; }
-        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
+        h1 { color: #333; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
         button { width: 100%; padding: 12px; background-color: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
         button:hover { background-color: #357abd; }
-        #error-message { color: #d0021b; margin-top: 10px; min-height: 20px; font-size: 0.9em; }
-        .options-container { display: flex; justify-content: center; align-items: center; margin: 15px 0 10px 0; font-size: 0.9em; color: #555; }
+        #error-message { color: #d0021b; margin-top: 10px; min-height: 40px; font-size: 0.9em; }
+        .options-container { display: flex; justify-content: center; align-items: center; margin: 15px 0; font-size: 0.9em; color: #555; }
         #remember-me { margin-right: 8px; width: 16px; height: 16px; }
         #splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f5f5f5; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4a90e2; animation: spin 1s ease infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+		/* 【【【新增這段 CSS】】】 */
 		.password-wrapper {
 			position: relative;
 			display: flex;
 			align-items: center;
 		}
 		.password-wrapper input {
-			padding-right: 50px; 
+			padding-right: 50px; /* 留出空間給眼睛圖示 */
 		}
 		.toggle-password {
 			position: absolute;
@@ -35,31 +36,6 @@
 			font-size: 1.2em;
 			color: #888;
 		}
-        .sso-divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            color: #888;
-            font-size: 0.9em;
-            margin: 25px 0 15px 0;
-        }
-        .sso-divider::before, .sso-divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid #ccc;
-        }
-        .sso-divider:not(:empty)::before {
-            margin-right: .25em;
-        }
-        .sso-divider:not(:empty)::after {
-            margin-left: .25em;
-        }
-        .sso-container label {
-            font-size: 1em;
-            color: #333;
-            margin-bottom: 10px;
-            display: block;
-        }
     </style>
 </head>
 <body>
@@ -67,33 +43,16 @@
     <div id="login-view" style="display: none;">
         <div class="login-container">
             <h1>學生綜合紀錄暨課表系統</h1>
-            
             <form id="login-form">
-                <input type="email" id="login-email" placeholder="管理員 Email" required autocomplete="email">
+                <input type="email" id="login-email" placeholder="Email" required autocomplete="email">
 				<div class="password-wrapper">
 					<input type="password" id="login-password" placeholder="密碼" required autocomplete="current-password">
 					<span class="toggle-password" data-target="login-password">👁️</span>
 				</div>
                 <div class="options-container"><input type="checkbox" id="remember-me"><label for="remember-me">保持登入狀態</label></div>
-                <button type="submit">管理員登入</button>
+                <button type="submit">登入</button>
             </form>
             <p id="error-message"></p>
-
-            <div class="sso-divider">或</div>
-            <div class="sso-container">
-                <label for="sso-select">教師請選擇您的縣市登入</label>
-                <select id="sso-select">
-                    <option value="" disabled selected>-- 選擇縣市教育入口 --</option>
-                    <option value="edu" data-url-template="https://www.sso.edu.tw/?response_type=code&client_id=YOUR_CLIENT_ID_HERE&redirect_uri=CALLBACK_URL_PLACEHOLDER&scope=openid%20profile%20email">教育部教育雲 (通用)</option>
-                    <option value="tpe" data-url-template="https://ldap.tp.edu.tw/?response_type=code&client_id=YOUR_CLIENT_ID_HERE&redirect_uri=CALLBACK_URL_PLACEHOLDER&scope=openid%20profile%20email">臺北市 親師生平台</option>
-                    <option value="ntpc" data-url-template="https://ntpc.sso.edu.tw/auth-server-login?Auth_Request_RedirectUri=CALLBACK_URL_PLACEHOLDER&Auth_Request_State=U-6Pig95DYcrWqnUYj6ynmNYALLb8sloxQcj090lnkk&Auth_Request_Response_Type=code&Auth_Request_Client_ID=cf789350df91c914eede027ce55f3ab5&Auth_Request_Nonce=evuD6jGuAgVYF5opAkt3-hkLjPzjhL9HTwCyWb7G8bk&Auth_Request_Scope=openid+exchangedata&local=true">新北市 親師生平台</option>
-                    <option value="tyc" data-url-template="https://sso.tyc.edu.tw/cas/login?response_type=code&client_id=YOUR_CLIENT_ID_HERE&redirect_uri=CALLBACK_URL_PLACEHOLDER&scope=openid%20profile%20email">桃園市 SSO</option>
-                    <option value="tc" data-url-template="https://sso.tc.edu.tw/?response_type=code&client_id=YOUR_CLIENT_ID_HERE&redirect_uri=CALLBACK_URL_PLACEHOLDER&scope=openid%20profile%20email">臺中市 SSO</option>
-                    <option value="tn" data-url-template="http://sso.tn.edu.tw/?response_type=code&client_id=YOUR_CLIENT_ID_HERE&redirect_uri=CALLBACK_URL_PLACEHOLDER&scope=openid%20profile%20email">臺南市 SSO</option>
-                    <option value="kh" data-url-template="https://www.egame.kh.edu.tw/?response_type=code&client_id=YOUR_CLIENT_ID_HERE&redirect_uri=CALLBACK_URL_PLACEHOLDER&scope=openid%20profile%20email">高雄市 e-game</option>
-                    <option value="kl" data-url-template="https://sso.kl.edu.tw/cas/login?response_type=code&client_id=YOUR_CLIENT_ID_HERE&redirect_uri=CALLBACK_URL_PLACEHOLDER&scope=openid%20profile%20email">基隆市 SSO</option>
-                </select>
-            </div>
         </div>
     </div>
 
@@ -113,7 +72,6 @@
         const errorMessage = document.getElementById('error-message');
         const rememberMeCheckbox = document.getElementById('remember-me');
         const splashScreen = document.getElementById('splash-screen');
-        const ssoSelect = document.getElementById('sso-select');
 
         const savedEmail = localStorage.getItem('lastLoginEmail');
         if (savedEmail) { loginEmailInput.value = savedEmail; }
@@ -121,17 +79,32 @@
         rememberMeCheckbox.checked = (savedRememberState === 'true' || savedRememberState === null);
         
         auth.onAuthStateChanged(async (user) => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromPage = urlParams.get('from');
+
             if (user) {
+                sessionStorage.setItem('justLoggedIn', 'true'); // 標記為剛剛登入
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 if (!userDoc.exists) {
                     showLoginError("找不到您的使用者設定，將為您登出。");
                     return;
                 }
                 const userRole = userDoc.data().role;
-                routeUser(userRole);
+                if (!fromPage || userRole === fromPage) {
+                    routeUser(userRole);
+                } else {
+                    splashScreen.style.display = 'none';
+                    loginView.style.display = 'flex';
+                    const currentRoleText = userRole === 'teacher' ? '教師' : '管理者';
+                    const targetRoleText = fromPage === 'admin' ? '管理' : '教師';
+                    errorMessage.textContent = `您目前以 ${currentRoleText} 身份登入，無法進入 ${targetRoleText} 頁面。請在此登入正確帳號以切換身份。`;
+                }
             } else {
                 splashScreen.style.display = 'none';
                 loginView.style.display = 'flex';
+                if (fromPage) {
+                     errorMessage.textContent = `欲進入${fromPage === 'admin' ? '管理' : '教師'}頁面，請先登入。`;
+                }
             }
         });
 
@@ -146,45 +119,33 @@
             try {
                 const persistence = rememberMeCheckbox.checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
                 await auth.setPersistence(persistence);
+                
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
+
+                if (userCredential.user) {
+                    db.collection('users').doc(userCredential.user.uid).update({
+                        lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(err => {
+                        console.error("更新登入時間失敗:", err);
+                    });
+                }
+                
                 localStorage.setItem('lastLoginEmail', email);
             } catch (error) {
                 splashScreen.style.display = 'none';
                 loginView.style.display = 'flex';
-                errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。';
-            }
-        });
-
-        // --- 【【【修改】】】 ---
-        // 新的跳轉邏輯，會讀取 data-url-template 並替換其中的佔位符
-        ssoSelect.addEventListener('change', (e) => {
-            const selectedOption = e.target.options[e.target.selectedIndex];
-            const urlTemplate = selectedOption.dataset.urlTemplate;
-
-            if (urlTemplate) {
-                const callbackUrl = window.location.origin + window.location.pathname.replace('login.html', 'sso_callback.html');
-                
-                // 將範本中的佔位符替換成我們動態產生的回調網址
-                const finalUrl = urlTemplate.replace('CALLBACK_URL_PLACEHOLDER', encodeURIComponent(callbackUrl));
-
-                splashScreen.innerHTML = '<div class="spinner"></div><p style="margin-top: 20px; color: #555;">正在導向至縣市登入頁面...</p>';
-                splashScreen.style.display = 'flex';
-                
-                setTimeout(() => {
-                    window.location.href = finalUrl;
-                }, 500);
+                switch (error.code) {
+                    case 'auth/invalid-credential': case 'auth/invalid-login-credentials': errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。'; break;
+                    default: errorMessage.textContent = '登入時發生未知錯誤。'; break;
+                }
             }
         });
         
         function routeUser(role) {
             if (role === 'admin') {
                 window.location.href = 'admin.html';
-            } else if (role === 'school_admin') {
-                window.location.href = 'school_admin.html';
             } else if (role === 'teacher') {
                 window.location.href = 'teacher.html';
-            } else {
-                showLoginError(`未知的用戶角色 (${role})，無法登入。`);
             }
         }
 
@@ -194,7 +155,7 @@
             errorMessage.textContent = msg;
             auth.signOut();
         }
-
+		/* 【【【新增這段 JavaScript】】】 */
 		document.querySelectorAll('.toggle-password').forEach(toggle => {
 			toggle.addEventListener('click', () => {
 				const targetId = toggle.dataset.target;
