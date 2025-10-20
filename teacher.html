@@ -432,7 +432,10 @@
             header { gap: 10px; }
             main { padding: 1rem; }
 			.main-actions button, .main-actions a button { padding: 5px 5px; font-size: 1em; }
-            .class-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; }
+            .class-grid {
+				grid-template-columns: repeat(3, 1fr); /* 固定為三欄均分 */
+				gap: 0.5rem; 
+			}
             .class-block-title { font-size: 1.6em; }
             #my-timetable-modal .modal-content { padding: 10px; }
             .schedule-table { font-size: 0.8em; }
@@ -828,21 +831,32 @@
         }
 
         function renderLayout() {
-            appContainer.innerHTML = '';
+            // --- 【【【修改此區塊】】】 ---
+            const gridContainer = document.getElementById('class-grid-container');
+            const loadingMessage = document.querySelector('#app-container > h2');
+            
+            // 1. 如果載入訊息存在，就隱藏它，而不是清空所有東西
+            if (loadingMessage) {
+                loadingMessage.style.display = 'none';
+            }
+
+            // 2. 只清空用來放格子的容器
+            gridContainer.innerHTML = ''; 
+            // --- 【【【修改結束】】】 ---
+
             const classesToRender = allClassList.filter(className => visibleClassList.includes(className));
 
             if (classesToRender.length === 0 && allClassList.length > 0) {
-                appContainer.innerHTML = '<h3>沒有設定要顯示的班級。請點擊下拉選單中的「班級顯示設定」。</h3>';
+                // 修改：如果沒有班級，訊息也顯示在 gridContainer 內
+                gridContainer.innerHTML = '<h3>沒有設定要顯示的班級。請點擊下拉選單中的「班級顯示設定」。</h3>';
                 return;
             }
 
             classesToRender.forEach(className => {
-				const classBlock = document.createElement('div');
+                const classBlock = document.createElement('div');
                 classBlock.className = 'class-block';
 
-                // --- 【【【修改開始】】】 ---
-                
-                // (這是上次新增的計算分數邏輯，保持不變)
+                // (計算分數和設定背景色的邏輯保持不變...)
                 const studentsInClass = studentsData.filter(s => s.id.startsWith(className));
                 const totalStudentScore = studentsInClass.reduce((sum, student) => {
                     return sum + (studentScores[student.id] || 0);
@@ -850,20 +864,16 @@
                 const classScore = classEventScores[className] || 0;
                 const totalScore = totalStudentScore + classScore;
 
-                // 【【【新增判斷分數並設定背景色的邏輯】】】
                 if (totalScore < 0) {
-                    classBlock.classList.add('score-bg-negative'); // 低於0分：淺灰色
+                    classBlock.classList.add('score-bg-negative');
                 } else if (totalScore > 0 && totalScore <= 10) {
-                    classBlock.classList.add('score-bg-low');       // 10分以內：淺綠色
+                    classBlock.classList.add('score-bg-low');
                 } else if (totalScore > 10 && totalScore <= 20) {
-                    classBlock.classList.add('score-bg-medium');    // 10~20分：淺紫色
+                    classBlock.classList.add('score-bg-high'); 
                 } else if (totalScore > 20) {
-                    classBlock.classList.add('score-bg-high');      // 20分以上：金黃色
+                    classBlock.classList.add('score-bg-medium');
                 }
-                // 總分等於0時，不加任何 class，維持預設白色背景
-
-                // --- 【【【修改結束】】】 ---
-
+                
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'class-block-title';
                 titleDiv.innerHTML = `
@@ -892,11 +902,11 @@
                 classBlock.appendChild(titleDiv);
                 classBlock.appendChild(actionsDiv);
                 
-                appContainer.appendChild(classBlock);
-
+                // --- 【【【修改此行】】】 ---
+                gridContainer.appendChild(classBlock); // 3. 將格子加到正確的 gridContainer 中
             });
         }
-        
+		
 		function openStudentRosterModal(className, origin = 'main') {
 			rosterModalOrigin = origin; // 記錄來源是 'main' 還是 'timetable'
 			document.body.classList.add('modal-open');
