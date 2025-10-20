@@ -139,7 +139,16 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script>
-        const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+	  const firebaseConfig = {
+		apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
+		authDomain: "classrecords-13902.firebaseapp.com",
+		projectId: "classrecords-13902",
+		storageBucket: "classrecords-13902.firebasestorage.app",
+		messagingSenderId: "431747377367",
+		appId: "1:431747377367:web:b157a8f5c59ce38091e892",
+		measurementId: "G-JWTQGM9XMP"
+	  };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); const auth = firebase.auth();
         let currentUser = null, studentsData = [], classList = [], currentPerfResults = [], currentPerfStats = {}, currentGradesResults = {}, allAssignments = [];
