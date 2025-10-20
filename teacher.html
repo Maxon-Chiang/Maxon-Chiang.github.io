@@ -432,8 +432,12 @@
             header { gap: 10px; }
             main { padding: 1rem; }
 			.main-actions button, .main-actions a button { padding: 5px 5px; font-size: 1em; }
-            .class-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; }
-            .class-block-title { font-size: 1.6em; }
+             /* .class-grid { grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 0.5rem; } */
+			.class-grid {
+        		grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        		gap: 0.8rem; /* 間距可以稍微調回來，100px 的最小值足夠了 */
+    		}
+			.class-block-title { font-size: 1.6em; }
             #my-timetable-modal .modal-content { padding: 10px; }
             .schedule-table { font-size: 0.8em; }
             .schedule-table td { height: 50px; }				
@@ -1471,3 +1475,4 @@
     </script>
 </body>
 </html>
+
