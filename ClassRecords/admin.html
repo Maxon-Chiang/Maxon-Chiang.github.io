@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超級管理後台</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; padding: 20px; max-width: 900px; margin: auto; background-color: #f8f9fa; }
+        h1, h2 { color: #333; }
+        button, input, textarea { font-family: inherit; padding: 8px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; }
+        button { background-color: #0d6efd; color: white; cursor: pointer; border: none; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section { background-color: #ffffff; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #dee2e6; }
+        textarea { width: 98%; height: 120px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .stat-card { background-color: #f8f9fa; padding: 20px; border-radius: 6px; text-align: center; border: 1px solid #dee2e6; }
+        .stat-card-value { font-size: 2.5em; font-weight: bold; color: #0d6efd; }
+        .stat-card-label { font-size: 1em; color: #6c757d; margin-top: 5px; }
+
+        #announcements-list li { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: flex-start; }
+        .announcement-content { flex-grow: 1; white-space: pre-wrap; word-break: break-word; }
+        .announcement-meta { font-size: 0.8em; color: #6c757d; display: block; margin-bottom: 5px; }
+        .delete-btn { background-color: #dc3545; font-size: 0.8em; padding: 4px 8px; margin-left: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>超級管理後台</h1>
+        <div id="admin-panel" style="display: none;">
+            <span>歡迎，<span id="admin-email"></span>！</span>
+            <button id="logout-btn" style="margin-left: 15px; background-color: #6c757d;">登出</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>平台數據總覽</h2>
+        <div id="stats-container" class="stats-grid">
+            <div class="stat-card"><div class="stat-card-value" id="school-admin-count">...</div><div class="stat-card-label">學校管理者帳號數</div></div>
+            <div class="stat-card"><div class="stat-card-value" id="teacher-count">...</div><div class="stat-card-label">教師總帳號數</div></div>
+            <div class="stat-card"><div class="stat-card-value" id="roster-count">...</div><div class="stat-card-label">總名冊數</div></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>系統公告管理</h2>
+        <form id="announcement-form">
+            <label for="announcement-text">輸入公告內容：</label>
+            <textarea id="announcement-text" required placeholder="此公告將顯示在所有學校管理者的後台首頁..."></textarea>
+            <button type="submit">發布公告</button>
+        </form>
+        <hr style="margin: 25px 0;">
+        <h3>歷史公告</h3>
+        <ul id="announcements-list" style="list-style-type: none; padding: 0;"><li>載入中...</li></ul>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'admin') {
+                    document.getElementById('admin-email').textContent = user.email;
+                    document.getElementById('admin-panel').style.display = 'block';
+                    loadStats();
+                    loadAnnouncements();
+                } else {
+                    alert('權限不足！');
+                    window.location.href = 'login.html';
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+
+		async function loadStats() {
+            const schoolAdminQuery = db.collection('users').where('role', '==', 'school_admin').get();
+            const teacherQuery = db.collection('users').where('role', '==', 'teacher').get();
+            // 【【【修改】】】: 使用 collectionGroup 跨所有學校查詢 rosters 子集合
+            const rosterQuery = db.collectionGroup('rosters').get();
+            
+            const [schoolAdminSnapshot, teacherSnapshot, rosterSnapshot] = await Promise.all([schoolAdminQuery, teacherQuery, rosterQuery]);
+            
+            document.getElementById('school-admin-count').textContent = schoolAdminSnapshot.size;
+            document.getElementById('teacher-count').textContent = teacherSnapshot.size;
+            document.getElementById('roster-count').textContent = rosterSnapshot.size;
+        }
+
+        function loadAnnouncements() {
+            const list = document.getElementById('announcements-list');
+            db.collection('announcements').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+                list.innerHTML = '';
+                if (snapshot.empty) {
+                    list.innerHTML = '<li>尚無歷史公告。</li>';
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const announcement = doc.data();
+                    const date = announcement.createdAt.toDate().toLocaleString('zh-TW');
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <div class="announcement-content">
+                            <span class="announcement-meta">發布於 ${date}</span>
+                            ${announcement.content}
+                        </div>
+                        <button class="delete-btn" data-id="${doc.id}">刪除</button>
+                    `;
+                    list.appendChild(li);
+                });
+            });
+        }
+        
+        document.getElementById('announcement-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const content = document.getElementById('announcement-text').value.trim();
+            if (!content) return;
+            try {
+                await db.collection('announcements').add({
+                    content: content,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('announcement-text').value = '';
+                alert('公告已發布！');
+            } catch (error) {
+                alert('發布失敗: ' + error.message);
+            }
+        });
+
+        document.getElementById('announcements-list').addEventListener('click', async (e) => {
+            if (e.target.classList.contains('delete-btn')) {
+                const docId = e.target.dataset.id;
+                if (confirm('確定要刪除這則公告嗎？')) {
+                    await db.collection('announcements').doc(docId).delete();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

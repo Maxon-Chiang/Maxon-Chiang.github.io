@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數據報告 - 班級綜合成績紀錄系統</title>
+    <style>
+        :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+		/* 【新增此段】強制所有表單元件繼承 body 的字體 */
+        button, input, select, textarea {
+            font-family: inherit;
+        }
+        header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        header h1 { font-size: 1.6em; margin: 0; }
+        header a button, header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em;}
+        main { padding: 20px; max-width: 1200px; margin: auto; }
+        .section { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h2 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .tab-nav { border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+        .tab-nav button { background: none; border: none; padding: 10px 20px; font-size: 1.1em; cursor: pointer; border-bottom: 3px solid transparent; }
+        .tab-nav button.active { border-bottom-color: var(--primary-color); font-weight: bold; color: var(--primary-color); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .sub-nav { font-size: 0.9em; font-weight: normal; }
+        .sub-nav label { margin-left: 20px; cursor: pointer; }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end; margin-top: 20px;}
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+        .filter-group input, .filter-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; }
+        #class-filter-container, #assignment-filter-container { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 5px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 4px; border: 1px solid #eee;}
+        .class-checkbox { display: flex; align-items: center; gap: 5px; }
+        .action-buttons { margin-top: 20px; }
+        .action-buttons button { font-size: 1.1em; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; }
+        .run-query-btn { background-color: var(--primary-color); color: white; }
+        .export-csv-btn { background-color: #28a745; color: white; margin-left: 10px; }
+        .export-csv-btn:disabled { background-color: #aaa; cursor: not-allowed; }
+        .results-container { min-height: 100px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; white-space: nowrap; }
+        th { background-color: #f2f2f2; position: sticky; top: 0; z-index: 1;}
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .sortable-header, .drill-down-row { cursor: pointer; user-select: none; }
+        .sortable-header:hover, .drill-down-row:hover { background-color: #eef3f8; }
+        .sortable-header .sort-arrow { margin-left: 5px; color: #999; display: inline-block; width: 1em; }
+        .back-btn { background-color: #6c757d; color: white; font-size: 0.9em; padding: 5px 10px; border: none; border-radius: 4px; }
+		/* 【新增】用戶名稱樣式 */
+        #user-email {
+            margin-right: 15px;
+            font-size: 1.0em;
+        }
+        header .header-actions {
+            display: flex;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            main { padding: 10px; }
+            .section { padding: 15px; }
+            header h1 { font-size: 1.6em; }
+            h2 {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .sub-nav {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                flex-direction: row;
+				font-size: 0.8em;
+            }
+            .sub-nav label {
+                margin-left: 0;
+            }
+            .filter-grid {
+                 grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            }
+            .action-buttons {
+                display: flex;
+                flex-direction: row;
+                gap: 10px;
+            }
+            .export-csv-btn {
+                margin-left: 0;
+            }
+
+        }
+    </style>
+</head>
+<body>
+	<header>
+        <h1>數據報告</h1>
+        <div class="header-actions">
+            <span id="user-email"></span>
+            <button onclick="history.back()">返回主頁</button>
+            <button id="logout-btn">登出</button>
+        </div>
+    </header>
+    <main>
+        <div class="tab-nav">
+            <button class="tab-btn active" data-tab="performance">表現紀錄報告</button>
+            <button class="tab-btn" data-tab="grades">成績報告</button>
+        </div>
+        <div id="performance-tab" class="tab-content active">
+            <div class="section">
+                <h2><span>查詢條件</span><div class="sub-nav"><label><input type="radio" name="perf-report-type" value="log" checked> 事件明細</label><label><input type="radio" name="perf-report-type" value="stats"> 統計摘要</label></div></h2>
+                <div class="filter-grid">
+                    <div class="filter-group"><label for="start-date">開始日期:</label><input type="date" id="start-date"></div>
+                    <div class="filter-group"><label for="end-date">結束日期:</label><input type="date" id="end-date"></div>
+					<div class="filter-grid" style="grid-template-columns: 1fr; margin-top: 20px;" id="event-select"><div class="filter-group"><label>事件類型:</label><select id="event-type-filter"><option value="all">全部事件</option><option value="with_points">僅有分數</option><option value="text_only">僅純文字</option></select></div></div>
+                </div>
+                <div id="perf-log-filters">                    
+                    <div class="filter-group" style="margin-top: 20px;"><label>班級 (可複選):</label><div id="class-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-classes" checked> <label for="select-all-classes">全選</label></div></div></div>
+                </div>
+                <div class="action-buttons"><button id="run-perf-query-btn" class="run-query-btn">執行查詢</button><button id="export-perf-csv-btn" class="export-csv-btn" disabled>匯出 CSV</button></div>
+            </div>
+            <div class="section"><h2 id="perf-results-title"><span>查詢結果</span></h2><div id="perf-results-container" class="results-container"><p>請設定條件後執行查詢。</p></div></div>
+        </div>
+        <div id="grades-tab" class="tab-content">
+            <div class="section">
+                <h2><span>查詢條件</span><div class="sub-nav"><label><input type="radio" name="grades-report-type" value="student" checked> 學生個人成績明細</label><label><input type="radio" name="grades-report-type" value="assignment"> 班級內作業分析</label><label><input type="radio" name="grades-report-type" value="cross-class"> 跨班級作業比較</label></div></h2>
+                <div id="grades-student-filters">
+                    <div class="filter-group"><label for="grades-class-select">選擇班級:</label><select id="grades-class-select"><option value="">請先選擇班級</option></select></div>
+                    <div class="filter-group" style="margin-top: 20px;"><label>成績項目 (可複選):</label><div id="assignment-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked> <label for="select-all-assignments">全選</label></div></div></div>
+                </div>
+                 <div id="grades-assignment-filters" style="display:none;">
+                    <div class="filter-group"><label for="grades-class-select-single">選擇班級:</label><select id="grades-class-select-single"><option value="">請先選擇班級</option></select></div>
+                </div>
+                <div id="grades-cross-class-filters" style="display:none;">
+                    <div class="filter-group"><label for="grades-assignment-select">選擇成績項目:</label><select id="grades-assignment-select"><option value="">請先載入所有成績項目</option></select></div>
+                </div>
+                <div class="action-buttons"><button id="run-grades-query-btn" class="run-query-btn">執行查詢</button><button id="export-grades-csv-btn" class="export-csv-btn" disabled>匯出 CSV</button></div>
+            </div>
+            <div class="section"><h2 id="grades-results-title"><span>查詢結果</span></h2><div id="grades-results-container" class="results-container"><p>請設定條件後執行查詢。</p></div></div>
+        </div>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(); const auth = firebase.auth();
+        let currentUser = null, studentsData = [], classList = [], currentPerfResults = [], currentPerfStats = {}, currentGradesResults = {}, allAssignments = [];
+        let perfSortState = { key: 'class', direction: 'asc' };
+        let perfStatsSortState = { key: 'total', direction: 'desc' };
+        let gradeAssignmentSortState = { key: 'date', direction: 'desc' };
+        let gradeCrossClassSortState = { key: 'className', direction: 'asc' };
+
+        // 【【【新增此函式】】】
+        function convertClassName(oldClassName) {
+            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
+            const firstDigit = oldClassName.charAt(0);
+            const restOfName = oldClassName.substring(1);
+            switch (firstDigit) {
+                case '7': return '1' + restOfName;
+                case '8': return '2' + restOfName;
+                case '9': return '3' + restOfName;
+                default: return oldClassName;
+            }
+        }
+        
+		auth.onAuthStateChanged(async (user) => { 
+            if (user) { 
+                currentUser = user;
+                
+                // 新增：讀取並顯示用戶名稱
+                const displayElement = document.getElementById('user-email');
+                const userDoc = await db.collection('users').doc(user.uid).get(); 
+                if (userDoc.exists && (userDoc.data().role === 'teacher' || userDoc.data().role === 'admin')) {
+                    if (userDoc.data().displayName) {
+                        displayElement.textContent = userDoc.data().displayName;
+                    } else {
+                        displayElement.textContent = user.email;
+                    }
+                    await initializeReportPage(userDoc.data()); 
+                } else { 
+                    window.location.href = 'login.html'; 
+                } 
+            } else { 
+                window.location.href = 'login.html'; 
+            } 
+        });
+		
+		// 【【【請用這整段新的函數，取代舊的 initializeReportPage 函數】】】
+        async function initializeReportPage(userData) {
+            const today = new Date().toLocaleDateString('en-CA');
+            document.getElementById('start-date').value = today;
+            document.getElementById('end-date').value = today;
+
+            // --- 變更開始 ---
+            // 1. 檢查 schoolId 而非 rosterId
+            if (!userData.schoolId) {
+                console.warn("帳號未綁定學校ID，無法讀取名冊。");
+                alert('錯誤：您的帳號未綁定學校ID，無法繼續操作。');
+                return;
+            }
+            // 2. 使用 schoolId 讀取當前學期名冊
+            const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
+            if (!rosterDoc.exists) {
+                alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
+                return;
+            }
+            // --- 變更結束 ---
+
+            studentsData = rosterDoc.data().students;
+            classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
+            
+            const perfClassFilter = document.getElementById('class-filter-container');
+            const gradesClassSelect = document.getElementById('grades-class-select');
+            const gradesClassSelectSingle = document.getElementById('grades-class-select-single');
+
+            classList.forEach(className => {
+                const div = document.createElement('div');
+                div.className = 'class-checkbox';
+                div.innerHTML = `<input type="checkbox" id="class-${className}" value="${className}" class="class-selector" checked> <label for="class-${className}">${convertClassName(className)}</label>`;
+                perfClassFilter.appendChild(div);
+                gradesClassSelect.add(new Option(`${convertClassName(className)} 班`, className));
+                gradesClassSelectSingle.add(new Option(`${convertClassName(className)} 班`, className));
+            });
+
+            const assignmentsSnapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').orderBy('date', 'desc').get();
+            allAssignments = [];
+            const uniqueAssignments = {};
+            assignmentsSnapshot.forEach(doc => {
+                allAssignments.push({ id: doc.id, ...doc.data() });
+                const name = doc.data().assignmentName;
+                if (!uniqueAssignments[name]) uniqueAssignments[name] = name;
+            });
+            const gradesAssignmentSelect = document.getElementById('grades-assignment-select');
+            gradesAssignmentSelect.innerHTML = '<option value="">請選擇成績項目</option>';
+            Object.keys(uniqueAssignments).sort().forEach(name => {
+                gradesAssignmentSelect.add(new Option(name, name));
+            });
+        }
+        
+        document.querySelectorAll('.tab-btn').forEach(button => { button.addEventListener('click', () => { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); button.classList.add('active'); document.getElementById(button.dataset.tab + '-tab').classList.add('active'); }); });
+        document.querySelectorAll('input[name="perf-report-type"]').forEach(radio => { radio.addEventListener('change', () => { const isLog = radio.value === 'log'; document.getElementById('perf-log-filters').style.display = isLog ? 'block' : 'none'; document.getElementById('event-select').style.display = isLog ? 'block' : 'none'; document.getElementById('perf-results-container').innerHTML = '<p>請設定條件後執行查詢。</p>'; document.getElementById('export-perf-csv-btn').disabled = true; document.getElementById('perf-results-title').innerHTML = '<span>查詢結果</span>'; }); });
+        document.querySelectorAll('input[name="grades-report-type"]').forEach(radio => { radio.addEventListener('change', (e) => { document.getElementById('grades-student-filters').style.display = 'none'; document.getElementById('grades-assignment-filters').style.display = 'none'; document.getElementById('grades-cross-class-filters').style.display = 'none'; document.getElementById(`grades-${e.target.value}-filters`).style.display = 'block'; document.getElementById('grades-results-container').innerHTML = '<p>請設定條件後執行查詢。</p>'; document.getElementById('export-grades-csv-btn').disabled = true; document.getElementById('grades-results-title').innerHTML = '<span>查詢結果</span>'; }); });
+        
+        document.getElementById('select-all-classes').addEventListener('change', (e) => { document.querySelectorAll('#performance-tab .class-selector').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
+        
+        document.getElementById('run-perf-query-btn').addEventListener('click', async () => {
+            const container = document.getElementById('perf-results-container');
+            container.innerHTML = '查詢中...'; document.getElementById('export-perf-csv-btn').disabled = true;
+            const reportType = document.querySelector('input[name="perf-report-type"]:checked').value;
+            const startDate = document.getElementById('start-date').value;
+            const endDate = document.getElementById('end-date').value;
+            if (!startDate || !endDate) { container.innerHTML = '<p style="color:red;">請選擇日期！</p>'; return; }
+            const startTS = new Date(startDate); const endTS = new Date(endDate); endTS.setHours(23, 59, 59, 999);
+            try {
+                const query = db.collection('performanceRecords').doc(currentUser.uid).collection('records').where('timestamp', '>=', startTS).where('timestamp', '<=', endTS);
+                const snapshot = await query.get();
+                let allRecordsInRange = [];
+                snapshot.forEach(doc => allRecordsInRange.push(doc.data()));
+                if (reportType === 'log') {
+                    const selectedClasses = [...document.querySelectorAll('#performance-tab .class-selector:checked')].map(cb => cb.value);
+                    const eventType = document.getElementById('event-type-filter').value;
+                    currentPerfResults = allRecordsInRange.filter(r => { const cId = (r.entityType === 'class') ? r.entityId : (r.entityId || r.studentId).substring(0, 3); const hasP = (r.points || 0) !== 0; const hasT = (r.text || '').trim() !== ''; const cMatch = selectedClasses.length === 0 || selectedClasses.includes(cId); let eMatch = true; if (eventType === 'with_points') eMatch = hasP; if (eventType === 'text_only') eMatch = !hasP && hasT; return cMatch && eMatch; });
+                    perfSortState = { key: 'class', direction: 'asc' };
+                    sortAndRenderPerfLog();
+                } else {
+                    const stats = {};
+                    classList.forEach(c => { stats[c] = { className: c, total: 0, positive: 0, negative: 0, count: 0 }; });
+                    allRecordsInRange.forEach(record => {
+                        const className = (record.entityType === 'class') ? record.entityId : (record.entityId || record.studentId).substring(0, 3);
+                        if (stats[className]) {
+                            const points = record.points || 0;
+                            stats[className].count++;
+                            stats[className].total += points;
+                            if (points > 0) stats[className].positive += points;
+                            if (points < 0) stats[className].negative += points;
+                        }
+                    });
+                    currentPerfStats = { allRecords: allRecordsInRange, stats: Object.values(stats) };
+                    perfStatsSortState = { key: 'total', direction: 'desc' };
+                    sortAndRenderPerfStats();
+                }
+            } catch (error) { console.error("查詢失敗:", error); container.innerHTML = `<p style="color:red;">查詢失敗！請檢查 Console。</p>`; }
+        });
+
+        function sortAndRenderPerfLog(fromDrillDown = false) { 
+                const sortedResults = [...currentPerfResults];
+                sortedResults.sort( (a, b) => {
+                    const key = perfSortState.key;
+                    const direction = perfSortState.direction === 'asc' ? 1 : -1;
+                    let valA, valB;
+                    if (key === 'timestamp') {
+                        valA = a.timestamp.seconds;
+                        valB = b.timestamp.seconds;
+                    } else if (key === 'score') {
+                        valA = a.points || 0;
+                        valB = b.points || 0;
+                    } else if (key === 'class') {
+                        valA = parseInt(a.entityId || a.studentId || '0', 10);
+                        valB = parseInt(b.entityId || b.studentId || '0', 10);
+                    }
+                    if (valA < valB)
+                        return -1 * direction;
+                    if (valA > valB)
+                        return 1 * direction;
+                    return 0;
+                }
+                );
+                renderPerfLog(sortedResults, fromDrillDown);
+        }
+
+        function renderPerfLog(results, fromDrillDown = false) { 
+            const container = document.getElementById('perf-results-container');
+            const title = document.getElementById('perf-results-title');
+            
+            const existingBtn = title.querySelector('.back-btn');
+            if(existingBtn) existingBtn.remove();
+            
+            let titleText = '<span>查詢結果</span>';
+            if (fromDrillDown) {
+                titleText += '<button class="back-btn" id="back-to-perf-stats">返回統計摘要</button>';
+            }
+            title.innerHTML = titleText;
+
+            if (fromDrillDown) {
+                document.getElementById('back-to-perf-stats').addEventListener('click', () => {
+                    const statsRadio = document.querySelector('input[name="perf-report-type"][value="stats"]');
+                    statsRadio.checked = true;
+                    statsRadio.dispatchEvent(new Event('change'));
+                    sortAndRenderPerfStats();
+                });
+            }
+
+            if (results.length === 0) { container.innerHTML = '<p>找不到紀錄。</p>'; return; } 
+            
+            const getArrow = (key) => { if (perfSortState.key !== key) return '&#x25B4;&#x25BE;'; return perfSortState.direction === 'asc' ? '&#x25B2;' : '&#x25BC;'; }; 
+            let tableHTML = `<table><thead><tr><th class="sortable-header" data-sort="timestamp">日期時間 <span class="sort-arrow">${getArrow('timestamp')}</span></th><th class="sortable-header" data-sort="class">班級 <span class="sort-arrow">${getArrow('class')}</span></th><th>座號</th><th>姓名</th><th class="sortable-header" data-sort="score">分數 <span class="sort-arrow">${getArrow('score')}</span></th><th>事由</th></tr></thead><tbody>`; 
+            results.forEach(record => { 
+                const entityId = record.entityId || record.studentId; 
+                const type = record.entityType || 'student'; 
+                const seatNum = (type === 'student') ? entityId.substring(3) : '-'; 
+                let targetName = ''; 
+                if (type === 'class') { 
+                    targetName = `班級 (${entityId})`; 
+                } else { 
+                    const student = studentsData.find(s => s.id === entityId); 
+                    targetName = student ? student.name : `學生 (${entityId})`; 
+                } 
+                const className = type === 'class' ? entityId : entityId.substring(0, 3); 
+                // 【【【修改】】】
+                tableHTML += `<tr><td>${record.timestamp.toDate().toLocaleString('zh-TW', { hour12: false })}</td><td>${convertClassName(className)}</td><td>${seatNum}</td><td>${targetName}</td><td>${record.points || 0}</td><td>${record.text || ''}</td></tr>`; 
+            }); 
+            tableHTML += '</tbody></table>'; 
+            container.innerHTML = tableHTML; 
+            document.getElementById('export-perf-csv-btn').disabled = false; 
+            
+            container.querySelectorAll('.sortable-header[data-sort]').forEach(header => { 
+                header.addEventListener('click', () => { 
+                    const sortKey = header.dataset.sort; 
+                    if (perfSortState.key === sortKey) { 
+                        perfSortState.direction = perfSortState.direction === 'asc' ? 'desc' : 'asc'; 
+                    } else { 
+                        perfSortState.key = sortKey; 
+                        perfSortState.direction = 'desc'; 
+                    } 
+                    sortAndRenderPerfLog(fromDrillDown); 
+                }); 
+            }); 
+        }
+        
+        function sortAndRenderPerfStats() { const sortedStats = [...currentPerfStats.stats]; sortedStats.sort((a, b) => { const key = perfStatsSortState.key; const direction = perfStatsSortState.direction === 'asc' ? 1 : -1; let valA, valB; if (key === 'avg') { valA = a.count > 0 ? (a.total / a.count) : -Infinity; valB = b.count > 0 ? (b.total / b.count) : -Infinity; } else { valA = a[key]; valB = b[key]; } if (valA < valB) return -1 * direction; if (valA > valB) return 1 * direction; return a.className.localeCompare(b.className); }); renderPerfStats(sortedStats); }
+        
+        function renderPerfStats(stats) { 
+            const container = document.getElementById('perf-results-container'); 
+            document.getElementById('perf-results-title').innerHTML = '<span>查詢結果</span>';
+            if (stats.length === 0) { container.innerHTML = '<p>找不到可統計的紀錄。</p>'; return; } 
+            const getArrow = (key) => { if (perfStatsSortState.key !== key) return '&#x25B4;&#x25BE;'; return perfStatsSortState.direction === 'asc' ? '&#x25B2;' : '&#x25BC;'; }; 
+            let table = `<table><thead><tr><th class="sortable-header" data-sort-stats="className">班級 <span class="sort-arrow">${getArrow('className')}</span></th><th class="sortable-header" data-sort-stats="total">總分 <span class="sort-arrow">${getArrow('total')}</span></th><th class="sortable-header" data-sort-stats="positive">總加分 <span class="sort-arrow">${getArrow('positive')}</span></th><th class="sortable-header" data-sort-stats="negative">總扣分 <span class="sort-arrow">${getArrow('negative')}</span></th><th class="sortable-header" data-sort-stats="count">事件總數 <span class="sort-arrow">${getArrow('count')}</span></th><th class="sortable-header" data-sort-stats="avg">單次均分 <span class="sort-arrow">${getArrow('avg')}</span></th></tr></thead><tbody>`; 
+            stats.forEach(s => { 
+                const avg = s.count > 0 ? (s.total / s.count).toFixed(2) : 'N/A'; 
+                // 【【【修改】】】
+                table += `<tr class="drill-down-row" data-type="perf" data-value="${s.className}"><td>${convertClassName(s.className)}</td><td>${s.total}</td><td>${s.positive}</td><td>${s.negative}</td><td>${s.count}</td><td>${avg}</td></tr>`; 
+            }); 
+            table += '</tbody></table>'; 
+            container.innerHTML = table; 
+            document.getElementById('export-perf-csv-btn').disabled = false; 
+            container.querySelectorAll('.sortable-header[data-sort-stats]').forEach(header => { header.addEventListener('click', () => { const sortKey = header.dataset.sortStats; if (perfStatsSortState.key === sortKey) { perfStatsSortState.direction = perfStatsSortState.direction === 'asc' ? 'desc' : 'asc'; } else { perfStatsSortState.key = sortKey; perfStatsSortState.direction = 'desc'; } sortAndRenderPerfStats(); }); }); 
+            container.querySelectorAll('.drill-down-row[data-type="perf"]').forEach(row => { row.addEventListener('click', () => { const className = row.dataset.value; document.querySelector('input[name="perf-report-type"][value="log"]').checked = true; document.querySelector('input[name="perf-report-type"][value="log"]').dispatchEvent(new Event('change')); document.querySelectorAll('#performance-tab .class-selector').forEach(cb => { cb.checked = cb.value === className; }); document.getElementById('select-all-classes').checked = false; currentPerfResults = currentPerfStats.allRecords.filter(r => ((r.entityType === 'class' ? r.entityId : (r.entityId || r.studentId).substring(0, 3)) === className)); perfSortState = { key: 'timestamp', direction: 'desc' }; sortAndRenderPerfLog(true); }); });
+        }
+
+        function exportPerfLogCSV() { 
+            if (currentPerfResults.length === 0) return; 
+            let csv = "\uFEFF"; 
+            csv += "日期時間,班級,座號,對象,分數,事由\r\n"; 
+            const sortedForExport = [...currentPerfResults]; 
+            sortedForExport.sort((a, b) => { let valA, valB; const key = perfSortState.key; const direction = perfSortState.direction === 'asc' ? 1 : -1; if (key === 'timestamp') { valA = a.timestamp.seconds; valB = b.timestamp.seconds; } else if (key === 'score') { valA = a.points || 0; valB = b.points || 0; } else if (key === 'class') { const classA = (a.entityType === 'class') ? a.entityId : (a.entityId || a.studentId).substring(0, 3); const classB = (b.entityType === 'class') ? b.entityId : (b.entityId || a.studentId).substring(0, 3); const classComparison = classA.localeCompare(classB); if (classComparison !== 0) return classComparison * direction; const idA = parseInt((a.entityType === 'student') ? (a.entityId || a.studentId) : '0', 10); const idB = parseInt((b.entityType === 'student') ? (b.entityId || b.studentId) : '0', 10); return (idA - idB); } if (valA < valB) return -1 * direction; if (valA > valB) return 1 * direction; return 0; }); 
+            sortedForExport.forEach(r => { 
+                const eid = r.entityId || r.studentId; 
+                const type = r.entityType || 'student'; 
+                const ts = r.timestamp.toDate().toLocaleString('zh-TW', { hour12: false }); 
+                const cName = type === 'class' ? eid : eid.substring(0, 3); 
+                const seatNum = (type === 'student') ? eid.substring(3) : ''; 
+                let target = `班級-${convertClassName(cName)}`; 
+                if (type === 'student') { const s = studentsData.find(s => s.id === eid); target = s ? s.name : `學生-${eid}`; } 
+                const p = r.points || 0; 
+                const t = r.text ? `"${r.text.replace(/"/g, '""')}"` : ''; 
+                // 【【【修改】】】
+                csv += [ts, convertClassName(cName), seatNum, target, p, t].join(',') + "\r\n"; 
+            }); 
+            downloadCSV(csv, 'performance_log_report'); 
+        }
+        
+        function exportPerfStatsCSV() { 
+            if (!currentPerfStats.stats || currentPerfStats.stats.length === 0) return; 
+            let csv = "\uFEFF"; 
+            csv += "班級,總分,總加分,總扣分,事件總數,單次均分\r\n"; 
+            const sortedForExport = [...currentPerfStats.stats]; 
+            sortedForExport.sort((a, b) => { const key = perfStatsSortState.key; const direction = perfStatsSortState.direction === 'asc' ? 1 : -1; let valA, valB; if (key === 'avg') { valA = a.count > 0 ? (a.total / a.count) : -Infinity; valB = b.count > 0 ? (b.total / b.count) : -Infinity; } else { valA = a[key]; valB = b[key]; } if (valA < valB) return -1 * direction; if (valA > valB) return 1 * direction; return a.className.localeCompare(b.className); }); 
+            sortedForExport.forEach(s => { 
+                const avg = s.count > 0 ? (s.total / s.count).toFixed(2) : 'N/A'; 
+                // 【【【修改】】】
+                csv += [convertClassName(s.className), s.total, s.positive, s.negative, s.count, avg].join(',') + "\r\n"; 
+            }); 
+            downloadCSV(csv, 'performance_stats_report'); 
+        }
+        
+        const gradesClassSelect = document.getElementById('grades-class-select'), assignmentFilterContainer = document.getElementById('assignment-filter-container'), runGradesQueryBtn = document.getElementById('run-grades-query-btn'), exportGradesCsvBtn = document.getElementById('export-grades-csv-btn'), gradesResultsContainer = document.getElementById('grades-results-container'), gradesClassSelectSingle = document.getElementById('grades-class-select-single'), gradesAssignmentSelect = document.getElementById('grades-assignment-select');
+        
+        gradesClassSelect.addEventListener('change', async (e) => { const selectedClass = e.target.value; assignmentFilterContainer.innerHTML = '<div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked> <label for="select-all-assignments">全選</label></div>'; gradesResultsContainer.innerHTML = '<p>請選擇成績項目後執行查詢。</p>'; exportGradesCsvBtn.disabled = true; if (!selectedClass) return; try { const assignmentsInClass = allAssignments.filter(a => a.className === selectedClass); if (assignmentsInClass.length === 0) { assignmentFilterContainer.innerHTML += '<p>此班級尚無成績項目。</p>'; } assignmentsInClass.forEach(a => { const div = document.createElement('div'); div.className = 'class-checkbox'; div.innerHTML = `<input type="checkbox" id="assign-${a.id}" value="${a.id}" data-name="${a.assignmentName}" class="assignment-selector" checked> <label for="assign-${a.id}">${a.assignmentName}</label>`; assignmentFilterContainer.appendChild(div); }); document.getElementById('select-all-assignments').addEventListener('change', (e) => { document.querySelectorAll('.assignment-selector').forEach(checkbox => { checkbox.checked = e.target.checked; }); }); } catch(error) { console.error("載入成績項目失敗:", error); assignmentFilterContainer.innerHTML += `<p style="color:red;">載入失敗！請檢查 Console。</p>`; } });
+        
+        runGradesQueryBtn.addEventListener('click', async () => { const reportType = document.querySelector('input[name="grades-report-type"]:checked').value; if (reportType === 'student') await runGradesStudentQuery(); else if (reportType === 'assignment') await runGradesAssignmentQuery(); else if (reportType === 'cross-class') await runGradesCrossClassQuery(); });
+        
+        async function runGradesStudentQuery() { const container = document.getElementById('grades-results-container'); container.innerHTML = '查詢中...'; document.getElementById('export-grades-csv-btn').disabled = true; const selectedClass = gradesClassSelect.value; const selectedAssignments = [...document.querySelectorAll('.assignment-selector:checked')]; if (!selectedClass || selectedAssignments.length === 0) { container.innerHTML = '<p style="color:red;">請先選擇班級和成績項目！</p>'; return; } const studentsInClass = studentsData.filter(s => s.id.startsWith(selectedClass)).sort((a,b) => parseInt(a.id) - parseInt(b.id)); const assignmentIds = selectedAssignments.map(cb => cb.value); try { const assignmentsData = {}; const promises = assignmentIds.map(id => db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(id).get()); const assignmentSnapshots = await Promise.all(promises); assignmentSnapshots.forEach(doc => { if (doc.exists) { assignmentsData[doc.id] = { id: doc.id, ...doc.data() }; } }); currentGradesResults = { type: 'student', students: studentsInClass, assignments: Object.values(assignmentsData), data: assignmentsData }; renderGradesStudentResults(currentGradesResults); } catch (error) { console.error("查詢成績失敗:", error); container.innerHTML = `<p style="color:red;">查詢失敗！</p>`; } }
+        
+        function renderGradesStudentResults(results) { const container = document.getElementById('grades-results-container'); document.getElementById('grades-results-title').innerHTML = `<span>查詢結果</span>`; const { students, assignments, data } = results; if (students.length === 0) { container.innerHTML = '<p>找不到學生資料。</p>'; return; } let tableHTML = '<table><thead><tr><th>座號</th><th>姓名</th>'; assignments.forEach(assign => { tableHTML += `<th>${assign.assignmentName}</th>`; }); tableHTML += '<th>個人平均</th></tr></thead><tbody>'; students.forEach(student => { tableHTML += `<tr><td>${student.id.substring(3)}</td><td>${student.name}</td>`; let total = 0; const count = assignments.length; assignments.forEach(assign => { const assignmentData = data[assign.id]; const scoreInfo = assignmentData && assignmentData.scores[student.id]; let cellContent = ''; let score = 0; if (scoreInfo && scoreInfo.score !== undefined && scoreInfo.score !== null) { cellContent = scoreInfo.score; score = scoreInfo.score; if (scoreInfo.comment) { cellContent += ` (${scoreInfo.comment})`; } } else { cellContent = '<span style="color:#aaa;">-</span>'; } total += score; tableHTML += `<td>${cellContent}</td>`; }); const avg = count > 0 ? (total/count).toFixed(1) : ''; tableHTML += `<td><strong>${avg}</strong></td></tr>`; }); tableHTML += '</tbody></table>'; container.innerHTML = tableHTML; document.getElementById('export-grades-csv-btn').disabled = false; }
+        
+        async function runGradesAssignmentQuery(fromDrillDown = false, drillDownClass = null) { const container = document.getElementById('grades-results-container'); container.innerHTML = '查詢中...'; document.getElementById('export-grades-csv-btn').disabled = true; const selectedClass = drillDownClass || document.getElementById('grades-class-select-single').value; if (!selectedClass) { container.innerHTML = '<p style="color:red;">請先選擇班級！</p>'; return; } const studentsInClass = studentsData.filter(s => s.id.startsWith(selectedClass)); try { const assignmentsInClass = allAssignments.filter(a => a.className === selectedClass); let stats = []; assignmentsInClass.forEach(a => { let studentCount = 0, totalScore = 0, maxScore = -Infinity, minScore = Infinity, passCount = 0; if (a.scores) { for(const sid in a.scores) { if (a.scores[sid].score !== undefined && a.scores[sid].score !== null) { const score = a.scores[sid].score; studentCount++; totalScore += score; if (score > maxScore) maxScore = score; if (score < minScore) minScore = score; if (score >= 60) passCount++; } } } stats.push({ assignmentName: a.assignmentName, date: a.date, studentCount, totalStudents: studentsInClass.length, avg: studentCount > 0 ? (totalScore / studentCount) : 0, max: studentCount > 0 ? maxScore : 'N/A', min: studentCount > 0 ? minScore : 'N/A', passRate: studentCount > 0 ? (passCount / studentCount) * 100 : 0 }); }); currentGradesResults = { type: 'assignment', stats: stats, fromDrillDown: fromDrillDown }; sortAndRenderGradesAssignmentStats(); } catch (error) { console.error("查詢失敗:", error); container.innerHTML = `<p style="color:red;">查詢失敗！</p>`; } }
+        function sortAndRenderGradesAssignmentStats() { const sortedStats = [...currentGradesResults.stats]; sortedStats.sort((a,b) => { const key = gradeAssignmentSortState.key; const direction = gradeAssignmentSortState.direction === 'asc' ? 1 : -1; let valA = a[key], valB = b[key]; if (key === 'date') { valA = a.date.seconds; valB = b.date.seconds; } if (valA < valB) return -1 * direction; if (valA > valB) return 1 * direction; return 0; }); renderGradesAssignmentStats(sortedStats, currentGradesResults.fromDrillDown); }
+        function renderGradesAssignmentStats(stats, fromDrillDown = false) { 
+            const container = document.getElementById('grades-results-container');
+            const title = document.getElementById('grades-results-title');
+            const existingBtn = title.querySelector('.back-btn');
+            if(existingBtn) existingBtn.remove();
+            
+            let titleText = '<span>查詢結果</span>';
+            if (fromDrillDown) {
+                titleText += '<button class="back-btn" id="back-to-cross-class">返回跨班級比較</button>';
+            }
+            title.innerHTML = titleText;
+            if (fromDrillDown) {
+                 document.getElementById('back-to-cross-class').addEventListener('click', () => {
+                    const crossClassRadio = document.querySelector('input[name="grades-report-type"][value="cross-class"]');
+                    crossClassRadio.checked = true;
+                    crossClassRadio.dispatchEvent(new Event('change'));
+                    runGradesCrossClassQuery();
+                 });
+            }
+
+            if (stats.length === 0) { container.innerHTML = '<p>找不到成績項目。</p>'; return; } 
+            
+            const getArrow = (key) => { if (gradeAssignmentSortState.key !== key) return '&#x25B4;&#x25BE;'; return gradeAssignmentSortState.direction === 'asc' ? '&#x25B2;' : '&#x25BC;'; }; 
+            let table = `<table><thead><tr><th class="sortable-header" data-sort-grades="assignmentName">成績項目 <span class="sort-arrow">${getArrow('assignmentName')}</span></th><th class="sortable-header" data-sort-grades="date">日期 <span class="sort-arrow">${getArrow('date')}</span></th><th>繳交人數</th><th class="sortable-header" data-sort-grades="avg">班級平均 <span class="sort-arrow">${getArrow('avg')}</span></th><th class="sortable-header" data-sort-grades="max">最高分 <span class="sort-arrow">${getArrow('max')}</span></th><th class="sortable-header" data-sort-grades="min">最低分 <span class="sort-arrow">${getArrow('min')}</span></th><th class="sortable-header" data-sort-grades="passRate">及格率(%) <span class="sort-arrow">${getArrow('passRate')}</span></th></tr></thead><tbody>`; 
+            stats.forEach(s => { table += `<tr><td>${s.assignmentName}</td><td>${s.date.toDate().toLocaleDateString()}</td><td>${s.studentCount}/${s.totalStudents}</td><td>${s.avg.toFixed(1)}</td><td>${s.max}</td><td>${s.min}</td><td>${s.passRate.toFixed(1)}%</td></tr>`; }); 
+            table += '</tbody></table>'; 
+            container.innerHTML = table; 
+            document.getElementById('export-grades-csv-btn').disabled = false; 
+            container.querySelectorAll('.sortable-header[data-sort-grades]').forEach(header => { header.addEventListener('click', () => { const sortKey = header.dataset.sortGrades; if (gradeAssignmentSortState.key === sortKey) { gradeAssignmentSortState.direction = gradeAssignmentSortState.direction === 'asc' ? 'desc' : 'asc'; } else { gradeAssignmentSortState.key = sortKey; gradeAssignmentSortState.direction = 'desc'; } sortAndRenderGradesAssignmentStats(); }); }); 
+        }
+        
+        async function runGradesCrossClassQuery() { const container = document.getElementById('grades-results-container'); container.innerHTML = '查詢中...'; document.getElementById('export-grades-csv-btn').disabled = true; const selectedAssignmentName = document.getElementById('grades-assignment-select').value; if (!selectedAssignmentName) { container.innerHTML = '<p style="color:red;">請先選擇成績項目！</p>'; return; } try { const assignmentsWithName = allAssignments.filter(a => a.assignmentName === selectedAssignmentName); let stats = []; classList.forEach(className => { const assignment = assignmentsWithName.find(a => a.className === className); if (assignment) { const studentsInClass = studentsData.filter(s => s.id.startsWith(className)); let studentCount = 0, totalScore = 0, maxScore = -Infinity, minScore = Infinity, passCount = 0; if (assignment.scores) { for(const sid in assignment.scores) { if (assignment.scores[sid].score !== undefined && assignment.scores[sid].score !== null) { const score = assignment.scores[sid].score; studentCount++; totalScore += score; if (score > maxScore) maxScore = score; if (score < minScore) minScore = score; if (score >= 60) passCount++; } } } stats.push({ className, date: assignment.date, studentCount, totalStudents: studentsInClass.length, avg: studentCount > 0 ? (totalScore / studentCount) : 0, max: studentCount > 0 ? maxScore : 'N/A', min: studentCount > 0 ? minScore : 'N/A', passRate: studentCount > 0 ? (passCount / studentCount) * 100 : 0 }); } }); currentGradesResults = { type: 'cross-class', stats: stats }; sortAndRenderGradesCrossClassStats(); } catch (error) { console.error("查詢失敗:", error); container.innerHTML = `<p style="color:red;">查詢失敗！</p>`; } }
+        function sortAndRenderGradesCrossClassStats() { const sortedStats = [...currentGradesResults.stats]; sortedStats.sort((a,b) => { const key = gradeCrossClassSortState.key; const direction = gradeCrossClassSortState.direction === 'asc' ? 1 : -1; let valA = a[key], valB = b[key]; if (key === 'avg') { valA = a.studentCount > 0 ? a.avg : -Infinity; valB = b.studentCount > 0 ? b.avg : -Infinity; } if (valA < valB) return -1 * direction; if (valA > valB) return 1 * direction; return 0; }); renderGradesCrossClassStats(sortedStats); }
+        function renderGradesCrossClassStats(stats) { 
+            const container = document.getElementById('grades-results-container'); 
+            document.getElementById('grades-results-title').innerHTML = `<span>查詢結果：${document.getElementById('grades-assignment-select').value}</span>`; 
+            if (stats.length === 0) { container.innerHTML = '<p>找不到此成績項目的跨班級資料。</p>'; return; } 
+            const getArrow = (key) => { if (gradeCrossClassSortState.key !== key) return '&#x25B4;&#x25BE;'; return gradeCrossClassSortState.direction === 'asc' ? '&#x25B2;' : '&#x25BC;'; }; 
+            let table = `<table><thead><tr><th class="sortable-header" data-sort-cross="className">班級 <span class="sort-arrow">${getArrow('className')}</span></th><th>繳交人數</th><th class="sortable-header" data-sort-cross="avg">班級平均 <span class="sort-arrow">${getArrow('avg')}</span></th><th class="sortable-header" data-sort-cross="max">最高分 <span class="sort-arrow">${getArrow('max')}</span></th><th class="sortable-header" data-sort-cross="min">最低分 <span class="sort-arrow">${getArrow('min')}</span></th><th class="sortable-header" data-sort-cross="passRate">及格率(%) <span class="sort-arrow">${getArrow('passRate')}</span></th></tr></thead><tbody>`; 
+            stats.forEach(s => { 
+                // 【【【修改】】】
+                table += `<tr class="drill-down-row" data-type="grades" data-value="${s.className}"><td>${convertClassName(s.className)}</td><td>${s.studentCount}/${s.totalStudents}</td><td>${s.avg.toFixed(1)}</td><td>${s.max}</td><td>${s.min}</td><td>${s.passRate.toFixed(1)}%</td></tr>`; 
+            }); 
+            table += '</tbody></table>'; container.innerHTML = table; document.getElementById('export-grades-csv-btn').disabled = false; container.querySelectorAll('.sortable-header[data-sort-cross]').forEach(header => { header.addEventListener('click', () => { const sortKey = header.dataset.sortCross; if (gradeCrossClassSortState.key === sortKey) { gradeCrossClassSortState.direction = gradeCrossClassSortState.direction === 'asc' ? 'desc' : 'asc'; } else { gradeCrossClassSortState.key = sortKey; gradeCrossClassSortState.direction = 'desc'; } sortAndRenderGradesCrossClassStats(); }); }); container.querySelectorAll('.drill-down-row[data-type="grades"]').forEach(row => { row.addEventListener('click', () => { const className = row.dataset.value; document.querySelector('input[name="grades-report-type"][value="assignment"]').checked = true; document.querySelector('input[name="grades-report-type"][value="assignment"]').dispatchEvent(new Event('change')); document.getElementById('grades-class-select-single').value = className; runGradesAssignmentQuery(true, className); }); }); }
+        
+        document.getElementById('export-grades-csv-btn').addEventListener('click', () => { const reportType = document.querySelector('input[name="grades-report-type"]:checked').value; if (reportType === 'student') exportGradesStudentCSV(); else if (reportType === 'assignment') exportGradesAssignmentStatsCSV(); else if (reportType === 'cross-class') exportGradesCrossClassStatsCSV(); });
+        function exportGradesStudentCSV() { 
+            const { students, assignments, data } = currentGradesResults; 
+            if (students.length === 0) return; 
+            let csvContent = "\uFEFF"; 
+            let header = ["座號", "姓名"]; 
+            assignments.forEach(assign => header.push(assign.assignmentName)); 
+            csvContent += header.join(',') + "," + "個人平均\r\n"; // Modified line
+            students.forEach(student => { 
+                let row = [student.id.substring(3), student.name]; 
+                let total = 0; 
+                const count = assignments.length; 
+                assignments.forEach(assign => { 
+                    const assignmentData = data[assign.id]; 
+                    const scoreInfo = assignmentData && assignmentData.scores[student.id]; 
+                    let cellContent = ''; 
+                    let score = 0; 
+                    if (scoreInfo && scoreInfo.score !== undefined && scoreInfo.score !== null) { 
+                        cellContent = scoreInfo.score; score = scoreInfo.score; 
+                        if (scoreInfo.comment) { cellContent = `"${cellContent} (${scoreInfo.comment})"`; } 
+                    } 
+                    total += score; 
+                    row.push(cellContent); 
+                }); 
+                const avg = count > 0 ? (total/count).toFixed(1) : ''; 
+                row.push(avg); 
+                csvContent += row.join(',') + "\r\n"; 
+            }); 
+            // 【【【修改】】】
+            downloadCSV(csvContent, `grades_student_report_${convertClassName(document.getElementById('grades-class-select').value)}`); 
+        }
+        function exportGradesAssignmentStatsCSV() { 
+            const { stats } = currentGradesResults; if (!stats || stats.length === 0) return; 
+            let csv = "\uFEFF"; 
+            csv += "成績項目,日期,繳交人數,班級平均,最高分,最低分,及格率(%)\r\n"; 
+            stats.forEach(s => { 
+                const row = [s.assignmentName, s.date.toDate().toLocaleDateString(), `${s.studentCount}/${s.totalStudents}`, s.avg.toFixed(1), s.max, s.min, s.passRate.toFixed(1)]; 
+                csv += row.join(',') + "\r\n"; 
+            }); 
+            // 【【【修改】】】
+            downloadCSV(csv, `grades_assignment_stats_${convertClassName(document.getElementById('grades-class-select-single').value)}`); 
+        }
+        function exportGradesCrossClassStatsCSV() { 
+            const { stats } = currentGradesResults; 
+            if (!stats || stats.length === 0) return; 
+            let csv = "\uFEFF"; 
+            csv += "班級,繳交人數,班級平均,最高分,最低分,及格率(%)\r\n"; 
+            stats.forEach(s => { 
+                // 【【【修改】】】
+                const row = [convertClassName(s.className), `${s.studentCount}/${s.totalStudents}`, s.avg.toFixed(1), s.max, s.min, s.passRate.toFixed(1)]; 
+                csv += row.join(',') + "\r\n"; 
+            }); 
+            downloadCSV(csv, `grades_cross_class_stats_${document.getElementById('grades-assignment-select').value}`); 
+        }
+        
+        function downloadCSV(csvContent, baseFileName) { const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.setAttribute("href", url); link.setAttribute("download", `${baseFileName}_${new Date().toISOString().split('T')[0]}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+        document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
+    </script>
+</body>
+</html>

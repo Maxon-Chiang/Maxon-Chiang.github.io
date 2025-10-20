@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>成績登錄 - 班級綜合成績紀錄系統</title>
+    <style>
+        :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+        /* 【新增此段】強制所有表單元件繼承 body 的字體 */
+        button, input, select, textarea {
+            font-family: inherit;
+        }
+		header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        header h1 { font-size: 1.6em; margin: 0; }
+        header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em; }
+        main { padding: 20px; max-width: 1000px; margin: auto; }
+        .section { background-color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+        input, button, textarea { padding: 10px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid var(--border-color); box-sizing: border-box; }
+        button { background-color: var(--primary-color); color: white; cursor: pointer; border: none; }
+        
+        /* 【【【版面優化 3】】】: 調整表單佈局 */
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            align-items: flex-end; 
+        }
+        .form-grid label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-grid input {
+            width: 100%;
+        }
+        /* 【【【版面優化 3】】】: 結束 */
+
+        #create-section.disabled { opacity: 0.5; pointer-events: none; }
+        #student-scores-container { margin-top: 10px; }
+        .score-entry-header, .score-entry { display: grid; grid-template-columns: 40px 1fr 120px 2fr; gap: 15px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; color: #555;}
+        .score-entry { font-weight: normal; }
+        .score-entry:last-child { border-bottom: none; }
+        .score-entry input { width: 100%; text-align: center; }
+        #history-list { list-style-type: none; padding: 0; }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            margin-bottom: 6px; /* 【【【版面優化 3】】】: 再次縮小間距 */
+            background-color: #f9f9f9;
+        }
+        .history-item:hover { background-color: #eef; }
+        .history-item-content {
+            flex-grow: 1;
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            min-width: 0;
+            cursor: pointer;
+        }
+        .history-item-title {
+            font-weight: bold;
+            font-size: 1.1em;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .history-item-comment {
+            font-size: 0.9em;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .history-item-meta, .history-item-actions {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        .history-item-stats {
+            font-size: 0.9em;
+            color: #333;
+            white-space: nowrap;
+        }
+        .history-item-actions .delete-btn {
+            background-color: #e74c3c;
+            font-size: 0.8em;
+            padding: 5px 8px;
+            margin-left: 15px;
+        }
+		header .header-actions {
+            display: flex;
+            align-items: center;
+        }
+        #user-email {
+            margin-right: 15px;
+            font-size: 1.0em;
+        }
+		/* 【【【新增/修改以下樣式】】】 */
+
+		/* 1. 處理標題和按鈕並排 */
+		.section-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			border-bottom: 2px solid var(--primary-color);
+			padding-bottom: 10px;
+			margin-bottom: 20px; /* 增加標題和輸入框之間的間距 */
+		}
+
+		.section-header h2 {
+			border-bottom: none; /* 移除 h2 原本的底線 */
+			padding-bottom: 0;
+			margin: 0; /* 移除 h2 的預設邊距 */
+		}
+
+		h3 { /* 維持 h3 的樣式不變 */
+			color: #333; 
+			border-bottom: 2px solid var(--primary-color); 
+			padding-bottom: 10px; 
+		}
+
+		/* 2. 處理兩個輸入框並排 */
+		.form-grid { 
+			display: grid; 
+			/* 將最小寬度改小，讓手機螢幕也能容納兩欄 */
+			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
+			gap: 20px; 
+			align-items: flex-end; 
+		}
+		/* 【【【新增】】】可收合面板的樣式 */
+		.collapsible-header {
+			display: flex;
+			justify-content: flex-start; /* 讓所有項目都從左邊開始對齊 */
+			align-items: center;
+			gap: 10px; /* 在標題和箭頭之間增加一個固定的間距 */
+			cursor: pointer;
+			user-select: none; /* 防止選取文字 */
+		}		
+		.collapsible-header h3 {
+			margin: 0; /* 移除 h3 的預設邊距 */
+		}
+		.collapsible-content {
+			display: none; /* 預設為隱藏 */
+			padding-top: 15px;
+			border-top: 1px solid #eee;
+			margin-top: 10px;
+		}
+		.toggle-icon {
+			font-size: 0.8em;
+			transition: transform 0.2s ease-in-out;
+		}
+		.collapsible-header.active .toggle-icon {
+			transform: rotate(180deg);
+		}
+        @media (max-width: 600px) {
+            .score-entry-header, .score-entry {
+                grid-template-columns: 30px 1fr 70px 1.5fr;
+                gap: 10px;
+                font-size: 0.9em;
+            }
+            .score-entry input {
+                padding: 8px 4px;
+            }
+			main {
+                padding: 8px;
+            }
+			.section {
+				padding: 8px; /* 縮小每個區塊的內部邊距 */
+				margin-bottom: 8px; /* 縮小區塊之間的垂直間距 */
+			}
+			.section button {
+				padding: 10px; /* 縮小每個區塊的內部邊距 */
+				margin-bottom: 5px; /* 縮小區塊之間的垂直間距 */
+			}
+			/* --- 標題字體與間距調整 --- */
+			h2, .section-header h2 {
+				font-size: 1.5em; /* 縮小 h2 標題 */
+				padding-bottom: 8px;
+			}
+			h3, #current-assignment-title {
+				font-size: 1.2em; /* 縮小 h3 標題 */
+				padding-bottom: 8px;
+			}
+			/* --- 成績項目清單 (解決文字截斷問題) --- */
+			.history-item {
+				padding: 10px; /* 縮小列表項的內距 */
+				align-items: flex-start; /* 讓刪除按鈕垂直對齊頂部 */
+			}
+			.history-item-content {
+				flex-direction: column; /* 【關鍵】讓標題和說明垂直堆疊 */
+				align-items: flex-start; /* 從左邊對齊 */
+				gap: 2px; /* 縮小標題和說明的垂直間距 */
+			}
+			.history-item-title {
+				font-size: 0.9em; /* 微調標題字體 */
+			}
+			.history-item-comment {
+				white-space: normal; /* 允許說明文字換行，解決截斷問題 */
+				overflow: visible;
+				text-overflow: clip;
+				color: #666; /* 讓說明文字顏色稍淺以區分 */
+			}
+			.history-item-actions {
+				margin-top: 2px; /* 微調刪除按鈕的位置 */
+			}
+			.history-item-stats { display: none; }
+	
+			.section-header, .grade-entry-header-bar {
+				margin-bottom: 8px; /* 調整標題和內容的間距 */
+				font-size: 1.0em; /* 微調標題字體 */
+			}
+			.form-grid {
+				/* 在小螢幕上，強制設定為兩欄均分 */
+				grid-template-columns: 1fr 1fr;
+				gap: 10px; /* 可以稍微縮小間距 */
+			}
+			.form-grid label { font-size: 0.85em; }
+			/* 1. 調整整個區塊的 padding */
+			#grade-entry-section.section {
+				padding: 8px;
+			}
+			/* 2. 讓標題和按鈕並排 */
+			.grade-entry-header-bar {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 5px;
+			}
+
+			/* 3. 縮小標題字型，並移除預設樣式 */
+			#current-assignment-title {
+				font-size: 1.0em;
+				margin: 0;
+				padding: 0;
+				border: none;
+				/* 讓標題可以被壓縮換行 */
+				min-width: 0;
+			}
+
+			/* 4. 縮小按鈕 */
+			.grade-entry-actions button {
+				padding: 6px 10px;
+				font-size: 0.9em;
+				margin-left: 5px; /* 給按鈕間一點點距離 */
+			}
+			
+			/* 5. 縮小輸入框的標題字型 */
+			.form-grid label {
+				font-size: 1.0em;
+			}
+
+			.score-entry-header, .score-entry {
+				grid-template-columns: 50px 1fr 60px 1.5fr; /* 重新分配欄寬 */
+				gap: 4px;
+				padding: 0px 0;
+				text-align: center;
+				font-size: 1.0em; /* 再縮小一點字體 */
+			}
+			.score-entry input { padding: 6px 4px; }
+        }
+    </style>
+</head>
+<body>
+	<header>
+        <h1 id="header-title">成績登錄</h1>
+        <div class="header-actions">
+            <span id="user-email"></span>
+            <button onclick="history.back()">返回主頁</button>
+            <button id="logout-btn">登出</button>
+        </div>
+    </header>
+    <main id="app-container" style="display: none;">
+		<div id="create-section" class="section">
+			<div class="section-header">
+				<h2 id="class-header"></h2>
+				<button id="create-assignment-btn">建立新成績單</button>
+			</div>
+			<div class="form-grid">
+				<div>
+					<label for="new-assignment-name">成績項目名稱：</label>
+					<input type="text" id="new-assignment-name" placeholder="例如: 習作1-1" list="assignment-suggestions">
+					<datalist id="assignment-suggestions"></datalist>
+				</div>
+				<div>
+					<label for="new-general-comment">成績說明 (選填)：</label>
+					<input type="text" id="new-general-comment" placeholder="例如: 遲交">
+				</div>
+			</div>
+		</div>
+		<div class="section">
+			<div id="history-toggler" class="collapsible-header">
+				<h3>成績項目清單</h3>
+				<span class="toggle-icon">▼</span>
+			</div>
+			<div id="history-list-container" class="collapsible-content">
+				<ul id="history-list"><li id="history-loading">載入中...</li></ul>
+			</div>
+		</div>
+		<div id="grade-entry-section" class="section" style="display: none;">
+			<div class="grade-entry-header-bar">
+				<h3 id="current-assignment-title"></h3>
+				<div class="grade-entry-actions">
+					<button class="save-grades-btn" style="background-color: #28a745;">更新儲存</button>
+					<button class="cancel-edit-btn" style="background-color: #777;">取消</button>
+				</div>
+			</div>
+
+			<div class="form-grid">
+				<div>
+					<label for="edit-assignment-name">成績項目名稱：</label>
+					<input type="text" id="edit-assignment-name">
+				</div>
+				<div>
+					<label for="edit-general-comment">成績說明 (選填)：</label>
+					<input type="text" id="edit-general-comment">
+				</div>
+			</div>
+			<hr>
+			<div id="student-scores-container">
+				</div>
+			<div style="margin-top: 20px;" class="grade-entry-actions">
+				<button class="save-grades-btn" style="background-color: #28a745;">更新儲存</button>
+				<button class="cancel-edit-btn" style="background-color: #777;">取消</button>
+			</div>
+		</div>
+    </main>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+        firebase.initializeApp(firebaseConfig);
+// 【【【新增此函式】】】
+        function convertClassName(oldClassName) {
+            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
+            const firstDigit = oldClassName.charAt(0);
+            const restOfName = oldClassName.substring(1);
+            switch (firstDigit) {
+                case '7': return '1' + restOfName;
+                case '8': return '2' + restOfName;
+                case '9': return '3' + restOfName;
+                default: return oldClassName;
+            }
+        }
+		function getGradeLevelFromClassId(classId) {
+			if (!classId) return null;
+			// 先用 convertClassName 統一格式，例如 701 -> 101
+			const convertedId = convertClassName(classId);
+			const firstDigit = convertedId.charAt(0);
+
+			if (['1'].includes(firstDigit)) return '1';
+			if (['2'].includes(firstDigit)) return '2';
+			if (['3'].includes(firstDigit)) return '3';
+			return null;
+		}
+        const db = firebase.firestore(); const auth = firebase.auth();
+        let currentUser = null, classId = null, studentsInClass = [], currentAssignmentId = null;
+        const appContainer = document.getElementById('app-container'), createSection = document.getElementById('create-section'), createBtn = document.getElementById('create-assignment-btn'), saveBtns = document.querySelectorAll('.save-grades-btn'), cancelBtns = document.querySelectorAll('.cancel-edit-btn'), gradeEntrySection = document.getElementById('grade-entry-section'), scoresContainer = document.getElementById('student-scores-container'), newAssignmentNameInput = document.getElementById('new-assignment-name'), newGeneralCommentInput = document.getElementById('new-general-comment'), editAssignmentNameInput = document.getElementById('edit-assignment-name'), editGeneralCommentInput = document.getElementById('edit-general-comment'), currentAssignmentTitle = document.getElementById('current-assignment-title'), historyList = document.getElementById('history-list');
+		auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'teacher') {
+                    // --- 【↓↓↓ 新增此區塊 ↓↓↓】 ---
+                    const displayElement = document.getElementById('user-email');
+                    const userData = userDoc.data();
+                    if (userData.displayName) {
+                        displayElement.textContent = userData.displayName;
+                    } else {
+                        displayElement.textContent = user.email;
+                    }
+                    // --- 【↑↑↑ 新增此區塊 ↑↑↑】 ---
+
+                    await initializeGradesPage(userData);
+                } else {
+                    alert('權限不足或帳號設定錯誤。');
+                    window.location.href = 'login.html';
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+		// 【【【請用這整段新的函數，取代舊的 initializeGradesPage 函數】】】
+		async function initializeGradesPage(userData) {
+			const urlParams = new URLSearchParams(window.location.search);
+			classId = urlParams.get('class');
+			if (!classId) {
+				appContainer.innerHTML = '<h2>錯誤：未指定班級。</h2>';
+				appContainer.style.display = 'block';
+				return;
+			}
+			document.getElementById('class-header').textContent = `${convertClassName(classId)} 班 成績管理`;
+
+			// --- 變更開始 ---
+			// 1. 檢查 schoolId 而非 rosterId
+			if (!userData.schoolId) {
+				alert('錯誤：您的帳號未綁定學校ID，無法讀取名冊。');
+				return;
+			}
+			// 2. 使用 schoolId 讀取當前學期名冊
+			const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
+			if (!rosterDoc.exists) {
+				alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
+				return;
+			}
+			// --- 變更結束 ---
+
+			studentsInClass = rosterDoc.data().students.filter(s => s.id.startsWith(classId)).sort((a, b) => a.id.localeCompare(b.id));
+
+			// 獲取建議清單的邏輯維持不變
+			try {
+				const allStudents = rosterDoc.data().students || [];
+				const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
+				const queryPromises = teacherClasses.map(cId => 
+					db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
+					  .where('className', '==', cId)
+					  .get()
+				);
+				const snapshots = await Promise.all(queryPromises);
+				const gradeAssignmentNames = new Set();
+				snapshots.forEach(snapshot => {
+					snapshot.forEach(doc => {
+						gradeAssignmentNames.add(doc.data().assignmentName);
+					});
+				});
+				const datalist = document.getElementById('assignment-suggestions');
+				datalist.innerHTML = '';
+				gradeAssignmentNames.forEach(name => {
+					const option = document.createElement('option');
+					option.value = name;
+					datalist.appendChild(option);
+				});
+			} catch (error) {
+				console.error("讀取成績項目建議清單失敗:", error);
+			}
+
+			setupKeyboardNavigation();
+			loadHistory();
+			appContainer.style.display = 'block';
+		}
+		
+        function setupKeyboardNavigation() { scoresContainer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('score-input')) { e.preventDefault(); const allScoreInputs = Array.from(scoresContainer.querySelectorAll('.score-input')); const currentIndex = allScoreInputs.indexOf(e.target); if (currentIndex > -1 && currentIndex < allScoreInputs.length - 1) { const nextInput = allScoreInputs[currentIndex + 1]; nextInput.focus(); nextInput.select(); } else { saveBtns[1].focus(); } } }); }
+        function toggleCreateSection(enabled) { createSection.style.opacity = enabled ? '1' : '0.5'; createSection.style.pointerEvents = enabled ? 'auto' : 'none'; }
+        function displayGradeEntry(assignmentName, generalComment = '', scoresData = {}) { currentAssignmentTitle.textContent = currentAssignmentId ? `編輯成績：${assignmentName}` : `登錄新成績：${assignmentName}`; editAssignmentNameInput.value = assignmentName; editGeneralCommentInput.value = generalComment; scoresContainer.innerHTML = '<div class="score-entry-header"><span>座號</span><span>姓名</span><span>分數</span><span>個別註解 (選填)</span></div>'; studentsInClass.forEach(student => { const scoreInfo = scoresData[student.id] || {}; const entryDiv = document.createElement('div'); entryDiv.className = 'score-entry'; entryDiv.innerHTML = `<span>${student.id.substring(3)}</span><label>${student.name}</label><input type="number" class="score-input" data-student-id="${student.id}" value="${scoreInfo.score ?? ''}" placeholder="分數"><input type="text" class="comment-input" data-student-id="${student.id}" value="${scoreInfo.comment || ''}" placeholder="個別註解">`; scoresContainer.appendChild(entryDiv); }); gradeEntrySection.style.display = 'block'; toggleCreateSection(false); }
+		createBtn.addEventListener('click', () => {
+            const newAssignmentName = newAssignmentNameInput.value.trim();
+            if (!newAssignmentName) {
+                alert('請先輸入成績項目名稱！');
+                return;
+            }
+
+            // --- 【↓↓↓ Bug 修正核心邏輯 ↓↓↓】 ---
+            const historyItems = Array.from(historyList.querySelectorAll('.history-item'));
+            const existingItem = historyItems.find(item => {
+                const titleElement = item.querySelector('.history-item-title');
+                // 提取括號前的名稱來比對
+                const titleText = titleElement ? titleElement.textContent.split(' (')[0] : '';
+                return titleText === newAssignmentName;
+            });
+
+            if (existingItem) {
+                // 如果找到同名項目，就模擬點擊它來載入編輯
+                alert(`提醒：已存在名為「${newAssignmentName}」的成績項目，將直接載入該項目進行編輯。`);
+                existingItem.querySelector('.history-item-content').click();
+                return; // 結束函式，不再建立新項目
+            }
+            // --- 【↑↑↑ Bug 修正結束 ↑↑↑】 ---
+
+            // 如果沒有同名項目，才執行建立新成績單的流程
+            currentAssignmentId = null;
+            displayGradeEntry(newAssignmentName, newGeneralCommentInput.value.trim());
+            saveBtns.forEach(btn => btn.textContent = '儲存新成績');
+        });
+        cancelBtns.forEach(btn => btn.addEventListener('click', () => { gradeEntrySection.style.display = 'none'; newAssignmentNameInput.value = ''; newGeneralCommentInput.value = ''; currentAssignmentId = null; toggleCreateSection(true); }));
+        saveBtns.forEach(btn => { btn.addEventListener('click', async () => { const scoresData = {}; scoresContainer.querySelectorAll('.score-entry').forEach(entry => { const studentId = entry.querySelector('.score-input').dataset.studentId; const score = entry.querySelector('.score-input').value.trim(); const comment = entry.querySelector('.comment-input').value.trim(); if (score !== '' || comment !== '') { scoresData[studentId] = {}; if (score !== '') scoresData[studentId].score = parseFloat(score); if (comment !== '') scoresData[studentId].comment = comment; } }); const assignmentName = editAssignmentNameInput.value.trim(); if (!assignmentName) { alert('成績項目名稱不可為空！'); return; } const assignmentData = { assignmentName, className: classId, date: firebase.firestore.FieldValue.serverTimestamp(), generalComment: editGeneralCommentInput.value.trim(), scores: scoresData, teacherId: currentUser.uid }; try { const assignmentsRef = db.collection('gradebooks').doc(currentUser.uid).collection('assignments'); if (currentAssignmentId) { await assignmentsRef.doc(currentAssignmentId).update(assignmentData); alert(`已更新成績項目：${assignmentName}`); } else { await assignmentsRef.add(assignmentData); alert(`已儲存新成績項目：${assignmentName}`); } cancelBtns[0].click(); } catch (error) { console.error("儲存成績失敗:", error); alert("儲存失敗！"); } }); });
+        
+        function loadHistory() {
+            db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
+              .where('className', '==', classId)
+              .orderBy('date', 'desc')
+              .onSnapshot(snapshot => {
+                historyList.innerHTML = '';
+                if (snapshot.empty) {
+                    historyList.innerHTML = '<li>尚無成績項目。</li>';
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    const a = doc.data();
+                    const li = document.createElement('li');
+                    li.className = 'history-item';
+                    li.dataset.id = doc.id;
+
+                    let studentCount = 0;
+                    let totalScore = 0;
+                    if (a.scores) {
+                        for (const studentId in a.scores) {
+                            if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null) {
+                                studentCount++;
+                                totalScore += a.scores[studentId].score;
+                            }
+                        }
+                    }
+                    const averageScore = studentCount > 0 ? (totalScore / studentCount).toFixed(1) : 'N/A';
+                    const dateString = a.date ? a.date.toDate().toLocaleDateString() : '日期未知';
+                    const commentText = a.generalComment || '';
+                    
+                    li.innerHTML = `
+                        <div class="history-item-content">
+                            <span class="history-item-title">${a.assignmentName} (${dateString})</span>
+                            <span class="history-item-comment">${commentText}</span>
+                        </div>
+                        <div class="history-item-meta">
+                            <span class="history-item-stats">人數: <strong>${studentCount}</strong> | 平均: <strong>${averageScore}</strong></span>
+                        </div>
+                        <div class="history-item-actions">
+                            <button class="delete-btn" data-id="${doc.id}">刪除</button>
+                        </div>
+                    `;
+                    
+                    li.querySelector('.history-item-content').addEventListener('click', (e) => {
+                        currentAssignmentId = doc.id;
+                        displayGradeEntry(a.assignmentName, a.generalComment, a.scores);
+                        saveBtns.forEach(btn => btn.textContent = '更新儲存');
+						// 將面板的內容隱藏起來
+						document.getElementById('history-list-container').style.display = "none";
+						// 同時移除標題的 'active' 狀態，讓箭頭恢復朝下
+						document.getElementById('history-toggler').classList.remove('active');
+                    });
+                    historyList.appendChild(li);
+                });
+            }, error => {
+                console.error("讀取成績失敗:", error);
+                historyList.innerHTML = '<li>讀取項目清單時發生錯誤。</li>';
+            });
+        }
+
+		historyList.addEventListener('click', async (e) => {
+            if (e.target.closest('.delete-btn')) {
+                e.stopPropagation();
+                const deleteBtn = e.target.closest('.delete-btn');
+                const docId = deleteBtn.dataset.id;
+                
+                // --- 【↓↓↓ 功能強化：在確認訊息中顯示詳細資訊 ↓↓↓】 ---
+                const listItem = deleteBtn.closest('.history-item');
+                const titleElement = listItem.querySelector('.history-item-title');
+                
+                // 從標題文字中提取成績項目名稱 (移除日期部分)
+                const assignmentName = titleElement ? titleElement.textContent.split(' (')[0] : '未命名項目';
+                const className = convertClassName(classId);
+
+                const firstConfirm = confirm(`您確定要刪除【${className} 班】的成績項目：\n\n「${assignmentName}」\n\n及其所有學生成績嗎？`);
+                
+                if (firstConfirm) {
+                    const secondConfirm = confirm(`【【【最後確認】】】\n\n此操作將永久刪除「${assignmentName}」的所有成績，無法復原！\n\n真的確定要刪除嗎？`);
+                    
+                    if (secondConfirm) {
+                        try {
+                            await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete();
+                            alert(`已成功刪除「${assignmentName}」`);
+                            if (currentAssignmentId === docId) {
+                                cancelBtns[0].click();
+                            }
+                        } catch (error) {
+                            alert("刪除失敗！");
+                        }
+                    }
+                }
+                // --- 【↑↑↑ 功能強化結束 ↑↑↑】 ---
+            }
+        });
+        document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
+		// 【【【新增】】】處理可收合面板的點擊事件
+		document.getElementById('history-toggler').addEventListener('click', function() {
+			this.classList.toggle('active');
+			const content = document.getElementById('history-list-container');
+			if (content.style.display === "block") {
+				content.style.display = "none";
+			} else {
+				content.style.display = "block";
+			}
+		});
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+

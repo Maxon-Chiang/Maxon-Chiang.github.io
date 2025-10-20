@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課表暨調課系統</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+<style>
+:root {
+    --primary-bg: #f8f9fa;
+    --header-bg: #005a87;
+    --text-color: #333;
+    --border-color: #dee2e6;
+    --accent-color: #007bff;
+    --modal-bg: #fff;
+    --modal-shadow: rgba(0,0,0,0.2);
+    --table-header-bg: #e9ecef;
+    --highlight-bg: #fff3cd;
+    --suggestion-bg: #d1e7dd;
+    --suggestion-border: #a3cfbb;
+    --cleared-bg: #fdfdfd;
+    --list-item-hover-bg: #e9ecef;
+    --substitution-bg: #e9ecef; 
+    --substitution-border: #adb5bd;
+    --exchange-bg: #fff0f5;
+    --exchange-border: #ffb6c1;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    background-color: var(--primary-bg);
+    color: var(--text-color);
+    margin: 0;
+    line-height: 1.6;
+}
+button, input, select, textarea {
+    font-family: inherit;
+}
+header {
+    background-color: #4a90e2;
+    color: white;
+    padding: 0.6rem 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+header h1 { font-size: 1.6em; margin: 0; }
+header .header-actions button {
+    background: none; border: 1px solid white; color: white;
+    padding: 5px 10px; border-radius: 4px; cursor: pointer;
+    margin-left: 10px; font-size: 1em;
+}
+.container {
+    max-width: 1500px; margin: 20px auto; background: var(--modal-bg);
+    padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 8px var(--modal-shadow);
+}
+.controls-header {
+    display: flex; align-items: center; justify-content: center;
+    gap: 20px; flex-wrap: wrap; margin-bottom: 2em;
+}
+.control-group { display: flex; align-items: center; gap: 8px; }
+.control-group span { font-size: 1.1em; }
+#class-selector, #location-selector, #search-teacher {
+    font-size: 1em; padding: 5px 8px; border-radius: 4px;
+    border: 1px solid #ccc; font-family: inherit;
+}
+#search-teacher { width: 150px; }
+.view-toggle-btn {
+    padding: 5px 10px; border: 1px solid var(--header-bg); background-color: white;
+    color: var(--header-bg); cursor: pointer; border-radius: 4px;
+    font-size: 14px; font-family: inherit;
+}
+.view-toggle-btn.active { background-color: var(--header-bg); color: white; }
+
+.hidden { display: none !important; }
+#teacher-list-container, #teacher-list-by-subject-container { column-count: 6; column-gap: 6px; }
+.department-table { break-inside: avoid; margin-bottom: 15px; width: 100%; border-collapse: collapse; font-size: 15px; }
+.department-table th { background-color: var(--header-bg); color: white; padding: 2px; text-align: center; font-weight: normal; }
+.department-table td { border: 1px solid var(--border-color); padding: 2px 6px; white-space: normal; text-align: center; }
+.department-table .name-cell { width: 80px; cursor: pointer; color: var(--accent-color); text-decoration: underline; }
+.department-table .ext-cell { width: 50px; }
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+.modal-content { margin: 1% auto; padding: 15px; border: 1px solid var(--border-color); width: 100%; border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg); }
+.main-modal .modal-content { max-width: 1000px; }
+.sub-modal .modal-content { max-width: 480px; text-align: center; padding: 20px; }
+.close-button { color: #aaa; position: absolute; top: 10px; right: 25px; font-size: 28px; font-weight: bold; cursor: pointer; }
+.close-button:hover, .close-button:focus { color: #333; }
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px 0 10px;
+    margin-bottom: 5px;
+}
+#modal-title { text-align: center; margin: 0; color: var(--header-bg); }
+#modal-title2 { text-align: left; margin: 0; font-size: 16px; color: blue; font-weight: normal; flex-grow: 1; }
+.week-navigator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.week-navigator button {
+    font-size: 0.9em; padding: 3px 10px; border-radius: 4px;
+    border: 1px solid var(--border-color); background-color: #fff;
+    cursor: pointer; font-family: inherit;
+}
+#swap-confirm-modal .modal-content, #substitution-modal .modal-content { text-align: left; }
+#swap-details, #substitution-details { background-color: #f1f1f1; border-radius: 4px; padding: 10px; margin-bottom: 20px; }
+#swap-details p { margin: 5px 0; }
+.date-picker-group { margin-bottom: 15px; }
+.date-picker-group label { display: block; margin-bottom: 5px; }
+.date-picker-group input[type="date"], .date-picker-group select, .date-picker-group textarea { width: 100%; box-sizing: border-box; padding: 8px; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; font-family: inherit;}
+#confirm-swap-btn, #confirm-substitution-btn { width: 100%; padding: 10px; font-size: 1.1em; border: none; color: white; border-radius: 4px; cursor: pointer; }
+#confirm-swap-btn { background-color: var(--accent-color); }
+#single-event-modal h3 { margin-top: 0; color: var(--header-bg); }
+#single-event-modal p { margin: 8px 0; }
+#single-event-modal div { margin-bottom: 10px; }
+#single-event-modal label { display: block; margin-bottom: 5px; text-align: left; }
+#single-event-modal input[type="date"], #single-event-modal textarea { font-family: inherit; font-size: 1em; padding: 5px; border: 1px solid #ccc; border-radius: 4px; width: 95%; box-sizing: border-box; }
+#single-event-modal button { padding: 8px 16px; font-size: 1em; font-family: inherit; border: 1px solid var(--header-bg); background-color: var(--header-bg); color: white; cursor: pointer; border-radius: 4px; }
+#single-event-modal button:hover { background-color: #004a6e; }
+.schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.schedule-table th, .schedule-table td { border: 1px solid #999; padding: 2px; text-align: center; vertical-align: middle; word-wrap: break-word; box-sizing: border-box; position: relative; }
+.schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 35px; }
+.schedule-table th:first-child, .schedule-table td:first-child { width: 5%; }
+.schedule-table td { font-size: 16px; height: 65px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg); }
+.schedule-table td.empty-cell { background-color: var(--cleared-bg); }
+.schedule-table td:hover { background-color: #f0f0f0; }
+.schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
+.schedule-table .period-header { font-weight: bold; background-color: var(--table-header-bg); }
+.schedule-table .subject { font-weight: normal; display: block; }
+.schedule-table .details { font-size: 14px; color: #555; display: block; line-height: 1.1; }
+.highlight { background-color: var(--highlight-bg) !important; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
+.swap-suggestion { background-color: var(--suggestion-bg) !important; color: #0f5132; outline: 2px dashed var(--suggestion-border); outline-offset: -2px; }
+.swap-suggestion .subject, .swap-suggestion .details {color: #0f5132;  line-height: 1.1;}
+.swap-suggestion .teacher-detail, .swap-suggestion .ext-detail { display: inline; margin-left: 4px; }
+.swap-suggestion .class-detail { display: block; }
+.swap-suggestion .class-detail + .teacher-detail { margin-left: 0; }
+.cleared-cell { background-color: var(--cleared-bg); }
+#user-email {
+  margin-right: 15px;
+  font-size: 1.0em;
+}
+header .header-actions {
+  display: flex;
+  align-items: center;
+}
+@keyframes pulse-purple {
+    from { background-color: var(--modal-bg); }
+    to { background-color: #dcd3ef; }
+}
+@keyframes pulse-orange {
+    from { background-color: var(--modal-bg); }
+    to { background-color: #ffe8d1; }
+}
+.swapped-cell {
+    border: 1px dashed #b19cd9;
+    cursor: help;
+}
+.swapped-cell-pulse {
+    animation-name: pulse-purple;
+    animation-duration: 1.2s;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+.exchanged-cell {
+    border: 1px dashed #ffc994;
+    cursor: help;
+}
+.exchanged-cell-pulse {
+    animation-name: pulse-orange;
+    animation-duration: 1.2s;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+#exchange-modal .disabled-cell {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+#exchange-modal .disabled-cell:hover {
+    background-color: #e9ecef;
+}
+#exchange-modal .exchange-target-cell {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    cursor: pointer;
+}
+#exchange-modal .exchange-target-cell:hover {
+    background-color: #badbcc;
+}
+.swap-confirm-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 15px 10px;
+    align-items: center;
+    margin-bottom: 25px;
+}
+.swap-info-box {
+    text-align: left;
+    background-color: #f1f1f1;
+    padding: 12px;
+    border-radius: 4px;
+    line-height: 1.4;
+}
+.swap-info-box b {
+    display: block;
+    margin-bottom: 4px;
+}
+.substituted-cell {
+    background-color: var(--substitution-bg) !important;
+    border: 1px dashed var(--substitution-border);
+    cursor: help;
+}
+.substituted-cell .details {
+    font-style: italic;
+    color: #6c757d;
+}
+
+.week-navigator button.current {
+    color: blue;
+    border-color: var(--accent-color);
+}
+.schedule-table thead.current-week th {
+    color:blue;
+    font-weight: normal;
+}
+.modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
+.subtitle-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin: 0 10px 10px 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    min-height: 38px;
+}
+#substitution-btn {
+    display: none;
+    padding: 6px 12px;
+    font-size: 0.9em;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+#substitution-btn.visible {
+    display: inline-block;
+}
+.title-container {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+.dropdown {
+	position: relative;
+	display: inline-block;
+}
+.icon-btn {
+	background: none;
+	border: none;
+	color: white;
+	cursor: pointer;
+	font-size: 0.8em;
+	padding: 5px;
+	line-height: 1;
+}
+.dropdown-content {
+	display: none;
+	position: absolute;
+	background-color: white;
+	min-width: 180px;
+	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+	z-index: 1001;
+	border-radius: 4px;
+	overflow: hidden;
+	left: 0;
+}
+.dropdown-content button {
+	color: #333;
+	padding: 10px 15px;
+	text-decoration: none;
+	display: block;
+	width: 100%;
+	text-align: left;
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 0.95em;
+}
+.dropdown-content button:hover {
+	background-color: #f1f1f1;
+}
+.dropdown-content.show {
+	display: block;
+}
+@media screen and (max-width: 768px) {
+    body { padding: 0; }
+    header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding: 0.6rem 1rem;
+    }
+    header h1 {
+        font-size: 1.6em;
+        flex-shrink: 0;
+    }
+    header .header-actions button {
+        padding: 4px 8px;
+        font-size: 0.9em;
+    }
+    .container { padding: 10px; margin: 10px; }
+    .close-button { top: 10px; right: 15px; }
+	.controls-header {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px 15px;
+		justify-content: center;
+		margin-bottom: 1.5em;
+		font-size: 0.9em;
+	}
+	.controls-header .control-group {
+		margin: 0;
+	}
+	.controls-header .control-group:nth-child(1) {
+		width: 100%;
+		order: -1;
+	}
+	.controls-header .control-group:nth-child(2) {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		width: 100%;
+		gap: 10px;
+	}
+	.view-toggle-btn {
+		padding: 5px 10px;
+		font-size: 1em; 
+	}
+    .modal-header { flex-direction: column; gap: 10px; }
+    .modal-content { width: 90%; margin: 5% auto; }
+    #modal-title2 { font-size: 12px; }
+    #teacher-list-container, #teacher-list-by-subject-container { column-count: 1; }
+    .department-table { font-size: 14px; }
+    #search-teacher { width: 120px; }
+    .schedule-table th { font-size: 12px; }
+    .schedule-table td { font-size: 12px; height: 65px; }
+    .schedule-table .details { font-size: 10px; }
+    .swap-suggestion .details { display: block; margin-left: 0px; line-height: 1.2; }
+}
+
+</style>
+
+</head>
+<body>
+	<header>
+        <div class="title-container">
+            <h1>課表系統</h1>
+            <div class="dropdown">
+                <button id="recent-schedules-btn" class="icon-btn">▼</button>
+                <div id="recent-schedules-list" class="dropdown-content">
+                    </div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <span id="user-email"></span>
+			<button onclick="history.back()">返回主頁</button>
+            <button id="logout-btn">登出</button>
+        </div>
+    </header>
+ 
+    <div class="container">
+        <div class="controls-header">
+            <div class="control-group">
+                <input type="search" id="search-teacher" placeholder="搜尋教師...">
+                <span style="font-size:14px;">列表方式：</span>
+                <button id="view-by-dept-btn" class="view-toggle-btn active">依單位</button>
+                <button id="view-by-subject-btn" class="view-toggle-btn">依領域</button>
+            </div>
+            <div class="control-group">
+                <select id="location-selector"><option value="" disabled selected>場地課表</option></select>
+                <select id="class-selector"><option value="" disabled selected>班級課表</option></select>
+            </div>
+		</div>
+
+        <div id="teacher-list-column">
+            <div id="teacher-list-container"><p>正在載入教師列表...</p></div>
+            <div id="teacher-list-by-subject-container" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div id="schedule-modal" class="modal main-modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <div class="modal-header">
+                <h2 id="modal-title"></h2>
+                <div class="week-navigator">
+                    <button id="prev-week-btn">‹ 上一週</button>
+                    <button id="today-btn">回到本週</button>
+                    <button id="next-week-btn">下一週 ›</button>
+                </div>
+            </div>
+			<div class="subtitle-header">
+                <h3 id="modal-title2"></h3>
+                <button id="substitution-btn">指定代課 / 換課</button>
+            </div>
+            <div id="reminder-container"></div>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <div id="single-event-modal" class="modal sub-modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>將課程加入行事曆</h3>
+            <p id="single-event-info"></p>
+            <div>
+                <label for="single-event-date">選擇日期：</label>
+                <input type="date" id="single-event-date">
+            </div>
+            <div>
+                <label for="event-notes">註記 (例如：小考、交作業)：</label>
+                <textarea id="event-notes" rows="3" placeholder="此處的文字將會顯示在行事曆事件的說明中..."></textarea>
+            </div>
+            <p><button id="download-single-ics-btn">下載 .ics 檔案</button></p>
+        </div>
+    </div>
+
+	<div id="swap-confirm-modal" class="modal sub-modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>確認調課</h3>
+            
+            <div class="swap-confirm-grid">
+                <div id="original-class-info" class="swap-info-box"></div>
+                <input type="date" id="original-class-date">
+                <div id="target-class-info" class="swap-info-box"></div>
+                <input type="date" id="target-class-date">
+            </div>
+
+            <p><button id="confirm-swap-btn">確認調課</button></p>
+        </div>
+    </div>
+
+	<div id="substitution-modal" class="modal sub-modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>指定代課 / 換課</h3>
+            
+            <div id="substitution-details"></div>
+            <div class="date-picker-group">
+                <label for="substitution-date">請假日期：</label>
+                <input type="date" id="substitution-date">
+            </div>
+            <div class="date-picker-group">
+                <label for="substitution-reason">事由 (選填)：</label>
+                <textarea id="substitution-reason" rows="2" placeholder="事由將顯示在課表格子的提示中..."></textarea>
+            </div>
+            <hr style="margin: 20px 0;">
+
+            <div class="date-picker-group">
+                <label for="substitute-teacher-select">選擇代課老師：</label>
+                <select id="substitute-teacher-select"></select>
+            </div>
+            <div class="control-group" style="margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <input type="checkbox" id="exchange-checkbox" style="width: auto; height: 1.2em; transform: scale(1.2);">
+                <label for="exchange-checkbox">這是一次互相換課 (我要還課)</label>
+            </div>
+            
+            <p><button id="confirm-substitution-btn">請先選擇老師</button></p>
+        </div>
+    </div>
+
+    <div id="exchange-modal" class="modal main-modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2 id="exchange-modal-title" style="text-align: center;"></h2>
+            <h3 id="exchange-modal-subtitle" style="text-align: center; color: #555; font-weight: normal;"></h3>
+            <div class="modal-header" style="padding: 0; margin-bottom: 15px;">
+                <div class="week-navigator" style="margin: auto;">
+                    <button id="exchange-prev-week-btn">‹ 上一週</button>
+                    <button id="exchange-today-btn">回到本週</button>
+                    <button id="exchange-next-week-btn">下一週 ›</button>
+                </div>
+            </div>
+            <div id="exchange-modal-body"></div>
+        </div>
+    </div>
+    
+    <div id="welcome-modal-timetable" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: left; line-height: 1.8;">
+            <span class="close-button">&times;</span>
+            <h2>歡迎使用 課表系統</h2>
+            <p>這是一套整合性的課表工具，您可以：</p>
+            <ul>
+                <li><strong>查詢課表</strong>: 快速查詢個人、班級、或場地的課表。</li>
+                <li><strong>智慧調課</strong>: 點擊自己課表上的課程，系統會自動以<span style="background-color: #d1e7dd; padding: 2px 4px; border-radius: 3px;">綠色</span>標示出可互相調課的時段。</li>
+                <li><strong>指定代課/換課</strong>: 點擊自己課表後，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」。</li>
+                <li><strong>加入行事曆</strong>: 在任何課表上長按 (或滑鼠右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
+            </ul>
+            <div class="modal-footer">
+                <label><input type="checkbox" id="dont-show-again-timetable"> 以後不要再顯示此訊息</label>
+                <button id="close-welcome-timetable-btn" style="width: auto; padding: 8px 20px; background-color: #4a90e2; color: white;">我了解了</button>
+            </div>
+        </div>
+    </div>
+
+
+<script>
+// --- Firebase 初始化與登入驗證 ---
+const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+let currentUser = null;
+let currentUserDisplayName = '';
+const recentSchedulesBtn = document.getElementById('recent-schedules-btn');
+const recentSchedulesList = document.getElementById('recent-schedules-list');
+const MAX_RECENT_ITEMS = 10;
+
+auth.onAuthStateChanged(async (user) => {
+    if (user) {
+        currentUser = user;
+        const displayElement = document.getElementById('user-email');
+
+        try {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (userDoc.exists) { 
+                const userData = userDoc.data();
+                if (userData.displayName) {
+                    displayElement.textContent = userData.displayName;
+                    currentUserDisplayName = userData.displayName;
+                } else {
+                    displayElement.textContent = user.email;
+                    currentUserDisplayName = user.email;
+                }
+            } else {
+                displayElement.textContent = user.email;
+            }
+        } catch (e) {
+            console.error("讀取用戶資料失敗:", e);
+            displayElement.textContent = user.email;
+        }
+
+        main();
+    } else {
+        window.location.href = 'login.html';
+    }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+    auth.signOut();
+});
+
+// 【【【請使用這整段新的 main 函數，完整替換您 timetable.html 中舊的 main 函數】】】
+async function main() {
+    populateRecentList();
+    const welcomeModal = document.getElementById('welcome-modal-timetable');
+    if (localStorage.getItem('hideTimetableWelcome') !== 'true') {
+        setTimeout(() => {
+            welcomeModal.style.display = 'block';
+        }, 500);
+    }
+
+    const closeWelcome = () => {
+        if (document.getElementById('dont-show-again-timetable').checked) {
+            localStorage.setItem('hideTimetableWelcome', 'true');
+        }
+        welcomeModal.style.display = 'none';
+    };
+
+    welcomeModal.querySelector('.close-button').onclick = closeWelcome;
+    document.getElementById('close-welcome-timetable-btn').onclick = closeWelcome;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const teacherNameToShow = urlParams.get('teacher');
+    
+    log('正在獲取使用者資訊...');
+    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+    if (!userDoc.exists || !userDoc.data().schoolId) {
+        alert('錯誤：您的帳號資料不完整，找不到 schoolId。');
+        document.querySelector('.container').innerHTML = '<h2>讀取資料失敗：帳號未綁定學校 ID。</h2>';
+        return;
+    }
+    const userData = userDoc.data();
+    const schoolId = userData.schoolId;
+    log(`使用者資訊獲取成功，學校 ID: ${schoolId}`);
+
+	log("正在從 Firestore 獲取資料...");
+	const schoolRef = db.collection('schools').doc(schoolId);
+	// 【最終修正】只查詢 schoolId scope 下的 timetables 和 teachers 集合
+	const [scheduleSnapshot, staffSnapshot] = await Promise.all([
+		schoolRef.collection('timetables').get(),
+		schoolRef.collection('teachers').get()
+	]);
+	log("資料獲取完成。");
+
+    const classStartTimes = {
+        1: '08:10', 2: '09:10', 3: '10:10', 4: '11:10',
+        5: '13:10', 6: '14:10', 7: '15:10', 8: '16:10'
+    };
+    const classEndTimes = {
+        1: '09:00', 2: '10:00', 3: '11:00', 4: '12:00',
+        5: '14:00', 6: '15:00', 7: '16:00', 8: '17:00'
+    };
+    const classSchedules = new Map();
+    const teacherSchedules = new Map();
+    const locationSchedules = new Map();
+    const teacherExtensions = new Map();
+    const teacherNameToId = new Map();
+    let currentView = 'department';
+    let longPressTimer;
+    const LONG_PRESS_DURATION = 500;
+    
+    let currentWeekStart = getMonday(new Date());
+    let activeSchedule = { type: null, name: null };
+    let teacherViewSelectedCell = null;
+    let classViewSelectedCell = null;
+    
+    let activeChanges = [];
+
+    let allTeachersList = [];
+    let substitutionInfo = {};
+
+    function log(message) {
+        console.log(message);
+    }
+
+    // 【修正】從 staffSnapshot (即 /schools/{schoolId}/teachers) 建立 teacherNameToId Map
+    staffSnapshot.forEach(doc => {
+        const teacherData = doc.data();
+        // 使用遷移後補上的 uid 和 name 欄位
+        if (teacherData.name && teacherData.uid) {
+            teacherNameToId.set(teacherData.name, teacherData.uid);
+        }
+    });
+
+    function getMonday(d) {
+        d = new Date(d);
+        d.setHours(0, 0, 0, 0);
+        const day = d.getDay(),
+            diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    }
+
+    function formatDate(date, format = 'MM/DD') {
+        if (!date) return '';
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        if (format === 'YYYY-MM-DD') {
+            return `${date.getFullYear()}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+        return `${month}/${day}`;
+    }
+	
+    function findNextAvailableDate(initialDate, period, day) {
+        let nextAvailableDate = new Date(initialDate);
+        let safetyCounter = 0;
+
+        while (safetyCounter < 100) {
+            const dateString = formatDate(nextAvailableDate, 'YYYY-MM-DD');
+            const dayIndex = nextAvailableDate.getDay() - 1;
+            
+            const conflict = activeChanges.find(change => {
+                if (change.type === 'substitution' || (change.type === 'exchange' && change.originalLessonInfo) ) {
+                    const info = change.type === 'substitution' ? change.lessonInfo : change.originalLessonInfo;
+                    const changeDate = change.type === 'substitution' ? change.date : info.date;
+                    return changeDate === dateString && info.period === period && dayIndex === day;
+                }
+                if (change.type === 'swap') {
+                    const infoA = change.originalClassInfo;
+                    const infoB = change.targetClassInfo;
+                    return (infoA.date === dateString && infoA.period === period && infoA.day === day) ||
+                           (infoB.date === dateString && infoB.period === period && infoB.day === day);
+                }
+                return false;
+            });
+
+            if (conflict) {
+                nextAvailableDate.setDate(nextAvailableDate.getDate() + 7);
+                safetyCounter++;
+            } else {
+                return nextAvailableDate;
+            }
+        }
+        
+        console.warn("尋找可用日期超過 100 週，可能存在邏輯問題。");
+        return new Date(initialDate);
+    }
+    
+	function isDateConflict(dateString, period, day) {
+        const dayIndex = new Date(dateString).getDay() - 1;
+        if (dayIndex !== day) {
+             console.warn("isDateConflict 檢查時，日期與星期不符。");
+        }
+
+        const conflict = activeChanges.find(change => {
+            if (change.status !== 'active') return false;
+
+            if (change.type === 'substitution') {
+                return change.date === dateString && change.lessonInfo.period === period;
+            }
+            if (change.type === 'exchange') {
+                const infoA = change.originalLessonInfo;
+                const infoB = change.exchangeLessonInfo;
+                return (infoA.date === dateString && infoA.period === period) ||
+                       (infoB.date === dateString && infoB.period === period);
+            }
+            if (change.type === 'swap') {
+                const infoA = change.originalClassInfo;
+                const infoB = change.targetClassInfo;
+                return (infoA.date === dateString && infoA.period === period && infoA.day === day) ||
+                       (infoB.date === dateString && infoB.period === period && infoB.day === day);
+            }
+            return false;
+        });
+
+        return conflict || null;
+    }
+	
+    async function loadActiveChanges() {
+        const involvedQuery = db.collection('classChanges')
+                                .where('involvedTeacherIds', 'array-contains', currentUser.uid)
+                                .where('status', '==', 'active');
+                                
+        const snapshot = await involvedQuery.get();
+        activeChanges = [];
+        snapshot.forEach(doc => {
+            activeChanges.push({ id: doc.id, ...doc.data() });
+        });
+    }
+
+    function parseSchedulesFromFirestore(allTeachers) {
+        scheduleSnapshot.forEach(doc => {
+            const teacherName = doc.id;
+            const data = doc.data();
+            
+            if (!isValidTeacher(teacherName)) return;
+            allTeachers.add(teacherName);
+            
+            if (!teacherSchedules.has(teacherName)) {
+                 teacherSchedules.set(teacherName, Array.from({ length: 8 }, () => Array(5).fill(null)));
+            }
+            const teacherGrid = teacherSchedules.get(teacherName);
+
+            if (data.periods) {
+                for (const periodKey in data.periods) {
+                    const period = parseInt(periodKey, 10);
+                    if (period < 0 || period >= 8) continue;
+                    
+                    const dailyLessons = data.periods[periodKey];
+                    for(let day = 0; day < dailyLessons.length; day++) {
+                        const cellContent = dailyLessons[day];
+                        if (cellContent) {
+                            const [className, ...subjectParts] = cellContent.split(/\s+/);
+                            const subject = subjectParts.join(' ');
+                            if(className && subject) {
+                                teacherGrid[period][day] = { subject, class: className, location: '', period };
+
+                                if (!classSchedules.has(className)) {
+                                    classSchedules.set(className, Array.from({ length: 8 }, () => Array(5).fill(null)));
+                                }
+                                classSchedules.get(className)[period][day] = { subject, teacher: teacherName, location: '' };
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+	async function deriveSchedules() {
+        await loadActiveChanges();
+        
+        teacherSchedules.clear();
+        classSchedules.clear();
+        locationSchedules.clear();
+
+        const allTeachers = new Set();
+        const baseTeacherSchedules = new Map();
+
+        parseSchedulesFromFirestore(allTeachers);
+
+        for (const [teacher, schedule] of teacherSchedules.entries()) {
+            baseTeacherSchedules.set(teacher, JSON.parse(JSON.stringify(schedule)));
+        }
+
+        activeChanges.forEach(change => {
+            if (change.type === 'swap' || change.type === 'substitution') {
+                const changeDateStr = change.type === 'swap' ? change.originalClassInfo.date : change.date;
+                const changeDate = new Date(changeDateStr);
+                const changeWeekStart = getMonday(changeDate);
+                if (changeWeekStart.getTime() !== currentWeekStart.getTime()) return;
+                
+                if (change.type === 'swap') {
+                    const teacherA_name = change.originalClassInfo.teacher;
+                    const teacherB_name = change.targetClassInfo.teacher;
+                    const scheduleA = teacherSchedules.get(teacherA_name);
+                    const scheduleB = teacherSchedules.get(teacherB_name);
+
+                    if (scheduleA && scheduleB) {
+                        const infoA = change.originalClassInfo;
+                        const infoB = change.targetClassInfo;
+                        scheduleA[infoA.period][infoA.day] = { ...infoB, class: infoA.class, isSwappedIn: true, changeId: change.id };
+                        scheduleA[infoB.period][infoB.day] = { ...infoA, isSwappedOut: true, changeId: change.id };
+                        scheduleB[infoB.period][infoB.day] = { ...infoA, class: infoB.class, isSwappedIn: true, changeId: change.id };
+                        scheduleB[infoA.period][infoA.day] = { ...infoB, isSwappedOut: true, changeId: change.id };
+                    }
+                } else {
+                    const originalTeacher = change.originalTeacherName;
+                    const substituteTeacher = change.substituteTeacherName;
+                    const scheduleOriginal = teacherSchedules.get(originalTeacher);
+                    const scheduleSubstitute = teacherSchedules.get(substituteTeacher);
+                    const lessonInfo = change.lessonInfo;
+                    const dayIndex = new Date(change.date).getDay() - 1; 
+
+                    if (scheduleOriginal && dayIndex >= 0 && dayIndex < 5) {
+                        scheduleOriginal[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedOut: true, substituteTeacherName: substituteTeacher, reason: change.reason, changeId: change.id };
+                    }
+                    if (scheduleSubstitute && dayIndex >= 0 && dayIndex < 5) {
+                        scheduleSubstitute[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedIn: true, originalTeacherName: originalTeacher, reason: change.reason, changeId: change.id };
+                    }
+                }
+
+            } else if (change.type === 'exchange') {
+                const teacherA = change.originalLessonInfo.teacher;
+                const teacherB = change.exchangeLessonInfo.teacher;
+                const scheduleA = teacherSchedules.get(teacherA);
+                const scheduleB = teacherSchedules.get(teacherB);
+                const infoA = change.originalLessonInfo;
+                const infoB = change.exchangeLessonInfo;
+
+                const weekA = getMonday(new Date(infoA.date));
+                if (weekA.getTime() === currentWeekStart.getTime()) {
+                    const dayA = new Date(infoA.date).getDay() - 1;
+                    if (scheduleA && dayA >= 0 && dayA < 5) {
+                        scheduleA[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: teacherB, changeId: change.id, reason: change.reason };
+                    }
+                    if (scheduleB && dayA >= 0 && dayA < 5) {
+                        scheduleB[infoA.period][dayA] = { ...infoA, isExchangedIn: true, originalTeacher: teacherA, changeId: change.id, reason: change.reason };
+                    }
+                }
+
+                const weekB = getMonday(new Date(infoB.date));
+                if (weekB.getTime() === currentWeekStart.getTime()) {
+                    const dayB = new Date(infoB.date).getDay() - 1;
+                    if (scheduleB && dayB >= 0 && dayB < 5) {
+                        scheduleB[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: teacherA, changeId: change.id, reason: change.reason };
+                    }
+                    if (scheduleA && dayB >= 0 && dayB < 5) {
+                        scheduleA[infoB.period][dayB] = { ...infoB, isExchangedIn: true, originalTeacher: teacherB, changeId: change.id, reason: change.reason };
+                    }
+                }
+            }
+        });
+        
+        return allTeachers;
+    }
+
+    function isValidTeacher(name) {
+        if (!name) return false;
+        return !/^(英文師|數學師|自然師|共選師|社團師|彈學師)\d*$/.test(name);
+    }
+
+    function isValidClassForListing(name) {
+        if (!name) return false;
+        if (!/^\d{3}$/.test(name)) return false;
+        return true;
+    }
+
+    function parseStaffDirectoryFromFirestore() {
+        const structureMap = new Map();
+        const staffSet = new Set();
+        staffSnapshot.forEach(doc => {
+            const person = doc.data();
+            if (person.name && person.department) {
+                const office = person.department;
+                if (!structureMap.has(office)) {
+                    structureMap.set(office, { office: office, members: [] });
+                }
+                structureMap.get(office).members.push({ title: person.title || '教師', name: person.name, ext: person.extension || '' });
+                staffSet.add(person.name);
+                if (person.extension) { teacherExtensions.set(person.name, person.extension); }
+            }
+        });
+        const structure = Array.from(structureMap.values());
+        return { structure, staffSet };
+    }
+    
+    function populateTeacherList(allTeachersWithSchedule) {
+        const container = document.getElementById('teacher-list-container');
+        container.innerHTML = '';
+        const { structure, staffSet } = parseStaffDirectoryFromFirestore();
+        const filteredStructure = [];
+        structure.forEach(dept => {
+            const scheduledMembers = dept.members.filter(member => allTeachersWithSchedule.has(member.name));
+            if (scheduledMembers.length > 0) {
+                filteredStructure.push({ office: dept.office, members: scheduledMembers });
+            }
+        });
+        let otherSection = filteredStructure.find(s => s.office === '其他');
+        if (otherSection) {
+            otherSection.office = "專任教師";
+        }
+        const unlistedTeachers = [...allTeachersWithSchedule]
+            .filter(name => isValidTeacher(name) && !staffSet.has(name));
+        let teacherSection = filteredStructure.find(s => s.office === '專任教師');
+        if (!teacherSection && unlistedTeachers.length > 0) {
+            teacherSection = { office: '專任教師', members: [] };
+            filteredStructure.push(teacherSection);
+        }
+        if (teacherSection && unlistedTeachers.length > 0) {
+             unlistedTeachers.forEach(name => {
+                if (!teacherSection.members.some(m => m.name === name)) {
+                    teacherSection.members.push({ title: '專任教師', name: name, ext: '' });
+                }
+            });
+        }
+        const departmentOrder = ["校長室", "教務處", "學務處", "總務處", "輔導處", "圖書館", "國一導", "國二導", "國三導", "國專", "高中辦公室", "高中", "健康中心", "體育辦公室", "人事室", "會計室", "高輔中心", "科技中心"];
+        let orderedStructure = departmentOrder
+            .map(officeName => filteredStructure.find(s => s.office === officeName))
+            .filter(Boolean);
+        const specialSection = filteredStructure.find(s => s.office === '專任教師');
+        if (specialSection) {
+            orderedStructure = orderedStructure.filter(s => s.office !== '專任教師');
+            orderedStructure.push(specialSection);
+        }
+        orderedStructure.forEach(dept => {
+            const table = document.createElement('table');
+            table.className = 'department-table';
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const th = document.createElement('th');
+            th.colSpan = 3;
+            th.textContent = dept.office;
+            headerRow.appendChild(th);
+            const tbody = table.createTBody();
+            dept.members.sort((a,b) => a.name.localeCompare(b.name, 'zh-Hant')).forEach(member => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = member.title;
+                const nameCell = row.insertCell();
+                nameCell.className = 'name-cell';
+                nameCell.textContent = member.name;
+                nameCell.onclick = () => showSchedule(member.name, 'teacher');
+                row.insertCell().textContent = member.ext;
+            });
+            container.appendChild(table);
+        });
+    }
+
+	function populateTeacherListBySubject(allTeachersWithSchedule) {
+        const container = document.getElementById('teacher-list-by-subject-container');
+        container.innerHTML = '';
+        
+        const subjectsMap = new Map();
+        staffSnapshot.forEach(doc => {
+            const teacher = doc.data();
+            if (teacher.subject && allTeachersWithSchedule.has(teacher.name)) {
+                const subjects = teacher.subject.split(/,|、|\s+/).map(s => s.trim()).filter(Boolean);
+                subjects.forEach(subjectName => {
+                    if (!subjectsMap.has(subjectName)) {
+                        subjectsMap.set(subjectName, []);
+                    }
+                    subjectsMap.get(subjectName).push({
+                        name: teacher.name,
+                        role: teacher.title || '教師',
+                        ext: teacher.extension || ''
+                    });
+                });
+            }
+        });
+
+        const sortedSubjects = [...subjectsMap.keys()].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+
+        sortedSubjects.forEach(subjectName => {
+            const members = subjectsMap.get(subjectName);
+            const table = document.createElement('table');
+            table.className = 'department-table';
+            const thead = table.createTHead();
+            const headerRow = thead.insertRow();
+            const th = document.createElement('th');
+            th.colSpan = 3;
+            th.textContent = subjectName;
+            headerRow.appendChild(th);
+            const tbody = table.createTBody();
+            members.sort((a,b) => a.name.localeCompare(b.name, 'zh-Hant')).forEach(member => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = member.role;
+                const nameCell = row.insertCell();
+                nameCell.className = 'name-cell';
+                nameCell.textContent = member.name;
+                nameCell.onclick = () => showSchedule(member.name, 'teacher');
+                row.insertCell().textContent = member.ext;
+            });
+            container.appendChild(table);
+        });
+    }
+
+    function populateClassList() {
+        const selector = document.getElementById('class-selector');
+        selector.innerHTML = '<option value="" disabled selected>班級課表</option>';
+        const classesForList = [...classSchedules.keys()].filter(isValidClassForListing).sort();
+        classesForList.forEach(name => {
+            selector.appendChild(new Option(name, name));
+        });
+        selector.onchange = function() {
+            if (this.value) {
+                document.getElementById('location-selector').value = "";
+                showSchedule(this.value, 'class');
+            }
+        };
+    }
+
+    function populateLocationList() {
+        const selector = document.getElementById('location-selector');
+        selector.innerHTML = '<option value="" disabled selected>場地課表</option>';
+        const locations = [...locationSchedules.keys()].sort();
+        locations.forEach(name => {
+            selector.appendChild(new Option(name, name));
+        });
+        selector.onchange = function() {
+            if(this.value) {
+                document.getElementById('class-selector').value = "";
+                showSchedule(this.value, 'location');
+            }
+        };
+    }
+    
+	async function showSchedule(name, type) {
+		addRecentSchedule(name, type);
+		populateRecentList();
+
+        activeSchedule = { type, name };
+        const dataToStore = { 
+            savedBy: currentUser.uid, 
+            schedule: { view: currentView, ...activeSchedule } 
+        };
+        localStorage.setItem('lastSchedule', JSON.stringify(dataToStore));
+        
+     	const modal = document.getElementById('schedule-modal');
+        const titleEl = document.getElementById('modal-title');
+        const titleEl2 = document.getElementById('modal-title2');
+        const bodyEl = document.getElementById('modal-body');
+        
+        const todayWeekStart = getMonday(new Date());
+        const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
+        
+        document.getElementById('today-btn').classList.toggle('current', isCurrentWeek);
+        
+        await deriveSchedules();
+        
+        let schedule, title;
+
+        if (type === 'teacher' && teacherSchedules.has(name)) {
+            schedule = teacherSchedules.get(name);
+            title = `${name} 課表`;
+			const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const interactionHint = isTouchDevice ? '長按' : '右鍵';
+            if (name === currentUserDisplayName) {
+                titleEl2.textContent = `＊點擊有課格子可進行調/代/換課，${interactionHint}可加入行事曆註記＊`;
+            } else {
+                titleEl2.textContent = `＊${interactionHint}可加入行事曆註記＊`;
+            }
+        } else if (type === 'class' && classSchedules.has(name)) {
+            schedule = classSchedules.get(name);
+            title = `${name} 班課表`;
+            titleEl2.textContent = '＊點擊有課的格子可看換課選擇＊';
+        } else if (type === 'location' && locationSchedules.has(name)) {
+            schedule = locationSchedules.get(name);
+            title = `${name} 場地課表`;
+            titleEl2.textContent = '';
+        } else {
+            bodyEl.innerHTML = `<p style="text-align:center;">找不到 ${name} 的課表資料。</p>`;
+            titleEl.textContent = "資料錯誤";
+            if (!modal.style.display || modal.style.display === 'none') modal.style.display = 'block';
+            return;
+        }
+
+        titleEl.textContent = title;
+        const daysOfWeek = ['星期一', '星期二', '星期三', '星期四', '星期五'];
+        let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
+        
+        const weekDates = [];
+        for (let i = 0; i < 5; i++) {
+            const date = new Date(currentWeekStart);
+            date.setDate(currentWeekStart.getDate() + i);
+            weekDates.push(date);
+            tableHtml += `<th>${daysOfWeek[i]}<br>(${formatDate(date)})</th>`;
+        }
+        tableHtml += '</tr></thead><tbody>';
+
+        for (let period = 0; period < 8; period++) {
+            tableHtml += `<tr><td class="period-header">${period + 1}</td>`;
+            for (let day = 0; day < 5; day++) {
+                const cellDate = formatDate(weekDates[day], 'YYYY-MM-DD');
+                const cellData = schedule[period]?.[day];
+                let content = '';
+                let cellClass = '';
+                let dataAttrs = `data-period="${period}" data-day="${day}" data-date="${cellDate}"`;
+			
+				if (cellData) {
+                    if (cellData.isSwappedIn || cellData.isSwappedOut) {
+                        cellClass = 'swapped-cell swapped-cell-pulse';
+                        content = `<span class="subject">${cellData.subject}</span><span class="details"><span style="color: blue;">${cellData.teacher}</span></span><span class="details">${cellData.class}</span>`;
+                        dataAttrs += ` data-change-id="${cellData.changeId}"`;
+                    } else if (cellData.isSubstitutedOut) {
+                        cellClass = 'substituted-cell';
+                        content = `<span class="subject" style="text-decoration: line-through;">${cellData.subject} (${cellData.class})</span><span class="details">由 <span style="color: blue;">${cellData.substituteTeacherName}</span> 代課</span>`;
+                        dataAttrs += ` data-change-id="${cellData.changeId}" title="${cellData.reason || '無事由'}"`;
+                    } else if (cellData.isSubstitutedIn) {
+                        cellClass = 'substituted-cell';
+                        content = `<span class="subject">${cellData.subject}</span><span class="details">代 <span style="color: blue;">${cellData.originalTeacherName}</span> 的課</span><span class="details">${cellData.class}</span>`;
+                        dataAttrs += ` data-change-id="${cellData.changeId}" title="${cellData.reason || '無事由'}"`;
+                    } else if (cellData.isExchangedOut) {
+                        cellClass = 'exchanged-cell exchanged-cell-pulse';
+                        content = `<span class="subject">${cellData.subject} (${cellData.class})</span><span class="details">換課: 由 <span style="color: blue;">${cellData.targetTeacher}</span> 代</span>`;
+                        dataAttrs += ` data-change-id="${cellData.changeId}" title="${cellData.reason || '無事由'}"`;
+                    } else if (cellData.isExchangedIn) {
+                        cellClass = 'exchanged-cell exchanged-cell-pulse';
+                        content = `<span class="subject">${cellData.subject} (${cellData.class})</span><span class="details">換課: 由 <span style="color: blue;">${name}</span> 代</span>`;
+                        dataAttrs += ` data-change-id="${cellData.changeId}" title="${cellData.reason || '無事由'}"`;
+                    } else {
+                        if (type === 'teacher') content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.class || ''}</span><span class="details">${cellData.location || ''}</span>`;
+                        else if (type === 'class') content = `<span class="subject">${cellData.subject || ''}</span><span class="details"><span style="color: blue;">${cellData.teacher || ''}</span></span><span class="details">${cellData.location || ''}</span>`;
+                        else if (type === 'location') content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.class || ''}</span><span class="details"><span style="color: blue;">${cellData.teacher || ''}</span></span>`;
+                    }
+                    tableHtml += `<td class="${cellClass}" ${dataAttrs}>${content}</td>`;
+                } else {
+                    tableHtml += `<td class="empty-cell" ${dataAttrs}></td>`;
+                }
+            }
+            tableHtml += '</tr>';
+        }
+        tableHtml += '</tbody></table>';
+        bodyEl.innerHTML = tableHtml;
+
+        const scheduleTable = bodyEl.querySelector('.schedule-table');
+        
+        if (isCurrentWeek) {
+            scheduleTable.querySelector('thead').classList.add('current-week');
+        }
+
+        if (type === 'teacher') {
+            teacherViewSelectedCell = null;
+            scheduleTable.addEventListener('click', (e) => handleTeacherCellClick(e, name));
+            scheduleTable.addEventListener('contextmenu', (e) => handleTeacherCellInteraction(e, name));
+            scheduleTable.addEventListener('touchstart', (e) => handleTeacherCellInteraction(e, name), { passive: true });
+            scheduleTable.addEventListener('touchend', () => clearTimeout(longPressTimer));
+            scheduleTable.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+        } else if (type === 'class') {
+            classViewSelectedCell = null;
+            scheduleTable.addEventListener('click', (e) => handleClassCellClick(e, name));
+        }
+        if (!modal.style.display || modal.style.display === 'none') {
+            modal.style.display = 'block';
+        }
+    }
+	
+	function handleTeacherCellClick(event, teacherName) {
+        if (teacherName !== currentUserDisplayName) {
+            return;
+        }
+        const cell = event.target.closest('td');
+		const substitutionBtn = document.getElementById('substitution-btn');
+		substitutionBtn.classList.remove('visible');
+
+        if (!cell || cell.classList.contains('period-header')) return;
+        
+        const changeId = cell.dataset.changeId;
+        const isSuggestion = cell.classList.contains('swap-suggestion');
+        const table = cell.closest('table');
+        
+        const clearAllSelections = () => {
+            table.querySelectorAll('.highlight, .swap-suggestion').forEach(el => {
+                el.classList.remove('highlight', 'swap-suggestion');
+                if (el.dataset.originalText !== undefined) {
+                    el.innerHTML = el.dataset.originalText;
+                    delete el.dataset.originalText;
+                }
+            });
+			teacherViewSelectedCell = null;
+			substitutionBtn.classList.remove('visible');
+        };
+
+        if (changeId) {
+            const changeToCancel = activeChanges.find(c => c.id === changeId);
+            if (!changeToCancel) return;
+
+            let message = '';
+            if (changeToCancel.type === 'swap') {
+                const infoA = changeToCancel.originalClassInfo;
+                const infoB = changeToCancel.targetClassInfo;
+                message = `這是一筆調課紀錄：\n\n${infoA.date} 第${infoA.period + 1}節 [${infoA.subject}]\n與\n${infoB.date} 第${infoB.period + 1}節 [${infoB.subject}]\n\n您確定要取消嗎？`;
+            } else if (changeToCancel.type === 'substitution') {
+                const info = changeToCancel.lessonInfo;
+                message = `這是一筆代課紀錄：\n\n${changeToCancel.date} 第${info.period + 1}節 [${info.subject}]\n由 ${changeToCancel.substituteTeacherName} 老師代課。\n\n您確定要取消嗎？`;
+            } else if (changeToCancel.type === 'exchange') {
+                 const infoA = changeToCancel.originalLessonInfo;
+                 const infoB = changeToCancel.exchangeLessonInfo;
+                 message = `這是一筆換課紀錄：\n\n- ${infoA.date} 第${infoA.period+1}節 [${infoA.subject}] 由 ${infoB.teacher} 代課\n- ${infoB.date} 第${infoB.period+1}節 [${infoB.subject}] 由 ${infoA.teacher} 代課\n\n您確定要取消嗎？`;
+            }
+            
+            if (confirm(message)) {
+                cancelChange(changeId);
+            }
+            return; 
+        }
+
+        if (isSuggestion) {
+            const originalCell = document.querySelector('.schedule-table .highlight');
+            if (!originalCell) return;
+            const originalLesson = { teacher: teacherName, ...teacherSchedules.get(teacherName)[parseInt(originalCell.dataset.period)]?.[parseInt(originalCell.dataset.day)]};
+            const targetLessonData = classSchedules.get(originalLesson.class)[parseInt(cell.dataset.period)]?.[parseInt(cell.dataset.day)];
+            showSwapConfirmationModal({
+                original: { ...originalLesson, day: parseInt(originalCell.dataset.day), period: parseInt(originalCell.dataset.period), date: originalCell.dataset.date },
+                target: { ...targetLessonData, day: parseInt(cell.dataset.day), period: parseInt(cell.dataset.period), date: cell.dataset.date }
+            });
+            return;
+        }
+        
+        if (cell === teacherViewSelectedCell) {
+            clearAllSelections();
+            return;
+        }
+
+        clearAllSelections();
+
+        const period = parseInt(cell.dataset.period);
+        const day = parseInt(cell.dataset.day);
+        const clickedLesson = teacherSchedules.get(teacherName)?.[period]?.[day];
+        
+        if (!clickedLesson) return;
+        if (period >= 7 || (day === 4 && period >= 5)) return;
+
+		cell.classList.add('highlight');
+		teacherViewSelectedCell = cell;
+
+		substitutionBtn.classList.add('visible');
+		substitutionBtn.onclick = () => showSubstitutionModal(clickedLesson, teacherViewSelectedCell.dataset.date, teacherName);
+	
+        const classSchedule = classSchedules.get(clickedLesson.class);
+        if (!classSchedule) return;
+
+        for (let p = 0; p < 7; p++) {
+            for (let d = 0; d < 5; d++) {
+                if (d === 4 && p >= 5) continue;
+                const ownTargetCellData = teacherSchedules.get(teacherName)?.[p]?.[d];
+                if (!ownTargetCellData) {
+                    const lessonAtTarget = classSchedule[p]?.[d];
+                    if (lessonAtTarget?.teacher && lessonAtTarget.teacher !== teacherName) {
+                        const otherTeacherSchedule = teacherSchedules.get(lessonAtTarget.teacher);
+                        if (otherTeacherSchedule && !otherTeacherSchedule[period]?.[day]) {
+                            const targetCell = table.querySelector(`td[data-period="${p}"][data-day="${d}"]`);
+                            if (targetCell) {
+                                targetCell.classList.add('swap-suggestion');
+                                targetCell.dataset.originalText = targetCell.innerHTML;
+                                const ext = teacherExtensions.get(lessonAtTarget.teacher);
+                                const extHtml = ext ? `<span class="ext-details">(分機 ${ext})</span>` : '';
+                                targetCell.innerHTML = `<span class="subject">${lessonAtTarget.subject}</span><span class="class-details">${clickedLesson.class}</span><span class="teacher-details">${lessonAtTarget.teacher}</span>${extHtml}`;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+	
+    function handleClassCellClick(event, className) {
+        const cell = event.target.closest('td');
+        if (!cell || cell.classList.contains('period-header')) {
+            if (classViewSelectedCell) showSchedule(className, 'class');
+            return;
+        }
+        if (cell === classViewSelectedCell || cell.classList.contains('empty-cell') || cell.classList.contains('cleared-cell')) {
+            showSchedule(className, 'class');
+            return;
+        }
+        showSchedule(className, 'class');
+        const freshTable = document.getElementById('modal-body').querySelector('table');
+        const freshCell = freshTable.querySelector(`td[data-period="${cell.dataset.period}"][data-day="${cell.dataset.day}"]`);
+        classViewSelectedCell = freshCell;
+        freshCell.classList.add('highlight');
+        const originalPeriod = parseInt(freshCell.dataset.period);
+        const originalDay = parseInt(freshCell.dataset.day);
+        const clickedLesson = classSchedules.get(className)?.[originalPeriod]?.[originalDay];
+        if (!clickedLesson?.teacher || originalPeriod >= 7 || (originalDay === 4 && originalDay >= 5)) return;
+        freshTable.querySelectorAll('tbody td:not(.period-header)').forEach(td => {
+            if (td !== freshCell) {
+                td.innerHTML = '';
+                td.classList.add('cleared-cell', 'empty-cell');
+            }
+        });
+        const teacherASchedule = teacherSchedules.get(clickedLesson.teacher);
+        if (!teacherASchedule) return;
+        for (let p = 0; p < 7; p++) {
+            for (let d = 0; d < 5; d++) {
+                if ((p === originalPeriod && d === originalDay) || (d === 4 && p >= 5)) continue;
+                const lessonAtTarget = classSchedules.get(className)?.[p]?.[d];
+                if (lessonAtTarget?.teacher && lessonAtTarget.teacher !== clickedLesson.teacher) {
+                    const teacherBSchedule = teacherSchedules.get(lessonAtTarget.teacher);
+                    if (teacherBSchedule && !teacherASchedule[p]?.[d] && !teacherBSchedule[originalPeriod]?.[originalDay]) {
+                        const targetCell = freshTable.querySelector(`td[data-period="${p}"][data-day="${d}"]`);
+                        if (targetCell) {
+                            targetCell.classList.remove('cleared-cell', 'empty-cell');
+                            targetCell.classList.add('swap-suggestion');
+                            const ext = teacherExtensions.get(lessonAtTarget.teacher);
+                            const extHtml = ext ? `<span class="ext-details">(分機 ${ext})</span>` : '';
+                            targetCell.innerHTML = `<span class="subject">${lessonAtTarget.subject}</span><span class="class-details">${className}</span><span class="teacher-details">${lessonAtTarget.teacher}</span>${extHtml}`;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    function handleTeacherCellInteraction(event, teacherName) {
+        const cell = event.target.closest('td');
+        if (!cell || cell.classList.contains('empty-cell') || cell.classList.contains('period-header')) return;
+        const period = parseInt(cell.dataset.period);
+        const day = parseInt(cell.dataset.day);
+        const cellDate = cell.dataset.date;
+        const lesson = teacherSchedules.get(teacherName)?.[period]?.[day];
+        if (!lesson) return;
+        const showModal = () => showSingleEventModal(lesson, day, teacherName, cellDate);
+        if (event.type === 'contextmenu') {
+            event.preventDefault();
+            showModal();
+        } else if (event.type === 'touchstart') {
+            clearTimeout(longPressTimer);
+            longPressTimer = setTimeout(showModal, LONG_PRESS_DURATION);
+        }
+    }
+
+	function showSwapConfirmationModal(swapInfo) {
+        const modal = document.getElementById('swap-confirm-modal');
+        const originalInfoEl = document.getElementById('original-class-info');
+        const targetInfoEl = document.getElementById('target-class-info');
+        const originalDateInput = document.getElementById('original-class-date');
+        const targetDateInput = document.getElementById('target-class-date');
+        const confirmBtn = document.getElementById('confirm-swap-btn');
+
+        const days = ['日', '一', '二', '三', '四', '五', '六'];
+
+        originalInfoEl.innerHTML = `<b>您的課程:</b> 週${days[swapInfo.original.day + 1]} 第 ${swapInfo.original.period + 1} 節 - ${swapInfo.original.subject} (${swapInfo.original.class})`;
+        targetInfoEl.innerHTML = `<b>調換對象:</b> 週${days[swapInfo.target.day + 1]} 第 ${swapInfo.target.period + 1} 節 - <span style="color: blue;">${swapInfo.target.teacher}</span>老師的 ${swapInfo.target.subject}`;
+        
+        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayString = formatDate(today, 'YYYY-MM-DD');
+
+        let initialDateOriginal = new Date(swapInfo.original.date);
+        const lessonEndTimeStrOriginal = classEndTimes[swapInfo.original.period + 1];
+        if (lessonEndTimeStrOriginal) {
+            const [endH, endM] = lessonEndTimeStrOriginal.split(':');
+            const lessonFullDateTime = new Date(initialDateOriginal);
+            lessonFullDateTime.setHours(endH, endM, 0, 0);
+            if (lessonFullDateTime < now) {
+                initialDateOriginal.setDate(initialDateOriginal.getDate() + 7);
+            }
+        }
+        const defaultDateOriginal = findNextAvailableDate(initialDateOriginal, swapInfo.original.period, swapInfo.original.day);
+        originalDateInput.value = formatDate(defaultDateOriginal, 'YYYY-MM-DD');
+
+        let initialDateTarget = new Date(swapInfo.target.date);
+        const lessonEndTimeStrTarget = classEndTimes[swapInfo.target.period + 1];
+        if (lessonEndTimeStrTarget) {
+            const [endH, endM] = lessonEndTimeStrTarget.split(':');
+            const lessonFullDateTime = new Date(initialDateTarget);
+            lessonFullDateTime.setHours(endH, endM, 0, 0);
+            if (lessonFullDateTime < now) {
+                initialDateTarget.setDate(initialDateTarget.getDate() + 7);
+            }
+        }
+        const defaultDateTarget = findNextAvailableDate(initialDateTarget, swapInfo.target.period, swapInfo.target.day);
+        targetDateInput.value = formatDate(defaultDateTarget, 'YYYY-MM-DD');
+
+        originalDateInput.min = todayString;
+        targetDateInput.min = todayString;
+
+        let lastValidDateOriginal = originalDateInput.value;
+        const originalDateValidationHandler = () => {
+            const newDate = new Date(originalDateInput.value);
+            const newDayIndex = (newDate.getDay() + 6) % 7;
+            if (newDayIndex !== swapInfo.original.day) {
+                alert(`日期選擇錯誤！\n\n您的課程是「星期${days[swapInfo.original.day + 1]}」，您不能選擇其他星期。\n系統將自動還原。`);
+                originalDateInput.value = lastValidDateOriginal;
+            } else {
+                lastValidDateOriginal = originalDateInput.value;
+            }
+        };
+
+        let lastValidDateTarget = targetDateInput.value;
+        const targetDateValidationHandler = () => {
+            const newDate = new Date(targetDateInput.value);
+            const newDayIndex = (newDate.getDay() + 6) % 7;
+            if (newDayIndex !== swapInfo.target.day) {
+                alert(`日期選擇錯誤！\n\n調換對象的課程是「星期${days[swapInfo.target.day + 1]}」，您不能選擇其他星期。\n系統將自動還原。`);
+                targetDateInput.value = lastValidDateTarget;
+            } else {
+                lastValidDateTarget = targetDateInput.value;
+            }
+        };
+
+        originalDateInput.onchange = null;
+        targetDateInput.onchange = null;
+        originalDateInput.addEventListener('change', originalDateValidationHandler);
+        targetDateInput.addEventListener('change', targetDateValidationHandler);
+
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+        newConfirmBtn.addEventListener('click', async () => {
+            const originalDate = originalDateInput.value;
+            const targetDate = targetDateInput.value;
+            
+            const conflict1 = isDateConflict(originalDate, swapInfo.original.period, swapInfo.original.day);
+            if (conflict1) {
+                alert(`錯誤：您的原課程節次 (${originalDate} 第 ${swapInfo.original.period + 1} 節) 已有其他的課程異動，無法設定。`);
+                return;
+            }
+
+            const conflict2 = isDateConflict(targetDate, swapInfo.target.period, swapInfo.target.day);
+            if (conflict2) {
+                alert(`錯誤：您選擇的調換對象節次 (${targetDate} 第 ${swapInfo.target.period + 1} 節) 已有其他的課程異動，無法設定。`);
+                return;
+            }
+
+            newConfirmBtn.disabled = true;
+            newConfirmBtn.textContent = '儲存中...';
+            
+            const targetTeacherId = teacherNameToId.get(swapInfo.target.teacher);
+            if (!targetTeacherId) {
+                 alert(`儲存失敗：系統中找不到教師 ${swapInfo.target.teacher} 的帳號資訊。`);
+                 newConfirmBtn.disabled = false;
+                 newConfirmBtn.textContent = '確認調課';
+                 return;
+            }
+
+            const changeData = {
+                type: 'swap',
+                originalClassInfo: { ...swapInfo.original, teacher: swapInfo.original.teacher, date: originalDateInput.value },
+                targetClassInfo: { ...swapInfo.target, teacher: swapInfo.target.teacher, class: swapInfo.original.class, date: targetDateInput.value },
+                involvedTeacherIds: [currentUser.uid, targetTeacherId],
+                status: 'active',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            
+            try {
+                await db.collection('classChanges').add(changeData);
+                
+                currentWeekStart = getMonday(new Date(originalDateInput.value));
+                if (activeSchedule.type && activeSchedule.name) {
+                    showSchedule(activeSchedule.name, activeSchedule.type);
+                }
+                
+                modal.style.display = 'none';
+                alert('調課成功！課表已自動跳轉至調課週次。');
+
+            } catch (error) {
+                console.error("儲存調課失敗:", error);
+                alert("儲存失敗: " + error.message);
+            } finally {
+                newConfirmBtn.disabled = false;
+                newConfirmBtn.textContent = '確認調課';
+            }
+        });
+
+        modal.querySelector('.close-button').onclick = () => {
+            originalDateInput.removeEventListener('change', originalDateValidationHandler);
+            targetDateInput.removeEventListener('change', targetDateValidationHandler);
+            modal.style.display = 'none';
+        };
+
+        modal.style.display = 'block';
+    }
+	
+	async function cancelChange(changeId) {
+        try {
+            await db.collection('classChanges').doc(changeId).update({ status: 'cancelled' });
+            alert('課程異動已成功取消！');
+            if (activeSchedule.type && activeSchedule.name) {
+                showSchedule(activeSchedule.name, activeSchedule.type);
+            }
+        } catch (error) {
+            console.error("取消異動失敗:", error);
+            alert("取消失敗: " + error.message);
+        }
+    }
+    
+	function showSubstitutionModal(lesson, date, ownTeacherName) {
+        substitutionInfo = {
+            originalLesson: lesson,
+            originalDate: date,
+            ownTeacherName: ownTeacherName
+        };
+
+        const modal = document.getElementById('substitution-modal');
+        const detailsEl = document.getElementById('substitution-details');
+        const teacherSelect = document.getElementById('substitute-teacher-select');
+        const dateInput = document.getElementById('substitution-date');
+        const reasonInput = document.getElementById('substitution-reason');
+        const exchangeCheckbox = document.getElementById('exchange-checkbox');
+        const confirmBtn = document.getElementById('confirm-substitution-btn');
+
+        const days = ['一', '二', '三', '四', '五'];
+        const originalDayIndex = new Date(substitutionInfo.originalDate).getDay() - 1;
+        const dayChar = days[originalDayIndex] || '假日';
+
+        detailsEl.innerHTML = `<p style="margin: 0;"><strong>您要請假的課程：</strong><br>
+                            週${dayChar} 第 ${lesson.period + 1} 節<br>
+                            ${lesson.subject} (${lesson.class})</p>`;
+
+        teacherSelect.innerHTML = '<option value="">-- 請選擇 --</option>';
+        allTeachersList.forEach(teacher => {
+            const isBusy = teacherSchedules.get(teacher)?.[lesson.period]?.[originalDayIndex];
+            if (teacher !== ownTeacherName && !isBusy) {
+                const option = new Option(teacher, teacher);
+                teacherSelect.appendChild(option);
+            }
+        });
+
+        const now = new Date();
+        let initialDate = new Date(date);
+        const lessonEndTimeStr = classEndTimes[lesson.period + 1];
+        if (lessonEndTimeStr) {
+            const [endH, endM] = lessonEndTimeStr.split(':');
+            const lessonFullDateTime = new Date(initialDate);
+            lessonFullDateTime.setHours(endH, endM, 0, 0);
+            if (lessonFullDateTime < now) {
+                initialDate.setDate(initialDate.getDate() + 7);
+            }
+        }
+        
+        const defaultDate = findNextAvailableDate(initialDate, lesson.period, originalDayIndex);
+        
+        dateInput.value = formatDate(defaultDate, 'YYYY-MM-DD');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dateInput.min = formatDate(today, 'YYYY-MM-DD');
+        
+        reasonInput.value = '';
+        exchangeCheckbox.checked = false;
+
+        let lastValidDate = dateInput.value;
+        const dateValidationHandler = () => {
+            const newDate = new Date(dateInput.value);
+            const newDayIndex = (newDate.getDay() + 6) % 7;
+            
+            if (newDayIndex !== originalDayIndex) {
+                alert(`日期選擇錯誤！\n\n原始課程是「星期${dayChar}」，您不能選擇其他星期。\n系統將自動還原。`);
+                dateInput.value = lastValidDate;
+            } else {
+                lastValidDate = dateInput.value;
+            }
+        };
+
+        const updateButtonState = () => {
+            const selectedTeacher = teacherSelect.value;
+            if (!selectedTeacher) {
+                confirmBtn.disabled = true;
+                confirmBtn.textContent = '請先選擇老師';
+                confirmBtn.style.backgroundColor = '#ccc';
+                return;
+            }
+            confirmBtn.disabled = false;
+            confirmBtn.style.backgroundColor = exchangeCheckbox.checked ? '#ff8c00' : '#28a745';
+            confirmBtn.textContent = exchangeCheckbox.checked ? '下一步：選擇還課時段' : '確認指定代課';
+        };
+
+        const confirmClickHandler = () => {
+            const selectedTeacher = teacherSelect.value;
+            substitutionInfo.substituteTeacherName = selectedTeacher;
+            substitutionInfo.newDate = dateInput.value;
+            substitutionInfo.reason = reasonInput.value.trim();
+
+            if (exchangeCheckbox.checked) {
+                showExchangeModal();
+            } else {
+                confirmAndSaveChange('substitution');
+            }
+        };
+        
+        dateInput.onchange = null;
+        dateInput.addEventListener('change', dateValidationHandler);
+
+        exchangeCheckbox.removeEventListener('change', updateButtonState);
+        exchangeCheckbox.addEventListener('change', updateButtonState);
+
+        teacherSelect.removeEventListener('change', updateButtonState);
+        teacherSelect.addEventListener('change', updateButtonState);
+        
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        newConfirmBtn.addEventListener('click', confirmClickHandler);
+
+
+        modal.querySelector('.close-button').onclick = () => {
+             dateInput.removeEventListener('change', dateValidationHandler);
+             modal.style.display = 'none';
+        };
+        
+        updateButtonState();
+        modal.style.display = 'block';
+    }
+
+	function showExchangeModal() {
+        const modal = document.getElementById('exchange-modal');
+        const titleEl = document.getElementById('exchange-modal-title');
+        const subtitleEl = document.getElementById('exchange-modal-subtitle');
+        const bodyEl = document.getElementById('exchange-modal-body');
+        
+        const ownTeacherName = substitutionInfo.ownTeacherName;
+        const targetTeacherName = substitutionInfo.substituteTeacherName;
+        
+        let exchangeWeekStart = getMonday(new Date(substitutionInfo.newDate));
+
+        titleEl.textContent = `請選擇一節 ${targetTeacherName} 老師的課來交換`;
+        subtitleEl.textContent = `灰色格子代表您當時有課，無法選擇`;
+        
+        const renderExchangeSchedule = () => {
+            const ownSchedule = teacherSchedules.get(ownTeacherName);
+            const targetSchedule = teacherSchedules.get(targetTeacherName);
+            
+            const daysOfWeekForHeader = ['星期一', '星期二', '星期三', '星期四', '星期五'];
+            let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
+            
+            const weekDates = [];
+            for (let i = 0; i < 5; i++) {
+                const date = new Date(exchangeWeekStart);
+                date.setDate(exchangeWeekStart.getDate() + i);
+                weekDates.push(date);
+                tableHtml += `<th>${daysOfWeekForHeader[i]}<br>(${formatDate(date)})</th>`;
+            }
+            tableHtml += '</tr></thead><tbody>';
+
+            for (let period = 0; period < 8; period++) {
+                tableHtml += `<tr><td class="period-header">${period + 1}</td>`;
+                for (let day = 0; day < 5; day++) {
+                    const targetLesson = targetSchedule?.[period]?.[day];
+                    const ownLesson = ownSchedule?.[period]?.[day];
+                    
+                    if (targetLesson) {
+                        if (ownLesson) {
+                            tableHtml += `<td class="disabled-cell"><span class="subject">${targetLesson.subject}</span><span class="details">${targetLesson.class}</span></td>`;
+                        } else {
+                            const cellDate = formatDate(weekDates[day], 'YYYY-MM-DD');
+							tableHtml += `<td class="exchange-target-cell" data-period="${period}" data-day="${day}" data-date="${cellDate}"><span class="subject">${targetLesson.subject}</span><span class="details">${targetLesson.class}</span></td>`;                            
+                        }
+                    } else {
+                        tableHtml += `<td class="empty-cell"></td>`;
+                    }
+                }
+                tableHtml += '</tr>';
+            }
+            tableHtml += '</tbody></table>';
+            bodyEl.innerHTML = tableHtml;
+
+            bodyEl.querySelector('.schedule-table').addEventListener('click', (e) => {
+                const cell = e.target.closest('td');
+                if (cell && !cell.classList.contains('disabled-cell') && !cell.classList.contains('empty-cell') && !cell.classList.contains('period-header')) {
+                    
+                    const period = parseInt(cell.dataset.period);
+                    const day = parseInt(cell.dataset.day);
+                    const date = cell.dataset.date;
+                    const exchangeLesson = targetSchedule[period][day];
+                    
+                    if (!exchangeLesson || !date || day === undefined || period === undefined) {
+                        alert("錯誤：無法獲取完整的課程資訊，請重試。");
+                        return;
+                    }
+                    
+                    const daysOfWeekForMessage = ['一', '二', '三', '四', '五']; 
+                    const dayChar = daysOfWeekForMessage[day];
+
+                    const confirmMessage = `您選擇了於 ${date} (週${dayChar}) 第 ${period + 1} 節，\n` +
+                                           `前往 ${exchangeLesson.class} 班代 ${targetTeacherName} 老師的 [${exchangeLesson.subject}] 課。\n\n` +
+                                           `確定選擇此節課來交換嗎？`;
+
+                    if (confirm(confirmMessage)) {
+                        substitutionInfo.exchangeLessonInfo = {
+                            ...exchangeLesson,
+                            teacher: targetTeacherName,
+                            date,
+                            period,
+                            day
+                        };
+                        confirmAndSaveChange('exchange');
+                    }
+                }
+            });
+        };
+
+        document.getElementById('exchange-prev-week-btn').onclick = () => {
+            exchangeWeekStart.setDate(exchangeWeekStart.getDate() - 7);
+            renderExchangeSchedule();
+        };
+        document.getElementById('exchange-next-week-btn').onclick = () => {
+            exchangeWeekStart.setDate(exchangeWeekStart.getDate() + 7);
+            renderExchangeSchedule();
+        };
+        document.getElementById('exchange-today-btn').onclick = () => {
+            exchangeWeekStart = getMonday(new Date());
+            renderExchangeSchedule();
+        };
+
+        renderExchangeSchedule();
+
+        document.getElementById('substitution-modal').style.display = 'none';
+        modal.style.display = 'block';
+        modal.querySelector('.close-button').onclick = () => modal.style.display = 'none';
+    }
+    
+	async function confirmAndSaveChange(type) {
+        const confirmBtn = document.getElementById('confirm-substitution-btn');
+        let message = '';
+        let changeData = {};
+        
+        if (type === 'substitution') {
+            const { substituteTeacherName, newDate } = substitutionInfo;
+            message = `您確定要請 ${substituteTeacherName} 老師於 ${newDate} 代您這節課嗎？`;
+        } else if (type === 'exchange') {
+            const infoA = substitutionInfo.originalLesson;
+            const teacherA = substitutionInfo.ownTeacherName;
+            const dateA = substitutionInfo.newDate;
+
+            const infoB = substitutionInfo.exchangeLessonInfo;
+            const teacherB = substitutionInfo.substituteTeacherName;
+            const dateB = infoB.date;
+            
+            message = `您確定要進行以下換課嗎？\n\n` +
+                      `您的課程：\n${dateA} 第${infoA.period+1}節 [${infoA.subject}] 將由 ${teacherB} 代課。\n\n`+
+                      `您需還課：\n${dateB} 第${infoB.period+1}節 您將前往 ${infoB.class} 代 ${teacherB} 的 [${infoB.subject}] 課。`;
+        }
+
+        if (confirm(message)) {
+            if (type === 'substitution' || type === 'exchange') {
+                const dateToCheck = substitutionInfo.newDate;
+                const periodToCheck = substitutionInfo.originalLesson.period;
+                const dayToCheck = new Date(dateToCheck).getDay() - 1;
+
+                const conflict = isDateConflict(dateToCheck, periodToCheck, dayToCheck);
+                if (conflict) {
+                    let conflictType = '';
+                    switch (conflict.type) {
+                        case 'swap': conflictType = '調課'; break;
+                        case 'exchange': conflictType = '換課'; break;
+                        case 'substitution': conflictType = '指定代課'; break;
+                        default: conflictType = '課程異動';
+                    }
+                    alert(`錯誤：該節次 (${dateToCheck} 第 ${periodToCheck + 1} 節) 已被『${conflictType}』，無法重複設定。`);
+                    return;
+                }
+            }
+            
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            newConfirmBtn.disabled = true;
+            newConfirmBtn.textContent = '儲存中...';
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+            const substituteTeacherId = teacherNameToId.get(substitutionInfo.substituteTeacherName);
+            if (!substituteTeacherId) {
+                alert(`儲存失敗：系統中找不到教師 ${substitutionInfo.substituteTeacherName} 的帳號資訊。`);
+                newConfirmBtn.disabled = false;
+                newConfirmBtn.textContent = '確認送出';
+                return;
+            }
+
+            if (type === 'substitution') {
+                 changeData = {
+                    type: 'substitution',
+                    date: substitutionInfo.newDate,
+                    reason: substitutionInfo.reason || '',
+                    originalTeacherName: substitutionInfo.ownTeacherName,
+                    substituteTeacherName: substitutionInfo.substituteTeacherName,
+                    involvedTeacherIds: [currentUser.uid, substituteTeacherId],
+                    lessonInfo: {
+                        subject: substitutionInfo.originalLesson.subject,
+                        class: substitutionInfo.originalLesson.class,
+                        location: substitutionInfo.originalLesson.location,
+                        period: substitutionInfo.originalLesson.period
+                    },
+                    status: 'active',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+            } else if (type === 'exchange') {
+                const { originalLesson, ownTeacherName, newDate, exchangeLessonInfo } = substitutionInfo;
+                changeData = {
+                    type: 'exchange',
+                    reason: substitutionInfo.reason || '',
+                    originalLessonInfo: {
+                        teacher: ownTeacherName,
+                        date: newDate,
+                        subject: originalLesson.subject,
+                        class: originalLesson.class,
+                        location: originalLesson.location,
+                        period: originalLesson.period
+                    },
+                    exchangeLessonInfo: {
+                        teacher: exchangeLessonInfo.teacher,
+                        date: exchangeLessonInfo.date,
+                        subject: exchangeLessonInfo.subject,
+                        class: exchangeLessonInfo.class,
+                        location: exchangeLessonInfo.location,
+                        period: exchangeLessonInfo.period
+                    },
+                    involvedTeacherIds: [currentUser.uid, substituteTeacherId],
+                    status: 'active',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                }
+            }
+            
+            try {
+                await db.collection('classChanges').add(changeData);
+                
+                document.getElementById('substitution-modal').style.display = 'none';
+                document.getElementById('exchange-modal').style.display = 'none';
+                document.getElementById('schedule-modal').style.display = 'none';
+
+                alert(type === 'substitution' ? "代課指定成功！" : "換課成功！");
+                
+				const jumpDate = substitutionInfo.newDate;
+                currentWeekStart = getMonday(new Date(jumpDate));
+                if (activeSchedule.type && activeSchedule.name) {
+                    showSchedule(activeSchedule.name, activeSchedule.type);
+                }
+
+            } catch (error) {
+                alert('儲存失敗: ' + error.message);
+                console.error("儲存異動紀錄失敗:", error);
+            }
+        }
+    }
+
+	function showSingleEventModal(lesson, dayIndex, teacherName, date) {
+        const modal = document.getElementById('single-event-modal');
+        const infoEl = document.getElementById('single-event-info');
+        const dateInput = document.getElementById('single-event-date');
+        const notesInput = document.getElementById('event-notes');
+        const downloadBtn = document.getElementById('download-single-ics-btn');
+        const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+
+        let infoText = `日期: ${date} (${days[dayIndex+1]}) 第 ${lesson.period + 1} 節<br>`;
+        
+        if (lesson.isSubstitutedIn) {
+            infoText += `<strong>[${lesson.subject}] 代 ${lesson.originalTeacherName} (${lesson.class})</strong>`;
+        } else if (lesson.isSubstitutedOut) {
+            infoText += `<strong>[${lesson.subject}] 由 ${lesson.substituteTeacherName} 代課 (${lesson.class})</strong>`;
+        } else if (lesson.isExchangedIn) {
+            infoText += `<strong>[${lesson.subject}] 換課: 代 ${lesson.originalTeacher} (${lesson.class})</strong>`;
+        } else if (lesson.isExchangedOut) {
+            infoText += `<strong>[${lesson.subject}] 換課: 由 ${lesson.targetTeacher} 代 (${lesson.class})</strong>`;
+        } else {
+            infoText += `<strong>${lesson.subject} (${lesson.class})</strong>`;
+        }
+        
+        infoEl.innerHTML = infoText;
+        notesInput.value = lesson.reason || '';
+        dateInput.value = date;
+
+        downloadBtn.onclick = () => {
+            const options = {
+                teacherName,
+                date: dateInput.value,
+                notes: notesInput.value
+            };
+            generateIcsForLesson(lesson, options);
+            modal.style.display = 'none';
+        };
+        modal.style.display = 'block';
+    }
+
+	function generateIcsForLesson(lesson, options) {
+        const { teacherName, date, notes } = options;
+        const classStartTime = classStartTimes[lesson.period + 1];
+        if(!classStartTime) return;
+        
+        const [startH, startM] = classStartTime.split(':');
+        const startTime = new Date(`${date}T00:00:00`);
+        startTime.setHours(startH, startM);
+        
+        const endTime = new Date(startTime.getTime() + 50 * 60000);
+
+        const formatTime = (d) => {
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+        };
+        
+        const formattedNotes = (notes || '').replace(/\n/g, '\\n');
+
+        let summary = '';
+        if (lesson.isSubstitutedIn) {
+            summary = `[${lesson.subject}] 代 ${lesson.originalTeacherName} (${lesson.class})`;
+        } else if (lesson.isSubstitutedOut) {
+            summary = `[${lesson.subject}] 由 ${lesson.substituteTeacherName} 代課 (${lesson.class})`;
+        } else if (lesson.isExchangedIn) {
+            summary = `[${lesson.subject}] 換課: 代 ${lesson.originalTeacher} (${lesson.class})`;
+        } else if (lesson.isExchangedOut) {
+            summary = `[${lesson.subject}] 換課: 由 ${lesson.targetTeacher} 代 (${lesson.class})`;
+        } else {
+            summary = `[${lesson.subject}] ${lesson.class} (${teacherName})`;
+        }
+
+        let eventDetails = [
+            'BEGIN:VEVENT',
+            `UID:${Date.now()}-${Math.random()}@myapp.com`,
+            `DTSTAMP:${formatTime(new Date())}Z`,
+            `DTSTART;TZID=Asia/Taipei:${formatTime(startTime)}`,
+            `DTEND;TZID=Asia/Taipei:${formatTime(endTime)}`,
+            `SUMMARY:${summary}`,
+            `DESCRIPTION:${formattedNotes}`,
+            `LOCATION:${lesson.location || ''}`,
+            'END:VEVENT'
+        ];
+        const icsContent = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//My School//EN', ...eventDetails, 'END:VCALENDAR'].join('\r\n');
+        
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${date}-${teacherName}-${lesson.subject}.ics`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+	
+    function bindNavEventListeners() {
+        document.getElementById('prev-week-btn').addEventListener('click', () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            if (activeSchedule.type && activeSchedule.name) {
+                showSchedule(activeSchedule.name, activeSchedule.type);
+            }
+        });
+        document.getElementById('next-week-btn').addEventListener('click', () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            if (activeSchedule.type && activeSchedule.name) {
+                showSchedule(activeSchedule.name, activeSchedule.type);
+            }
+        });
+        document.getElementById('today-btn').addEventListener('click', () => {
+            currentWeekStart = getMonday(new Date());
+            if (activeSchedule.type && activeSchedule.name) {
+                showSchedule(activeSchedule.name, activeSchedule.type);
+            }
+        });
+    }
+
+    try {
+        const allTeachersWithSchedule = await deriveSchedules();
+        allTeachersList = [...allTeachersWithSchedule].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+
+        populateTeacherList(allTeachersWithSchedule);
+        populateTeacherListBySubject(allTeachersWithSchedule);
+        populateClassList();
+        populateLocationList();
+        bindNavEventListeners();
+
+        if (teacherNameToShow) {
+            setTimeout(() => {
+                const decodedTeacherName = decodeURIComponent(teacherNameToShow);
+                if (teacherSchedules.has(decodedTeacherName)) {
+                    showSchedule(decodedTeacherName, 'teacher');
+                } else {
+                    alert(`找不到教師「${decodedTeacherName}」的課表資料。`);
+                }
+            }, 100);
+        } else {
+            const lastScheduleJSON = localStorage.getItem('lastSchedule');
+            if (lastScheduleJSON) {
+                const savedData = JSON.parse(lastScheduleJSON);
+                if (savedData.savedBy && savedData.savedBy === currentUser.uid) {
+                    const lastSchedule = savedData.schedule;
+                    if (lastSchedule.view === 'subject') {
+                        updateView('subject', false);
+                    }
+                    if (lastSchedule?.type && lastSchedule?.name) {
+                        activeSchedule = { type: lastSchedule.type, name: lastSchedule.name };
+                        setTimeout(() => showSchedule(lastSchedule.name, lastSchedule.type), 100);
+                    }
+                } else {
+                    localStorage.removeItem('lastSchedule');
+                }
+            }
+        }
+    } catch (e) {
+        console.error("程式執行時發生嚴重錯誤:", e);
+        if (e.code === 'permission-denied') {
+             alert("權限不足，無法讀取課程異動資料。\n\n請聯繫管理員檢查 Firestore 的 'classChanges' 安全規則。");
+        } else {
+             alert("程式執行時發生嚴重錯誤，請檢查主控台(F12)獲取更多資訊。");
+        }
+    }
+    
+    document.querySelectorAll('.modal .close-button').forEach(btn => {
+        btn.onclick = (e) => e.target.closest('.modal').style.display = 'none';
+    });
+    window.onclick = (event) => {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    };
+    document.getElementById('search-teacher').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        const container = currentView === 'department' ? document.getElementById('teacher-list-container') : document.getElementById('teacher-list-by-subject-container');
+        container.querySelectorAll('.department-table').forEach(table => {
+            let tableHasVisibleRow = false;
+            table.querySelectorAll('tbody tr').forEach(row => {
+                const nameCell = row.querySelector('.name-cell');
+                const isVisible = nameCell && nameCell.textContent.toLowerCase().includes(searchTerm);
+                row.style.display = isVisible ? '' : 'none';
+                if (isVisible) tableHasVisibleRow = true;
+            });
+            table.style.display = (tableHasVisibleRow || !searchTerm) ? '' : 'none';
+        });
+    });
+    
+    const deptBtn = document.getElementById('view-by-dept-btn');
+    const subjectBtn = document.getElementById('view-by-subject-btn');
+    const deptContainer = document.getElementById('teacher-list-container');
+    const subjectContainer = document.getElementById('teacher-list-by-subject-container');
+	const updateView = (newView, saveToStorage = true) => {
+        if (saveToStorage) {
+            const lastScheduleJSON = localStorage.getItem('lastSchedule');
+            let scheduleData = {};
+            if (lastScheduleJSON) {
+                const savedData = JSON.parse(lastScheduleJSON);
+                if (savedData.savedBy === currentUser.uid) {
+                    scheduleData = savedData.schedule || {};
+                }
+            }
+            scheduleData.view = newView;
+            const dataToStore = { savedBy: currentUser.uid, schedule: scheduleData };
+            localStorage.setItem('lastSchedule', JSON.stringify(dataToStore));
+        }
+
+        document.getElementById('search-teacher').value = '';
+        document.querySelectorAll('.department-table, .department-table tr').forEach(el => el.style.display = '');
+        const isDept = newView === 'department';
+        deptContainer.style.display = isDept ? 'block' : 'none';
+        subjectContainer.style.display = isDept ? 'none' : 'block';
+        deptBtn.classList.toggle('active', isDept);
+        subjectBtn.classList.toggle('active', !isDept);
+        currentView = newView;
+    };
+    deptBtn.onclick = () => updateView('department');
+    subjectBtn.onclick = () => updateView('subject');
+	
+    function getRecentSchedules() {
+        try {
+            const stored = localStorage.getItem('recentSchedules');
+            return stored ? JSON.parse(stored) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function addRecentSchedule(name, type) {
+        let recents = getRecentSchedules();
+        recents = recents.filter(item => !(item.name === name && item.type === type));
+        recents.unshift({ name, type });
+        if (recents.length > MAX_RECENT_ITEMS) {
+            recents = recents.slice(0, MAX_RECENT_ITEMS);
+        }
+        localStorage.setItem('recentSchedules', JSON.stringify(recents));
+    }
+
+    function populateRecentList() {
+        const recents = getRecentSchedules();
+        recentSchedulesList.innerHTML = '';
+        if (recents.length === 0) {
+            const emptyItem = document.createElement('span');
+            emptyItem.textContent = '尚無瀏覽紀錄';
+            emptyItem.style.padding = '10px 15px';
+            emptyItem.style.color = '#999';
+            emptyItem.style.fontSize = '0.9em';
+            recentSchedulesList.appendChild(emptyItem);
+            return;
+        }
+
+        recents.forEach(item => {
+            const btn = document.createElement('button');
+            let typeText = '';
+            if (item.type === 'teacher') typeText = ' (教師)';
+            if (item.type === 'class') typeText = ' (班級)';
+            if (item.type === 'location') typeText = ' (場地)';
+            btn.textContent = item.name + typeText;
+            btn.onclick = () => {
+                showSchedule(item.name, item.type);
+                recentSchedulesList.classList.remove('show');
+            };
+            recentSchedulesList.appendChild(btn);
+        });
+    }
+
+    recentSchedulesBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        populateRecentList();
+        recentSchedulesList.classList.toggle('show');
+    });
+
+    window.addEventListener('click', (event) => {
+        if (!event.target.matches('#recent-schedules-btn')) {
+            if (recentSchedulesList.classList.contains('show')) {
+                recentSchedulesList.classList.remove('show');
+            }
+        }
+    });
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學校管理後台</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; padding: 20px; max-width: 1200px; margin: auto; background-color: #f8f9fa; }
+        h1, h2, h3 { color: #333; }
+        button, input, textarea { font-family: inherit; padding: 8px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; }
+        button { background-color: #0d6efd; color: white; cursor: pointer; border: none; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .section { background-color: #ffffff; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #dee2e6; }
+        textarea { width: 98%; min-height: 200px; font-size: 0.9em; line-height: 1.6; }
+        .info-box { background-color: #fffbe6; padding: 15px; border: 1px solid #ffe58f; border-radius: 4px; font-size: 0.9em; line-height: 1.6; }
+        .danger-zone { border: 2px solid #dc3545; }
+        .danger-zone h2 { color: #dc3545; }
+        #reset-semester-btn { background-color: #dc3545; padding: 10px 20px; font-size: 1.1em; }
+
+        #announcement-section { background-color: #e7f3ff; border-color: #b3d7ff; }
+        #announcement-section h2 { color: #004085; }
+        #announcement-content { white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
+        #announcement-meta { font-size: 0.9em; color: #555; text-align: right; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>學校管理後台</h1>
+        <div id="admin-panel" style="display: none;">
+            <span>歡迎，<span id="admin-email"></span>！</span>
+            <button id="logout-btn" style="margin-left: 15px; background-color: #6c757d;">登出</button>
+        </div>
+    </div>
+
+    <div id="announcement-section" class="section">
+        <h2>最新系統公告</h2>
+        <div id="announcement-content">載入中...</div>
+        <div id="announcement-meta"></div>
+    </div>
+
+    <div class="section">
+        <h2>學期初資料設定</h2>
+        <p class="info-box"><strong>說明：</strong>請在新學期開始時，於下方三個欄位貼上對應的純文字資料，然後點擊最下方的「上傳/更新所有資料」按鈕。系統將會一次性地更新全校的資料。</p>
+        <form id="data-upload-form">
+            <div style="margin-bottom: 25px;">
+                <label for="teachers-data"><h3>1. 教師基本資料</h3></label>
+				<textarea id="teachers-data" placeholder="格式: 姓名,單位(選填),分機(選填)&#10;【重要】此處的「姓名」必須與教師登入的 Google 帳號名稱完全一致！&#10;王大明,國一導師室,123&#10;陳小美,教務處,456"></textarea>
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label for="roster-data"><h3>2. 學生名冊</h3></label>
+                <textarea id="roster-data" placeholder="格式: 班級座號,姓名 (一行一筆)&#10;70101,陳宥炘&#10;70102,廖翊暟"></textarea>
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label for="timetable-data"><h3>3. 全校教師課表</h3></label>
+                <textarea id="timetable-data" placeholder="請貼上已轉AI換過的 CSV 格式課表..."></textarea>
+            </div>
+            <button type="submit" style="padding: 10px 20px; font-size: 1.1em; background-color: #198754;">預覽並準備上傳</button>
+        </form>
+    </div>
+
+    <div class="section danger-zone">
+        <h2>學期重設 (危險操作)</h2>
+        <p class="info-box"><strong>警告：</strong>此功能將會**刪除**目前學校所有老師的**成績紀錄**和**表現紀錄**。通常只在學年轉換、準備輸入新學期資料**之前**使用。此操作無法復原，請謹慎使用！</p>
+        <button id="reset-semester-btn">執行學期重設</button>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyAn17zhvzLRCS3qOb6PWA464cGNu1D7WzA", authDomain: "stu001-e72fa.firebaseapp.com", projectId: "stu001-e72fa", storageBucket: "stu001-e72fa.appspot.com", messagingSenderId: "852359717475", appId: "1:852359717475:web:db9a6a5d737978874c8e56" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        let currentUser = null;
+        let schoolId = null; 
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists && userDoc.data().role === 'school_admin') {
+                    const userData = userDoc.data();
+                    schoolId = userData.schoolId; 
+                    if (!schoolId) {
+                        document.body.innerHTML = '<h1>錯誤：您的管理者帳號未綁定學校ID，請聯繫超級管理員。</h1>';
+                        return;
+                    }
+                    document.getElementById('admin-email').textContent = userData.displayName || user.email;
+                    document.getElementById('admin-panel').style.display = 'block';
+                    loadLatestAnnouncement();
+                } else {
+                    alert('權限不足！');
+                    window.location.href = 'login.html';
+                }
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        async function loadLatestAnnouncement() {
+            const contentEl = document.getElementById('announcement-content');
+            const metaEl = document.getElementById('announcement-meta');
+            try {
+                const snapshot = await db.collection('announcements').orderBy('createdAt', 'desc').limit(1).get();
+                if (snapshot.empty) {
+                    contentEl.textContent = '目前沒有系統公告。';
+                    return;
+                }
+                const doc = snapshot.docs[0];
+                const announcement = doc.data();
+                const date = announcement.createdAt.toDate().toLocaleString('zh-TW');
+                contentEl.textContent = announcement.content;
+                metaEl.textContent = `發布於 ${date}`;
+            } catch (error) {
+                contentEl.innerHTML = `<strong style="color:red;">讀取公告失敗：</strong><br>${error.message}`;
+            }
+        }
+        
+        document.getElementById('data-upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const teachersText = document.getElementById('teachers-data').value;
+            const rosterText = document.getElementById('roster-data').value;
+            const timetableText = document.getElementById('timetable-data').value;
+            
+            if (!teachersText || !rosterText || !timetableText) {
+                alert('請確認三個欄位都已貼上資料！');
+                return;
+            }
+
+            try {
+                const teachers = parseTeachers(teachersText);
+                const students = parseRoster(rosterText);
+                const { schedules, teacherTitles, teacherSubjects } = parseTimetable(timetableText);
+                const mergedTeachers = mergeTeacherData(teachers, teacherTitles, teacherSubjects);
+
+                const confirmationMessage = `
+資料解析完成，請確認：
+------------------------------------
+- 教師人數: ${Object.keys(mergedTeachers).length} 人
+- 學生人數: ${students.length} 人
+- 課表筆數 (已解析): ${Object.keys(schedules).length} 筆
+------------------------------------
+點擊「確定」將會覆蓋 Firestore 中現有的教師、學生與課表資料。
+此操作會保留已登入教師的 uid 與 email 資訊。
+                `;
+
+                if (confirm(confirmationMessage)) {
+                    await uploadAllData(mergedTeachers, students, schedules);
+                    alert('所有資料已成功上傳/更新！');
+                } else {
+                    alert('操作已取消。');
+                }
+
+            } catch (error) {
+                alert('資料解析或上傳時發生錯誤：\n' + error.message);
+                console.error(error);
+            }
+        });
+        
+        // 【修改】parseTeachers 已改回只處理 Name, Department, Extension 的版本
+        function parseTeachers(text) {
+            const teachers = {};
+            const lines = text.trim().split('\n');
+            lines.forEach((line, index) => {
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length < 1 || parts[0] === '') return; 
+                const name = parts[0];
+                const department = parts[1] || '';
+                const extension = parts[2] || '';
+                if (!name) throw new Error(`教師資料第 ${index + 1} 行的姓名不可為空`);
+                teachers[name] = { department, extension };
+            });
+            if (Object.keys(teachers).length === 0) throw new Error('未解析到任何有效的教師資料。');
+            return teachers;
+        }
+
+        function parseRoster(text) {
+            const students = [];
+            const lines = text.trim().split('\n');
+            lines.forEach((line, index) => {
+                const parts = line.split(',').map(p => p.trim());
+                if (parts.length < 2 || !parts[0] || !parts[1]) return; // 忽略格式不符的空行
+                const [id, name] = parts;
+                if (!/^\d{5}$/.test(id)) throw new Error(`學生名冊第 ${index + 1} 行的班級座號 (${id}) 格式不正確`);
+                students.push({ id, name });
+            });
+            if (students.length === 0) throw new Error('未解析到任何有效的學生資料。');
+            return students;
+        }
+
+		function parseTimetable(text) {
+            const OFFICIAL_SUBJECTS = ['國文', '英文', '英語', '數學', '社會', '自然', '綜合', '藝術', '健體', '科技', '公民', '歷史', '地理', '理化', '生物', '地科', '表演', '視覺', '音樂', '體育', '家政', '童軍', '輔導', '本土語', '資訊科技', '生活科技'];
+            const lines = text.trim().split('\n');
+            const schedules = {};
+            const teacherTitles = {};
+            const teacherSubjects = {};
+
+            // 忽略 CSV 的第一行標頭
+            for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(',');
+                if (parts.length < 8) continue;
+
+                const [name, title, periodStr, mon, tue, wed, thu, fri] = parts.map(p => p.trim());
+                
+                if (!name) continue;
+
+                if (!schedules[name]) {
+                    schedules[name] = Array.from({ length: 7 }, () => Array(5).fill(''));
+                    teacherSubjects[name] = new Set();
+                    teacherTitles[name] = title;
+                }
+
+                const periodIndex = '第一節,第二節,第三節,第四節,第五節,第六節,第七節'.split(',').indexOf(periodStr);
+                if (periodIndex !== -1) {
+                    const dailyLessons = [mon, tue, wed, thu, fri];
+                    schedules[name][periodIndex] = dailyLessons;
+
+                    dailyLessons.forEach(lesson => {
+                        if (lesson) {
+                            for (const officialSub of OFFICIAL_SUBJECTS) {
+                                if (lesson.includes(officialSub)) {
+                                    teacherSubjects[name].add(officialSub);
+                                    break;
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            for (const teacher in teacherSubjects) {
+                teacherSubjects[teacher] = Array.from(teacherSubjects[teacher]).join(', ') || '其他';
+            }
+
+            if (Object.keys(schedules).length === 0) throw new Error('未解析到任何有效的課表資料。');
+            return { schedules, teacherTitles, teacherSubjects };
+        }
+        
+        // 【修改】mergeTeacherData 已改回不處理 Email 的版本
+        function mergeTeacherData(teachers, teacherTitles, teacherSubjects) {
+            const merged = { ...teachers };
+            for (const name in merged) {
+                merged[name].title = teacherTitles[name] || '專任教師';
+                merged[name].subject = teacherSubjects[name] || '其他';
+            }
+            for (const name in teacherTitles) {
+                if (!merged[name]) {
+                    merged[name] = {
+                        department: '',
+                        extension: '',
+                        title: teacherTitles[name],
+                        subject: teacherSubjects[name] || '其他'
+                    };
+                }
+            }
+            return merged;
+        }
+
+        // 【【【此為本次修正的核心】】】
+        async function uploadAllData(mergedTeachers, students, schedules) {
+            const schoolRef = db.collection('schools').doc(schoolId);
+            
+            // --- 新增：讀取並保留舊的 uid 和 email ---
+            const preservedData = new Map();
+            const oldTeachersSnapshot = await schoolRef.collection('teachers').get();
+            oldTeachersSnapshot.forEach(doc => {
+                const data = doc.data();
+                if (data.uid || data.email) {
+                    preservedData.set(doc.id, { uid: data.uid, email: data.email });
+                }
+            });
+            // --- 新增結束 ---
+
+            const batch = db.batch();
+
+            // 刪除舊資料
+            oldTeachersSnapshot.forEach(doc => batch.delete(doc.ref));
+            const oldTimetables = await schoolRef.collection('timetables').get();
+            oldTimetables.forEach(doc => batch.delete(doc.ref));
+
+            // 寫入新資料
+            for (const name in mergedTeachers) {
+                const teacherData = { name: name, ...mergedTeachers[name] };
+                
+                // --- 新增：將保留的 uid 和 email 寫回去 ---
+                if (preservedData.has(name)) {
+                    const oldData = preservedData.get(name);
+                    teacherData.uid = oldData.uid || '';
+                    teacherData.email = oldData.email || '';
+                }
+                // --- 新增結束 ---
+                
+                const docRef = schoolRef.collection('teachers').doc(name);
+                batch.set(docRef, teacherData);
+            }
+
+            const rosterRef = schoolRef.collection('rosters').doc('current');
+            batch.set(rosterRef, { students: students, uploadedAt: new Date() });
+
+            for (const name in schedules) {
+                const scheduleObject = {};
+                schedules[name].forEach((dayData, periodIndex) => {
+                    scheduleObject[periodIndex] = dayData;
+                });
+                const scheduleData = { periods: scheduleObject };
+                const docRef = schoolRef.collection('timetables').doc(name);
+                batch.set(docRef, scheduleData);
+            }
+
+            await batch.commit();
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+        
+        document.getElementById('reset-semester-btn').addEventListener('click', async () => { /* ... (維持不變) ... */ });
+    </script>
+</body>
+</html>
