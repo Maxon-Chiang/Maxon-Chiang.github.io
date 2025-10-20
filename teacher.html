@@ -1032,6 +1032,7 @@
 				myTimetableModal.style.display = 'flex';
 			} else {
 				// 否則 (從主畫面來的)，才移除背景鎖定
+				renderLayout();
 				document.body.classList.remove('modal-open');
 			}
 			rosterModalOrigin = null; // 重設來源標記
@@ -1132,12 +1133,12 @@
 				await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n);
 				
 				closeModal(); 
-				await fetchAllScores(); 
+				await fetchAllScores(); // 1. 重新從資料庫抓取最新的總分
 
 				if (origin === 'roster') {
-					openStudentRosterModal(className); 
+					openStudentRosterModal(className); // 這個函式內部會用新分數更新學生名單
 				} else {
-					renderLayout();
+					renderLayout(); // 2. 用最新的分數重新渲染主畫面的班級格子
 					document.body.classList.remove('modal-open');
 				}
             } catch (err) { console.error(err); } 
@@ -1155,12 +1156,12 @@
 						await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
 
 						closeModal(); 
-						await fetchAllScores(); 
+						await fetchAllScores(); // 1. 重新從資料庫抓取最新的總分
 
 						if (origin === 'roster') {
 							openStudentRosterModal(className);
 						} else {
-							renderLayout();
+							renderLayout(); // 2. 用最新的分數重新渲染主畫面的班級格子
 							document.body.classList.remove('modal-open');
 						}
 					} catch (err) { 
