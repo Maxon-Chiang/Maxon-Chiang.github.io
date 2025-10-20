@@ -139,6 +139,7 @@
             cursor: pointer;
             flex-grow: 1;
             display: flex;
+			flex-direction: column;
             align-items: center;
             justify-content: center;
             border-radius: 8px 8px 0 0;
@@ -294,6 +295,12 @@
             border-radius: 5px;
             background-color: white;
         }
+		.class-block-score {
+			font-size: 0.6em; /* 讓分數的字體小一點 */
+			font-weight: bold;
+			color: #555;      /* 給分數一個不同的顏色 */
+			margin-top: 5px;   /* 和班級名稱間隔一點距離 */
+		}
         #save-class-settings-btn {
             margin-top: 20px;
             background-color: #28a745;
@@ -417,11 +424,15 @@
 		.timetable-clickable-cell:hover {
 			background-color: #eef3f8 !important;
 		}
+		.score-bg-negative { background-color: #f5f5f5; } /* 淺灰色 */
+		.score-bg-low { background-color: #e8f5e9; }      /* 淺綠色 */
+		.score-bg-medium { background-color: #fff8e1; }     /* 金黃色 */
+		.score-bg-high { background-color: #f3e5f5; }   /* 淺紫色 */
 		@media (max-width: 768px) {
             header { gap: 10px; }
             main { padding: 1rem; }
 			.main-actions button, .main-actions a button { padding: 5px 5px; font-size: 1em; }
-            .class-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; }
+            .class-grid { grid-template-columns: grid-template-columns: repeat(3, 1fr); gap: 0.8rem; }
             .class-block-title { font-size: 1.6em; }
             #my-timetable-modal .modal-content { padding: 10px; }
             .schedule-table { font-size: 0.8em; }
@@ -826,12 +837,39 @@
             }
 
             classesToRender.forEach(className => {
-                const classBlock = document.createElement('div');
+				const classBlock = document.createElement('div');
                 classBlock.className = 'class-block';
+
+                // --- 【【【修改開始】】】 ---
+                
+                // (這是上次新增的計算分數邏輯，保持不變)
+                const studentsInClass = studentsData.filter(s => s.id.startsWith(className));
+                const totalStudentScore = studentsInClass.reduce((sum, student) => {
+                    return sum + (studentScores[student.id] || 0);
+                }, 0);
+                const classScore = classEventScores[className] || 0;
+                const totalScore = totalStudentScore + classScore;
+
+                // 【【【新增判斷分數並設定背景色的邏輯】】】
+                if (totalScore < 0) {
+                    classBlock.classList.add('score-bg-negative'); // 低於0分：淺灰色
+                } else if (totalScore > 0 && totalScore <= 10) {
+                    classBlock.classList.add('score-bg-low');       // 10分以內：淺綠色
+                } else if (totalScore > 10 && totalScore <= 20) {
+                    classBlock.classList.add('score-bg-medium');    // 10~20分：淺紫色
+                } else if (totalScore > 20) {
+                    classBlock.classList.add('score-bg-high');      // 20分以上：金黃色
+                }
+                // 總分等於0時，不加任何 class，維持預設白色背景
+
+                // --- 【【【修改結束】】】 ---
 
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'class-block-title';
-                titleDiv.textContent = `${convertClassName(className)} 班`;
+                titleDiv.innerHTML = `
+                    <span>${convertClassName(className)} 班</span>
+                    <span class="class-block-score">總分: ${totalScore.toFixed(1)}</span>
+                `;
                 titleDiv.title = '點擊以紀錄班級共同事件';
                 titleDiv.addEventListener('click', () => openModal(className, 'class', 'main')); 
 
@@ -855,6 +893,7 @@
                 classBlock.appendChild(actionsDiv);
                 
                 appContainer.appendChild(classBlock);
+
             });
         }
         
