@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>學生綜合紀錄暨課表系統</title>
-		<style>
+	<style>
         :root {
             --primary-color: #4a90e2;
             --secondary-color: #f5f5ff;
@@ -121,20 +121,21 @@
         }
 
         .class-block {
-            /* 修正：這是我們將通過 JS 設置背景色的主要區塊 */
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             display: flex;
             flex-direction: column;
             text-align: center;
-            min-height: 120px;
+            /* 【修改】縮小最小高度，使其接近方格 */
+            min-height: 100px; /* 原本是 120px */
             justify-content: space-between;
             transition: background-color 0.3s ease;
         }
         
         .class-block-title {
-            padding: 12px 10px 5px 10px;
-            font-size: 1.8em;
+            /* 【修改】縮小班級名稱的字體和垂直填充 */
+            padding: 5px 10px 0px 10px; /* 原本是 12px 10px 5px 10px */
+            font-size: 1.6em; /* 原本是 1.8em */
             font-weight: normal;
             color: var(--primary-color);
             cursor: pointer;
@@ -145,15 +146,16 @@
             border-radius: 8px 8px 0 0;
         }
         .class-block-title:hover {
-            background-color: rgba(240, 248, 255, 0.5); /* 讓 hover 效果在有背景色時也能看見 */
+            background-color: rgba(240, 248, 255, 0.5); 
         }
         
         /* 新增：班級總分顯示樣式 */
         .class-total-score {
-            font-size: 1.2em;
+            /* 【修改】縮小總分部分的字體和垂直填充 */
+            font-size: 1.0em; /* 原本是 1.2em */
             font-weight: bold;
             color: #333; 
-            padding: 5px 10px;
+            padding: 0px 10px 5px 10px; /* 原本是 5px 10px */
             margin: 0;
             flex-shrink: 0;
         }
@@ -169,7 +171,8 @@
         .class-block-actions a, .class-block-actions button {
             background: none;
             border: none;
-            font-size: 1.8em;
+            /* 【修改】縮小圖示字體以配合整體縮小的尺寸 */
+            font-size: 1.6em; /* 原本是 1.8em */
             cursor: pointer;
             color: #555;
             padding: 5px 10px;
@@ -443,7 +446,8 @@
             main { padding: 1rem; }
 			.main-actions button, .main-actions a button { padding: 5px 5px; font-size: 1em; }
             .class-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; }
-            .class-block-title { font-size: 1.6em; }
+            /* 【修改】手機版班級名稱字體 */
+            .class-block-title { font-size: 1.4em; } 
             #my-timetable-modal .modal-content { padding: 10px; }
             .schedule-table { font-size: 0.8em; }
             .schedule-table td { height: 50px; }				
@@ -456,8 +460,12 @@
 			.student-block-info { font-size: 1.1em; font-weight: bold; margin-bottom: 2px; }
 			.student-block-name { font-size: 1.0em;}
 			.modal-content { padding: 15px;	}
+            /* 【修改】手機版班級格子最小高度，使其更方 */
+            .class-block { min-height: 90px; } 
+            /* 【修改】手機版總分字體 */
+            .class-total-score { font-size: 0.9em; }
         }
-	</style>
+    </style>
 </head>
 
 <body>
