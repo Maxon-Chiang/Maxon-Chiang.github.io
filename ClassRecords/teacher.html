@@ -637,8 +637,6 @@
                 font-size: 0.9em; /* 縮小學生姓名部分字體 */
             }
             
-            /* 【手機版排序按鈕大小調整】 */
-            #roster-sort-btn { font-size: 1.2em; }
             
             /* 【手機版 Header 排序按鈕位置修正】 */
             #main-sort-container {
@@ -646,6 +644,36 @@
                 justify-content: center;
                 gap: 10px;
                 padding-bottom: 5px;
+            }
+			
+			/* 【修正 學生名單標題排版】: 確保標題文字和按鈕在手機上仍能保持在單行 */
+            #student-roster-modal .modal-content h2 {
+                /* 【關鍵修正 1】: 覆蓋原本的 flex-wrap: wrap; */
+                flex-wrap: nowrap; 
+                padding-right: 25px; /* 縮小一點，為手機上的關閉按鈕留空間 */
+            }
+            
+            .roster-title-text {
+                /* 【關鍵修正 2】: 確保文字容器佔據所有可用空間，但允許標題文字被截斷 */
+                flex-grow: 1;
+                min-width: 0; 
+                /* 確保在空間極度不足時，文字不會溢出或導致容器換行 */
+                white-space: nowrap; 
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .roster-title-text h3 {
+                /* 【關鍵修正 3】: 允許標題文字本身在必要時被隱藏截斷，而不是強制換行 */
+                white-space: nowrap; 
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            #roster-sort-btn {
+                /* 【關鍵修正 4】: 確保按鈕永遠不會被壓縮或換行 */
+                flex-shrink: 0;
+                font-size: 1.2em; /* 調整為手機版大小 */
             }
         }
     </style>
