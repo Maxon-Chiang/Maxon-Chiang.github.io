@@ -23,29 +23,35 @@
         button, input, select, textarea {
             font-family: inherit;
         }
+        
+        /* ---------------------------------------------------- */
+        /* 【電腦版預設樣式】: 維持所有內容在單行，主標題靠左，其他靠右 */
         header {
             background-color: var(--primary-color);
             color: white;
             padding: 0.6rem 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
-            justify-content: space-between;
+            justify-content: space-between; /* 標題靠左，右側元素靠右 */
             align-items: center;
             position: sticky;
             top: 0;
             z-index: 100;
-			flex-wrap: wrap;
+			flex-wrap: wrap; /* 允許在空間不足時換行 (這是原來的設定) */
         }
         header h1 {
             font-size: 1.6em;
             margin: 0;
             flex-shrink: 0;
         }
+        /* 確保右側元素組在電腦版能佔據空間 */
         .header-right-panel {
             display: flex;
             align-items: center;
             gap: 5px;
         }
+        /* ---------------------------------------------------- */
+
         .user-profile {
             display: flex;
             align-items: center;
@@ -126,16 +132,14 @@
             display: flex;
             flex-direction: column;
             text-align: center;
-            /* 【修改】縮小最小高度，使其接近方格 */
-            min-height: 100px; /* 原本是 120px */
+            min-height: 100px; 
             justify-content: space-between;
             transition: background-color 0.3s ease;
         }
         
         .class-block-title {
-            /* 【修改】縮小班級名稱的字體和垂直填充 */
-            padding: 5px 10px 0px 10px; /* 原本是 12px 10px 5px 10px */
-            font-size: 1.6em; /* 原本是 1.8em */
+            padding: 5px 10px 0px 10px;
+            font-size: 1.6em;
             font-weight: normal;
             color: var(--primary-color);
             cursor: pointer;
@@ -151,11 +155,10 @@
         
         /* 新增：班級總分顯示樣式 */
         .class-total-score {
-            /* 【修改】縮小總分部分的字體和垂直填充 */
-            font-size: 1.0em; /* 原本是 1.2em */
+            font-size: 1.0em; 
             font-weight: bold;
             color: #333; 
-            padding: 0px 10px 5px 10px; /* 原本是 5px 10px */
+            padding: 0px 10px 5px 10px; 
             margin: 0;
             flex-shrink: 0;
         }
@@ -171,8 +174,7 @@
         .class-block-actions a, .class-block-actions button {
             background: none;
             border: none;
-            /* 【修改】縮小圖示字體以配合整體縮小的尺寸 */
-            font-size: 1.6em; /* 原本是 1.8em */
+            font-size: 1.6em; 
             cursor: pointer;
             color: #555;
             padding: 5px 10px;
@@ -185,6 +187,8 @@
             color: var(--primary-color);
         }
         
+        /* ... (省略其餘模態框/紀錄樣式) ... */
+		
         #student-roster-modal .modal-content {
             max-width: 95%;
             width: 100%;
@@ -441,17 +445,61 @@
 		.timetable-clickable-cell:hover {
 			background-color: #eef3f8 !important;
 		}
-		@media (max-width: 768px) {
-            header { gap: 10px; }
+		
+		/* ---------------------------------------------------- */
+        /* 【手機版樣式】: @media (max-width: 768px) */
+        @media (max-width: 768px) {
+            
+            /* 【結構調整 1: Header 整體】: 強制垂直堆疊，實現兩行佈局 */
+            header {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            /* 【結構調整 2: 標題行】: 讓標題獨佔一行並置中 */
+            header h1 {
+                width: 100%;
+                text-align: center;
+                padding-bottom: 5px; /* 與第二行內容區隔 */
+                font-size: 1.5em;
+            }
+            
+            /* 【結構調整 3: 底部操作行容器】: 容納按鈕組和用戶信息 */
+            .header-bottom-row {
+                width: 100%;
+                display: flex;
+                justify-content: space-between; /* 關鍵：實現左(按鈕組)右(用戶信息)對齊 */
+                align-items: center;
+            }
+
+            /* 【結構調整 4: 功能按鈕組】: 確保按鈕不會被擠到下一行 */
+            .main-actions {
+                /* 允許按鈕組佔據左側空間，並在必要時壓縮按鈕 */
+                flex-grow: 1; 
+                flex-shrink: 1; 
+                min-width: 0;
+            }
+            .main-actions button, .main-actions a button { 
+                padding: 5px 5px; 
+                font-size: 0.85em; /* 略微縮小按鈕文字 */
+                white-space: nowrap; /* 避免按鈕文字換行 */
+            }
+            
+            /* 【結構調整 5: 右側用戶信息組】: 確保右側靠右 */
+            .header-right-panel {
+                flex-shrink: 0;
+            }
+            .user-profile { 
+                font-size: 0.8em; 
+            }
+            
+            /* --- 以下為原有的手機版優化，保持不變 --- */
             main { padding: 1rem; }
-			.main-actions button, .main-actions a button { padding: 5px 5px; font-size: 1em; }
             .class-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; }
-            /* 【修改】手機版班級名稱字體 */
             .class-block-title { font-size: 1.4em; } 
             #my-timetable-modal .modal-content { padding: 10px; }
             .schedule-table { font-size: 0.8em; }
             .schedule-table td { height: 50px; }				
-			.user-profile { font-size: 0.8em; }
 			#student-grid-container {
 				grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
 				gap: 5px;
@@ -460,9 +508,7 @@
 			.student-block-info { font-size: 1.1em; font-weight: bold; margin-bottom: 2px; }
 			.student-block-name { font-size: 1.0em;}
 			.modal-content { padding: 15px;	}
-            /* 【修改】手機版班級格子最小高度，使其更方 */
             .class-block { min-height: 90px; } 
-            /* 【修改】手機版總分字體 */
             .class-total-score { font-size: 0.9em; }
         }
     </style>
