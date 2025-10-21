@@ -9,12 +9,15 @@
 			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; 
 			background-color: #f5f5f5; 
 			display: flex; 
+			/* 保持水平居中 */
 			justify-content: center; 
-			/* 【修正 2】將內容置中對齊頂部，讓視覺上整個區塊上移 */
-			align-items: flex-start; /* 原本是 center */
-			padding-top: 5vh; /* 增加頂部內距，讓它不會貼在瀏覽器頂部 */
-			height: 100vh;
-			min-height: 100vh; 
+			/* 垂直從頂部開始對齊，解決視覺偏下問題 */
+			align-items: flex-start; 
+			/* 增加頂部內距，讓容器下移 */
+			padding-top: 5vh; 
+			/* 移除強制高度，讓內容能向上收縮 */
+			/* height: 100vh; */ 
+			/* min-height: 100vh; */
 			margin: 0; 
 			width: 100%;
 			overflow-x: hidden;
@@ -32,22 +35,16 @@
 			max-width: 450px; 
 			overflow-y: auto;
 			max-height: 95vh;
-			margin: 10px;
+			/* 修正水平居中問題 */
+			margin: 10px auto; 
 		}
         h1 { 
 			color: #333; 
 			margin-top: 0; 
 			margin-bottom: 25px; 
-			/* 新增：允許長標題在容器內換行，防止溢出 */
+			/* 允許長標題在容器內換行 */
 			word-break: break-word; 
 		}
-        /* 【修正 1】針對手機版縮小標題字體 */
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 1.5em; /* 縮小字體 */
-            }
-        }
-
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
         button { width: 100%; padding: 12px; background-color: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
         button:hover { background-color: #357abd; }
@@ -69,16 +66,15 @@
             gap: 10px; 
             font-size: 1.1em; 
             padding: 15px; 
-            /* 【修正 3】新增最小寬度，防止文字擠壓圖片 */
+            /* 防止文字擠壓圖片 */
             min-width: 100%; 
-            /* 【修正 3】確保圖片和文字不換行 */
             white-space: nowrap;
         }
         #google-signin-btn:hover { background-color: #f8f8f8; }
         #google-signin-btn img { 
             width: 22px; 
             height: 22px; 
-            /* 【修正 3】防止圖片被縮小擠壓 */
+            /* 防止圖片被縮小擠壓 */
             flex-shrink: 0; 
         }
 
@@ -98,6 +94,18 @@
         .selection-list li:hover { background-color: #f5f5f5; }
         .selection-list strong { display: block; font-size: 1.1em; color: #333; }
         .selection-list span { font-size: 0.9em; color: #666; }
+        
+        /* 手機版優化 */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.5em; /* 縮小 h1 標題字體 */
+            }
+            body {
+                /* 確保 body 能夠使用整個視窗高度，但內容仍然從頂部開始排 */
+                height: auto; 
+                min-height: 100vh;
+            }
+        }
     </style>
 </head>
 <body>
