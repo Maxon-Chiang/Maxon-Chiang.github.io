@@ -570,6 +570,20 @@ document.getElementById('logout-btn').addEventListener('click', () => {
     auth.signOut();
 });
 
+// --- 移除 convertClassName 函數 ---
+/* function convertClassName(oldClassName) {
+    if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
+    const firstDigit = oldClassName.charAt(0);
+    const restOfName = oldClassName.substring(1);
+    switch (firstDigit) {
+        case '7': return '1' + restOfName;
+        case '8': return '2' + restOfName;
+        case '9': return '3' + restOfName;
+        default: return oldClassName;
+    }
+} */
+// ----------------------------------------------------
+
 // 【【【請使用這整段新的 main 函數，完整替換您 timetable.html 中舊的 main 函數】】】
 async function main() {
     populateRecentList();
@@ -1019,6 +1033,7 @@ async function main() {
         selector.innerHTML = '<option value="" disabled selected>班級課表</option>';
         const classesForList = [...classSchedules.keys()].filter(isValidClassForListing).sort();
         classesForList.forEach(name => {
+            // 使用原始班級代碼
             selector.appendChild(new Option(name, name));
         });
         selector.onchange = function() {
@@ -1117,6 +1132,7 @@ async function main() {
                 let dataAttrs = `data-period="${period}" data-day="${day}" data-date="${cellDate}"`;
 			
 				if (cellData) {
+                    // 移除所有對 convertClassName 的呼叫
                     if (cellData.isSwappedIn || cellData.isSwappedOut) {
                         cellClass = 'swapped-cell swapped-cell-pulse';
                         content = `<span class="subject">${cellData.subject}</span><span class="details"><span style="color: blue;">${cellData.teacher}</span></span><span class="details">${cellData.class}</span>`;
@@ -1274,6 +1290,7 @@ async function main() {
                                 targetCell.dataset.originalText = targetCell.innerHTML;
                                 const ext = teacherExtensions.get(lessonAtTarget.teacher);
                                 const extHtml = ext ? `<span class="ext-details">(分機 ${ext})</span>` : '';
+                                // 移除對 convertClassName 的呼叫
                                 targetCell.innerHTML = `<span class="subject">${lessonAtTarget.subject}</span><span class="class-details">${clickedLesson.class}</span><span class="teacher-details">${lessonAtTarget.teacher}</span>${extHtml}`;
                             }
                         }
@@ -1323,6 +1340,7 @@ async function main() {
                             targetCell.classList.add('swap-suggestion');
                             const ext = teacherExtensions.get(lessonAtTarget.teacher);
                             const extHtml = ext ? `<span class="ext-details">(分機 ${ext})</span>` : '';
+                            // 移除對 convertClassName 的呼叫
                             targetCell.innerHTML = `<span class="subject">${lessonAtTarget.subject}</span><span class="class-details">${className}</span><span class="teacher-details">${lessonAtTarget.teacher}</span>${extHtml}`;
                         }
                     }
