@@ -345,8 +345,8 @@
 	  };
 
         firebase.initializeApp(firebaseConfig);
-// 【【【新增此函式】】】
-        function convertClassName(oldClassName) {
+// --- 移除 convertClassName 函數 ---
+/* function convertClassName(oldClassName) {
             if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
             const firstDigit = oldClassName.charAt(0);
             const restOfName = oldClassName.substring(1);
@@ -356,8 +356,10 @@
                 case '9': return '3' + restOfName;
                 default: return oldClassName;
             }
-        }
-		function getGradeLevelFromClassId(classId) {
+        }*/
+// ----------------------------------------------------
+// --- 移除 getGradeLevelFromClassId 函數 ---
+/*		function getGradeLevelFromClassId(classId) {
 			if (!classId) return null;
 			// 先用 convertClassName 統一格式，例如 701 -> 101
 			const convertedId = convertClassName(classId);
@@ -367,7 +369,8 @@
 			if (['2'].includes(firstDigit)) return '2';
 			if (['3'].includes(firstDigit)) return '3';
 			return null;
-		}
+		}*/
+// ----------------------------------------------------
         const db = firebase.firestore(); const auth = firebase.auth();
         let currentUser = null, classId = null, studentsInClass = [], currentAssignmentId = null;
         const appContainer = document.getElementById('app-container'), createSection = document.getElementById('create-section'), createBtn = document.getElementById('create-assignment-btn'), saveBtns = document.querySelectorAll('.save-grades-btn'), cancelBtns = document.querySelectorAll('.cancel-edit-btn'), gradeEntrySection = document.getElementById('grade-entry-section'), scoresContainer = document.getElementById('student-scores-container'), newAssignmentNameInput = document.getElementById('new-assignment-name'), newGeneralCommentInput = document.getElementById('new-general-comment'), editAssignmentNameInput = document.getElementById('edit-assignment-name'), editGeneralCommentInput = document.getElementById('edit-general-comment'), currentAssignmentTitle = document.getElementById('current-assignment-title'), historyList = document.getElementById('history-list');
@@ -405,7 +408,8 @@
 				appContainer.style.display = 'block';
 				return;
 			}
-			document.getElementById('class-header').textContent = `${convertClassName(classId)} 班 成績管理`;
+			// 使用原始班級代碼
+			document.getElementById('class-header').textContent = `${classId} 班 成績管理`;
 
 			// --- 變更開始 ---
 			// 1. 檢查 schoolId 而非 rosterId
@@ -465,7 +469,7 @@
                 return;
             }
 
-            // --- 【↓↓↓ Bug 修正核心邏輯 ↓↓↓】 ---
+            // --- Bug 修正核心邏輯：移除班級代碼轉換 ---
             const historyItems = Array.from(historyList.querySelectorAll('.history-item'));
             const existingItem = historyItems.find(item => {
                 const titleElement = item.querySelector('.history-item-title');
@@ -476,11 +480,12 @@
 
             if (existingItem) {
                 // 如果找到同名項目，就模擬點擊它來載入編輯
+                // 提示訊息使用原始班級代碼
                 alert(`提醒：已存在名為「${newAssignmentName}」的成績項目，將直接載入該項目進行編輯。`);
                 existingItem.querySelector('.history-item-content').click();
                 return; // 結束函式，不再建立新項目
             }
-            // --- 【↑↑↑ Bug 修正結束 ↑↑↑】 ---
+            // --- Bug 修正結束 ---
 
             // 如果沒有同名項目，才執行建立新成績單的流程
             currentAssignmentId = null;
@@ -556,13 +561,14 @@
                 const deleteBtn = e.target.closest('.delete-btn');
                 const docId = deleteBtn.dataset.id;
                 
-                // --- 【↓↓↓ 功能強化：在確認訊息中顯示詳細資訊 ↓↓↓】 ---
+                // --- 功能強化：在確認訊息中顯示詳細資訊，並使用原始班級代碼 ---
                 const listItem = deleteBtn.closest('.history-item');
                 const titleElement = listItem.querySelector('.history-item-title');
                 
                 // 從標題文字中提取成績項目名稱 (移除日期部分)
                 const assignmentName = titleElement ? titleElement.textContent.split(' (')[0] : '未命名項目';
-                const className = convertClassName(classId);
+                // 使用原始班級代碼
+                const className = classId;
 
                 const firstConfirm = confirm(`您確定要刪除【${className} 班】的成績項目：\n\n「${assignmentName}」\n\n及其所有學生成績嗎？`);
                 
@@ -581,7 +587,7 @@
                         }
                     }
                 }
-                // --- 【↑↑↑ 功能強化結束 ↑↑↑】 ---
+                // --- 功能強化結束 ---
             }
         });
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
@@ -598,16 +604,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
