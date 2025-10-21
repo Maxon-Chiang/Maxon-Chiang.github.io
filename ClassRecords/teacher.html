@@ -251,7 +251,8 @@
             align-items: center;
             padding-right: 35px; /* 為關閉按鈕留出空間 */
             text-align: left; /* 內容靠左 */
-            flex-wrap: wrap;
+            flex-wrap: wrap; /* [原始設定] */
+            min-height: 40px; 
         }
         
         /* 【新增】學生名單大標題文字樣式 (包含總分統計) */
@@ -260,11 +261,12 @@
             flex-direction: column; /* 讓標題和總分垂直堆疊 */
             align-items: flex-start;
             flex-grow: 1;
-            /* 移除不精確的點擊指示和填充 */
+            min-width: 0;
         }
         .roster-title-clickable {
             cursor: pointer;
             padding: 5px 0;
+            white-space: nowrap;
         }
         .roster-title-text h3 {
             margin: 0;
@@ -468,7 +470,12 @@
             align-items: center;
             margin-bottom: 15px;
         }
-        .form-header h3 { margin: 0; }
+        .form-header h3 { 
+            margin: 0; 
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
         #add-record-form {
             display: flex;
             gap: 10px;
@@ -476,6 +483,30 @@
         }
         #record-points { flex: 0 1 100px; max-width: 110px; }
         #record-text { flex: 1 1 auto; }
+
+        /* 【新增】手機版專用的分數增減按鈕樣式 */
+        .mobile-score-controls {
+            display: none; /* 預設在電腦版隱藏 */
+            gap: 5px;
+        }
+        .score-adjust-btn {
+            padding: 5px 10px;
+            font-size: 1.2em;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            line-height: 1;
+            flex-shrink: 0;
+            transition: background-color 0.2s;
+        }
+        .score-adjust-btn:hover {
+            background-color: #e0e0e0;
+        }
+        /* 結束新增 */
+
         .record-item {
             display: flex;
             justify-content: space-between;
@@ -637,6 +668,8 @@
                 font-size: 0.9em; /* 縮小學生姓名部分字體 */
             }
             
+            /* 【手機版排序按鈕大小調整】 */
+            #roster-sort-btn { font-size: 1.2em; }
             
             /* 【手機版 Header 排序按鈕位置修正】 */
             #main-sort-container {
@@ -645,36 +678,68 @@
                 gap: 10px;
                 padding-bottom: 5px;
             }
-			
-			/* 【修正 學生名單標題排版】: 確保標題文字和按鈕在手機上仍能保持在單行 */
+
+            /* 【修正 學生名單標題排版】: 確保標題文字和按鈕在手機上仍能保持在單行 */
             #student-roster-modal .modal-content h2 {
-                /* 【關鍵修正 1】: 覆蓋原本的 flex-wrap: wrap; */
-                flex-wrap: nowrap; 
-                padding-right: 25px; /* 縮小一點，為手機上的關閉按鈕留空間 */
+                flex-wrap: nowrap; /* 關鍵修正：確保不換行 */
+                padding-right: 25px; 
             }
             
             .roster-title-text {
-                /* 【關鍵修正 2】: 確保文字容器佔據所有可用空間，但允許標題文字被截斷 */
                 flex-grow: 1;
                 min-width: 0; 
-                /* 確保在空間極度不足時，文字不會溢出或導致容器換行 */
+            }
+            .roster-title-text h3, .roster-title-clickable {
                 white-space: nowrap; 
                 overflow: hidden;
                 text-overflow: ellipsis;
+                max-width: 100%; 
             }
             
-            .roster-title-text h3 {
-                /* 【關鍵修正 3】: 允許標題文字本身在必要時被隱藏截斷，而不是強制換行 */
-                white-space: nowrap; 
-                overflow: hidden;
-                text-overflow: ellipsis;
+            #roster-sort-btn {
+                flex-shrink: 0;
+                font-size: 1.2em; 
+            }
+            
+            /* 【修正 手機版事件紀錄模態視窗調整】 */
+            .modal2 .modal-content {
+                padding: 15px;
+            }
+            
+            /* 【修正 手機版：顯示分數增減按鈕】 */
+            .mobile-score-controls {
+                display: flex; 
+            }
+            
+            /* 【修正 手機版：調整分數輸入框寬度，為按鈕留空間】 */
+            #add-record-form {
+                flex-wrap: nowrap;
+                gap: 5px;
+            }
+            #record-points {
+                max-width: 60px; 
+                flex: 0 0 60px; 
+                padding: 8px;
+                text-align: center;
+            }
+            #record-text {
+                 padding: 8px;
+            }
+            .score-adjust-btn {
+                width: 35px; 
+                height: 35px;
+                font-size: 1.1em;
+            }
+            .form-header button[type="submit"] {
+                padding: 8px 10px;
+                font-size: 0.9em;
+                flex-shrink: 0;
+            }
+            
+            #records-list {
+                max-height: 25vh; 
             }
 
-            #roster-sort-btn {
-                /* 【關鍵修正 4】: 確保按鈕永遠不會被壓縮或換行 */
-                flex-shrink: 0;
-                font-size: 1.2em; /* 調整為手機版大小 */
-            }
         }
     </style>
 </head>
@@ -742,6 +807,10 @@
             <div class="form-container">
                 <div class="form-header">
                     <h3>近期紀錄 <span id="modal-current-score" style="font-weight: normal; font-size: 0.8em; color: #555;"></span></h3>
+                    <div class="mobile-score-controls">
+                        <button type="button" class="score-adjust-btn" id="score-minus-btn">-</button>
+                        <button type="button" class="score-adjust-btn" id="score-plus-btn">+</button>
+                    </div>
                     <button type="submit" form="add-record-form">新增</button>
                 </div>
 				<form id="add-record-form" novalidate>
@@ -972,6 +1041,12 @@
         myTimetableModal.querySelector('.close-btn').addEventListener('click', () => {
             myTimetableModal.style.display = 'none';
         });
+
+        // 【新增 DOM Elements for score adjustment】
+        const scorePlusBtn = document.getElementById('score-plus-btn'); 
+        const scoreMinusBtn = document.getElementById('score-minus-btn'); 
+        const recordPointsInput = document.getElementById('record-points'); 
+
 
         // --- Core Application Logic ---
         
@@ -1329,16 +1404,16 @@
         }
 
 
-        function closeModal() {
-			modal.style.display = 'none'; 
+        function closeModal(id = 'modal') {
+			document.getElementById(id).style.display = 'none'; 
 			addRecordForm.reset();
 			
             const refreshAndClose = () => {
-                const originalEntityId = currentEntity.id;
-                const originalType = currentEntity.type;
+                const originalEntityId = currentEntity ? currentEntity.id : null;
+                const originalType = currentEntity ? currentEntity.type : null;
                 currentEntity = null;
 
-                if (modalOrigin === 'roster') {
+                if (modalOrigin === 'roster' && originalEntityId) {
                     const className = originalType === 'student' ? originalEntityId.substring(0, 3) : originalEntityId;
                     // 重新渲染名單，維持當前的排序狀態
                     openStudentRosterModal(className); 
@@ -1406,9 +1481,16 @@
             currentEntity = { id, type };
             let titleText = '', scoreText = '';
             
-            const recordPointsInput = document.getElementById('record-points');
-            if (window.innerWidth <= 768) { recordPointsInput.placeholder = '加/減分'; } 
-            else { recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)'; }
+            
+            if (window.innerWidth <= 768) { 
+                // 【修改 1】: 手機版調整 placeholder 和預設值
+                recordPointsInput.placeholder = '+/-'; 
+                recordPointsInput.value = 1; 
+            } else { 
+                // 【修改 1】: 電腦版調整 placeholder
+                recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)'; 
+                recordPointsInput.value = '';
+            }
             
             const scoreSpan = document.getElementById('modal-current-score');
             
@@ -1417,7 +1499,14 @@
                 const displayId = `${student.id.substring(0,3)}${student.id.substring(3)}`;
                 titleText = `${student.name} (${displayId}) 的紀錄`;
                 const currentScore = allPerformanceScores[id] || 0;
-                scoreText = `(目前個人總分: ${currentScore.toFixed(1)})`;
+                
+                if (window.innerWidth <= 768) {
+                     // 【修改 2】: 手機版文字替換
+                    scoreText = `(總分: ${currentScore.toFixed(1)})`;
+                } else {
+                     // 【修改 3】: 電腦版保持原文字
+                    scoreText = `(目前個人總分: ${currentScore.toFixed(1)})`;
+                }
             } else {
                 titleText = `班級事件紀錄 (${id} 班)`;
                 const currentScore = classTotalScores[id] || 0; 
@@ -1428,7 +1517,6 @@
             scoreSpan.textContent = scoreText;
 
             loadRecords(id, type);
-			document.getElementById('record-points').value = 1; 
 			loadRecentTexts();
             modal.style.display = 'flex';
         }
@@ -1469,7 +1557,7 @@
                     recordItem.innerHTML = `
                         <div class="record-content">
                             <span class="record-points ${pClass}">${record.points||0}分</span>
-                            <span class="record-text">${record.text||''}</span>
+                            <span class="record-text">${record.text || ''}</span>
                         </div>
                         <div class="record-timestamp">${timestamp}</div>
                         <button class="delete-btn" data-id="${record.id}">🗑️</button>
@@ -1525,6 +1613,22 @@
                 this.value = roundedValue;
             }
         });
+
+        // 【新增：分數增減按鈕的事件監聽器】
+        const adjustScore = (amount) => {
+            if (window.innerWidth > 768) return; // 僅在手機版啟用
+
+            let currentValue = parseFloat(recordPointsInput.value) || 0;
+            let newValue = currentValue + amount;
+            
+            // 將結果四捨五入到小數點後一位
+            recordPointsInput.value = (Math.round(newValue * 10) / 10).toFixed(1);
+        };
+
+        scorePlusBtn.addEventListener('click', () => adjustScore(1));
+        scoreMinusBtn.addEventListener('click', () => adjustScore(-1));
+        // 結束新增
+
 
         passwordResetForm.addEventListener('submit', async (e) => { e.preventDefault(); const p1 = document.getElementById('new-password').value; const p2 = document.getElementById('confirm-password').value; document.getElementById('password-error-message').textContent = ''; if (p1.length < 6) { document.getElementById('password-error-message').textContent = '密碼至少6字元'; return; } if (p1 !== p2) { document.getElementById('password-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(p1); await db.collection('users').doc(currentUser.uid).update({ passwordNeedsReset: false }); alert('密碼修改成功，請重新登入'); auth.signOut(); } catch (err) { document.getElementById('password-error-message').textContent = '更新失敗: ' + err.message; } });
         document.getElementById('force-logout-btn').addEventListener('click', () => {
