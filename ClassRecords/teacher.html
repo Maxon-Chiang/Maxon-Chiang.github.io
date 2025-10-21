@@ -464,18 +464,30 @@
             font-size: 0.9em;
             margin-top: 10px;
         }
+        
+        /* 【修改此區塊】: 移除 h3 的樣式，改用 div 實現新的統計顯示 */
         .form-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            /* 【新增】調整高度以容納新的統計行 */
+            min-height: 30px; 
         }
-        .form-header h3 { 
-            margin: 0; 
+        
+        /* 【新增】統計資訊容器樣式 */
+        .record-stats-display {
             display: flex;
-            align-items: center;
-            gap: 5px;
+            gap: 15px;
+            font-size: 1.0em;
+            font-weight: bold;
         }
+        .record-stats-display span {
+             font-weight: normal;
+             color: #555;
+        }
+        /* 結束修改 */
+        
         #add-record-form {
             display: flex;
             gap: 10px;
@@ -806,7 +818,10 @@
             <h2 id="modal-title"></h2>
             <div class="form-container">
                 <div class="form-header">
-                    <h3>近期紀錄 <span id="modal-current-score" style="font-weight: normal; font-size: 0.8em; color: #555;"></span></h3>
+                    <div class="record-stats-display">
+                        <span id="record-count-display">事件數: 0</span>
+                        <span id="record-total-score-display">總分: 0.0</span>
+                    </div>
                     <div class="mobile-score-controls">
                         <button type="button" class="score-adjust-btn" id="score-minus-btn">-</button>
                         <button type="button" class="score-adjust-btn" id="score-plus-btn">+</button>
@@ -1042,10 +1057,13 @@
             myTimetableModal.style.display = 'none';
         });
 
-        // 【新增 DOM Elements for score adjustment】
+        // 【新增 DOM Elements for score adjustment and new stats display】
         const scorePlusBtn = document.getElementById('score-plus-btn'); 
         const scoreMinusBtn = document.getElementById('score-minus-btn'); 
         const recordPointsInput = document.getElementById('record-points'); 
+        // 新增的統計顯示 DOM
+        const recordCountDisplay = document.getElementById('record-count-display'); 
+        const recordTotalScoreDisplay = document.getElementById('record-total-score-display'); 
 
 
         // --- Core Application Logic ---
@@ -1479,43 +1497,28 @@
 			modalOrigin = origin;
             document.body.classList.add('modal-open');
             currentEntity = { id, type };
-            let titleText = '', scoreText = '';
             
-            
+            // 【修改 1】: 根據版面大小設定 placeholder 和預設值
             if (window.innerWidth <= 768) { 
-                // 【修改 1】: 手機版調整 placeholder 和預設值
                 recordPointsInput.placeholder = '+/-'; 
                 recordPointsInput.value = 1; 
             } else { 
-                // 【修改 1】: 電腦版調整 placeholder
                 recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)'; 
                 recordPointsInput.value = '';
             }
             
-            const scoreSpan = document.getElementById('modal-current-score');
-            
+            let titleText = '';
             if (type === 'student') {
                 const student = studentsData.find(s => s.id === id);
                 const displayId = `${student.id.substring(0,3)}${student.id.substring(3)}`;
                 titleText = `${student.name} (${displayId}) 的紀錄`;
-                const currentScore = allPerformanceScores[id] || 0;
-                
-                if (window.innerWidth <= 768) {
-                     // 【修改 2】: 手機版文字替換
-                    scoreText = `(總分: ${currentScore.toFixed(1)})`;
-                } else {
-                     // 【修改 3】: 電腦版保持原文字
-                    scoreText = `(目前個人總分: ${currentScore.toFixed(1)})`;
-                }
             } else {
                 titleText = `班級事件紀錄 (${id} 班)`;
-                const currentScore = classTotalScores[id] || 0; 
-                scoreText = `(總分: ${currentScore.toFixed(1)})`;
             }
 
             modalTitle.textContent = titleText;
-            scoreSpan.textContent = scoreText;
 
+            // loadRecords 將會負責更新兩個新的統計顯示 DOM
             loadRecords(id, type);
 			loadRecentTexts();
             modal.style.display = 'flex';
@@ -1523,6 +1526,9 @@
         
         async function loadRecords(id, type) {
             recordsList.innerHTML = '載入中...';
+            recordCountDisplay.textContent = '事件數: 0';
+            recordTotalScoreDisplay.textContent = '總分: 0.0';
+
             try {
                 let allRecords = [];
                 const recordsRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
@@ -1544,6 +1550,18 @@
                     const tsB = b.timestamp ? b.timestamp.seconds : 0;
                     return tsB - tsA;
                 });
+                
+                // 【修改 2】: 計算總分和事件數
+                let totalScore = 0;
+                let recordCount = 0;
+                allRecords.forEach(record => {
+                    totalScore += record.points || 0;
+                    recordCount++;
+                });
+
+                recordCountDisplay.textContent = `事件數: ${recordCount}`;
+                recordTotalScoreDisplay.textContent = `總分: ${totalScore.toFixed(1)}`;
+                // 結束修改 2
 
                 recordsList.innerHTML = '';
                 if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; }
@@ -1838,4 +1856,3 @@
     </script>
 </body>
 </html>
-
