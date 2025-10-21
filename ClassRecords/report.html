@@ -157,8 +157,8 @@
         let gradeAssignmentSortState = { key: 'date', direction: 'desc' };
         let gradeCrossClassSortState = { key: 'className', direction: 'asc' };
 
-        // 【【【新增此函式】】】
-        function convertClassName(oldClassName) {
+        // --- 移除 convertClassName 函數 ---
+        /*function convertClassName(oldClassName) {
             if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
             const firstDigit = oldClassName.charAt(0);
             const restOfName = oldClassName.substring(1);
@@ -168,7 +168,8 @@
                 case '9': return '3' + restOfName;
                 default: return oldClassName;
             }
-        }
+        }*/
+        // ---------------------------------------------------
         
 		auth.onAuthStateChanged(async (user) => { 
             if (user) { 
@@ -199,7 +200,7 @@
             document.getElementById('end-date').value = today;
 
             // --- 變更開始 ---
-            // 1. 檢查 schoolId 而非 rosterId
+            // 1. 檢查 schoolId
             if (!userData.schoolId) {
                 console.warn("帳號未綁定學校ID，無法讀取名冊。");
                 alert('錯誤：您的帳號未綁定學校ID，無法繼續操作。');
@@ -223,10 +224,12 @@
             classList.forEach(className => {
                 const div = document.createElement('div');
                 div.className = 'class-checkbox';
-                div.innerHTML = `<input type="checkbox" id="class-${className}" value="${className}" class="class-selector" checked> <label for="class-${className}">${convertClassName(className)}</label>`;
+                // 使用原始班級代碼
+                div.innerHTML = `<input type="checkbox" id="class-${className}" value="${className}" class="class-selector" checked> <label for="class-${className}">${className}</label>`;
                 perfClassFilter.appendChild(div);
-                gradesClassSelect.add(new Option(`${convertClassName(className)} 班`, className));
-                gradesClassSelectSingle.add(new Option(`${convertClassName(className)} 班`, className));
+                // 使用原始班級代碼
+                gradesClassSelect.add(new Option(`${className} 班`, className));
+                gradesClassSelectSingle.add(new Option(`${className} 班`, className));
             });
 
             const assignmentsSnapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').orderBy('date', 'desc').get();
@@ -353,8 +356,8 @@
                     targetName = student ? student.name : `學生 (${entityId})`; 
                 } 
                 const className = type === 'class' ? entityId : entityId.substring(0, 3); 
-                // 【【【修改】】】
-                tableHTML += `<tr><td>${record.timestamp.toDate().toLocaleString('zh-TW', { hour12: false })}</td><td>${convertClassName(className)}</td><td>${seatNum}</td><td>${targetName}</td><td>${record.points || 0}</td><td>${record.text || ''}</td></tr>`; 
+                // 使用原始班級代碼
+                tableHTML += `<tr><td>${record.timestamp.toDate().toLocaleString('zh-TW', { hour12: false })}</td><td>${className}</td><td>${seatNum}</td><td>${targetName}</td><td>${record.points || 0}</td><td>${record.text || ''}</td></tr>`; 
             }); 
             tableHTML += '</tbody></table>'; 
             container.innerHTML = tableHTML; 
@@ -384,8 +387,8 @@
             let table = `<table><thead><tr><th class="sortable-header" data-sort-stats="className">班級 <span class="sort-arrow">${getArrow('className')}</span></th><th class="sortable-header" data-sort-stats="total">總分 <span class="sort-arrow">${getArrow('total')}</span></th><th class="sortable-header" data-sort-stats="positive">總加分 <span class="sort-arrow">${getArrow('positive')}</span></th><th class="sortable-header" data-sort-stats="negative">總扣分 <span class="sort-arrow">${getArrow('negative')}</span></th><th class="sortable-header" data-sort-stats="count">事件總數 <span class="sort-arrow">${getArrow('count')}</span></th><th class="sortable-header" data-sort-stats="avg">單次均分 <span class="sort-arrow">${getArrow('avg')}</span></th></tr></thead><tbody>`; 
             stats.forEach(s => { 
                 const avg = s.count > 0 ? (s.total / s.count).toFixed(2) : 'N/A'; 
-                // 【【【修改】】】
-                table += `<tr class="drill-down-row" data-type="perf" data-value="${s.className}"><td>${convertClassName(s.className)}</td><td>${s.total}</td><td>${s.positive}</td><td>${s.negative}</td><td>${s.count}</td><td>${avg}</td></tr>`; 
+                // 使用原始班級代碼
+                table += `<tr class="drill-down-row" data-type="perf" data-value="${s.className}"><td>${s.className}</td><td>${s.total}</td><td>${s.positive}</td><td>${s.negative}</td><td>${s.count}</td><td>${avg}</td></tr>`; 
             }); 
             table += '</tbody></table>'; 
             container.innerHTML = table; 
@@ -406,12 +409,12 @@
                 const ts = r.timestamp.toDate().toLocaleString('zh-TW', { hour12: false }); 
                 const cName = type === 'class' ? eid : eid.substring(0, 3); 
                 const seatNum = (type === 'student') ? eid.substring(3) : ''; 
-                let target = `班級-${convertClassName(cName)}`; 
+                let target = `班級-${cName}`; 
                 if (type === 'student') { const s = studentsData.find(s => s.id === eid); target = s ? s.name : `學生-${eid}`; } 
                 const p = r.points || 0; 
                 const t = r.text ? `"${r.text.replace(/"/g, '""')}"` : ''; 
-                // 【【【修改】】】
-                csv += [ts, convertClassName(cName), seatNum, target, p, t].join(',') + "\r\n"; 
+                // 使用原始班級代碼
+                csv += [ts, cName, seatNum, target, p, t].join(',') + "\r\n"; 
             }); 
             downloadCSV(csv, 'performance_log_report'); 
         }
@@ -424,8 +427,8 @@
             sortedForExport.sort((a, b) => { const key = perfStatsSortState.key; const direction = perfStatsSortState.direction === 'asc' ? 1 : -1; let valA, valB; if (key === 'avg') { valA = a.count > 0 ? (a.total / a.count) : -Infinity; valB = b.count > 0 ? (b.total / b.count) : -Infinity; } else { valA = a[key]; valB = b[key]; } if (valA < valB) return -1 * direction; if (valA > valB) return 1 * direction; return a.className.localeCompare(b.className); }); 
             sortedForExport.forEach(s => { 
                 const avg = s.count > 0 ? (s.total / s.count).toFixed(2) : 'N/A'; 
-                // 【【【修改】】】
-                csv += [convertClassName(s.className), s.total, s.positive, s.negative, s.count, avg].join(',') + "\r\n"; 
+                // 使用原始班級代碼
+                csv += [s.className, s.total, s.positive, s.negative, s.count, avg].join(',') + "\r\n"; 
             }); 
             downloadCSV(csv, 'performance_stats_report'); 
         }
@@ -482,8 +485,8 @@
             const getArrow = (key) => { if (gradeCrossClassSortState.key !== key) return '&#x25B4;&#x25BE;'; return gradeCrossClassSortState.direction === 'asc' ? '&#x25B2;' : '&#x25BC;'; }; 
             let table = `<table><thead><tr><th class="sortable-header" data-sort-cross="className">班級 <span class="sort-arrow">${getArrow('className')}</span></th><th>繳交人數</th><th class="sortable-header" data-sort-cross="avg">班級平均 <span class="sort-arrow">${getArrow('avg')}</span></th><th class="sortable-header" data-sort-cross="max">最高分 <span class="sort-arrow">${getArrow('max')}</span></th><th class="sortable-header" data-sort-cross="min">最低分 <span class="sort-arrow">${getArrow('min')}</span></th><th class="sortable-header" data-sort-cross="passRate">及格率(%) <span class="sort-arrow">${getArrow('passRate')}</span></th></tr></thead><tbody>`; 
             stats.forEach(s => { 
-                // 【【【修改】】】
-                table += `<tr class="drill-down-row" data-type="grades" data-value="${s.className}"><td>${convertClassName(s.className)}</td><td>${s.studentCount}/${s.totalStudents}</td><td>${s.avg.toFixed(1)}</td><td>${s.max}</td><td>${s.min}</td><td>${s.passRate.toFixed(1)}%</td></tr>`; 
+                // 使用原始班級代碼
+                table += `<tr class="drill-down-row" data-type="grades" data-value="${s.className}"><td>${s.className}</td><td>${s.studentCount}/${s.totalStudents}</td><td>${s.avg.toFixed(1)}</td><td>${s.max}</td><td>${s.min}</td><td>${s.passRate.toFixed(1)}%</td></tr>`; 
             }); 
             table += '</tbody></table>'; container.innerHTML = table; document.getElementById('export-grades-csv-btn').disabled = false; container.querySelectorAll('.sortable-header[data-sort-cross]').forEach(header => { header.addEventListener('click', () => { const sortKey = header.dataset.sortCross; if (gradeCrossClassSortState.key === sortKey) { gradeCrossClassSortState.direction = gradeCrossClassSortState.direction === 'asc' ? 'desc' : 'asc'; } else { gradeCrossClassSortState.key = sortKey; gradeCrossClassSortState.direction = 'desc'; } sortAndRenderGradesCrossClassStats(); }); }); container.querySelectorAll('.drill-down-row[data-type="grades"]').forEach(row => { row.addEventListener('click', () => { const className = row.dataset.value; document.querySelector('input[name="grades-report-type"][value="assignment"]').checked = true; document.querySelector('input[name="grades-report-type"][value="assignment"]').dispatchEvent(new Event('change')); document.getElementById('grades-class-select-single').value = className; runGradesAssignmentQuery(true, className); }); }); }
         
@@ -515,8 +518,8 @@
                 row.push(avg); 
                 csvContent += row.join(',') + "\r\n"; 
             }); 
-            // 【【【修改】】】
-            downloadCSV(csvContent, `grades_student_report_${convertClassName(document.getElementById('grades-class-select').value)}`); 
+            // 使用原始班級代碼
+            downloadCSV(csvContent, `grades_student_report_${document.getElementById('grades-class-select').value}`); 
         }
         function exportGradesAssignmentStatsCSV() { 
             const { stats } = currentGradesResults; if (!stats || stats.length === 0) return; 
@@ -526,8 +529,8 @@
                 const row = [s.assignmentName, s.date.toDate().toLocaleDateString(), `${s.studentCount}/${s.totalStudents}`, s.avg.toFixed(1), s.max, s.min, s.passRate.toFixed(1)]; 
                 csv += row.join(',') + "\r\n"; 
             }); 
-            // 【【【修改】】】
-            downloadCSV(csv, `grades_assignment_stats_${convertClassName(document.getElementById('grades-class-select-single').value)}`); 
+            // 使用原始班級代碼
+            downloadCSV(csv, `grades_assignment_stats_${document.getElementById('grades-class-select-single').value}`); 
         }
         function exportGradesCrossClassStatsCSV() { 
             const { stats } = currentGradesResults; 
@@ -535,8 +538,8 @@
             let csv = "\uFEFF"; 
             csv += "班級,繳交人數,班級平均,最高分,最低分,及格率(%)\r\n"; 
             stats.forEach(s => { 
-                // 【【【修改】】】
-                const row = [convertClassName(s.className), `${s.studentCount}/${s.totalStudents}`, s.avg.toFixed(1), s.max, s.min, s.passRate.toFixed(1)]; 
+                // 使用原始班級代碼
+                const row = [s.className, `${s.studentCount}/${s.totalStudents}`, s.avg.toFixed(1), s.max, s.min, s.passRate.toFixed(1)]; 
                 csv += row.join(',') + "\r\n"; 
             }); 
             downloadCSV(csv, `grades_cross_class_stats_${document.getElementById('grades-assignment-select').value}`); 
