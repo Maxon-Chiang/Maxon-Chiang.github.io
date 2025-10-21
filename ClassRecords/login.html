@@ -15,9 +15,6 @@
 			align-items: flex-start; 
 			/* 增加頂部內距，讓容器下移 */
 			padding-top: 5vh; 
-			/* 移除強制高度，讓內容能向上收縮 */
-			/* height: 100vh; */ 
-			/* min-height: 100vh; */
 			margin: 0; 
 			width: 100%;
 			overflow-x: hidden;
@@ -72,10 +69,12 @@
         }
         #google-signin-btn:hover { background-color: #f8f8f8; }
         #google-signin-btn img { 
-            width: 22px; 
+            /* 修正 Logo 變形：使用 auto 確保寬度依比例調整，同時設定一個固定的高度 */
+            width: auto; 
             height: 22px; 
-            /* 防止圖片被縮小擠壓 */
             flex-shrink: 0; 
+            /* 確保圖片不會因為 flex 佈局而被拉伸或壓縮 */
+            object-fit: contain; 
         }
 
         .admin-toggle-link { display: block; margin-top: 25px; font-size: 0.9em; color: #6c757d; text-decoration: none; cursor: pointer; }
