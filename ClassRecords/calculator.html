@@ -242,9 +242,9 @@
                         <label for="rule-grade-select">1. 選擇規則所屬年段</label>
                         <select id="rule-grade-select">
                             <option value="">請選擇年段</option>
-                            <option value="1">一年級</option>
-                            <option value="2">二年級</option>
-                            <option value="3">三年級</option>
+                            <option value="7">七年級 (原 7xx)</option>
+                            <option value="8">八年級 (原 8xx)</option>
+                            <option value="9">九年級 (原 9xx)</option>
                         </select>
                     </div>
                      <div class="control-group">
@@ -326,7 +326,8 @@
             allAssignments = {}, // { classId: [assignments] }
             allPerformanceScores = {}, // { studentId: score }
             allRules = [],
-            gradeLevels = { '1': [], '2': [], '3': [] };
+            // 修正 gradeLevels 以使用原始代碼的年級劃分 7, 8, 9
+            gradeLevels = { '7': [], '8': [], '9': [] };
             
         const appContainer = document.getElementById('app-container');
 
@@ -362,13 +363,13 @@
             }
         });
 		
-		// 【【【請用這整段新的函數，取代舊的 initializePage 函數】】】
+		// 【【【取代舊的 initializePage 函數】】】
         async function initializePage() {
             const userDoc = await db.collection('users').doc(currentUser.uid).get();
             const userData = userDoc.data();
 
             // --- 變更開始 ---
-            // 1. 檢查 schoolId 而非 rosterId
+            // 1. 檢查 schoolId
             if (!userDoc.exists || userData.role !== 'teacher' || !userData.schoolId) {
                 appContainer.innerHTML = '<h2>帳號設定錯誤或未綁定學校ID</h2><p>無法讀取學生名冊，請確認您的帳號設定是否正確。</p>';
                 return;
@@ -405,18 +406,22 @@
             
             const classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
             classList.forEach(c => {
+                // 獲取原始代碼的年級 (7, 8, 9)
                 const grade = getGradeLevelFromClassId(c);
                 if (grade && gradeLevels[grade]) gradeLevels[grade].push(c);
             });
 
             const calcTargetSelect = document.getElementById('calc-target-select');
+            // 遍歷原始代碼的年級 (7, 8, 9)
             for (const grade in gradeLevels) {
                 if (gradeLevels[grade].length > 0) {
                     const optGroup = document.createElement('optgroup');
-                    optGroup.label = `--- ${grade}年級 ---`;
+                    // 顯示原始年級代碼
+                    optGroup.label = `--- ${grade}年級 ---`; 
                     optGroup.appendChild(new Option(`${grade}年級全體`, `grade-${grade}`));
                     gradeLevels[grade].forEach(c => {
-                        optGroup.appendChild(new Option(`${convertClassName(c)}班`, c));
+                        // 班級名稱使用原始代碼
+                        optGroup.appendChild(new Option(`${c}班`, c));
                     });
                     calcTargetSelect.appendChild(optGroup);
                 }
@@ -425,7 +430,8 @@
         }
         
         // --- 輔助函式 ---
-        function convertClassName(oldClassName) {
+        // --- 移除 convertClassName 函數 ---
+        /* function convertClassName(oldClassName) {
             if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
             const firstDigit = oldClassName.charAt(0);
             const restOfName = oldClassName.substring(1);
@@ -435,18 +441,19 @@
                 case '9': return '3' + restOfName;
                 default: return oldClassName;
             }
-        }
+        }*/
+        // ---------------------------------------------------
+        // --- 移除 getGradeLevelFromClassId 函數 ---
         function getGradeLevelFromClassId(classId) {
             if (!classId) return null;
-            const firstDigit = (classId.charAt(0) === '7' || classId.charAt(0) === '8' || classId.charAt(0) === '9') 
-                ? convertClassName(classId).charAt(0) 
-                : classId.charAt(0);
-
-            if (['1'].includes(firstDigit)) return '1';
-            if (['2'].includes(firstDigit)) return '2';
-            if (['3'].includes(firstDigit)) return '3';
+            const firstDigit = classId.charAt(0);
+            // 檢查原始年級代碼 7, 8, 9
+            if (['7'].includes(firstDigit)) return '7';
+            if (['8'].includes(firstDigit)) return '8';
+            if (['9'].includes(firstDigit)) return '9';
             return null;
         }
+        // ---------------------------------------------------
 
         // 【【【新增/修正 整個 'bindEventListeners' 函式】】】
         function bindEventListeners() {
@@ -508,6 +515,7 @@
                 const calculateBtn = document.getElementById('btn-calculate');
 
                 if (target) {
+                    // 直接使用原始代碼的年級 (7, 8, 9)
                     const grade = target.startsWith('grade-') ? target.split('-')[1] : getGradeLevelFromClassId(target);
                     const rulesForGrade = allRules.filter(r => r.gradeLevel === grade);
                     if (rulesForGrade.length > 0) {
@@ -542,7 +550,6 @@
                 ruleSelect.appendChild(new Option(r.ruleName, r.id));
             });
             clearRuleForm();
-            //document.getElementById('rule-name').value = '';
         }
         
         function populateAssignmentsForGrade(grade) {
@@ -729,6 +736,7 @@
             
             const rule = allRules.find(r => r.id === ruleId);
             const isGradeCalc = target.startsWith('grade-');
+            // 使用原始代碼的年級
             const grade = isGradeCalc ? target.split('-')[1] : getGradeLevelFromClassId(target);
             const classesToCalc = isGradeCalc ? gradeLevels[grade] : [target];
             
@@ -778,7 +786,7 @@
                 finalScore = s1Score + s2Score + s3Score + s4Score;
 
                 tableHTML += `<tr>
-                    <td>${convertClassName(studentClassId)}</td>
+                    <td>${studentClassId}</td>
                     <td>${student.id.substring(3)}</td>
                     <td>${student.name}</td>
                     <td><strong>${finalScore.toFixed(2)}</strong></td>
