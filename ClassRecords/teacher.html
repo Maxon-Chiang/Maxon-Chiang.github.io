@@ -121,7 +121,7 @@
         }
 
         .class-block {
-            background-color: white;
+            /* 修正：這是我們將通過 JS 設置背景色的主要區塊 */
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             display: flex;
@@ -129,6 +129,7 @@
             text-align: center;
             min-height: 120px;
             justify-content: space-between;
+            transition: background-color 0.3s ease;
         }
         
         .class-block-title {
@@ -144,7 +145,17 @@
             border-radius: 8px 8px 0 0;
         }
         .class-block-title:hover {
-            background-color: #f0f8ff;
+            background-color: rgba(240, 248, 255, 0.5); /* 讓 hover 效果在有背景色時也能看見 */
+        }
+        
+        /* 新增：班級總分顯示樣式 */
+        .class-total-score {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333; 
+            padding: 5px 10px;
+            margin: 0;
+            flex-shrink: 0;
         }
 
         .class-block-actions {
@@ -177,6 +188,16 @@
             max-height: 90vh;
             display: flex;
             flex-direction: column;
+        }
+        
+        /* 調整學生名單標題佈局 */
+        #student-roster-modal .modal-content h2 {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 10px;
+            /* 讓標題文字居中，但允許分數靠右 */
+            text-align: center; 
         }
 
         #student-grid-container {
@@ -643,12 +664,17 @@
         const auth = firebase.auth();
 
         // --- Global Variables ---
-		let currentUser = null, studentsData = [], studentScores = {}, classEventScores = {},
-			currentEntity = null, allClassList = [], visibleClassList = [], modalOrigin = null, rosterModalOrigin = null;
-	
+		let currentUser = null, studentsData = [], 
+            allPerformanceScores = {}, // 儲存學生的個人總分
+            allClassList = [], visibleClassList = [], modalOrigin = null, rosterModalOrigin = null;
+
         let scheduleDataLoaded = false;
         let classSchedules = new Map(), teacherSchedules = new Map(), activeChanges = [];
-        let currentUserData = null; // 用來儲存登入者的完整 user data
+        let currentUserData = null; 
+        
+        // --- 新增變數用於分數計算 ---
+        let classTotalScores = {};      // 儲存計算後的班級總分 (包含學生累積和班級事件)
+        // ----------------------------
         
         // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
@@ -693,6 +719,19 @@
 
         // --- Core Application Logic ---
 
+        // 【新增輔助函數】決定班級格子背景顏色的函數
+        function getClassBlockColor(totalScore) {
+            if (totalScore < 0) {
+                return '#D9E2E9'; // 灰色 (小於 0)
+            } else if (totalScore < 10) {
+                return '#D4EDDA'; // 淺綠色 (0 <= x < 10)
+            } else if (totalScore < 20) {
+                return '#FFFACD'; // 金黃色 (10 <= x < 20)
+            } else {
+                return '#F8D7DA'; // 淡紅色 (大於等於 20)
+            }
+        }
+
         function runMainApp() {
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
@@ -700,7 +739,7 @@
                     currentUser = user;
                     const userDoc = await db.collection('users').doc(currentUser.uid).get();
                     if (userDoc.exists && userDoc.data().role === 'teacher') {
-                        currentUserData = userDoc.data(); // 將使用者資料存到全域變數
+                        currentUserData = userDoc.data(); 
                         document.getElementById('user-email').textContent = currentUserData.displayName || user.email;
                         visibleClassList = currentUserData.visibleClasses || [];
                         if (currentUserData.passwordNeedsReset === true) {
@@ -744,18 +783,6 @@
             timetableLink.href = `./timetable.html?v=${Date.now()}`;
         }
         
-        function convertClassName(oldClassName) {
-            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
-            const firstDigit = oldClassName.charAt(0);
-            const restOfName = oldClassName.substring(1);
-            switch (firstDigit) {
-                case '7': return '1' + restOfName;
-                case '8': return '2' + restOfName;
-                case '9': return '3' + restOfName;
-                default: return oldClassName;
-            }
-        }
-
         function showPasswordResetUI() {
             document.querySelector('header').style.display = 'none';
             appContainer.style.display = 'none';
@@ -764,7 +791,7 @@
 
 		async function initialize(userData) {
             try {
-                // 1. 檢查 schoolId 是否存在 (這是新的驗證)
+                // 1. 檢查 schoolId 是否存在
                 if (!userData.schoolId) {
                     appContainer.innerHTML = '<h2>帳號設定錯誤：找不到學校 ID。</h2>';
                     return;
@@ -799,26 +826,48 @@
             }
         }
 		
+        // 【修正 fetchAllScores】計算學生個人總分、班級事件總分，並累積計算出班級最終總分
         async function fetchAllScores() {
             const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
-            studentScores = {};
-            classEventScores = {};
+            
+            // 重設所有分數
+            allPerformanceScores = {};
+            classTotalScores = {};
+
             snapshot.forEach(doc => {
                 const r = doc.data();
                 const p = r.points || 0;
                 const type = r.entityType || 'student';
                 const id = r.entityId || r.studentId;
                 if (!id) return;
+                
+                // 學生分數累積到 allPerformanceScores
                 if (type === 'student') {
-                    if (!studentScores[id]) studentScores[id] = 0;
-                    studentScores[id] += p;
-                } else if (type === 'class') {
-                    if (!classEventScores[id]) classEventScores[id] = 0;
-                    classEventScores[id] += p;
+                    const studentId = id;
+                    if (!allPerformanceScores[studentId]) allPerformanceScores[studentId] = 0;
+                    allPerformanceScores[studentId] += p;
+                } 
+                // 班級事件分數直接累積到 classTotalScores
+                else if (type === 'class') {
+                    const classId = id;
+                    if (!classTotalScores[classId]) classTotalScores[classId] = 0;
+                    classTotalScores[classId] += p;
                 }
+            });
+
+            // 將所有學生的個人總分累積到其所屬班級的總分
+            studentsData.forEach(student => {
+                const studentId = student.id;
+                const className = studentId.substring(0, 3);
+                // 獲取該學生的個人累積分數
+                const score = allPerformanceScores[studentId] || 0; 
+                
+                // 累積學生個人分數到班級總分
+                classTotalScores[className] = (classTotalScores[className] || 0) + score;
             });
         }
 
+        // 【修改 renderLayout】加入分數顯示和背景顏色邏輯，並替換圖示
         function renderLayout() {
             appContainer.innerHTML = '';
             const classesToRender = allClassList.filter(className => visibleClassList.includes(className));
@@ -829,41 +878,64 @@
             }
 
             classesToRender.forEach(className => {
+                
+                // 1. 獲取班級總分和顏色
+                const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
+                const backgroundColor = getClassBlockColor(totalScore);
+                
                 const classBlock = document.createElement('div');
+                // 【設置背景色】
                 classBlock.className = 'class-block';
+                classBlock.style.backgroundColor = backgroundColor;
 
                 const titleDiv = document.createElement('div');
+                // 確保 class-block-title 的樣式仍然生效
                 titleDiv.className = 'class-block-title';
-                titleDiv.textContent = `${convertClassName(className)} 班`;
+                titleDiv.textContent = `${className} 班`;
                 titleDiv.title = '點擊以紀錄班級共同事件';
                 titleDiv.addEventListener('click', () => openModal(className, 'class', 'main')); 
 
+                // 【新增】顯示總分的元素
+                const scoreDiv = document.createElement('div');
+                scoreDiv.className = 'class-total-score';
+                scoreDiv.textContent = `總分: ${totalScore.toFixed(1)}`;
+                
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'class-block-actions';
                 
+                // 學生圖示替換為 🧑‍🎓
                 const studentBtn = document.createElement('button');
-                studentBtn.innerHTML = '👤';
+                studentBtn.innerHTML = '🧑‍🎓';
                 studentBtn.title = '開啟學生名單';
-				studentBtn.addEventListener('click', () => openStudentRosterModal(className, 'main'));
+		        studentBtn.addEventListener('click', () => openStudentRosterModal(className, 'main'));
 
+                // 成績單圖示替換為 📋
                 const gradesLink = document.createElement('a');
                 gradesLink.href = `./grades.html?class=${className}`;
-                gradesLink.innerHTML = '📝';
+                gradesLink.innerHTML = '📋';
                 gradesLink.title = '前往成績登錄';
 
                 actionsDiv.appendChild(studentBtn);
                 actionsDiv.appendChild(gradesLink);
                 
                 classBlock.appendChild(titleDiv);
+                // 將分數元素加到班級名稱下方
+                classBlock.appendChild(scoreDiv); 
                 classBlock.appendChild(actionsDiv);
                 
                 appContainer.appendChild(classBlock);
             });
         }
+		
+        // 【修正 openStudentRosterModal】加入班級總分顯示
 		function openStudentRosterModal(className, origin = 'main') {
-			rosterModalOrigin = origin; // 記錄來源是 'main' 還是 'timetable'
+			rosterModalOrigin = origin; 
 			document.body.classList.add('modal-open');
-			studentRosterTitle.textContent = `${convertClassName(className)} 班 學生名單`;
+            
+            const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
+            // 【修改點 1】在標題中加入班級總分顯示
+			studentRosterTitle.innerHTML = `${className} 班 學生名單 <span style="font-size: 0.7em; color: #555;">(累積總分: ${totalScore.toFixed(1)})</span>`;
+            
 			studentRosterTitle.style.cursor = 'pointer';
 			studentRosterTitle.title = '點擊以新增班級共同紀錄';
 			studentRosterTitle.onclick = () => {
@@ -872,28 +944,8 @@
 			};
 			studentGridContainer.innerHTML = '';
 
-			// 【【【最終修正核心】】】
-			// 1. 定義一個反向轉換函數
-			function convertClassNameReverse(newClassName) {
-				if (typeof newClassName !== 'string' || newClassName.length < 3) return newClassName;
-				const firstDigit = newClassName.charAt(0);
-				const restOfName = newClassName.substring(1);
-				switch (firstDigit) {
-					// 國一(1xx) -> 7xx
-					case '1': return '7' + restOfName;
-					// 國二(2xx) -> 8xx
-					case '2': return '8' + restOfName;
-					// 國三(3xx) -> 9xx
-					case '3': return '9' + restOfName;
-					default: return newClassName;
-				}
-			}
-
-			// 2. 在過濾學生前，先將收到的班級代號 (如 '101') 轉換回原始代號 (如 '701')
-			const originalClassId = convertClassNameReverse(className);
-
 			const studentsInClass = studentsData
-				.filter(s => s.id.startsWith(originalClassId)) // 使用原始代號進行過濾
+				.filter(s => s.id.startsWith(className))
 				.sort((a, b) => a.id.localeCompare(b.id));
 
 			if (studentsInClass.length === 0) {
@@ -903,7 +955,8 @@
 					const studentBlock = document.createElement('div');
 					studentBlock.title = `點擊以紀錄 ${student.name} 的表現`;
 					
-					const score = studentScores[student.id] || 0;
+					// 獲取個人總分 (來自 allPerformanceScores)
+					const score = allPerformanceScores[student.id] || 0; 
 					let scoreClass = '';
 					if (score < 0) {
 						scoreClass = 'score-negative';
@@ -933,6 +986,7 @@
 			studentRosterModal.style.display = 'flex';
 		}
 
+        // 【修正 openModal】使用 allPerformanceScores 和 classTotalScores
 		function openModal(id, type = 'student', origin = 'main') {
 			modalOrigin = origin;
             document.body.classList.add('modal-open');
@@ -947,14 +1001,16 @@
             
             if (type === 'student') {
                 const student = studentsData.find(s => s.id === id);
-                const displayId = `${convertClassName(student.id.substring(0,3))}${student.id.substring(3)}`;
+                const displayId = `${student.id.substring(0,3)}${student.id.substring(3)}`;
                 titleText = `${student.name} (${displayId}) 的紀錄`;
-                const currentScore = studentScores[id] || 0;
+                // 使用 allPerformanceScores 作為個人分數
+                const currentScore = allPerformanceScores[id] || 0;
                 scoreText = `(目前個人總分: ${currentScore.toFixed(1)})`;
             } else {
-                titleText = `班級事件紀錄 (${convertClassName(id)} 班)`;
-                const currentScore = classEventScores[id] || 0;
-                scoreText = `(目前班級事件總分: ${currentScore.toFixed(1)})`;
+                titleText = `班級事件紀錄 (${id} 班)`;
+                // 這裡顯示班級的累計總分（包含所有學生和班級事件）
+                const currentScore = classTotalScores[id] || 0; 
+                scoreText = `(目前累積總分: ${currentScore.toFixed(1)})`;
             }
 
             modalTitle.textContent = titleText;
@@ -965,65 +1021,86 @@
 			loadRecentTexts();
             modal.style.display = 'flex';
         }
-		
+        
+        
+        // 【修正 closeModal】確保返回主畫面或 Roster 時，數據和畫面都刷新
 		function closeModal() {
-			modal.style.display = 'none'; // 隱藏個人紀錄視窗
+			modal.style.display = 'none'; 
 			addRecordForm.reset();
-			currentEntity = null;
+			
+            // 由於 fetchAllScores 包含了 classTotalScores 和 allPerformanceScores 的更新，因此在關閉時呼叫它
+            const refreshAndClose = () => {
+                const originalEntityId = currentEntity.id;
+                const originalType = currentEntity.type;
+                currentEntity = null;
 
-			if (modalOrigin === 'roster') {
-				// 如果是從學生名單來的，就重新顯示學生名單
-				studentRosterModal.style.display = 'flex';
-			} else {
-				// 否則 (從主畫面來的)，才移除背景鎖定，回到主畫面
-				document.body.classList.remove('modal-open');
-			}
-			modalOrigin = null; // 重設來源標記
+                if (modalOrigin === 'roster') {
+                    // 如果是從學生名單來的 (學生紀錄或班級紀錄)，刷新分數並重新顯示學生名單
+                    const className = originalType === 'student' ? originalEntityId.substring(0, 3) : originalEntityId;
+                    openStudentRosterModal(className); 
+                } else {
+                    // 否則 (從主畫面點擊班級標題進入的班級紀錄)，刷新分數並回到主畫面
+                    renderLayout();
+                    document.body.classList.remove('modal-open');
+                }
+                modalOrigin = null; 
+            };
+
+            // 在執行完所有數據更新後，調用刷新邏輯
+            fetchAllScores().then(refreshAndClose);
 		}
+        
+        // 【修正 closeStudentRosterModal】確保返回主頁時，分數會刷新
 		function closeStudentRosterModal() {
-			studentRosterModal.style.display = 'none'; // 隱藏學生名單視窗
+			studentRosterModal.style.display = 'none'; 
 
 			if (rosterModalOrigin === 'timetable') {
-				// 如果是從課表來的，就重新顯示課表視窗
 				myTimetableModal.style.display = 'flex';
 			} else {
-				// 否則 (從主畫面來的)，才移除背景鎖定
-				document.body.classList.remove('modal-open');
+                // 刷新分數並回到主頁
+                fetchAllScores().then(() => {
+                    renderLayout();
+				    document.body.classList.remove('modal-open');
+                });
 			}
-			rosterModalOrigin = null; // 重設來源標記
+			rosterModalOrigin = null; 
 		}
-
-		async function loadRecentTexts() {
-			const datalist = document.getElementById('recent-texts-list');
-			datalist.innerHTML = ''; // 先清空舊的建議
-
-			try {
-				const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records')
-					.orderBy('timestamp', 'desc')
-					.limit(50) // 先抓最近的50筆紀錄以提高效率
-					.get();
+        
+        // *由於 handleAddRecord 和 handleDeleteRecord 最終都會呼叫 closeModal()，
+        // 而 closeModal() 已包含 fetchAllScores().then(refresh), 因此這兩個函數的邏輯無需大幅修改，只需移除冗餘的刷新邏輯。*
+        
+        async function handleAddRecord(e) { 
+            e.preventDefault(); 
+            const rawPoints = parseFloat(document.getElementById('record-points').value) || 0;
+            const p = Math.round(rawPoints * 10) / 10;
+            const t = document.getElementById('record-text').value.trim(); 
+            if (p === 0 && t === '') return; 
+            const sid = currentEntity; 
+            const n = { entityId: sid.id, entityType: sid.type, points: p, text: t, timestamp: firebase.firestore.FieldValue.serverTimestamp(), studentId: sid.type === 'student' ? sid.id : null }; 
+            try { 
+				await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n);
 				
-				const recentTexts = new Set(); // 使用 Set 來確保文字不重複
-				snapshot.forEach(doc => {
-					const text = doc.data().text;
-					// 如果文字存在且不為空，就加入 Set
-					if (text && text.trim() !== '') {
-						recentTexts.add(text.trim());
-					}
-				});
+                // 數據更新完成後，調用 closeModal 觸發刷新和畫面回溯
+				closeModal(); 
+            } catch (err) { console.error(err); } 
+        }
 
-				// 只取前10筆不重複的文字紀錄
-				Array.from(recentTexts).slice(0, 10).forEach(text => {
-					const option = document.createElement('option');
-					option.value = text;
-					datalist.appendChild(option);
-				});
-
-			} catch (error) {
-				console.error("讀取最近的文字紀錄失敗:", error);
-			}
+        async function handleDeleteRecord(e) { 
+			if (e.target.classList.contains('delete-btn')) { 
+				const rid = e.target.dataset.id; 
+				if (confirm('確定刪除？')) { 
+					try { 
+						await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
+                        
+                        // 數據更新完成後，調用 closeModal 觸發刷新和畫面回溯
+						closeModal(); 
+					} catch (err) { 
+						console.error(err); 
+					} 
+				} 
+			} 
 		}
-
+        
         async function loadRecords(id, type) {
             recordsList.innerHTML = '載入中...';
             try {
@@ -1072,62 +1149,41 @@
                 recordsList.innerHTML = '讀取紀錄時發生錯誤。';
             }
         }
-        
-        async function handleAddRecord(e) { 
-            e.preventDefault(); 
-            const rawPoints = parseFloat(document.getElementById('record-points').value) || 0;
-            const p = Math.round(rawPoints * 10) / 10;
-            const t = document.getElementById('record-text').value.trim(); 
-            if (p === 0 && t === '') return; 
-            const sid = currentEntity; 
-            const n = { entityId: sid.id, entityType: sid.type, points: p, text: t, timestamp: firebase.firestore.FieldValue.serverTimestamp(), studentId: sid.type === 'student' ? sid.id : null }; 
-            try { 
-				const origin = modalOrigin; 
-				const className = sid.type === 'student' ? sid.id.substring(0, 3) : sid.id;
 
-				await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n);
+		async function loadRecentTexts() {
+			const datalist = document.getElementById('recent-texts-list');
+			datalist.innerHTML = ''; 
+
+			try {
+				const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records')
+					.orderBy('timestamp', 'desc')
+					.limit(50) 
+					.get();
 				
-				closeModal(); 
-				await fetchAllScores(); 
+				const recentTexts = new Set(); 
+				snapshot.forEach(doc => {
+					const text = doc.data().text;
+					if (text && text.trim() !== '') {
+						recentTexts.add(text.trim());
+					}
+				});
 
-				if (origin === 'roster') {
-					openStudentRosterModal(className); 
-				} else {
-					renderLayout();
-					document.body.classList.remove('modal-open');
-				}
-            } catch (err) { console.error(err); } 
-        }
+				Array.from(recentTexts).slice(0, 10).forEach(text => {
+					const option = document.createElement('option');
+					option.value = text;
+					datalist.appendChild(option);
+				});
 
-        async function handleDeleteRecord(e) { 
-			if (e.target.classList.contains('delete-btn')) { 
-				const rid = e.target.dataset.id; 
-				if (confirm('確定刪除？')) { 
-					const sid = currentEntity; 
-					try { 
-						const origin = modalOrigin; 
-						const className = sid.type === 'student' ? sid.id.substring(0, 3) : sid.id;
-
-						await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
-
-						closeModal(); 
-						await fetchAllScores(); 
-
-						if (origin === 'roster') {
-							openStudentRosterModal(className);
-						} else {
-							renderLayout();
-							document.body.classList.remove('modal-open');
-						}
-					} catch (err) { 
-						console.error(err); 
-					} 
-				} 
-			} 
+			} catch (error) {
+				console.error("讀取最近的文字紀錄失敗:", error);
+			}
 		}
-        
+
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
-        closeBtn.addEventListener('click', closeModal);
+        closeBtn.addEventListener('click', () => { 
+            // 由於 closeModal 會處理所有刷新邏輯，這裡不需要額外處理
+            closeModal();
+        });
         addRecordForm.addEventListener('submit', handleAddRecord);
         recordsList.addEventListener('click', handleDeleteRecord);
         
@@ -1148,7 +1204,9 @@
         cpCloseBtn.addEventListener('click', () => { document.body.classList.remove('modal-open'); changePasswordModal.style.display = 'none'; changePasswordForm.reset(); cpErrorMessage.textContent = ''; });
         changePasswordForm.addEventListener('submit', async (e) => { e.preventDefault(); const newPassword = document.getElementById('cp-new-password').value; const confirmPassword = document.getElementById('cp-confirm-password').value; cpErrorMessage.textContent = ''; if (newPassword.length < 6) { cpErrorMessage.textContent = '密碼至少6字元'; return; } if (newPassword !== confirmPassword) { cpErrorMessage.textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(newPassword); alert('密碼更新成功！'); cpCloseBtn.click(); } catch (error) { if (error.code === 'auth/requires-recent-login') { cpErrorMessage.textContent = '此為敏感操作，請先登出再重新登入後再試。'; } else { cpErrorMessage.textContent = '更新失敗：' + error.message; } } });
         
-        classSettingsBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${convertClassName(className)} 班</label>`; classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; classSettingsModal.style.display = 'flex'; });
+        classSettingsBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; 
+            itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${className} 班</label>`; 
+            classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; classSettingsModal.style.display = 'flex'; });
         selectAllVisibleClasses.addEventListener('change', (e) => { document.querySelectorAll('.visible-class-checkbox').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
         csCloseBtn.addEventListener('click', () => { document.body.classList.remove('modal-open'); classSettingsModal.style.display = 'none'; });
         saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); csCloseBtn.click(); alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
@@ -1218,7 +1276,7 @@
         myTimetableBtn.addEventListener('click', async () => {
 			if (!studentsData || studentsData.length === 0) {
 				alert('學生資料仍在載入中，請稍候再試！');
-				return; // 中斷後續操作
+				return; 
 			}
             document.getElementById('dropdown-menu').classList.remove('show');
             const userDisplayName = document.getElementById('user-email').textContent;
@@ -1244,10 +1302,9 @@
 
 		async function fetchScheduleData() {
         try {
-            // 【修改1】修正資料讀取路徑
             const schoolRef = db.collection('schools').doc(currentUserData.schoolId);
             const [scheduleSnapshot, changesSnapshot] = await Promise.all([
-                schoolRef.collection('timetables').get(), // 從 schoolId 下的 timetables 讀取
+                schoolRef.collection('timetables').get(), 
                 db.collection('classChanges').where('involvedTeacherIds', 'array-contains', currentUser.uid).where('status', '==', 'active').get()
             ]);
 
@@ -1255,12 +1312,10 @@
             teacherSchedules.clear();
             activeChanges = [];
 
-            // 【修改2】調整資料解析邏輯以適應新結構
             scheduleSnapshot.forEach(doc => {
-                const teacherName = doc.id; // 文件 ID 現在是老師姓名
+                const teacherName = doc.id; 
                 const data = doc.data();
 
-                // 建立老師課表
                 if (!teacherSchedules.has(teacherName)) {
                      teacherSchedules.set(teacherName, Array.from({ length: 8 }, () => Array(5).fill(null)));
                 }
@@ -1268,23 +1323,18 @@
 
                 if (data.periods) {
                     for (const periodKey in data.periods) {
-                        // 新結構的 periodKey 是 0-6，不需-1
                         const period = parseInt(periodKey, 10);
                         if (period < 0 || period >= 8) continue;
 
-                        // 新結構的 dailyLessons 是一個陣列
                         const dailyLessons = data.periods[periodKey];
                         for(let day = 0; day < dailyLessons.length; day++) {
                             const cellContent = dailyLessons[day];
                             if (cellContent) {
-                                // 解析 "班級 科目" 格式
                                 const [className, ...subjectParts] = cellContent.split(/\s+/);
                                 const subject = subjectParts.join(' ');
                                 if(className && subject) {
-                                    // 填充老師課表
                                     teacherGrid[period][day] = { subject, class: className, location: '', period };
 
-                                    // 同時建立班級課表
                                     if (!classSchedules.has(className)) {
                                         classSchedules.set(className, Array.from({ length: 8 }, () => Array(5).fill(null)));
                                     }
@@ -1360,11 +1410,11 @@
 							tableHtml += `<td class="${cellClass}">${content}</td>`;
 						} else if (cellData.isSubstitutedIn) {
 							cellClass = 'substituted-cell timetable-clickable-cell';
-							content = `<span class="subject">${cellData.subject}</span><span class="details">代 ${cellData.originalTeacherName} 的課</span><span class="details">${convertClassName(cellData.class)}</span>`;
+							content = `<span class="subject">${cellData.subject}</span><span class="details">代 ${cellData.originalTeacherName} 的課</span><span class="details">${cellData.class}</span>`;
 							tableHtml += `<td class="${cellClass}" ${dataAttribute}>${content}</td>`;
 						} else {
 							cellClass = 'timetable-clickable-cell';
-							content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${convertClassName(cellData.class) || ''}</span>`;
+							content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.class || ''}</span>`;
 							tableHtml += `<td class="${cellClass}" ${dataAttribute}>${content}</td>`;
 						}
 					} else {
@@ -1398,10 +1448,10 @@
 				const passwordInput = document.getElementById(targetId);
 				if (passwordInput.type === 'password') {
 					passwordInput.type = 'text';
-					toggle.textContent = '🙈'; // 可換成閉眼的圖示
+					toggle.textContent = '🙈'; 
 				} else {
 					passwordInput.type = 'password';
-					toggle.textContent = '👁️'; // 換回開眼的圖示
+					toggle.textContent = '👁️'; 
 				}
 			});
 		});
