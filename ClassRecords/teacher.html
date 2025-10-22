@@ -864,7 +864,12 @@
 			#my-timetable-body {
 				overflow-x: hidden;
 			}
-			
+			#save-record-btn, #btn-cancel-edit {
+				/* 這裡使用新的 padding 值，大約是原來的 10px 15px 的一半 */
+				padding: 5px 8px !important; /* 手機版按鈕 padding 減半 */
+				font-size: 1em !important; /* 確保字體大小適中 */
+				flex-shrink: 0;
+			}
 		}
     </style>
 </head>
@@ -1709,9 +1714,11 @@
             editingRecordId = null;
             recordPointsInput.value = '1';
             recordTextInput.value = '';
-            saveRecordBtn.textContent = '新增紀錄';
+            saveRecordBtn.textContent = '新增';
             saveRecordBtn.classList.remove('update-mode');
             saveRecordBtn.style.backgroundColor = 'var(--success-color)';
+			// --- 【修改點】: 將文本改為 "取消" ---
+			btnCancelEdit.textContent = '取消';			
             btnCancelEdit.style.display = 'none'; // 隱藏取消按鈕
         }
 
@@ -1724,8 +1731,9 @@
 
             // 1. 設定編輯狀態
             editingRecordId = recordId;
-            saveRecordBtn.textContent = '更新紀錄';
+            saveRecordBtn.textContent = '更新';
             saveRecordBtn.classList.add('update-mode');
+			btnCancelEdit.textContent = '取消'; // 確保取消按鈕文本正確
             btnCancelEdit.style.display = 'inline-block'; // 顯示取消按鈕
 
             // 2. 填寫表單
