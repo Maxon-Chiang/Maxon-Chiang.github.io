@@ -807,15 +807,42 @@
 				font-size: 0.8em; 
 			}
 			
+			/* --- 我的課表 Modal (自適應寬度修正) --- */
+			#my-timetable-modal .modal-content { 
+				max-width: 98%; 
+				padding: 10px; 
+			}
+			
+			/* 【關鍵修復】: 移除表格的固定寬度/最小寬度，讓它完全由父容器決定 */
+			.schedule-table { 
+				font-size: 0.8em; 
+				min-width: unset; 
+			}
+			
+			.schedule-table th, .schedule-table td { 
+				/* 讓欄位內容可以被擠壓 */
+				white-space: normal; 
+				word-wrap: break-word;
+			}
+			
+			.schedule-table th:first-child, .schedule-table td:first-child { 
+				/* 節次欄仍保持較小寬度 */
+				width: 12%; 
+			}
+			/* 讓周一到周五平均分配剩下的寬度 (88% / 5 = 17.6%) */
+			.schedule-table th:not(:first-child), .schedule-table td:not(:first-child) {
+				 width: 17.6%; 
+			}
+
 			.schedule-table td { 
 				height: 50px; 
 			}
 			
-			/* 【關鍵修復】讓課表內容在容器內水平捲動 */
+			/* 【修正】: 由於表格現在是自適應的，不需要 overflow-x: auto */
 			#my-timetable-body {
-				overflow-x: auto;
-				-webkit-overflow-scrolling: touch; /* 改善 iOS 上的捲動體驗 */
+				overflow-x: hidden;
 			}
+			
 		}
     </style>
 </head>
