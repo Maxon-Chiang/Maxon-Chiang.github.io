@@ -7,7 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <style>
+	<style>
         :root {
             --primary-color: #4a90e2;
             --secondary-color: #f5f5ff;
@@ -649,174 +649,118 @@
 		
 		/* ---------------------------------------------------- */
         /* 【手機版樣式】: @media (max-width: 768px) */
-		@media (max-width: 768px) {
-			
-			/* --- 頁面結構與佈局修正 --- */
-			header {
-				flex-direction: column;
-				align-items: center;
-				padding-bottom: 5px; 
-				width: 100%; 
-				box-sizing: border-box;
-			}
-			
-			.header-left-panel {
-				width: 100%;
-				justify-content: center;
-				padding-bottom: 5px; 
-			}
-			
-			header h1 {
-				text-align: center;
-				font-size: 1.5em;
-			}
-			
-			.header-right-panel {
-				width: 100%; 
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-			}
-			
-			.main-actions {
-				flex-grow: 1; 
-				flex-shrink: 1; 
-				min-width: 0;
-			}
-			
-			.main-actions button, .main-actions a button { 
-				padding: 5px 5px; 
-				font-size: 0.85em;
-				white-space: nowrap;
-			}
-			
-			.header-right-panel .user-profile, 
-			.header-right-panel .dropdown {
-				flex-shrink: 0;
-			}
-			
-			.user-profile { 
-				font-size: 0.8em; 
-			}
-			
-			main { 
-				padding: 1rem; 
-				width: 100%; 
-				box-sizing: border-box;
-				overflow-x: hidden; /* 防止內容溢出導致的頁面捲動 */
-			}
-			
-			/* --- 主畫面班級格子 --- */
-			.class-grid { 
-				grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
-				gap: 0.8rem; 
-			}
-			
-			.class-block { 
-				min-height: 90px; 
-			} 
-			
-			.class-block-title { 
-				font-size: 1.4em; 
-			} 
-			
-			.class-total-score { 
-				font-size: 0.9em; 
-			}
-			
-			/* --- 學生名單 (Roster) Modal --- */
-			#student-roster-modal .modal-content h2 {
-				flex-wrap: nowrap;
-				padding-right: 25px; 
-			}
-			
-			.roster-title-text h3, .roster-title-clickable {
-				white-space: nowrap; 
-				overflow: hidden;
-				text-overflow: ellipsis;
-				max-width: 100%; 
-			}
-			
-			#roster-sort-btn { 
-				flex-shrink: 0;
-				font-size: 1.2em; 
-			}
-			
-			#student-grid-container {
+        @media (max-width: 768px) {
+            
+            /* 【結構調整 1: Header 整體】: 強制垂直堆疊，實現兩行佈局 */
+            header {
+                flex-direction: column;
+                align-items: center;
+                padding-bottom: 5px; 
+                width: 100%; /* 確保 Header 不會導致水平捲動 */
+                box-sizing: border-box;
+            }
+            
+            /* 【結構調整 2: 標題行】: 讓標題獨佔一行並置中 */
+            .header-left-panel {
+                width: 100%;
+                justify-content: center;
+                padding-bottom: 5px; 
+            }
+            header h1 {
+                text-align: center;
+                font-size: 1.5em;
+            }
+            
+            /* 【結構調整 3: 底部操作行容器】: 容納按鈕組和用戶信息 */
+            .header-right-panel {
+                width: 100%; 
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            /* 【結構調整 4: 功能按鈕組】: 確保按鈕不會被擠到下一行 */
+            .main-actions {
+                flex-grow: 1; 
+                flex-shrink: 1; 
+                min-width: 0;
+            }
+            .main-actions button, .main-actions a button { 
+                padding: 5px 5px; 
+                font-size: 0.85em;
+                white-space: nowrap;
+            }
+            
+            /* 【結構調整 5: 右側用戶信息組】: 確保右側靠右 */
+            .header-right-panel .user-profile, 
+            .header-right-panel .dropdown {
+                flex-shrink: 0;
+            }
+            .user-profile { 
+                font-size: 0.8em; 
+            }
+            
+            /* --- 主內容區塊修正 --- */
+            main { 
+                padding: 1rem; 
+                width: 100%; 
+                box-sizing: border-box;
+                overflow-x: hidden; /* 防止內容溢出導致的頁面捲動 */
+            }
+            
+            /* --- 班級格子和學生名單優化 --- */
+            .class-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; }
+            .class-block-title { font-size: 1.4em; } 
+            .class-block { min-height: 90px; } 
+            .class-total-score { font-size: 0.9em; }
+            #student-grid-container {
 				grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
 				gap: 5px;
 				padding: 5px;
 			}
-			
-			.student-block {
-				padding: 6px;
-			}
-			
-			.student-block-info { 
-				font-size: 0.9em;
-				margin-bottom: 0px;
-			}
-			
-			.student-block-name { 
-				font-size: 0.9em;
-			}
-			
-			/* --- 日常表現紀錄 Modal (modal2) --- */
-			.modal2 .modal-content {
-				padding: 15px;
-			}
-			
-			.mobile-score-controls {
-				display: flex; /* 顯示分數增減按鈕 */
-			}
-			
-			#add-record-form {
-				flex-wrap: nowrap;
-				gap: 5px;
-			}
-			
-			#record-points {
-				max-width: 60px; 
-				flex: 0 0 60px; 
-				padding: 8px;
-				text-align: center;
-			}
-			
-			#record-text {
-				 padding: 8px;
-			}
-			
-			.score-adjust-btn {
-				width: 35px; 
-				height: 35px;
-				font-size: 1.1em;
-			}
-			
-			.form-header button[type="submit"] {
-				padding: 8px 10px;
-				font-size: 0.9em;
-				flex-shrink: 0;
-			}
-			
-			#records-list {
-				max-height: 25vh; 
-			}
-			
-			/* --- 我的課表 Modal --- */
-			.schedule-table { 
-				font-size: 0.8em; 
-			}
-			
-			.schedule-table td { 
-				height: 50px; 
-			}
-			
-			/* 【關鍵修復】讓課表內容在容器內水平捲動 */
-			#my-timetable-body {
-				overflow-x: auto;
-				-webkit-overflow-scrolling: touch; /* 改善 iOS 上的捲動體驗 */
-			}
-		}
+            .student-block { padding: 6px; }
+            .student-block-info { font-size: 0.9em; margin-bottom: 0px; }
+			.student-block-name { font-size: 0.9em; }
+            
+            /* --- 日常表現紀錄 Modal 優化 --- */
+            .modal2 .modal-content { padding: 15px; }
+            .mobile-score-controls { display: flex; }
+            #add-record-form { flex-wrap: nowrap; gap: 5px; }
+            #record-points { max-width: 60px; flex: 0 0 60px; padding: 8px; text-align: center; }
+            #record-text { padding: 8px; }
+            .score-adjust-btn { width: 35px; height: 35px; font-size: 1.1em; }
+            .form-header button[type="submit"] { padding: 8px 10px; font-size: 0.9em; flex-shrink: 0; }
+            #records-list { max-height: 25vh; }
+            
+            /* --- 我的課表 Modal 核心修復 --- */
+            .modal, .modal2, .modal-notes {
+                /* 確保整個 modal 彈窗佔滿視窗 */
+                padding: 0; 
+            }
+            #my-timetable-modal .modal-content { 
+                /* 確保 modal 內容最大化，並且其內部可以被 flex 容器填滿 */
+                max-width: 100%; 
+                width: 100%; 
+                height: 100%;
+                max-height: 100vh;
+                border-radius: 0;
+                margin: 0;
+                padding: 15px; /* 縮小邊距 */
+            }
+            
+            .schedule-table { 
+                font-size: 0.8em; 
+                min-width: 500px; /* 確保表格本身有一個最小寬度，以容納 5 天 */
+            }
+            
+            /* 【關鍵修復點】: 讓課表內容在容器內水平捲動 */
+            #my-timetable-body {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch; /* 改善 iOS 上的捲動體驗 */
+            }
+            
+            .schedule-table td { height: 50px; }
+        }
     </style>
 </head>
 
