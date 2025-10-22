@@ -494,6 +494,12 @@
             gap: 10px;
             align-items: center;
         }
+        /* 禁用狀態的樣式 */
+        #record-points[disabled] {
+             background-color: #f1f1f1;
+             color: #6c757d;
+             cursor: not-allowed;
+        }
         #record-points { flex: 0 1 100px; max-width: 110px; }
         #record-text { flex: 1 1 auto; }
 
@@ -525,6 +531,8 @@
 		#save-record-btn.update-mode { background-color: #ff9800 !important; /* 橙色表示更新 */}
 		#save-record-btn.update-mode:hover { background-color: #e68900 !important; /* 新增 Hover 效果 */}
 		#btn-cancel-edit { display:none; color: white !important; /* 核心修正：深灰底配白字 */ background-color: #6c757d !important;}
+        #btn-cancel-edit:hover { background-color: #5a6268 !important; }
+
 
         .record-item {
             display: flex;
@@ -790,6 +798,13 @@
 				display: flex; /* 顯示分數增減按鈕 */
 			}
 			
+			/* 【核心 CSS 修改點 1】: 手機版按鈕 padding 減半 */
+			#save-record-btn, #btn-cancel-edit {
+				padding: 5px 8px !important; 
+				font-size: 1em !important; 
+				flex-shrink: 0;
+			}
+			
 			#add-record-form {
 				flex-wrap: nowrap;
 				gap: 5px;
@@ -863,12 +878,6 @@
 			/* 【修正】: 由於表格現在是自適應的，不需要 overflow-x: auto */
 			#my-timetable-body {
 				overflow-x: hidden;
-			}
-			#save-record-btn, #btn-cancel-edit {
-				/* 這裡使用新的 padding 值，大約是原來的 10px 15px 的一半 */
-				padding: 5px 8px !important; /* 手機版按鈕 padding 減半 */
-				font-size: 1em !important; /* 確保字體大小適中 */
-				flex-shrink: 0;
 			}
 		}
     </style>
@@ -944,11 +953,11 @@
                         <button type="button" class="score-adjust-btn" id="score-minus-btn">-</button>
                         <button type="button" class="score-adjust-btn" id="score-plus-btn">+</button>
                     </div>
-                    <button type="button" id="save-record-btn" style="background-color: var(--success-color);">新增紀錄</button>
-                    <button type="button" id="btn-cancel-edit" style="display:none; background-color:#6c757d;">取消修改</button>
+                    <button type="button" id="save-record-btn" style="background-color: var(--success-color);">新增</button>
+                    <button type="button" id="btn-cancel-edit" style="display:none; background-color:#6c757d;">取消</button>
                 </div>
 				<form id="add-record-form" novalidate>
-					<input type="number" id="record-points" placeholder="加/減分" step="1">
+					<input type="number" id="record-points" placeholder="加/減分" disabled>
 					<input type="text" id="record-text" placeholder="文字紀錄 (選填)" list="recent-texts-list">
 					<datalist id="recent-texts-list"></datalist>
 				</form>
@@ -1470,8 +1479,8 @@
                 // 狀態 2: 低到高 (藍色/黃色上箭頭)
                 upArrowEl.classList.add('active');
                 downArrowEl.classList.remove('active');
-                upArrowEl.style.color = activeColor;
                 downArrowEl.style.color = type === 'main' ? 'white' : '#999';
+                upArrowEl.style.color = activeColor;
             }
         }
 
@@ -1641,23 +1650,18 @@
 		}
         
         /**
-         * 【修改】統一的保存函數 (處理新增或更新)
+         * 【修正】統一的保存函數 (處理新增或更新)
          */
         async function handleAddRecord(e) { 
             e.preventDefault(); 
-            const rawPoints = parseFloat(recordPointsInput.value) || 0;
-            const p = Math.round(rawPoints * 10) / 10;
+            
             const t = recordTextInput.value.trim(); 
-            
-            if (p === 0 && t === '') return; 
-            
             const sid = currentEntity;
             const docRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
 
-            const data = {
+            let data = {
                 entityId: sid.id,
                 entityType: sid.type,
-                points: p,
                 text: t,
                 teacherId: currentUser.uid,
                 studentId: sid.type === 'student' ? sid.id : null 
@@ -1665,16 +1669,40 @@
             
             try { 
 				if (editingRecordId) {
-                    // 更新模式
-                    data.timestamp = firebase.firestore.FieldValue.serverTimestamp(); // 更新時間戳
+                    // **更新模式：** // 【修正點 1.1】: 查找原始記錄
+                    const originalRecord = allPerformanceRecords.find(r => r.id === editingRecordId);
+                    if (!originalRecord) {
+                         alert('更新紀錄失敗: 找不到原始記錄');
+                         return;
+                    }
+                    
+                    // 【核心修改 1】: 讀取並保留原始分數。
+                    data.points = originalRecord.points;
+                    
+                    // 【核心修改 2】: 只檢查文字是否為空。
+                    if (t === '') {
+                        alert('更新紀錄時，文字描述不可為空！');
+                        return;
+                    }
+
+                    // 【核心修改 3】: 不更新 timestamp (createdAt)
                     await docRef.doc(editingRecordId).set(data, { merge: true });
                     alert('紀錄已更新！');
-                } else {
-                    // 新增模式
-                    data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+                    
+				} else {
+                    // **新增模式：** // 【修正點 1.2】: 必須讀取 rawPoints
+                    const rawPoints = parseFloat(recordPointsInput.value) || 0;
+                    
+                    const p = Math.round(rawPoints * 10) / 10;
+                    
+                    // 【核心修改 4】: 檢查是否需要新增
+                    if (p === 0 && t === '') return; 
+                    
+                    data.points = p;
+                    data.timestamp = firebase.firestore.FieldValue.serverTimestamp(); // 新增時記錄創建時間
                     await docRef.add(data);
                     alert('紀錄已新增！');
-                }
+				}
                 
                 // 數據更新完成後，調用 closeModal 觸發刷新和畫面回溯 (onSnapshot 會處理實際刷新)
 				closeModal(); 
@@ -1714,10 +1742,20 @@
             editingRecordId = null;
             recordPointsInput.value = '1';
             recordTextInput.value = '';
-            saveRecordBtn.textContent = '新增紀錄';
+            
+            // 啟用分數欄位，用於新增模式
+            recordPointsInput.disabled = false; 
+            if (window.innerWidth > 768) {
+                 recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)';
+            }
+            // 顯示手機分數調整按鈕 (如果它們是啟用的)
+            scorePlusBtn.style.display = window.innerWidth <= 768 ? 'inline-block' : 'none';
+            scoreMinusBtn.style.display = window.innerWidth <= 768 ? 'inline-block' : 'none';
+
+
+            saveRecordBtn.textContent = '新增';
             saveRecordBtn.classList.remove('update-mode');
             saveRecordBtn.style.backgroundColor = 'var(--success-color)';
-			// --- 【修改點】: 將文本改為 "取消" ---
 			btnCancelEdit.textContent = '取消';			
             btnCancelEdit.style.display = 'none'; // 隱藏取消按鈕
         }
@@ -1733,11 +1771,17 @@
             editingRecordId = recordId;
             saveRecordBtn.textContent = '更新';
             saveRecordBtn.classList.add('update-mode');
-			btnCancelEdit.textContent = '取消'; // 確保取消按鈕文本正確
+			btnCancelEdit.textContent = '取消'; 
             btnCancelEdit.style.display = 'inline-block'; // 顯示取消按鈕
 
             // 2. 填寫表單
+            // 【核心修改 3】: 顯示原始分數，但禁用欄位
             recordPointsInput.value = record.points || 0;
+            recordPointsInput.disabled = true; 
+            // 隱藏手機分數調整按鈕
+            scorePlusBtn.style.display = 'none';
+            scoreMinusBtn.style.display = 'none';
+            
             recordTextInput.value = record.text || '';
             
             // 滾動到表單頂部
@@ -1750,15 +1794,9 @@
             document.body.classList.add('modal-open');
             currentEntity = { id, type };
             
-            // 【修改 1】: 根據版面大小設定 placeholder 和預設值
-            if (window.innerWidth <= 768) { 
-                recordPointsInput.placeholder = '+/-'; 
-                recordPointsInput.value = 1; 
-            } else { 
-                recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)'; 
-                recordPointsInput.value = '';
-            }
-            
+            // 進入新增模式時，重置表單
+            resetPerformanceForm();
+
             let titleText = '';
             if (type === 'student') {
                 const student = studentsData.find(s => s.id === id);
@@ -1776,7 +1814,7 @@
             document.getElementById('modal').style.display = 'flex';
         }
         
-        // 【新增函數】分離渲染邏輯
+        // 【修改函數】分離渲染邏輯 (確保顯示 createdAt)
         function renderModalRecords(id, type) {
             recordsList.innerHTML = '載入中...';
             document.getElementById('record-count-display').textContent = '事件數: 0';
@@ -1811,6 +1849,8 @@
                 const recordItem = document.createElement('div');
                 recordItem.className = 'record-item';
                 const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
+                
+                // 【核心修改 4】: 使用 timestamp (即 createdAt) 作為時間點
                 const timestamp = record.timestamp ? new Date(record.timestamp.seconds * 1000).toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' }) : '日期不明';
 
                 recordItem.innerHTML = `
@@ -1897,6 +1937,7 @@
         // 【新增：分數增減按鈕的事件監聽器】
         const adjustScore = (amount) => {
             if (window.innerWidth > 768) return; // 僅在手機版啟用
+            if (recordPointsInput.disabled) return; // 禁用時不能調整分數
 
             let currentValue = parseFloat(document.getElementById('record-points').value) || 0;
             let newValue = currentValue + amount;
