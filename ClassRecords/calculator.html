@@ -242,10 +242,7 @@
                         <label for="rule-grade-select">1. 選擇規則所屬年段</label>
                         <select id="rule-grade-select">
                             <option value="">請選擇年段</option>
-                            <option value="7">七年級 (原 7xx)</option>
-                            <option value="8">八年級 (原 8xx)</option>
-                            <option value="9">九年級 (原 9xx)</option>
-                        </select>
+                            </select>
                     </div>
                      <div class="control-group">
                         <label for="rule-default-score">2. 缺考/缺交預設分數</label>
@@ -326,10 +323,11 @@
             allAssignments = {}, // { classId: [assignments] }
             allPerformanceScores = {}, // { studentId: score }
             allRules = [],
-            // 修正 gradeLevels 以使用原始代碼的年級劃分 7, 8, 9
-            gradeLevels = { '7': [], '8': [], '9': [] };
+            // 【修正 1】: gradeLevels 使用 1, 2, 3 作為鍵值
+            gradeLevels = { '1': [], '2': [], '3': [] };
             
         const appContainer = document.getElementById('app-container');
+        const GRADE_MAP = { '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '七', '8': '八', '9': '九' };
 
         // --- 初始化 & 資料載入 ---
 		auth.onAuthStateChanged(async (user) => {
@@ -368,7 +366,6 @@
             const userDoc = await db.collection('users').doc(currentUser.uid).get();
             const userData = userDoc.data();
 
-            // --- 變更開始 ---
             // 1. 檢查 schoolId
             if (!userDoc.exists || userData.role !== 'teacher' || !userData.schoolId) {
                 appContainer.innerHTML = '<h2>帳號設定錯誤或未綁定學校ID</h2><p>無法讀取學生名冊，請確認您的帳號設定是否正確。</p>';
@@ -381,7 +378,6 @@
                 appContainer.innerHTML = '<h2>找不到學校名冊</h2><p>請聯繫學校管理者上傳最新學期的學生名冊資料。</p>';
                 return;
             }
-            // --- 變更結束 ---
             
             studentsData = rosterDoc.exists ? rosterDoc.data().students : [];
 
@@ -405,57 +401,57 @@
             await loadAllRules();
             
             const classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
+            
+            // 【修正 3】: 根據班級代碼的字首數字來填充 gradeLevels
+            Object.keys(gradeLevels).forEach(grade => gradeLevels[grade] = []);
+
             classList.forEach(c => {
-                // 獲取原始代碼的年級 (7, 8, 9)
                 const grade = getGradeLevelFromClassId(c);
                 if (grade && gradeLevels[grade]) gradeLevels[grade].push(c);
             });
 
             const calcTargetSelect = document.getElementById('calc-target-select');
-            // 遍歷原始代碼的年級 (7, 8, 9)
+            const ruleGradeSelect = document.getElementById('rule-grade-select');
+            
+            // 清空舊的規則年段選項
+            ruleGradeSelect.innerHTML = '<option value="">請選擇年段</option>';
+
+
+            // 遍歷所有年級 (1, 2, 3...)
             for (const grade in gradeLevels) {
                 if (gradeLevels[grade].length > 0) {
+                    const gradeName = GRADE_MAP[grade] || grade; // 轉換為國字
+                    
+                    // 填充計算對象選單
                     const optGroup = document.createElement('optgroup');
-                    // 顯示原始年級代碼
-                    optGroup.label = `--- ${grade}年級 ---`; 
-                    optGroup.appendChild(new Option(`${grade}年級全體`, `grade-${grade}`));
+                    optGroup.label = `--- ${gradeName}年級 ---`; 
+                    optGroup.appendChild(new Option(`${gradeName}年級全體`, `grade-${grade}`));
                     gradeLevels[grade].forEach(c => {
-                        // 班級名稱使用原始代碼
                         optGroup.appendChild(new Option(`${c}班`, c));
                     });
                     calcTargetSelect.appendChild(optGroup);
+                    
+                    // 填充規則所屬年段選單
+                    const option = new Option(`${gradeName}年級 (原 ${grade}xx)`, grade);
+                    ruleGradeSelect.appendChild(option);
                 }
             }
             bindEventListeners();
         }
         
         // --- 輔助函式 ---
-        // --- 移除 convertClassName 函數 ---
-        /* function convertClassName(oldClassName) {
-            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
-            const firstDigit = oldClassName.charAt(0);
-            const restOfName = oldClassName.substring(1);
-            switch (firstDigit) {
-                case '7': return '1' + restOfName;
-                case '8': return '2' + restOfName;
-                case '9': return '3' + restOfName;
-                default: return oldClassName;
-            }
-        }*/
-        // ---------------------------------------------------
-        // --- 移除 getGradeLevelFromClassId 函數 ---
+        
+        // 【修正 2】: 函數根據班級代碼的第一位數字提取年級
         function getGradeLevelFromClassId(classId) {
-            if (!classId) return null;
+            if (!classId || classId.length < 3) return null;
             const firstDigit = classId.charAt(0);
-            // 檢查原始年級代碼 7, 8, 9
-            if (['7'].includes(firstDigit)) return '7';
-            if (['8'].includes(firstDigit)) return '8';
-            if (['9'].includes(firstDigit)) return '9';
+            // 檢查班級代碼的第一位數字是否在我們預期的年級範圍內 (1, 2, 3...)
+            if (GRADE_MAP[firstDigit]) return firstDigit; 
             return null;
         }
         // ---------------------------------------------------
 
-        // 【【【新增/修正 整個 'bindEventListeners' 函式】】】
+        // 【【【修正 'bindEventListeners' 函式，確保年級過濾使用新鍵值】】】
         function bindEventListeners() {
             // 頁籤切換
             document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -473,7 +469,7 @@
             const ruleConfigPanel = document.getElementById('rule-config-panel');
             
             ruleGradeSelect.addEventListener('change', (e) => {
-                const grade = e.target.value;
+                const grade = e.target.value; // 使用數字鍵值 '1', '2', '3'
                 const UIElements = [ruleSelect, ruleNameInput, document.getElementById('btn-save-rule')];
                 UIElements.forEach(el => el.disabled = !grade);
 
@@ -515,7 +511,7 @@
                 const calculateBtn = document.getElementById('btn-calculate');
 
                 if (target) {
-                    // 直接使用原始代碼的年級 (7, 8, 9)
+                    // 獲取數字年級鍵值
                     const grade = target.startsWith('grade-') ? target.split('-')[1] : getGradeLevelFromClassId(target);
                     const rulesForGrade = allRules.filter(r => r.gradeLevel === grade);
                     if (rulesForGrade.length > 0) {
@@ -546,6 +542,7 @@
         function populateRulesForGrade(grade) {
             const ruleSelect = document.getElementById('rule-select');
             ruleSelect.innerHTML = '<option value="new">-- 建立新規則 --</option>';
+            // 確保過濾時使用數字年級鍵值
             allRules.filter(r => r.gradeLevel === grade).forEach(r => {
                 ruleSelect.appendChild(new Option(r.ruleName, r.id));
             });
@@ -596,7 +593,6 @@
             step2Container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', handleCheckboxChange));
         }
 
-        // 【【【新增以下四個函式】】】
         function clearRuleForm() {
             document.getElementById('rule-default-score').value = 0;
             document.querySelectorAll('#rule-config-panel input[type="checkbox"]').forEach(cb => {
@@ -616,7 +612,7 @@
         function getRuleFromForm() {
             const ruleData = {
                 ruleName: document.getElementById('rule-name').value.trim(),
-                gradeLevel: document.getElementById('rule-grade-select').value,
+                gradeLevel: document.getElementById('rule-grade-select').value, // 這裡儲存數字鍵值 '1', '2', '3'
                 defaultMissingScore: parseFloat(document.getElementById('rule-default-score').value),
                 step1: {},
                 step2: { assignments: [], multiplier: 1.0 },
@@ -736,8 +732,8 @@
             
             const rule = allRules.find(r => r.id === ruleId);
             const isGradeCalc = target.startsWith('grade-');
-            // 使用原始代碼的年級
-            const grade = isGradeCalc ? target.split('-')[1] : getGradeLevelFromClassId(target);
+            // 獲取數字年級鍵值
+            const grade = isGradeCalc ? target.split('-')[1] : getGradeLevelFromClassId(target); 
             const classesToCalc = isGradeCalc ? gradeLevels[grade] : [target];
             
             const studentsToCalc = studentsData.filter(s => classesToCalc.includes(s.id.substring(0, 3)))
