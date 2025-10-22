@@ -818,7 +818,9 @@
 				font-size: 0.8em; 
 				min-width: unset; 
 			}
-			
+		    .schedule-table .subject { 
+				font-size: 0.8em;
+			}			
 			.schedule-table th, .schedule-table td { 
 				/* 讓欄位內容可以被擠壓 */
 				white-space: normal; 
@@ -827,11 +829,11 @@
 			
 			.schedule-table th:first-child, .schedule-table td:first-child { 
 				/* 節次欄仍保持較小寬度 */
-				width: 12%; 
+				width: 10%; 
 			}
-			/* 讓周一到周五平均分配剩下的寬度 (88% / 5 = 17.6%) */
+			/* 讓周一到周五平均分配剩下的寬度 (90% / 5 = 18%) */
 			.schedule-table th:not(:first-child), .schedule-table td:not(:first-child) {
-				 width: 17.6%; 
+				 width: 18%; 
 			}
 
 			.schedule-table td { 
