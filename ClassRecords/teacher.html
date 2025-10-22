@@ -26,10 +26,9 @@
         button, input, select, textarea {
             font-family: inherit;
         }
-        body.modal-open { overflow: hidden; }
-
+        
         /* ---------------------------------------------------- */
-        /* 【電腦版預設樣式】 */
+        /* 【電腦版預設樣式】: 維持所有內容在單行，主標題靠左，其他靠右 */
         header {
             background-color: var(--primary-color);
             color: white;
@@ -44,6 +43,7 @@
 			flex-wrap: wrap; 
         }
         
+        /* 【修正 Header 排版問題】: 將標題和排序按鈕視為一個組件 */
         .header-left-panel {
             display: flex;
             align-items: center;
@@ -56,13 +56,14 @@
             margin: 0;
             flex-shrink: 0;
         }
-        
+        /* 確保右側元素組在電腦版能佔據空間 */
         .header-right-panel {
             display: flex;
             align-items: center;
             gap: 5px;
         }
         
+        /* 【新增/修改】主標題排序按鈕容器 */
         #main-sort-container {
             display: flex;
             align-items: center;
@@ -82,6 +83,7 @@
             position: relative; 
             flex-shrink: 0;
         }
+        /* 排序狀態的箭頭顏色 */
         .main-sort-arrow {
             color: #fff;
             transition: color 0.2s;
@@ -92,10 +94,16 @@
             left: 50%;
             transform: translateX(-50%);
         }
-        #main-sort-up-arrow { top: 0; }
-        #main-sort-down-arrow { top: 50%; }
+        #main-sort-up-arrow {
+            top: 0; 
+        }
+        #main-sort-down-arrow {
+            top: 50%; 
+        }
         .main-sort-arrow.active { color: #f4d03f; }
         
+        /* ---------------------------------------------------- */
+
         .user-profile {
             display: flex;
             align-items: center;
@@ -116,33 +124,245 @@
             cursor: pointer;
             font-size: 1em;
         }
-        
-        /* Dropdown, main, class-grid... (維持不變) */
-        .dropdown { position: relative; display: inline-block; }
-        .icon-btn { background: none; border: none; color: white; font-size: 1.2em; cursor: pointer; padding: 0 0px; line-height: 1; }
-        .dropdown-content { display: none; position: absolute; right: 10px; background-color: white; min-width: 150px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 1001; border-radius: 4px; overflow: hidden; }
-        .dropdown-content button { color: #333; padding: 12px 16px; text-decoration: none; display: block; width: 100%; text-align: left; background: none; border: none; cursor: pointer; font-size: 1em; }
-        .dropdown-content button:hover { background-color: #f1f1f1; }
-        .show { display: block; }
-        
-        main { padding: 1.5rem; }
-        
-        .class-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
 
-        .class-block { border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); display: flex; flex-direction: column; text-align: center; min-height: 100px; justify-content: space-between; transition: background-color 0.3s ease; }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0 0px;
+            line-height: 1;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 10px;
+            background-color: white;
+            min-width: 150px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1001;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .dropdown-content button {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .dropdown-content button:hover {
+            background-color: #f1f1f1;
+        }
+        .show {
+            display: block;
+        }
         
-        .class-block-title { padding: 5px 10px 0px 10px; font-size: 1.6em; font-weight: normal; color: var(--primary-color); cursor: pointer; flex-grow: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px 8px 0 0; }
-        .class-block-title:hover { background-color: rgba(240, 248, 255, 0.5); }
+        main {
+            padding: 1.5rem;
+        }
         
-        .class-total-score { font-size: 1.0em; font-weight: bold; color: #333; padding: 0px 10px 5px 10px; margin: 0; flex-shrink: 0; }
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
 
-        .class-block-actions { display: flex; justify-content: space-around; align-items: center; padding: 8px; border-top: 1px solid #eee; }
+        .class-block {
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            min-height: 100px; 
+            justify-content: space-between;
+            transition: background-color 0.3s ease;
+        }
         
-        .class-block-actions a, .class-block-actions button { background: none; border: none; font-size: 1.6em; cursor: pointer; color: #555; padding: 5px 10px; border-radius: 4px; text-decoration: none; }
+        .class-block-title {
+            padding: 5px 10px 0px 10px;
+            font-size: 1.6em;
+            font-weight: normal;
+            color: var(--primary-color);
+            cursor: pointer;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .class-block-title:hover {
+            background-color: rgba(240, 248, 255, 0.5); 
+        }
         
-        .class-block-actions a:hover, .class-block-actions button:hover { background-color: #f1f1f1; color: var(--primary-color); }
+        /* 新增：班級總分顯示樣式 */
+        .class-total-score {
+            font-size: 1.0em; 
+            font-weight: bold;
+            color: #333; 
+            padding: 0px 10px 5px 10px; 
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .class-block-actions {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px;
+            border-top: 1px solid #eee;
+        }
         
-        /* Modal Base Styles (維持不變) */
+        .class-block-actions a, .class-block-actions button {
+            background: none;
+            border: none;
+            font-size: 1.6em; 
+            cursor: pointer;
+            color: #555;
+            padding: 5px 10px;
+            border-radius: 4px;
+            text-decoration: none;
+        }
+        
+        .class-block-actions a:hover, .class-block-actions button:hover {
+            background-color: #f1f1f1;
+            color: var(--primary-color);
+        }
+        
+        #student-roster-modal .modal-content {
+            max-width: 95%;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 【修改】學生名單大標題容器排版 */
+        #student-roster-modal .modal-content h2 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-right: 35px;
+            text-align: left;
+            flex-wrap: wrap;
+            min-height: 40px; 
+        }
+        
+        /* 【新增】學生名單大標題文字樣式 (包含總分統計) */
+        .roster-title-text {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            flex-grow: 1;
+            min-width: 0;
+        }
+        .roster-title-clickable {
+            cursor: pointer;
+            padding: 5px 0;
+            white-space: nowrap;
+        }
+        .roster-title-text h3 {
+            margin: 0;
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+        .roster-title-text .score-display {
+            font-size: 0.9em;
+            font-weight: normal;
+            color: #555;
+            margin-top: 2px;
+        }
+
+        /* 【新增/修改】排序按鈕樣式 */
+        #roster-sort-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px 0;
+            font-size: 1.5em; 
+            color: #999;
+            flex-shrink: 0;
+            margin-left: 10px; 
+            line-height: 1;
+            display: block;
+            height: 1.2em;
+            width: 1.5em;
+            position: relative;
+        }
+        #roster-sort-btn .roster-sort-arrow {
+            display: block;
+            transition: color 0.2s;
+            font-weight: bold;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+			font-size: 0.7em;
+        }
+        #roster-sort-up-arrow {
+            top: 0;
+        }
+        #roster-sort-down-arrow {
+            top: 50%;
+        }
+        /* 排序狀態的箭頭顏色 */
+		.roster-sort-arrow.active { color: var(--primary-color); }
+        .roster-sort-arrow.inactive { 
+            color: #aaa; 
+            opacity: 0.6;
+        }
+        
+        #student-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .student-block {
+            background-color: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .student-block:hover {
+            background-color: #eef3f8;
+            border-color: var(--primary-color);
+        }
+        .student-block-info {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .student-block-info .score {
+            font-size: 0.8em; 
+            font-weight: normal;
+            color: #333;
+        }
+        .student-block-name {
+            font-size: 1.1em;
+        }
+		.score-negative { background-color: #ffebee; }
+		.score-positive-low { background-color: #e8f5e9; }
+		.score-positive-high { background-color: #fff8e1; }
+        
         .modal, .modal2, .modal-notes {
             display: none;
             position: fixed;
@@ -171,26 +391,172 @@
             max-height: 90vh;
             overflow-y: auto;
         }
-
-        /* 學生名單 Modal (維持不變) */
-        #student-roster-modal .modal-content {
-            max-width: 95%;
+        
+        #password-reset-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 3000;
+            justify-content: center;
+            align-items: center;
+			padding: 15px; 
+			box-sizing: border-box;
         }
         
-        #student-grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 10px;
-            padding: 10px;
+        .close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        #class-settings-list {
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+            background: none;
+            border: none;
+            padding: 0;
+            margin-top: 15px;
+            max-height: 40vh;
             overflow-y: auto;
-            flex-grow: 1;
+        }
+        .class-setting-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: white;
+        }
+        #save-class-settings-btn {
+            margin-top: 20px;
+            background-color: #28a745;
+            padding: 12px 25px;
+            color: white; 
+        }
+
+        .password-reset-box {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-content input {
+            padding: 12px;
+            margin: 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+        #cp-error-message, #password-error-message {
+            color: var(--danger-color);
+            height: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
         }
         
-        /* 【我的課表 Modal - 電腦版/預設】 */
+        /* 【修改此區塊】: 移除 h3 的樣式，改用 div 實現新的統計顯示 */
+        .form-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            min-height: 30px; 
+        }
+        
+        /* 【新增】統計資訊容器樣式 */
+        .record-stats-display {
+            display: flex;
+            gap: 15px;
+            font-size: 1.0em;
+            font-weight: bold;
+        }
+        .record-stats-display span {
+             font-weight: normal;
+             color: #555;
+        }
+        /* 結束修改 */
+        
+        #add-record-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        #record-points { flex: 0 1 100px; max-width: 110px; }
+        #record-text { flex: 1 1 auto; }
+
+        /* 【新增】手機版專用的分數增減按鈕樣式 */
+        .mobile-score-controls {
+            display: none;
+            gap: 5px;
+        }
+        .score-adjust-btn {
+            padding: 5px 10px;
+            font-size: 1.2em;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            line-height: 1;
+            flex-shrink: 0;
+            transition: background-color 0.2s;
+        }
+        .score-adjust-btn:hover {
+            background-color: #e0e0e0;
+        }
+        /* 結束新增 */
+
+        .record-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .record-content { flex-grow: 1; display: flex; align-items: center; gap: 15px; min-width: 0; }
+        .record-points { font-weight: bold; font-size: 1.1em; flex-shrink: 0; }
+        .record-points.positive { color: #28a745; }
+        .record-points.negative { color: var(--danger-color); }
+        .record-text { color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .record-timestamp { font-size: 0.8em; color: #999; flex-shrink: 0; white-space: nowrap; }
+        .delete-btn { background: none; border: none; cursor: pointer; font-size: 1.2em; padding: 5px; flex-shrink: 0; }
+
+        .icon-btn-main {
+            background: none;
+            border: 1px solid white;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 2px 8px;
+            line-height: 1.2;
+        }
+        
+        #welcome-modal .modal-content { max-width: 500px; }
+        #welcome-modal .modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
+        #welcome-modal ul { list-style-type: disc; padding-left: 25px; }
+		#info-modal .modal-content { width: 100%; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
+        .info-modal-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-right: 40px; }
+        .info-modal-header h2 { margin: 0; padding: 0; border: none; font-size: 1.5em; }
+        #reset-welcome-prefs-btn { margin: 0; padding: 6px 12px; font-size: 0.9em; flex-shrink: 0; background-color: var(--danger-color); color: white; }
+        #info-modal ul { list-style-type: disc; padding-left: 25px; }
+
+        /* 【新增】我的課表 Modal 樣式 */
         #my-timetable-modal .modal-content { 
             max-width: 900px; 
             max-height: 90vh; 
@@ -198,22 +564,18 @@
             flex-direction: column; 
             padding: 20px;
         }
-        
         #my-timetable-body { 
             overflow-y: auto; 
-            overflow-x: hidden; /* 電腦版不允許水平捲動 */
+            overflow-x: auto;
             flex-grow: 1;
         }
-        
-        /* 電腦版課表樣式：固定佈局和最小寬度 */
         .schedule-table { 
             width: 100%; 
             border-collapse: collapse; 
-            table-layout: fixed; /* 電腦版固定佈局 */
+            table-layout: fixed; 
             font-size: 0.9em; 
-            min-width: 600px; /* 電腦版最小寬度 */
+            min-width: 600px;
         }
-        
         .schedule-table th, .schedule-table td { 
             border: 1px solid #999; 
             padding: 2px; 
@@ -257,84 +619,149 @@
         .timetable-empty-cell {
             background-color: #f7f7f7;
         }
-        
-        /* ---------------------------------------------------- */
+        /* End: My Timetable Modal Styles */
+
+		body.modal-open { overflow: hidden; }
+		.password-reset-box form {
+			display: flex;
+			flex-direction: column;
+			gap: 15px;
+			margin: 20px 0;
+		}
+		.password-reset-box input, .password-reset-box button {
+			width: 100%;
+			box-sizing: border-box;
+			height: 44px;
+			padding: 12px;
+		}
+		.password-wrapper {
+			position: relative;
+			display: flex;
+			align-items: center;
+		}
+		.toggle-password {
+			position: absolute;
+			right: 15px;
+			cursor: pointer;
+			font-size: 1.2em;
+			color: #888;
+		}
+		
+		/* ---------------------------------------------------- */
         /* 【手機版樣式】: @media (max-width: 768px) */
         @media (max-width: 768px) {
             
-            /* --- 頁面結構與佈局修正 (維持不變) --- */
+            /* 【結構調整 1: Header 整體】: 強制垂直堆疊，實現兩行佈局 */
             header {
                 flex-direction: column;
                 align-items: center;
                 padding-bottom: 5px; 
-                width: 100%; 
+                width: 100%; /* 確保 Header 不會導致水平捲動 */
                 box-sizing: border-box;
             }
-            .header-left-panel { width: 100%; justify-content: center; padding-bottom: 5px; }
-            header h1 { text-align: center; font-size: 1.5em; }
-            .header-right-panel { width: 100%; display: flex; justify-content: space-between; align-items: center; }
-            .main-actions { flex-grow: 1; flex-shrink: 1; min-width: 0; }
-            .main-actions button, .main-actions a button { padding: 5px 5px; font-size: 0.85em; white-space: nowrap; }
-            .user-profile { font-size: 0.8em; }
+            
+            /* 【結構調整 2: 標題行】: 讓標題獨佔一行並置中 */
+            .header-left-panel {
+                width: 100%;
+                justify-content: center;
+                padding-bottom: 5px; 
+            }
+            header h1 {
+                text-align: center;
+                font-size: 1.5em;
+            }
+            
+            /* 【結構調整 3: 底部操作行容器】: 容納按鈕組和用戶信息 */
+            .header-right-panel {
+                width: 100%; 
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            /* 【結構調整 4: 功能按鈕組】: 確保按鈕不會被擠到下一行 */
+            .main-actions {
+                flex-grow: 1; 
+                flex-shrink: 1; 
+                min-width: 0;
+            }
+            .main-actions button, .main-actions a button { 
+                padding: 5px 5px; 
+                font-size: 0.85em;
+                white-space: nowrap;
+            }
+            
+            /* 【結構調整 5: 右側用戶信息組】: 確保右側靠右 */
+            .header-right-panel .user-profile, 
+            .header-right-panel .dropdown {
+                flex-shrink: 0;
+            }
+            .user-profile { 
+                font-size: 0.8em; 
+            }
+            
+            /* --- 主內容區塊修正 --- */
             main { 
                 padding: 1rem; 
                 width: 100%; 
                 box-sizing: border-box;
-                overflow-x: hidden;
+                overflow-x: hidden; /* 防止內容溢出導致的頁面捲動 */
             }
             
-            /* --- 班級格子和學生名單優化 (維持不變) --- */
+            /* --- 班級格子和學生名單優化 --- */
             .class-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; }
             .class-block-title { font-size: 1.4em; } 
             .class-block { min-height: 90px; } 
             .class-total-score { font-size: 0.9em; }
-            #student-grid-container { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 5px; padding: 5px; }
+            #student-grid-container {
+				grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+				gap: 5px;
+				padding: 5px;
+			}
             .student-block { padding: 6px; }
             .student-block-info { font-size: 0.9em; margin-bottom: 0px; }
 			.student-block-name { font-size: 0.9em; }
             
-            /* --- 日常表現紀錄 Modal 優化 (維持不變) --- */
+            /* --- 日常表現紀錄 Modal 優化 --- */
+            .modal2 .modal-content { padding: 15px; }
             .mobile-score-controls { display: flex; }
+            #add-record-form { flex-wrap: nowrap; gap: 5px; }
+            #record-points { max-width: 60px; flex: 0 0 60px; padding: 8px; text-align: center; }
+            #record-text { padding: 8px; }
+            .score-adjust-btn { width: 35px; height: 35px; font-size: 1.1em; }
+            .form-header button[type="submit"] { padding: 8px 10px; font-size: 0.9em; flex-shrink: 0; }
+            #records-list { max-height: 25vh; }
             
-            /* --- 我的課表 Modal 核心修復 (縮放模式) --- */
-            
+            /* --- 我的課表 Modal 核心修復 --- */
+            .modal, .modal2, .modal-notes {
+                /* 確保整個 modal 彈窗佔滿視窗 */
+                padding: 0; 
+            }
             #my-timetable-modal .modal-content { 
-                /* 確保在手機上有足夠空間 */
-                max-width: 95%; 
-                width: 95%;
-                padding: 15px; 
+                /* 確保 modal 內容最大化，並且其內部可以被 flex 容器填滿 */
+                max-width: 100%; 
+                width: 100%; 
+                height: 100%;
+                max-height: 100vh;
+                border-radius: 0;
+                margin: 0;
+                padding: 15px; /* 縮小邊距 */
             }
             
-            #my-timetable-body {
-                /* 確保內容區域不產生水平捲動 */
-                overflow-x: hidden !important; 
-            }
-
             .schedule-table { 
-                /* 讓表格以自動佈局模式運行，允許欄寬根據內容和總寬度縮小 */
-                table-layout: auto !important; 
-                width: 100% !important;
-                /* 移除最小寬度限制 */
-                min-width: unset !important; 
                 font-size: 0.8em; 
+                min-width: 500px; /* 確保表格本身有一個最小寬度，以容納 5 天 */
             }
             
-            /* 讓節次欄固定寬度，強制擠壓星期欄 */
-            .schedule-table th:first-child, .schedule-table td:first-child { 
-                width: 15% !important; /* 增加節次欄寬度佔比 */
-                min-width: 40px;
+            /* 【關鍵修復點】: 讓課表內容在容器內水平捲動 */
+            #my-timetable-body {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch; /* 改善 iOS 上的捲動體驗 */
             }
             
-            /* 確保內容不會太寬導致表格撐大 */
-            .schedule-table .class-detail, .schedule-table .subject { 
-                font-size: 0.7em;
-                line-height: 1.1; 
-                word-break: break-all; /* 允許長文字強制換行，避免撐大欄位 */
-            }
-            
-            .schedule-table td { height: 50px; padding: 1px; }
+            .schedule-table td { height: 50px; }
         }
-    </style>	
+    </style>
 </head>
 
 <body>
