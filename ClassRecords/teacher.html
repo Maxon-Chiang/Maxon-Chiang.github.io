@@ -14,7 +14,7 @@
             --font-color: #333;
             --border-color: #ddd;
             --danger-color: #d0021b;
-            --success-color: #7ed321;
+            --success-color: #1976D2;
         }
 
         body {
@@ -519,6 +519,12 @@
             background-color: #e0e0e0;
         }
         /* 結束新增 */
+        
+		#save-record-btn, #btn-cancel-edit { border: none !important; padding: 10px 15px; font-size: 1.1em; border-radius: 6px;}
+		#save-record-btn { color: white; /* 確保「新增/更新」按鈕文字是白色 */}
+		#save-record-btn.update-mode { background-color: #ff9800 !important; /* 橙色表示更新 */}
+		#save-record-btn.update-mode:hover { background-color: #e68900 !important; /* 新增 Hover 效果 */}
+		#btn-cancel-edit { display:none; color: white !important; /* 核心修正：深灰底配白字 */ background-color: #6c757d !important;}
 
         .record-item {
             display: flex;
@@ -528,7 +534,20 @@
             padding: 12px 0;
             border-bottom: 1px solid #eee;
         }
-        .record-content { flex-grow: 1; display: flex; align-items: center; gap: 15px; min-width: 0; }
+        .record-content { 
+            flex-grow: 1; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            min-width: 0; 
+            cursor: pointer; /* 讓內容可點擊 */
+            padding: 5px 10px; /* 增加點擊區域 */
+            border-radius: 4px;
+        }
+        .record-content:hover {
+            background-color: #f5f5f5;
+        }
+        
         .record-points { font-weight: bold; font-size: 1.1em; flex-shrink: 0; }
         .record-points.positive { color: #28a745; }
         .record-points.negative { color: var(--danger-color); }
@@ -556,7 +575,7 @@
         #reset-welcome-prefs-btn { margin: 0; padding: 6px 12px; font-size: 0.9em; flex-shrink: 0; background-color: var(--danger-color); color: white; }
         #info-modal ul { list-style-type: disc; padding-left: 25px; }
 
-        /* 【新增】我的課表 Modal 樣式 */
+        /* 【我的課表 Modal 樣式】 */
         #my-timetable-modal .modal-content { 
             max-width: 900px; 
             max-height: 90vh; 
@@ -920,7 +939,8 @@
                         <button type="button" class="score-adjust-btn" id="score-minus-btn">-</button>
                         <button type="button" class="score-adjust-btn" id="score-plus-btn">+</button>
                     </div>
-                    <button type="submit" form="add-record-form">新增</button>
+                    <button type="button" id="save-record-btn" style="background-color: var(--success-color);">新增紀錄</button>
+                    <button type="button" id="btn-cancel-edit" style="display:none; background-color:#6c757d;">取消修改</button>
                 </div>
 				<form id="add-record-form" novalidate>
 					<input type="number" id="record-points" placeholder="加/減分" step="1">
@@ -1094,6 +1114,9 @@
         let classSortState = 0;
         let currentRosterClassId = null;
         let currentEntity = null;
+        
+        // 【新增】編輯狀態追蹤變數
+        let editingRecordId = null;
 
         // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
@@ -1119,11 +1142,17 @@
         const mainSortBtn = document.getElementById('main-sort-btn');
         // 【新增】課表系統連結 DOM 元素
         const timetableLink = document.getElementById('timetable-link');
+        
+        // 【新增】紀錄表單相關 DOM 元素
+        const saveRecordBtn = document.getElementById('save-record-btn');
+        const btnCancelEdit = document.getElementById('btn-cancel-edit');
+        const recordPointsInput = document.getElementById('record-points');
+        const recordTextInput = document.getElementById('record-text');
+
 
         // 其他需要引用的 DOM 元素
         const scorePlusBtn = document.getElementById('score-plus-btn'); 
         const scoreMinusBtn = document.getElementById('score-minus-btn'); 
-        const recordPointsInput = document.getElementById('record-points'); 
         const recordCountDisplay = document.getElementById('record-count-display'); 
         const recordTotalScoreDisplay = document.getElementById('record-total-score-display');
         const passwordResetForm = document.getElementById('password-reset-form');
@@ -1260,6 +1289,13 @@
                 updateSortButtonDisplay(0, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
                 updateSortButtonDisplay(0, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
 
+                // 綁定儲存/更新按鈕
+                saveRecordBtn.addEventListener('click', handleAddRecord);
+                recordsList.addEventListener('click', handleDeleteRecord);
+                
+                // 【新增】綁定取消修改函數
+                btnCancelEdit.addEventListener('click', resetPerformanceForm);
+
 
             } catch (error) {
                 console.error("初始化失敗:", error);
@@ -1268,36 +1304,56 @@
         }
 		
         async function fetchAllScores() {
-            const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
-            
-            allPerformanceScores = {};
-            classTotalScores = {};
-
-            snapshot.forEach(doc => {
-                const r = doc.data();
-                const p = r.points || 0;
-                const type = r.entityType || 'student';
-                const id = r.entityId || r.studentId;
-                if (!id) return;
+            // 使用 onSnapshot 監聽紀錄，確保分數和紀錄列表同步更新
+            db.collection('performanceRecords').doc(currentUser.uid).collection('records')
+              .onSnapshot(snapshot => {
+                allPerformanceScores = {};
+                classTotalScores = {};
+                allPerformanceRecords = []; // 重置全域紀錄列表
                 
-                if (type === 'student') {
-                    const studentId = id;
-                    if (!allPerformanceScores[studentId]) allPerformanceScores[studentId] = 0;
-                    allPerformanceScores[studentId] += p;
-                } 
-                else if (type === 'class') {
-                    const classId = id;
-                    if (!classTotalScores[classId]) classTotalScores[classId] = 0;
-                    classTotalScores[classId] += p;
+                snapshot.forEach(doc => {
+                    const r = doc.data();
+                    r.id = doc.id; // 添加 ID
+                    allPerformanceRecords.push(r);
+
+                    const p = r.points || 0;
+                    const type = r.entityType || 'student';
+                    const id = r.entityId || r.studentId;
+                    if (!id) return;
+                    
+                    if (type === 'student') {
+                        const studentId = id;
+                        if (!allPerformanceScores[studentId]) allPerformanceScores[studentId] = 0;
+                        allPerformanceScores[studentId] += p;
+                    } 
+                    else if (type === 'class') {
+                        const classId = id;
+                        if (!classTotalScores[classId]) classTotalScores[classId] = 0;
+                        classTotalScores[classId] += p;
+                    }
+                });
+
+                studentsData.forEach(student => {
+                    const studentId = student.id;
+                    const className = studentId.substring(0, 3);
+                    const score = allPerformanceScores[studentId] || 0; 
+                    
+                    classTotalScores[className] = (classTotalScores[className] || 0) + score;
+                });
+                
+                // 重新渲染UI，因為分數可能已改變
+                renderLayout();
+
+                // 如果紀錄彈窗是開著的，則刷新它的列表
+                if (modal.style.display === 'flex' && currentEntity) {
+                    // 只更新統計和列表，不需要重新打開 Modal
+                    renderModalRecords(currentEntity.id, currentEntity.type);
+                } else if (studentRosterModal.style.display === 'flex' && currentRosterClassId) {
+                     // 如果學生名單是開著的，重新渲染名單
+                    renderStudentRoster(currentRosterClassId);
                 }
-            });
-
-            studentsData.forEach(student => {
-                const studentId = student.id;
-                const className = studentId.substring(0, 3);
-                const score = allPerformanceScores[studentId] || 0; 
-                
-                classTotalScores[className] = (classTotalScores[className] || 0) + score;
+            }, error => {
+                console.error("監聽紀錄失敗:", error);
             });
         }
 
@@ -1535,6 +1591,9 @@
                 const originalEntityId = currentEntity ? currentEntity.id : null;
                 const originalType = currentEntity ? currentEntity.type : null;
                 currentEntity = null;
+                
+                // 重置編輯狀態
+                resetPerformanceForm();
 
                 if (modalOrigin === 'roster' && originalEntityId) {
                     const className = originalType === 'student' ? originalEntityId.substring(0, 3) : originalEntityId;
@@ -1545,7 +1604,7 @@
                         // 重新開啟名單，並標註來源仍為課表
                         openStudentRosterModal(className, 'timetable'); 
                     } else {
-                        // 重新渲染名單，維持當前的排序狀態
+                        // 重新開啟名單，維持當前的排序狀態
                         openStudentRosterModal(className); 
                     }
                 } else {
@@ -1555,43 +1614,74 @@
                 modalOrigin = null; 
             };
 
-            fetchAllScores().then(refreshAndClose);
+            // fetchAllScores() 現在由 onSnapshot 自動處理，這裡只需要處理視窗回溯邏輯
+            refreshAndClose();
 		}
         
         /* 【修改 closeStudentRosterModal 函數】: 處理課表導回邏輯 */
         function closeStudentRosterModal() {
 			document.getElementById('student-roster-modal').style.display = 'none'; 
             currentRosterClassId = null;
+            document.body.classList.remove('modal-open');
+
 
 			if (rosterModalOrigin === 'timetable') {
 				// 如果是從課表點擊進入名單，則回到課表彈窗
 				document.getElementById('my-timetable-modal').style.display = 'flex'; 
 			} else {
                 // 刷新分數並回到主頁
-                fetchAllScores().then(() => {
-                    renderLayout();
-				    document.body.classList.remove('modal-open');
-                });
+                renderLayout();
 			}
 			rosterModalOrigin = null; 
 		}
         
+        /**
+         * 【修改】統一的保存函數 (處理新增或更新)
+         */
         async function handleAddRecord(e) { 
             e.preventDefault(); 
-            const rawPoints = parseFloat(document.getElementById('record-points').value) || 0;
+            const rawPoints = parseFloat(recordPointsInput.value) || 0;
             const p = Math.round(rawPoints * 10) / 10;
-            const t = document.getElementById('record-text').value.trim(); 
+            const t = recordTextInput.value.trim(); 
+            
             if (p === 0 && t === '') return; 
-            const sid = currentEntity; 
-            const n = { entityId: sid.id, entityType: sid.type, points: p, text: t, timestamp: firebase.firestore.FieldValue.serverTimestamp(), studentId: sid.type === 'student' ? sid.id : null }; 
+            
+            const sid = currentEntity;
+            const docRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
+
+            const data = {
+                entityId: sid.id,
+                entityType: sid.type,
+                points: p,
+                text: t,
+                teacherId: currentUser.uid,
+                studentId: sid.type === 'student' ? sid.id : null 
+            }; 
+            
             try { 
-				await db.collection('performanceRecords').doc(currentUser.uid).collection('records').add(n);
-				
-                // 數據更新完成後，調用 closeModal 觸發刷新和畫面回溯
+				if (editingRecordId) {
+                    // 更新模式
+                    data.timestamp = firebase.firestore.FieldValue.serverTimestamp(); // 更新時間戳
+                    await docRef.doc(editingRecordId).set(data, { merge: true });
+                    alert('紀錄已更新！');
+                } else {
+                    // 新增模式
+                    data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+                    await docRef.add(data);
+                    alert('紀錄已新增！');
+                }
+                
+                // 數據更新完成後，調用 closeModal 觸發刷新和畫面回溯 (onSnapshot 會處理實際刷新)
 				closeModal(); 
-            } catch (err) { console.error(err); } 
+            } catch (err) { 
+                console.error(err); 
+                alert((editingRecordId ? '更新' : '新增') + '紀錄失敗: ' + err.message);
+            } 
         }
 
+        /**
+         * 刪除紀錄
+         */
         async function handleDeleteRecord(e) { 
 			if (e.target.classList.contains('delete-btn')) { 
 				const rid = e.target.dataset.id; 
@@ -1599,6 +1689,10 @@
 					try { 
 						await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
                         
+                        if (editingRecordId === rid) {
+                            resetPerformanceForm();
+                        }
+
                         // 數據更新完成後，調用 closeModal 觸發刷新和畫面回溯
 						closeModal(); 
 					} catch (err) { 
@@ -1608,6 +1702,41 @@
 			} 
 		}
 
+        /**
+         * 【新增】重置表單狀態
+         */
+        function resetPerformanceForm() {
+            editingRecordId = null;
+            recordPointsInput.value = '1';
+            recordTextInput.value = '';
+            saveRecordBtn.textContent = '新增紀錄';
+            saveRecordBtn.classList.remove('update-mode');
+            saveRecordBtn.style.backgroundColor = 'var(--success-color)';
+            btnCancelEdit.style.display = 'none'; // 隱藏取消按鈕
+        }
+
+        /**
+         * 【新增】載入紀錄到表單中進行編輯
+         */
+        function editRecord(recordId) {
+            const record = allPerformanceRecords.find(r => r.id === recordId);
+            if (!record) return;
+
+            // 1. 設定編輯狀態
+            editingRecordId = recordId;
+            saveRecordBtn.textContent = '更新紀錄';
+            saveRecordBtn.classList.add('update-mode');
+            btnCancelEdit.style.display = 'inline-block'; // 顯示取消按鈕
+
+            // 2. 填寫表單
+            recordPointsInput.value = record.points || 0;
+            recordTextInput.value = record.text || '';
+            
+            // 滾動到表單頂部
+            modalTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+
         function openModal(id, type = 'student', origin = 'main') {
 			modalOrigin = origin;
             document.body.classList.add('modal-open');
@@ -1615,18 +1744,18 @@
             
             // 【修改 1】: 根據版面大小設定 placeholder 和預設值
             if (window.innerWidth <= 768) { 
-                document.getElementById('record-points').placeholder = '+/-'; 
-                document.getElementById('record-points').value = 1; 
+                recordPointsInput.placeholder = '+/-'; 
+                recordPointsInput.value = 1; 
             } else { 
-                document.getElementById('record-points').placeholder = '加/減分 (可用方向鍵調整整數)'; 
-                document.getElementById('record-points').value = '';
+                recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)'; 
+                recordPointsInput.value = '';
             }
             
             let titleText = '';
             if (type === 'student') {
                 const student = studentsData.find(s => s.id === id);
-                const displayId = `${student.id.substring(0,3)}${student.id.substring(3)}`;
-                titleText = `${student.name} (${displayId}) 的紀錄`;
+                const displayId = student ? `${student.id.substring(0,3)}${student.id.substring(3)}` : 'N/A';
+                titleText = student ? `${student.name} (${displayId}) 的紀錄` : `學生紀錄 (${id})`;
             } else {
                 titleText = `班級事件紀錄 (${id} 班)`;
             }
@@ -1634,74 +1763,68 @@
             document.getElementById('modal-title').textContent = titleText;
 
             // loadRecords 將會負責更新兩個新的統計顯示 DOM
-            loadRecords(id, type);
+            renderModalRecords(id, type);
 			loadRecentTexts();
             document.getElementById('modal').style.display = 'flex';
         }
         
-        async function loadRecords(id, type) {
+        // 【新增函數】分離渲染邏輯
+        function renderModalRecords(id, type) {
             recordsList.innerHTML = '載入中...';
             document.getElementById('record-count-display').textContent = '事件數: 0';
             document.getElementById('record-total-score-display').textContent = '總分: 0.0';
 
-            try {
-                let allRecords = [];
-                const recordsRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
-                
-                if (type === 'class') {
-                    const snapshot = await recordsRef.where('entityId', '==', id).where('entityType', '==', 'class').get();
-                    snapshot.forEach(doc => { allRecords.push({ id: doc.id, ...doc.data() }); });
-                } else { 
-                    const newRecordsPromise = recordsRef.where('entityId', '==', id).where('entityType', '==', 'student').get();
-                    const oldRecordsPromise = recordsRef.where('studentId', '==', id).get();
-                    const [newSnapshot, oldSnapshot] = await Promise.all([newRecordsPromise, oldRecordsPromise]);
-                    const seenIds = new Set();
-                    newSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } });
-                    oldSnapshot.forEach(doc => { if (!seenIds.has(doc.id)) { allRecords.push({ id: doc.id, ...doc.data() }); seenIds.add(doc.id); } });
+            // 從全域變數中篩選紀錄
+            const allRecords = allPerformanceRecords.filter(r => {
+                if (type === 'class' && r.entityType === 'class') {
+                    return r.entityId === id;
+                } else if (type === 'student' && (r.entityType === 'student' || !r.entityType)) {
+                    return r.entityId === id || r.studentId === id; // 兼容舊數據結構
                 }
-                
-                allRecords.sort((a, b) => {
-                    const tsA = a.timestamp ? a.timestamp.seconds : 0;
-                    const tsB = b.timestamp ? b.timestamp.seconds : 0;
-                    return tsB - tsA;
-                });
-                
-                // 【修改 2】: 計算總分和事件數
-                let totalScore = 0;
-                let recordCount = 0;
-                allRecords.forEach(record => {
-                    totalScore += record.points || 0;
-                    recordCount++;
-                });
+                return false;
+            }).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-                document.getElementById('record-count-display').textContent = `事件數: ${recordCount}`;
-                document.getElementById('record-total-score-display').textContent = `總分: ${totalScore.toFixed(1)}`;
-                // 結束修改 2
+            // 統計
+            let totalScore = 0;
+            let recordCount = 0;
+            allRecords.forEach(record => {
+                totalScore += record.points || 0;
+                recordCount++;
+            });
 
-                recordsList.innerHTML = '';
-                if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; }
-                
-                allRecords.forEach(record => {
-                    const recordItem = document.createElement('div');
-                    recordItem.className = 'record-item';
-                    const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
-                    const timestamp = record.timestamp ? new Date(record.timestamp.seconds * 1000).toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' }) : '日期不明';
+            document.getElementById('record-count-display').textContent = `事件數: ${recordCount}`;
+            document.getElementById('record-total-score-display').textContent = `總分: ${totalScore.toFixed(1)}`;
+            
+            // 渲染列表
+            recordsList.innerHTML = '';
+            if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; }
+            
+            allRecords.forEach(record => {
+                const recordItem = document.createElement('div');
+                recordItem.className = 'record-item';
+                const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
+                const timestamp = record.timestamp ? new Date(record.timestamp.seconds * 1000).toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' }) : '日期不明';
 
-                    recordItem.innerHTML = `
-                        <div class="record-content">
-                            <span class="record-points ${pClass}">${record.points||0}分</span>
-                            <span class="record-text">${record.text || ''}</span>
-                        </div>
-                        <div class="record-timestamp">${timestamp}</div>
-                        <button class="delete-btn" data-id="${record.id}">🗑️</button>
-                    `;
-                    recordsList.appendChild(recordItem);
+                recordItem.innerHTML = `
+                    <div class="record-content edit-trigger" data-id="${record.id}">
+                        <span class="record-points ${pClass}">${record.points||0}分</span>
+                        <span class="record-text">${record.text || ''}</span>
+                    </div>
+                    <div class="record-timestamp">${timestamp}</div>
+                    <button class="delete-btn" data-id="${record.id}">🗑️</button>
+                `;
+                recordsList.appendChild(recordItem);
+            });
+            
+            // 重新綁定點擊事件
+            recordsList.querySelectorAll('.record-content').forEach(element => {
+                element.addEventListener('click', (e) => {
+                    const recordId = e.currentTarget.dataset.id;
+                    editRecord(recordId);
                 });
-            } catch (error) {
-                console.error("讀取事件紀錄失敗:", error);
-                recordsList.innerHTML = '讀取紀錄時發生錯誤。';
-            }
+            });
         }
+
 
 		async function loadRecentTexts() {
 			const datalist = document.getElementById('recent-texts-list');
@@ -1748,9 +1871,13 @@
              };
         });
 
-        addRecordForm.addEventListener('submit', handleAddRecord);
-        recordsList.addEventListener('click', handleDeleteRecord);
+        // addRecordForm.addEventListener('submit', handleAddRecord); // 已改為點擊按鈕
+        // recordsList.addEventListener('click', handleDeleteRecord); // 已改為在 handleDeleteRecord 裡處理
         
+        // 【新增】取消修改按鈕事件
+        btnCancelEdit.addEventListener('click', resetPerformanceForm);
+
+
         document.getElementById('record-points').addEventListener('blur', function() {
             const value = this.value;
             if (value !== '' && !isNaN(value)) {
