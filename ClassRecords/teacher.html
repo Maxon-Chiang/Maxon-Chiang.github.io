@@ -670,6 +670,14 @@
         .timetable-empty-cell {
             background-color: #f7f7f7;
         }
+
+		/* 【關鍵修正】: 確保高亮樣式能覆蓋表格單元格的默認背景 */
+		.current-timetable-cell {
+			background-color: #ffe0b2 !important; /* 淺橙色背景 */
+			border: 2px dashed #ff9800 !important; /* 橙色虛線邊框 */
+			box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+		}		
+
         /* End: My Timetable Modal Styles */
 
 		body.modal-open { overflow: hidden; }
@@ -697,13 +705,7 @@
 			font-size: 1.2em;
 			color: #888;
 		}
-
-		/* 【關鍵修正】: 確保高亮樣式能覆蓋表格單元格的默認背景 */
-		.current-timetable-cell {
-			background-color: #ffe0b2 !important; /* 淺橙色背景 */
-			border: 2px dashed #ff9800 !important; /* 橙色虛線邊框 */
-			box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
-		}		
+		
 		/* ---------------------------------------------------- */
         /* 【手機版樣式】: @media (max-width: 768px) */
 		@media (max-width: 768px) {
@@ -1163,7 +1165,6 @@
         
         // 【新增】時間表數據變數 (從 Firestore 讀取)
         let PERIOD_TIMES = []; 
-		let timetableIntervalId = null; // 【新增】追蹤課表定時器 ID
 
         // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
@@ -1311,8 +1312,14 @@
                 // 將開始時間字串轉換為分鐘數
                 const [startH, startM] = period.start.split(':').map(Number);
                 
-                const startTimeMinutes = startH * 60 + startM;
-                const endTimeMinutes = startTimeMinutes + period.duration; // 結束時間 = 開始時間 + 持續時間
+                let startTimeMinutes = startH * 60 + startM;
+                let endTimeMinutes = startTimeMinutes + period.duration; // 結束時間 = 開始時間 + 持續時間
+
+                // === 【核心修改邏輯】擴大高亮時間區間：課前 5 分鐘開始，課後 5 分鐘結束 ===
+                const bufferMinutes = 5; 
+                startTimeMinutes = startTimeMinutes - bufferMinutes;
+                endTimeMinutes = endTimeMinutes + bufferMinutes;
+                // ===================================
 
                 if (currentTimeMinutes >= startTimeMinutes && currentTimeMinutes < endTimeMinutes) {
                     return i;
@@ -1833,7 +1840,7 @@
 			} else {
                 // 回到主頁
                 renderLayout();
-                // 【核心修正】: 立即觸發一次高亮檢查
+                // 立即觸發一次高亮檢查
                 highlightCurrentClass(); 
 			}
 			rosterModalOrigin = null; 
@@ -1878,7 +1885,7 @@
                     alert('紀錄已更新！');
                     
 				} else {
-                    // **新增模式：** 【核心修正】在這裡定義 rawPoints
+                    // **新增模式：** 【核心修正】: 必須從 input 中獲取 rawPoints
                     const rawPoints = parseFloat(recordPointsInput.value) || 0; 
                     
                     const p = Math.round(rawPoints * 10) / 10;
