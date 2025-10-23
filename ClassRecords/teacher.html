@@ -895,11 +895,12 @@
 			
 			.schedule-table th:first-child, .schedule-table td:first-child { 
 				/* 節次欄仍保持較小寬度 */
-				width: 25%; 
+				width: 20%; 
+	            padding: 0px; 
 			}
 			/* 讓周一到周五平均分配剩下的寬度 (80% / 5 = 16%) */
 			.schedule-table th:not(:first-child), .schedule-table td:not(:first-child) {
-				 width: 15%; 
+				 width: 16%; 
 			}
 
 			.schedule-table td { 
@@ -2317,7 +2318,7 @@
                 const timeRange = `${periodItem.start} - ${pad(endH)}:${pad(endM)}`;
 
 
-                tableHtml += `<tr><td class="period-header">${periodItem.period}<br><small style="font-weight:normal; font-size: 0.75em;">(${timeRange})</small></td>`;
+                tableHtml += `<tr><td class="period-header">${periodItem.period}<br><small style="font-weight:normal; font-size: 0.75em;">${timeRange}</small></td>`;
                 
                 for (let d = 0; d < 5; d++) {
                     const cellContent = periods[periodIndex] ? periods[periodIndex][d] : null;
