@@ -697,7 +697,13 @@
 			font-size: 1.2em;
 			color: #888;
 		}
-		
+
+		/* 【關鍵修正】: 確保高亮樣式能覆蓋表格單元格的默認背景 */
+		.current-timetable-cell {
+			background-color: #ffe0b2 !important; /* 淺橙色背景 */
+			border: 2px dashed #ff9800 !important; /* 橙色虛線邊框 */
+			box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+		}		
 		/* ---------------------------------------------------- */
         /* 【手機版樣式】: @media (max-width: 768px) */
 		@media (max-width: 768px) {
@@ -1157,6 +1163,7 @@
         
         // 【新增】時間表數據變數 (從 Firestore 讀取)
         let PERIOD_TIMES = []; 
+		let timetableIntervalId = null; // 【新增】追蹤課表定時器 ID
 
         // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
@@ -1314,8 +1321,9 @@
             return -1;
         }
 
-        /**
+		/**
          * 根據當前課表高亮顯示正在上課的班級卡片。
+         * 【修正點】：將所有對 'timetable' 的引用改為正確的 'teacherTimetableData'。
          */
         function highlightCurrentClass() {
             // 只有在 PERIOD_TIMES 載入完成且有課表數據時才執行
@@ -1339,7 +1347,7 @@
 
             if (currentPeriodIndex === -1) return; // 當前不在上課時間
 
-            const periods = teacherTimetableData.periods;
+            const periods = teacherTimetableData.periods; // 使用正確的全域變數
             
             // 2. 從課表數據中找到正在上課的班級
             // periods[periodIndex][dayIndex] = "101 國文"
@@ -1673,12 +1681,17 @@
             }
         }
         
-        // 【新增函數】切換主畫面班級排序狀態
+		// 【新增函數】切換主畫面班級排序狀態
         function toggleClassSort() {
             classSortState = (classSortState + 1) % 3;
             // 使用 #f4d03f 作為主要排序的醒目色 (黃色)
             updateSortButtonDisplay(classSortState, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
-            renderLayout(); // 重新渲染主畫面
+            
+            // 1. 重新渲染 (更新排序)
+            renderLayout(); 
+            
+            // 2. 【核心修正】: 立即執行一次高亮檢查
+            highlightCurrentClass(); 
         }
 
         // 【修改 openStudentRosterModal】重置排序並設定當前班級ID
@@ -1772,7 +1785,7 @@
 			}
         }
 
-        /* 【修改 closeModal 函數】: 處理課表導回邏輯 */
+		/* 【修改 closeModal 函數】: 處理課表導回邏輯 */
         function closeModal(id = 'modal') {
 			document.getElementById(id).style.display = 'none'; 
 			document.getElementById('add-record-form').reset();
@@ -1789,43 +1802,44 @@
                     const className = originalType === 'student' ? originalEntityId.substring(0, 3) : originalEntityId;
                     
                     if (rosterModalOrigin === 'timetable') {
-                        // 如果是從課表 -> 名單 -> 紀錄彈窗，則回到課表
-                        rosterModalOrigin = null; // 重置狀態
-                        // 重新開啟名單，並標註來源仍為課表
+                        // 從課表 -> 名單 -> 紀錄 -> 回到名單 (來源為課表)
+                        rosterModalOrigin = null; 
                         openStudentRosterModal(className, 'timetable'); 
                     } else {
-                        // 重新開啟名單，維持當前的排序狀態
+                        // 從主頁 -> 名單 -> 紀錄 -> 回到名單 (來源為主頁)
                         openStudentRosterModal(className); 
                     }
                 } else {
+                    // 只有當直接從班級紀錄關閉並回到主頁時才執行
                     renderLayout();
+                    highlightCurrentClass(); 
                     document.body.classList.remove('modal-open');
                 }
                 modalOrigin = null; 
             };
 
-            // fetchAllScores() 現在由 onSnapshot 自動處理，這裡只需要處理視窗回溯邏輯
             refreshAndClose();
 		}
         
-        /* 【修改 closeStudentRosterModal 函數】: 處理課表導回邏輯 */
+		/* 【修改 closeStudentRosterModal 函數】: 處理課表導回邏輯 */
         function closeStudentRosterModal() {
 			document.getElementById('student-roster-modal').style.display = 'none'; 
             currentRosterClassId = null;
             document.body.classList.remove('modal-open');
 
-
 			if (rosterModalOrigin === 'timetable') {
 				// 如果是從課表點擊進入名單，則回到課表彈窗
 				document.getElementById('my-timetable-modal').style.display = 'flex'; 
 			} else {
-                // 刷新分數並回到主頁
+                // 回到主頁
                 renderLayout();
+                // 【核心修正】: 立即觸發一次高亮檢查
+                highlightCurrentClass(); 
 			}
 			rosterModalOrigin = null; 
 		}
         
-        /**
+		/**
          * 【修正】統一的保存函數 (處理新增或更新)
          */
         async function handleAddRecord(e) { 
@@ -1852,25 +1866,24 @@
                          return;
                     }
                     
-                    // 【核心修改 1】: 讀取並保留原始分數。
                     data.points = originalRecord.points;
                     
-                    // 【核心修改 2】: 只檢查文字是否為空。
                     if (t === '') {
                         alert('更新紀錄時，文字描述不可為空！');
                         return;
                     }
 
-                    // 【核心修改 3】: 不更新 timestamp (createdAt)
+                    // 不更新 timestamp (createdAt)
                     await docRef.doc(editingRecordId).set(data, { merge: true });
                     alert('紀錄已更新！');
                     
 				} else {
-                    // **新增模式：** const rawPoints = parseFloat(recordPointsInput.value) || 0;
+                    // **新增模式：** 【核心修正】在這裡定義 rawPoints
+                    const rawPoints = parseFloat(recordPointsInput.value) || 0; 
                     
                     const p = Math.round(rawPoints * 10) / 10;
                     
-                    // 【核心修改 4】: 檢查是否需要新增
+                    // 檢查是否需要新增
                     if (p === 0 && t === '') return; 
                     
                     data.points = p;
@@ -2220,61 +2233,115 @@
             }
 
             myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
-            if (!teacherTimetableData || Object.keys(teacherTimetableData.periods).length === 0) {
+            if (PERIOD_TIMES.length === 0) {
+                 myTimetableBody.innerHTML = '<p style="text-align: center; color: var(--danger-color);">錯誤：未載入課程時間表數據，無法計算節次時間。</p>';
+                 timetableMessage.textContent = '資料錯誤';
+                 // 即使沒有時間數據，也必須打開 Modal
+                 document.body.classList.add('modal-open');
+                 myTimetableModal.style.display = 'flex';
+                 return; 
+            }
+            else if (!teacherTimetableData || Object.keys(teacherTimetableData.periods).length === 0) {
                  myTimetableBody.innerHTML = '<p style="text-align: center;">找不到您的課表資料，請聯繫管理員上傳。</p>';
                  timetableMessage.textContent = '資料錯誤';
             } else {
+                 // 首次渲染
                  renderMyTimetableTable();
                  timetableMessage.textContent = '';
             }
             
             document.body.classList.add('modal-open');
             myTimetableModal.style.display = 'flex';
+            
+            // 【核心修正 1】: 啟動課表定時器，每 30 秒更新一次表格，實現即時高亮
+            if (timetableIntervalId) clearInterval(timetableIntervalId);
+            timetableIntervalId = setInterval(renderMyTimetableTable, 30000); 
         });
 
-        // 【【【修復點 2: 修正 renderMyTimetableTable 中的 dataset 存取錯誤】】】
+        // 【新增】關閉模態框時，必須停止定時器
+        document.getElementById('my-timetable-modal').querySelector('.close-btn').addEventListener('click', () => {
+            document.getElementById('my-timetable-modal').style.display = 'none';
+            document.body.classList.remove('modal-open');
+            if (timetableIntervalId) {
+                 clearInterval(timetableIntervalId);
+                 timetableIntervalId = null;
+            }
+        });
+
+        // 【新增】點擊 Modal 背景時關閉並停止定時器 (修復 window.onclick 內的邏輯)
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                // ... (省略其他 modal 邏輯) ...
+                if (e.target.id === 'my-timetable-modal') {
+                     e.target.style.display = 'none';
+                     document.body.classList.remove('modal-open');
+                     if (timetableIntervalId) {
+                         clearInterval(timetableIntervalId);
+                         timetableIntervalId = null;
+                     }
+                }
+                // ... (省略其他 modal 邏輯) ...
+            }
+        });
+
+		// 【【【替換 renderMyTimetableTable 函數】】】
         function renderMyTimetableTable() {
-            const periodNames = { 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8' };
+            if (!teacherTimetableData || PERIOD_TIMES.length === 0) return; // 安全檢查
+            
             const days = ['一', '二', '三', '四', '五']; 
             const periods = teacherTimetableData.periods;
+            const currentPeriodIndex = getCurrentPeriodIndex(); // 獲取當前節次 (0-7)
+            const currentDayIndex = new Date().getDay() - 1; // 獲取當前星期 (0-4)
             
             let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
             days.forEach(day => tableHtml += `<th>星期${day}</th>`);
             tableHtml += '</tr></thead><tbody>';
             
-            // 遍歷 1 到 8 節
-            for (let p = 1; p <= 8; p++) {
-                // 由於 Firestore 儲存的 periods key 是從 0 開始，這裡需要將 p 減 1 轉換為索引 (p-1)
-                const periodIndex = p - 1; 
+            // 遍歷所有已載入的節次時間
+            PERIOD_TIMES.forEach((periodItem, periodIndex) => {
+                const isCurrentPeriod = periodIndex === currentPeriodIndex;
+                
+                // 計算並顯示起訖時間
+                const [startH, startM] = periodItem.start.split(':').map(Number);
+                const endH = Math.floor((startH * 60 + startM + periodItem.duration) / 60) % 24;
+                const endM = (startH * 60 + startM + periodItem.duration) % 60;
+                const pad = (n) => String(n).padStart(2, '0');
+                
+                const timeRange = `${periodItem.start} - ${pad(endH)}:${pad(endM)}`;
 
-                tableHtml += `<tr><td class="period-header">${periodNames[p]}</td>`;
+
+                tableHtml += `<tr><td class="period-header">${periodItem.period}<br><small style="font-weight:normal; font-size: 0.75em;">(${timeRange})</small></td>`;
                 
                 for (let d = 0; d < 5; d++) {
-                    // 從 periods[periodIndex][dayIndex] 獲取內容
                     const cellContent = periods[periodIndex] ? periods[periodIndex][d] : null;
+                    let cellClass = '';
+                    
+                    // 【核心修正 2】: 檢查是否為當前時間和當前星期
+                    if (isCurrentPeriod && d === currentDayIndex) {
+                         cellClass = 'current-timetable-cell'; // 应用高亮
+                    }
                     
                     if (cellContent) {
                         const [classCode, ...subjectParts] = cellContent.split(/\s+/);
                         const subject = subjectParts.join(' ');
                         
-                        // 確保 data 屬性名稱是正確的 (data-class-code)
-                        tableHtml += `<td class="timetable-clickable-cell" data-class-code="${classCode}">
+                        tableHtml += `<td class="timetable-clickable-cell ${cellClass}" data-class-code="${classCode}">
                             <span class="subject">${subject}</span>
                             <span class="class-detail">${classCode}</span>
                         </td>`;
                     } else {
-                        tableHtml += `<td class="timetable-empty-cell"></td>`;
+                        tableHtml += `<td class="timetable-empty-cell ${cellClass}"></td>`;
                     }
                 }
                 tableHtml += '</tr>';
-            }
+            });
+            
             tableHtml += '</tbody></table>';
             myTimetableBody.innerHTML = tableHtml;
 
             // 綁定點擊事件 (導航至學生名單頁面)
             myTimetableBody.querySelectorAll('.timetable-clickable-cell').forEach(cell => {
                 cell.addEventListener('click', (e) => {
-                    // 【修正點】: 使用正確的駝峰命名法存取 dataset
                     const classCode = e.currentTarget.dataset.classCode;
                     if (classCode) {
                         // 關閉課表彈窗，並開啟學生名單，標註來源為 'timetable'
