@@ -2315,7 +2315,7 @@
                 const endM = (startH * 60 + startM + periodItem.duration) % 60;
                 const pad = (n) => String(n).padStart(2, '0');
                 
-                const timeRange = `${periodItem.start} - ${pad(endH)}:${pad(endM)}`;
+                const timeRange = `${periodItem.start}~${pad(endH)}:${pad(endM)}`;
 
 
                 tableHtml += `<tr><td class="period-header">${periodItem.period}<br><small style="font-weight:normal; font-size: 0.75em;">${timeRange}</small></td>`;
