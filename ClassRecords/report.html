@@ -28,7 +28,10 @@
         .filter-group { display: flex; flex-direction: column; }
         .filter-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
         .filter-group input, .filter-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; }
-        #class-filter-container, #assignment-filter-container { display: flex; flex-wrap: wrap; gap: 15px; padding-top: 5px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 4px; border: 1px solid #eee;}
+        /* 統一風格 */
+        #class-filter-container, #assignment-filter-container, #perf-grade-checkbox-container { 
+            display: flex; flex-wrap: wrap; gap: 15px; padding-top: 5px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 4px; border: 1px solid #eee;
+        }
         .class-checkbox { display: flex; align-items: center; gap: 5px; }
         .action-buttons { margin-top: 20px; }
         .action-buttons button { font-size: 1.1em; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; }
@@ -110,6 +113,19 @@
                     <div class="filter-group"><label for="end-date">結束日期:</label><input type="date" id="end-date"></div>
 					<div class="filter-grid" style="grid-template-columns: 1fr; margin-top: 20px;" id="event-select"><div class="filter-group"><label>事件類型:</label><select id="event-type-filter"><option value="all">全部事件</option><option value="with_points">僅有分數</option><option value="text_only">僅純文字</option></select></div></div>
                 </div>
+                <!-- 【修改點 1：年段篩選器容器 (改為複選框)】 -->
+                <div id="perf-grade-filter-container" class="filter-group" style="margin-top: 20px; display: none;">
+                    <label>選擇年段 (可複選):</label>
+                    <div id="perf-grade-checkbox-container">
+                        <div class="class-checkbox">
+                            <input type="checkbox" id="select-all-grades" class="grade-selector" data-grade="all" checked>
+                            <label for="select-all-grades">全選</label>
+                        </div>
+                        <!-- 年段選項由 JavaScript 填充 -->
+                    </div>
+                </div>
+                <!-- 結束修改點 1 -->
+                
                 <div id="perf-log-filters">                    
                     <div class="filter-group" style="margin-top: 20px;"><label>班級 (可複選):</label><div id="class-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-classes" checked> <label for="select-all-classes">全選</label></div></div></div>
                 </div>
@@ -151,25 +167,26 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); const auth = firebase.auth();
-        let currentUser = null, studentsData = [], classList = [], currentPerfResults = [], currentPerfStats = {}, currentGradesResults = {}, allAssignments = [];
+        let currentUser = null, studentsData = [], classList = [], currentPerfResults = [], currentPerfStats = {}, allAssignments = [];
         let perfSortState = { key: 'class', direction: 'asc' };
         let perfStatsSortState = { key: 'total', direction: 'desc' };
         let gradeAssignmentSortState = { key: 'date', direction: 'desc' };
         let gradeCrossClassSortState = { key: 'className', direction: 'asc' };
 
-        // --- 移除 convertClassName 函數 ---
-        /*function convertClassName(oldClassName) {
-            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
-            const firstDigit = oldClassName.charAt(0);
-            const restOfName = oldClassName.substring(1);
-            switch (firstDigit) {
-                case '7': return '1' + restOfName;
-                case '8': return '2' + restOfName;
-                case '9': return '3' + restOfName;
-                default: return oldClassName;
-            }
-        }*/
-        // ---------------------------------------------------
+        // --- 【新增輔助函數】 ---
+        const GRADE_MAP = { '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '七', '8': '八', '9': '九' };
+
+        /**
+         * 根據班級代碼的第一位數字提取年級
+         * @param {string} classId - 班級代碼 (例如: 701, 801)
+         * @returns {string|null} 年級代碼 (例如: '7', '8')
+         */
+        function getGradeLevelFromClassId(classId) {
+            if (!classId || classId.length < 3) return null;
+            const firstDigit = classId.charAt(0);
+            return GRADE_MAP[firstDigit] ? firstDigit : null; 
+        }
+        // ------------------------
         
 		auth.onAuthStateChanged(async (user) => { 
             if (user) { 
@@ -193,26 +210,22 @@
             } 
         });
 		
-		// 【【【請用這整段新的函數，取代舊的 initializeReportPage 函數】】】
+		// 【修改 initializeReportPage 函數】: 新增填充年段篩選器的邏輯
         async function initializeReportPage(userData) {
             const today = new Date().toLocaleDateString('en-CA');
             document.getElementById('start-date').value = today;
             document.getElementById('end-date').value = today;
 
-            // --- 變更開始 ---
-            // 1. 檢查 schoolId
             if (!userData.schoolId) {
                 console.warn("帳號未綁定學校ID，無法讀取名冊。");
                 alert('錯誤：您的帳號未綁定學校ID，無法繼續操作。');
                 return;
             }
-            // 2. 使用 schoolId 讀取當前學期名冊
             const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
             if (!rosterDoc.exists) {
                 alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
                 return;
             }
-            // --- 變更結束 ---
 
             studentsData = rosterDoc.data().students;
             classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
@@ -220,8 +233,20 @@
             const perfClassFilter = document.getElementById('class-filter-container');
             const gradesClassSelect = document.getElementById('grades-class-select');
             const gradesClassSelectSingle = document.getElementById('grades-class-select-single');
+            
+            // 【修改點 2：年段篩選器相關邏輯，改為複選框】
+            const perfGradeContainer = document.getElementById('perf-grade-checkbox-container'); 
+            const selectAllGrades = document.getElementById('select-all-grades');
+            const gradeGroups = {}; 
 
             classList.forEach(className => {
+                const grade = getGradeLevelFromClassId(className);
+                if (grade) {
+                    if (!gradeGroups[grade]) gradeGroups[grade] = [];
+                    gradeGroups[grade].push(className);
+                }
+
+                // 填充班級篩選器
                 const div = document.createElement('div');
                 div.className = 'class-checkbox';
                 // 使用原始班級代碼
@@ -231,6 +256,32 @@
                 gradesClassSelect.add(new Option(`${className} 班`, className));
                 gradesClassSelectSingle.add(new Option(`${className} 班`, className));
             });
+            
+            // 填充年段複選框
+            const availableGrades = Object.keys(gradeGroups).sort();
+            availableGrades.forEach(grade => {
+                const gradeName = GRADE_MAP[grade] || grade;
+                const div = document.createElement('div');
+                div.className = 'class-checkbox';
+                // 預設全部勾選
+                div.innerHTML = `<input type="checkbox" id="grade-${grade}" value="${grade}" class="grade-selector grade-checkbox" checked> <label for="grade-${grade}">${gradeName}年級</label>`;
+                perfGradeContainer.appendChild(div);
+            });
+            
+            // 綁定「全選」/「全取消」事件
+            selectAllGrades.addEventListener('change', (e) => {
+                document.querySelectorAll('.grade-checkbox').forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
+            });
+
+            document.querySelectorAll('.grade-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const allChecked = [...document.querySelectorAll('.grade-checkbox')].every(cb => cb.checked);
+                    selectAllGrades.checked = allChecked;
+                });
+            });
+            // ------------------------------------
 
             const assignmentsSnapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').orderBy('date', 'desc').get();
             allAssignments = [];
@@ -248,11 +299,29 @@
         }
         
         document.querySelectorAll('.tab-btn').forEach(button => { button.addEventListener('click', () => { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); button.classList.add('active'); document.getElementById(button.dataset.tab + '-tab').classList.add('active'); }); });
-        document.querySelectorAll('input[name="perf-report-type"]').forEach(radio => { radio.addEventListener('change', () => { const isLog = radio.value === 'log'; document.getElementById('perf-log-filters').style.display = isLog ? 'block' : 'none'; document.getElementById('event-select').style.display = isLog ? 'block' : 'none'; document.getElementById('perf-results-container').innerHTML = '<p>請設定條件後執行查詢。</p>'; document.getElementById('export-perf-csv-btn').disabled = true; document.getElementById('perf-results-title').innerHTML = '<span>查詢結果</span>'; }); });
+        
+        // 【修改點 3：切換事件明細/統計摘要的邏輯】
+        document.querySelectorAll('input[name="perf-report-type"]').forEach(radio => { 
+            radio.addEventListener('change', () => { 
+                const isLog = radio.value === 'log'; 
+                document.getElementById('perf-log-filters').style.display = isLog ? 'block' : 'none'; 
+                document.getElementById('event-select').style.display = isLog ? 'block' : 'none'; 
+                
+                // 【關鍵修改】: 顯示或隱藏年段篩選器
+                document.getElementById('perf-grade-filter-container').style.display = isLog ? 'none' : 'flex';
+                // -----------------------------
+                
+                document.getElementById('perf-results-container').innerHTML = '<p>請設定條件後執行查詢。</p>'; 
+                document.getElementById('export-perf-csv-btn').disabled = true; 
+                document.getElementById('perf-results-title').innerHTML = '<span>查詢結果</span>'; 
+            }); 
+        });
+
         document.querySelectorAll('input[name="grades-report-type"]').forEach(radio => { radio.addEventListener('change', (e) => { document.getElementById('grades-student-filters').style.display = 'none'; document.getElementById('grades-assignment-filters').style.display = 'none'; document.getElementById('grades-cross-class-filters').style.display = 'none'; document.getElementById(`grades-${e.target.value}-filters`).style.display = 'block'; document.getElementById('grades-results-container').innerHTML = '<p>請設定條件後執行查詢。</p>'; document.getElementById('export-grades-csv-btn').disabled = true; document.getElementById('grades-results-title').innerHTML = '<span>查詢結果</span>'; }); });
         
         document.getElementById('select-all-classes').addEventListener('change', (e) => { document.querySelectorAll('#performance-tab .class-selector').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
         
+        // 【修改點 4：執行表現查詢的邏輯】
         document.getElementById('run-perf-query-btn').addEventListener('click', async () => {
             const container = document.getElementById('perf-results-container');
             container.innerHTML = '查詢中...'; document.getElementById('export-perf-csv-btn').disabled = true;
@@ -266,26 +335,51 @@
                 const snapshot = await query.get();
                 let allRecordsInRange = [];
                 snapshot.forEach(doc => allRecordsInRange.push(doc.data()));
+                
+                // 【A. 事件明細 (Log) 查詢邏輯】
                 if (reportType === 'log') {
                     const selectedClasses = [...document.querySelectorAll('#performance-tab .class-selector:checked')].map(cb => cb.value);
                     const eventType = document.getElementById('event-type-filter').value;
                     currentPerfResults = allRecordsInRange.filter(r => { const cId = (r.entityType === 'class') ? r.entityId : (r.entityId || r.studentId).substring(0, 3); const hasP = (r.points || 0) !== 0; const hasT = (r.text || '').trim() !== ''; const cMatch = selectedClasses.length === 0 || selectedClasses.includes(cId); let eMatch = true; if (eventType === 'with_points') eMatch = hasP; if (eventType === 'text_only') eMatch = !hasP && hasT; return cMatch && eMatch; });
                     perfSortState = { key: 'class', direction: 'asc' };
                     sortAndRenderPerfLog();
-                } else {
+                } 
+                // 【B. 統計摘要 (Stats) 查詢邏輯】
+                else {
+                    // 【關鍵修改】: 獲取所有選中的年級代碼
+                    const selectedGrades = [...document.querySelectorAll('.grade-checkbox:checked')].map(cb => cb.value); 
                     const stats = {};
-                    classList.forEach(c => { stats[c] = { className: c, total: 0, positive: 0, negative: 0, count: 0 }; });
+                    
+                    if (selectedGrades.length === 0) {
+                        container.innerHTML = '<p style="color:red;">請至少選擇一個年段進行統計！</p>'; 
+                        return;
+                    }
+
+                    // 根據選定的年級篩選出要計算的班級列表
+                    const classesToProcess = classList.filter(c => {
+                        const grade = getGradeLevelFromClassId(c);
+                        return grade && selectedGrades.includes(grade); // 確保年級存在且在選中列表中
+                    });
+
+                    classesToProcess.forEach(c => { 
+                        stats[c] = { className: c, total: 0, positive: 0, negative: 0, count: 0 }; 
+                    });
+
                     allRecordsInRange.forEach(record => {
                         const className = (record.entityType === 'class') ? record.entityId : (record.entityId || record.studentId).substring(0, 3);
-                        if (stats[className]) {
-                            const points = record.points || 0;
-                            stats[className].count++;
-                            stats[className].total += points;
-                            if (points > 0) stats[className].positive += points;
-                            if (points < 0) stats[className].negative += points;
+                        // 確保只統計選定年級內的班級
+                        if (classesToProcess.includes(className)) {
+                            if (stats[className]) {
+                                const points = record.points || 0;
+                                stats[className].count++;
+                                stats[className].total += points;
+                                if (points > 0) stats[className].positive += points;
+                                if (points < 0) stats[className].negative += points;
+                            }
                         }
                     });
-                    currentPerfStats = { allRecords: allRecordsInRange, stats: Object.values(stats) };
+                    
+                    currentPerfStats = { allRecords: allRecordsInRange, stats: Object.values(stats).filter(s => s.count > 0) };
                     perfStatsSortState = { key: 'total', direction: 'desc' };
                     sortAndRenderPerfStats();
                 }
