@@ -94,16 +94,12 @@
 
     <div class="section">
         <h2>學期資料設定與上傳</h2>
-        <p class="info-box">請將每項資料貼上/設定完成後，點擊該區塊的「上傳」按鈕獨立更新。建議順序：教師 → 名冊 → 課表時間 → 課表內容。</p>
+        <!-- 移除了教師基本資料，修正順序與說明 -->
+        <p class="info-box">請將每項資料貼上/設定完成後，點擊該區塊的「上傳」按鈕獨立更新。必要資料：課程時間 → 學生名冊 → 教師課表。</p>
         
+        <!-- 【重新編號 1】: 課程時間表 -->
         <div class="data-block">
-            <label for="teachers-data"><h3>1. 教師基本資料</h3></label>
-			<textarea id="teachers-data" placeholder="格式: 姓名,單位(選填),分機(選填)&#10;【重要】此處的「姓名」必須與教師登入的 Google 帳號名稱完全一致！&#10;王大明,國一導師室,123&#10;陳小美,教務處,456"></textarea>
-            <button id="upload-teachers-btn" class="upload-btn" data-type="teachers">上傳教師資料</button>
-        </div>
-
-        <div class="data-block">
-            <h3>2. 課程時間表 (每節課起訖時間)</h3>
+            <h3>1. 課程時間表 (每節課起訖時間)</h3>
             <p class="info-box">請設定每節課的開始時間和持續分鐘數。</p>
             <table id="periods-table">
                 <thead>
@@ -121,14 +117,16 @@
             <button id="upload-periods-btn" class="upload-btn" data-type="periods">上傳課程時間表</button>
         </div>
 
+        <!-- 【重新編號 2】: 學生名冊 -->
         <div class="data-block">
-            <label for="roster-data"><h3>3. 學生名冊</h3></label>
+            <label for="roster-data"><h3>2. 學生名冊</h3></label>
             <textarea id="roster-data" placeholder="格式: 班級座號,姓名 (一行一筆)&#10;70101,陳宥炘&#10;70102,廖翊暟"></textarea>
             <button id="upload-roster-btn" class="upload-btn" data-type="roster">上傳學生名冊</button>
         </div>
 
+        <!-- 【重新編號 3】: 全校教師課表 -->
         <div class="data-block">
-            <label for="timetable-data"><h3>4. 全校教師課表</h3></label>
+            <label for="timetable-data"><h3>3. 全校教師課表</h3></label>
             <textarea id="timetable-data" placeholder="請貼上已轉AI換過的 CSV 格式課表..."></textarea>
             <button id="upload-timetable-btn" class="upload-btn" data-type="timetable">上傳教師課表</button>
         </div>
@@ -330,24 +328,10 @@
             }
         }
         
-        // --- 資料解析函數 (保持不變) ---
+        // --- 資料解析函數 (移除了 parseTeachers) ---
         
-        function parseTeachers(text) {
-            const teachers = {};
-            const lines = text.trim().split('\n');
-            lines.forEach((line, index) => {
-                const parts = line.split(',').map(p => p.trim());
-                if (parts.length < 1 || parts[0] === '') return; 
-                const name = parts[0];
-                const department = parts[1] || '';
-                const extension = parts[2] || '';
-                if (!name) throw new Error(`教師資料第 ${index + 1} 行的姓名不可為空`);
-                teachers[name] = { department, extension };
-            });
-            if (Object.keys(teachers).length === 0) throw new Error('未解析到任何有效的教師資料。');
-            return teachers;
-        }
-
+        // 移除了 parseTeachers 函數
+        
         function parseRoster(text) {
             const students = [];
             const lines = text.trim().split('\n');
@@ -363,17 +347,25 @@
         }
 
 		function parseTimetable(text) {
+            // 定義常用科目，用於從課表內容中提取領域
             const OFFICIAL_SUBJECTS = ['國文', '英文', '英語', '數學', '社會', '自然', '綜合', '藝術', '健體', '科技', '公民', '歷史', '地理', '理化', '生物', '地科', '表演', '視覺', '音樂', '體育', '家政', '童軍', '輔導', '本土語', '資訊科技', '生活科技'];
             const PERIOD_NAMES = ['第一節', '第二節', '第三節', '第四節', '第五節', '第六節', '第七節', '第八節'];
             const lines = text.trim().split('\n');
+            
+            // 檢查 CSV 標頭行，確定格式是老師名稱,職稱,節次名稱,週一,週二...
+            if (lines.length > 0 && lines[0].includes('老師名稱')) {
+                lines.shift(); // 移除標頭行
+            }
+            
             const schedules = {};
             const teacherTitles = {};
             const teacherSubjects = {};
 
-            for (let i = 1; i < lines.length; i++) {
+            for (let i = 0; i < lines.length; i++) {
                 const parts = lines[i].split(',').map(p => p.trim());
-                if (parts.length < 8) continue;
+                if (parts.length < 8) continue; // 至少需要 老師,職稱,節次,5天
 
+                // 假設 CSV 格式為：老師名稱, 職稱, 節次名稱, 週一課, 週二課, ...
                 const [name, title, periodStr, mon, tue, wed, thu, fri] = parts;
                 
                 if (!name) continue;
@@ -389,6 +381,7 @@
                     const dailyLessons = [mon, tue, wed, thu, fri];
                     schedules[name][periodIndex] = dailyLessons;
 
+                    // 從每天的課程中提取科目資訊
                     dailyLessons.forEach(lesson => {
                         if (lesson) {
                             for (const officialSub of OFFICIAL_SUBJECTS) {
@@ -402,73 +395,21 @@
                 }
             }
 
+            // 將 Set 轉為逗號分隔的字串
             for (const teacher in teacherSubjects) {
                 teacherSubjects[teacher] = Array.from(teacherSubjects[teacher]).join(', ') || '其他';
             }
-
+            
+            // 由於移除了教師基本資料上傳，這裡的 teacherTitles/teacherSubjects 將用於直接儲存到 timetables 文件
             if (Object.keys(schedules).length === 0) throw new Error('未解析到任何有效的課表資料。');
             return { schedules, teacherTitles, teacherSubjects };
         }
         
-        function mergeTeacherData(teachers, teacherTitles, teacherSubjects) {
-            const merged = { ...teachers };
-            for (const name in merged) {
-                merged[name].title = teacherTitles[name] || '專任教師';
-                merged[name].subject = teacherSubjects[name] || '其他';
-            }
-            for (const name in teacherTitles) {
-                if (!merged[name]) {
-                    merged[name] = {
-                        department: '',
-                        extension: '',
-                        title: teacherTitles[name],
-                        subject: teacherSubjects[name] || '其他'
-                    };
-                }
-            }
-            return merged;
-        }
+        // 移除了 mergeTeacherData 函數 (不再需要更新 teachers 集合)
 
         // --- 單獨上傳函數 ---
 
-        async function uploadTeachers() {
-            const text = document.getElementById('teachers-data').value;
-            if (!text) return alert('請貼上教師資料！');
-            try {
-                const teachers = parseTeachers(text);
-                const confirmationMessage = `確認上傳 ${Object.keys(teachers).length} 筆教師資料？這將覆蓋現有資料並保留 UID。`;
-                if (!confirm(confirmationMessage)) return alert('操作已取消。');
-
-                const schoolRef = db.collection('schools').doc(schoolId);
-                const preservedData = new Map();
-                const oldTeachersSnapshot = await schoolRef.collection('teachers').get();
-                oldTeachersSnapshot.forEach(doc => {
-                    const data = doc.data();
-                    if (data.uid || data.email) {
-                        preservedData.set(doc.id, { uid: data.uid, email: data.email });
-                    }
-                });
-
-                const batch = db.batch();
-                oldTeachersSnapshot.forEach(doc => batch.delete(doc.ref)); // 刪除舊資料
-
-                for (const name in teachers) {
-                    const teacherData = { name: name, ...teachers[name] };
-                    if (preservedData.has(name)) {
-                        const oldData = preservedData.get(name);
-                        teacherData.uid = oldData.uid || '';
-                        teacherData.email = oldData.email || '';
-                    }
-                    const docRef = schoolRef.collection('teachers').doc(name);
-                    batch.set(docRef, teacherData);
-                }
-                await batch.commit();
-                alert('教師資料已成功上傳/更新！');
-            } catch (error) {
-                alert('上傳教師資料時發生錯誤：\n' + error.message);
-                console.error(error);
-            }
-        }
+        // 移除了 uploadTeachers 函數
         
         async function uploadPeriods() {
             try {
@@ -518,18 +459,15 @@
             }
         }
         
+        // 【修改 uploadTimetable 函數】: 直接儲存課表並附帶職稱與科目
         async function uploadTimetable() {
             const text = document.getElementById('timetable-data').value;
             if (!text) return alert('請貼上全校課表資料！');
             try {
                 const { schedules, teacherTitles, teacherSubjects } = parseTimetable(text);
                 
-                const teacherData = {};
-                const oldTeachersSnapshot = await db.collection('schools').doc(schoolId).collection('teachers').get();
-                oldTeachersSnapshot.forEach(doc => teacherData[doc.id] = doc.data());
+                // 移除了所有對 teachers 集合的讀寫
                 
-                const mergedTeachers = mergeTeacherData(teacherData, teacherTitles, teacherSubjects);
-
                 const confirmationMessage = `確認上傳 ${Object.keys(schedules).length} 筆課表資料？這將覆蓋現有課表。`;
                 if (!confirm(confirmationMessage)) return alert('操作已取消。');
 
@@ -544,15 +482,15 @@
                     schedules[name].forEach((dayData, periodIndex) => {
                         scheduleObject[periodIndex] = dayData;
                     });
-                    const scheduleData = { periods: scheduleObject };
+                    
+                    // 【關鍵修改】：將職稱和科目資訊直接儲存在 timetables 文件中
+                    const scheduleData = { 
+                         periods: scheduleObject,
+                         title: teacherTitles[name] || '專任教師', 
+                         subject: teacherSubjects[name] || '其他'
+                     }; 
                     const docRef = schoolRef.collection('timetables').doc(name);
                     batch.set(docRef, scheduleData);
-                }
-                
-                // 由於課表解析會更新教師的 title/subject，所以這裡也更新教師列表
-                for (const name in mergedTeachers) {
-                    const docRef = schoolRef.collection('teachers').doc(name);
-                    batch.set(docRef, mergedTeachers[name], { merge: true });
                 }
 
                 await batch.commit();
@@ -564,7 +502,7 @@
         }
 
         // --- 事件監聽器 (綁定到各自的按鈕) ---
-        document.getElementById('upload-teachers-btn').addEventListener('click', uploadTeachers);
+        // 移除了 document.getElementById('upload-teachers-btn').addEventListener('click', uploadTeachers);
         document.getElementById('upload-periods-btn').addEventListener('click', uploadPeriods);
         document.getElementById('upload-roster-btn').addEventListener('click', uploadRoster);
         document.getElementById('upload-timetable-btn').addEventListener('click', uploadTimetable);
