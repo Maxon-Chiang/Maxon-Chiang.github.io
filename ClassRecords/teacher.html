@@ -214,6 +214,29 @@
             margin: 0;
             flex-shrink: 0;
         }
+        
+        /* 【新增】即時上課班級凸顯效果 */
+        .current-class-highlight {
+            border: 4px solid #FF5733; /* 亮紅色邊框 */
+            box-shadow: 0 0 15px rgba(255, 87, 51, 0.8); /* 發光效果 */
+            animation: pulse-border 1.5s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% {
+                border-color: #FF5733;
+                box-shadow: 0 0 15px rgba(255, 87, 51, 0.8);
+            }
+            50% {
+                border-color: #FFA500; /* 閃爍到橙色 */
+                box-shadow: 0 0 20px rgba(255, 165, 0, 0.9);
+            }
+            100% {
+                border-color: #FF5733;
+                box-shadow: 0 0 15px rgba(255, 87, 51, 0.8);
+            }
+        }
+
 
         .class-block-actions {
             display: flex;
@@ -1131,6 +1154,9 @@
         
         // 【新增】編輯狀態追蹤變數
         let editingRecordId = null;
+        
+        // 【新增】時間表數據變數 (不再是寫死常數)
+        let PERIOD_TIMES = []; // 從 Firestore 讀取到的課程時間表數據
 
         // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
@@ -1259,6 +1285,133 @@
             document.getElementById('app-container').style.display = 'none';
             document.getElementById('password-reset-overlay').style.display = 'flex';
         }
+        
+        /**
+         * 檢查當前時間屬於哪一節課（0-7）
+         * @returns {number} 當前節次 (0-7)，如果沒有課則返回 -1
+         */
+        function getCurrentPeriodIndex() {
+            // 如果時間數據不存在，則無法判斷
+            if (PERIOD_TIMES.length === 0) return -1;
+            
+            const now = new Date();
+            // 獲取當前的分鐘數（小時 * 60 + 分鐘）
+            const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+
+            for (let i = 0; i < PERIOD_TIMES.length; i++) {
+                const period = PERIOD_TIMES[i];
+                
+                // 將開始時間字串轉換為分鐘數
+                const [startH, startM] = period.start.split(':').map(Number);
+                
+                const startTimeMinutes = startH * 60 + startM;
+                const endTimeMinutes = startTimeMinutes + period.duration; // 結束時間 = 開始時間 + 持續時間
+
+                if (currentTimeMinutes >= startTimeMinutes && currentTimeMinutes < endTimeMinutes) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /**
+         * 根據當前課表高亮顯示正在上課的班級卡片。
+         */
+        function highlightCurrentClass() {
+            // 只有在 PERIOD_TIMES 載入完成且有課表數據時才執行
+            if (PERIOD_TIMES.length === 0 || !teacherTimetableData || !scheduleDataLoaded) return;
+
+            // 1. 移除所有現有的高亮
+            document.querySelectorAll('.class-block').forEach(el => {
+                el.classList.remove('current-class-highlight');
+            });
+
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
+            
+            // 判斷是否為工作日 (Mon=1 to Fri=5)
+            if (dayOfWeek < 1 || dayOfWeek > 5) return; 
+
+            // 轉換為課表索引 (0 = Mon, 4 = Fri)
+            const dayIndex = dayOfWeek - 1; 
+
+            const currentPeriodIndex = getCurrentPeriodIndex(); // 獲取當前節次 (0-7)
+
+            if (currentPeriodIndex === -1) return; // 當前不在上課時間
+
+            const periods = teacherTimetableData.periods;
+            
+            // 2. 從課表數據中找到正在上課的班級
+            // periods[periodIndex][dayIndex] = "101 國文"
+            const periodData = periods[currentPeriodIndex];
+            if (periodData && periodData[dayIndex]) {
+                const cellContent = periodData[dayIndex];
+                const [classCode, ...rest] = cellContent.split(/\s+/);
+                
+                if (classCode) {
+                    // 3. 尋找對應的班級卡片並添加高亮類別
+                    const targetCard = document.querySelector(`.class-block[data-class-id="${classCode}"]`);
+                    if (targetCard) {
+                        targetCard.classList.add('current-class-highlight');
+                    }
+                }
+            }
+        }
+
+        /**
+         * 載入學校設定的每節課開始時間和持續時間。
+         * 數據來源: schools/{schoolId}/periods/current
+         */
+        async function loadPeriodTimes() {
+            // 檢查 schoolId 是否已由 initialize 函數設定
+            if (!currentUserData.schoolId) return; 
+            
+            try {
+                // 1. 存取 Firestore 路徑以獲取課程時間表設定
+                const periodsDoc = await db.collection('schools').doc(currentUserData.schoolId)
+                                           .collection('periods').doc('current').get();
+
+                if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
+                    // 2. 如果資料存在，將其轉換並儲存到全域變數 PERIOD_TIMES
+                    PERIOD_TIMES = periodsDoc.data().times.map(item => ({
+                        period: item.period,
+                        start: item.start,
+                        duration: item.duration || 50 
+                    }));
+                    
+                    // 確保數據是按照節次順序排列
+                    PERIOD_TIMES.sort((a, b) => a.period - b.period);
+                    
+                } else {
+                    console.warn("警告: 學校尚未設定課程時間表 (periods/current 不存在或為空)。將使用預設時間。");
+                    // 載入失敗或無資料時，設定一個合理的預設時間表
+                    PERIOD_TIMES = [
+                        { period: 1, start: '08:10', duration: 50 },
+                        { period: 2, start: '09:10', duration: 50 },
+                        { period: 3, start: '10:10', duration: 50 },
+                        { period: 4, start: '11:10', duration: 50 },
+                        { period: 5, start: '13:10', duration: 50 },
+                        { period: 6, start: '14:10', duration: 50 },
+                        { period: 7, start: '15:10', duration: 50 },
+                        { period: 8, start: '16:10', duration: 50 }
+                    ];
+                }
+            } catch (error) {
+                console.error("載入課程時間表時發生錯誤:", error);
+                // 發生錯誤時也給予預設值，保證程式不中斷
+                PERIOD_TIMES = [
+                        { period: 1, start: '08:10', duration: 50 },
+                        { period: 2, start: '09:10', duration: 50 },
+                        { period: 3, start: '10:10', duration: 50 },
+                        { period: 4, start: '11:10', duration: 50 },
+                        { period: 5, start: '13:10', duration: 50 },
+                        { period: 6, start: '14:10', duration: 50 },
+                        { period: 7, start: '15:10', duration: 50 },
+                        { period: 8, start: '16:10', duration: 50 }
+                    ];
+            }
+        }
+
 
 		async function initialize(userData) {
             try {
@@ -1266,6 +1419,9 @@
                     document.getElementById('app-container').innerHTML = '<h2>帳號設定錯誤：找不到學校 ID。</h2>';
                     return;
                 }
+                
+                // 【核心修改點 1】: 先載入時間表，確保時間偵測可用
+                await loadPeriodTimes(); 
                 
                 const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
                 
@@ -1279,14 +1435,20 @@
                 if (visibleClassList.length === 0 && allClassList.length > 0) {
                     visibleClassList = allClassList;
                 }
-                await fetchAllScores();
+                
+                // 【核心修改點 2】: 必須在時間表載入後才呼叫 fetchAllScores/renderLayout
+                await fetchAllScores(); 
                 
                 // 【新增】預先載入課表數據
                 await fetchScheduleData();
 
                 // 首次渲染使用座號/班級排序
-                renderLayout();
-				
+                // renderLayout() 在 fetchAllScores 的 onSnapshot 裡呼叫
+
+                
+                // 啟動每 30 秒執行一次的時鐘偵測
+                setInterval(highlightCurrentClass, 30000); 
+
 				// 【【【修復點 1: 恢復自動彈出課表邏輯】】】
 				const preference = localStorage.getItem('homepagePreference');
 				if (preference === 'timetable') {
@@ -1309,6 +1471,13 @@
                 
                 // 【新增】綁定取消修改函數
                 btnCancelEdit.addEventListener('click', resetPerformanceForm);
+                
+                // 【新增】前景恢復時立即啟動偵測
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        highlightCurrentClass();
+                    }
+                });
 
 
             } catch (error) {
@@ -1357,6 +1526,8 @@
                 
                 // 重新渲染UI，因為分數可能已改變
                 renderLayout();
+                highlightCurrentClass(); // 分數改變後，立即更新高亮狀態
+                
 
                 // 如果紀錄彈窗是開著的，則刷新它的列表
                 if (modal.style.display === 'flex' && currentEntity) {
@@ -1423,6 +1594,7 @@
                 const classBlock = document.createElement('div');
                 classBlock.className = 'class-block';
                 classBlock.style.backgroundColor = backgroundColor;
+                classBlock.dataset.classId = className; // 【新增】data-class-id 屬性，用於高亮偵測
 
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'class-block-title';
@@ -1669,7 +1841,7 @@
             
             try { 
 				if (editingRecordId) {
-                    // **更新模式：** // 【修正點 1.1】: 查找原始記錄
+                    // **更新模式：**
                     const originalRecord = allPerformanceRecords.find(r => r.id === editingRecordId);
                     if (!originalRecord) {
                          alert('更新紀錄失敗: 找不到原始記錄');
@@ -1690,8 +1862,7 @@
                     alert('紀錄已更新！');
                     
 				} else {
-                    // **新增模式：** // 【修正點 1.2】: 必須讀取 rawPoints
-                    const rawPoints = parseFloat(recordPointsInput.value) || 0;
+                    // **新增模式：** const rawPoints = parseFloat(recordPointsInput.value) || 0;
                     
                     const p = Math.round(rawPoints * 10) / 10;
                     
