@@ -7,12 +7,12 @@
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; padding: 20px; max-width: 1200px; margin: auto; background-color: #f8f9fa; }
         h1, h2, h3 { color: #333; }
-        button, input, textarea { font-family: inherit; padding: 8px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; }
+        button, input, select, textarea { font-family: inherit; padding: 8px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
         button { background-color: #0d6efd; color: white; cursor: pointer; border: none; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
         .section { background-color: #ffffff; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #dee2e6; }
-        textarea { width: 98%; min-height: 200px; font-size: 0.9em; line-height: 1.6; }
-        .info-box { background-color: #fffbe6; padding: 15px; border: 1px solid #ffe58f; border-radius: 4px; font-size: 0.9em; line-height: 1.6; }
+        textarea { width: 98%; min-height: 150px; font-size: 0.9em; line-height: 1.6; }
+        .info-box { background-color: #fffbe6; padding: 15px; border: 1px solid #ffe58f; border-radius: 4px; font-size: 0.9em; line-height: 1.6; margin-bottom: 15px; }
         .danger-zone { border: 2px solid #dc3545; }
         .danger-zone h2 { color: #dc3545; }
         #reset-semester-btn { background-color: #dc3545; padding: 10px 20px; font-size: 1.1em; }
@@ -21,6 +21,60 @@
         #announcement-section h2 { color: #004085; }
         #announcement-content { white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
         #announcement-meta { font-size: 0.9em; color: #555; text-align: right; }
+        
+        /* 每個資料區塊的樣式 */
+        .data-block {
+            border-bottom: 1px dashed #ccc;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .data-block:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        /* 時間設定表格樣式 */
+        #periods-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95em;
+        }
+        #periods-table th, #periods-table td {
+            border: 1px solid #eee;
+            padding: 8px;
+            text-align: center;
+        }
+        #periods-table th {
+            background-color: #f2f2f2;
+        }
+        /* 【修改點 1】: 增加時間選擇器的寬度，讓它能完整顯示 */
+        #periods-table input[type="time"] {
+            width: 150px; /* 從 100px 增加到 120px 或更多 */
+            text-align: center;
+            font-size: 1em;
+        }
+        /* 【修改點 2】: 縮小持續時間輸入框的寬度 */
+        #periods-table input[type="number"] {
+            width: 60px; /* 縮小寬度，僅夠容納兩位數 */
+            text-align: center;
+        }
+        #periods-table .duration-unit {
+             white-space: nowrap; /* 確保 "(分鐘)" 不會換行 */
+             padding-left: 5px;
+        }
+
+        #periods-table button {
+            background-color: #6c757d;
+            padding: 5px 10px;
+            font-size: 0.9em;
+        }
+        .upload-btn {
+             background-color: #198754; 
+             padding: 10px 20px; 
+             font-size: 1.1em;
+             margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -39,28 +93,50 @@
     </div>
 
     <div class="section">
-        <h2>學期初資料設定</h2>
-        <p class="info-box"><strong>說明：</strong>請在新學期開始時，於下方三個欄位貼上對應的純文字資料，然後點擊最下方的「上傳/更新所有資料」按鈕。系統將會一次性地更新全校的資料。</p>
-        <form id="data-upload-form">
-            <div style="margin-bottom: 25px;">
-                <label for="teachers-data"><h3>1. 教師基本資料</h3></label>
-				<textarea id="teachers-data" placeholder="格式: 姓名,單位(選填),分機(選填)&#10;【重要】此處的「姓名」必須與教師登入的 Google 帳號名稱完全一致！&#10;王大明,國一導師室,123&#10;陳小美,教務處,456"></textarea>
-            </div>
-            <div style="margin-bottom: 25px;">
-                <label for="roster-data"><h3>2. 學生名冊</h3></label>
-                <textarea id="roster-data" placeholder="格式: 班級座號,姓名 (一行一筆)&#10;70101,陳宥炘&#10;70102,廖翊暟"></textarea>
-            </div>
-            <div style="margin-bottom: 25px;">
-                <label for="timetable-data"><h3>3. 全校教師課表</h3></label>
-                <textarea id="timetable-data" placeholder="請貼上已轉AI換過的 CSV 格式課表..."></textarea>
-            </div>
-            <button type="submit" style="padding: 10px 20px; font-size: 1.1em; background-color: #198754;">預覽並準備上傳</button>
-        </form>
+        <h2>學期資料設定與上傳</h2>
+        <p class="info-box">請將每項資料貼上/設定完成後，點擊該區塊的「上傳」按鈕獨立更新。建議順序：教師 → 名冊 → 課表時間 → 課表內容。</p>
+        
+        <div class="data-block">
+            <label for="teachers-data"><h3>1. 教師基本資料</h3></label>
+			<textarea id="teachers-data" placeholder="格式: 姓名,單位(選填),分機(選填)&#10;【重要】此處的「姓名」必須與教師登入的 Google 帳號名稱完全一致！&#10;王大明,國一導師室,123&#10;陳小美,教務處,456"></textarea>
+            <button id="upload-teachers-btn" class="upload-btn" data-type="teachers">上傳教師資料</button>
+        </div>
+
+        <div class="data-block">
+            <h3>2. 課程時間表 (每節課起訖時間)</h3>
+            <p class="info-box">請設定每節課的開始時間和持續分鐘數。</p>
+            <table id="periods-table">
+                <thead>
+                    <tr>
+                        <th>節次</th>
+                        <th>開始時間</th>
+                        <th>持續時間 (分鐘)</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="periods-tbody">
+                    </tbody>
+            </table>
+            <button id="add-period-btn" style="margin-top: 10px;">+ 新增一節課</button>
+            <button id="upload-periods-btn" class="upload-btn" data-type="periods">上傳課程時間表</button>
+        </div>
+
+        <div class="data-block">
+            <label for="roster-data"><h3>3. 學生名冊</h3></label>
+            <textarea id="roster-data" placeholder="格式: 班級座號,姓名 (一行一筆)&#10;70101,陳宥炘&#10;70102,廖翊暟"></textarea>
+            <button id="upload-roster-btn" class="upload-btn" data-type="roster">上傳學生名冊</button>
+        </div>
+
+        <div class="data-block">
+            <label for="timetable-data"><h3>4. 全校教師課表</h3></label>
+            <textarea id="timetable-data" placeholder="請貼上已轉AI換過的 CSV 格式課表..."></textarea>
+            <button id="upload-timetable-btn" class="upload-btn" data-type="timetable">上傳教師課表</button>
+        </div>
     </div>
 
     <div class="section danger-zone">
         <h2>學期重設 (危險操作)</h2>
-        <p class="info-box"><strong>警告：</strong>此功能將會**刪除**目前學校所有老師的**成績紀錄**和**表現紀錄**。通常只在學年轉換、準備輸入新學期資料**之前**使用。此操作無法復原，請謹慎使用！</p>
+        <p class="info-box"><strong>警告：</strong>此功能將會**刪除**目前學校所有老師的**成績紀錄**和**表現紀錄**。此操作無法復原，請謹慎使用！</p>
         <button id="reset-semester-btn">執行學期重設</button>
     </div>
 
@@ -83,6 +159,18 @@
         const auth = firebase.auth();
         let currentUser = null;
         let schoolId = null; 
+        
+        // 用於儲存節次時間表的暫存數據
+        let periodData = [
+            { period: 1, start: '08:10', duration: 50 },
+            { period: 2, start: '09:10', duration: 50 },
+            { period: 3, start: '10:10', duration: 50 },
+            { period: 4, start: '11:10', duration: 50 },
+            { period: 5, start: '13:10', duration: 50 },
+            { period: 6, start: '14:10', duration: 50 },
+            { period: 7, start: '15:10', duration: 50 },
+            { period: 8, start: '16:10', duration: 50 }
+        ];
 
         auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -98,6 +186,8 @@
                     document.getElementById('admin-email').textContent = userData.displayName || user.email;
                     document.getElementById('admin-panel').style.display = 'block';
                     loadLatestAnnouncement();
+                    await loadPeriodsData(); // 新增：載入既有的時間表
+                    renderPeriodsTable(); // 渲染時間表介面
                 } else {
                     alert('權限不足！');
                     window.location.href = 'login.html';
@@ -106,6 +196,120 @@
                 window.location.href = 'login.html';
             }
         });
+
+        // 輔助函數：計算結束時間
+        function calculateEndTime(startTime, duration) {
+            const [startH, startM] = startTime.split(':').map(Number);
+            const totalMinutes = startH * 60 + startM + duration;
+            const endH = Math.floor(totalMinutes / 60) % 24;
+            const endM = totalMinutes % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${pad(endH)}:${pad(endM)}`;
+        }
+        
+        // 載入既有的 Periods Data
+        async function loadPeriodsData() {
+            try {
+                const periodsDoc = await db.collection('schools').doc(schoolId).collection('periods').doc('current').get();
+                if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
+                    periodData = periodsDoc.data().times.map(item => ({
+                        period: item.period,
+                        start: item.start,
+                        duration: item.duration || 50 // 假設舊資料沒有 duration，給予預設值
+                    }));
+                }
+            } catch (error) {
+                console.error("載入課程時間表失敗:", error);
+            }
+        }
+
+		function renderPeriodsTable() {
+            const tbody = document.getElementById('periods-tbody');
+            tbody.innerHTML = '';
+            
+            periodData.sort((a, b) => a.period - b.period);
+
+            periodData.forEach((item, index) => {
+                const endTime = calculateEndTime(item.start, item.duration);
+                const row = tbody.insertRow();
+                row.dataset.index = index;
+                
+                row.insertCell().textContent = item.period;
+                
+                // 開始時間選擇器
+                const startCell = row.insertCell();
+                startCell.innerHTML = `<input type="time" class="period-start" value="${item.start}">`;
+                
+                // 持續時間輸入
+                const durationCell = row.insertCell();
+                // 【修改點 3】: 讓數字輸入框和單位文字在同一個 div 內，方便排版
+                durationCell.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:center;">
+                        <input type="number" class="period-duration" value="${item.duration}" min="10" step="5">
+                        <span class="duration-unit">(分鐘)</span>
+                    </div>`;
+                
+                // 結束時間顯示 + 刪除按鈕
+                const actionCell = row.insertCell();
+                actionCell.innerHTML = `<span class="period-end" style="margin-right: 10px; font-weight: bold;">~ ${endTime}</span> <button class="delete-period-btn" data-index="${index}">刪除</button>`;
+            });
+            
+            // 綁定事件監聽器 (必須在渲染後綁定)
+            tbody.querySelectorAll('.period-start, .period-duration').forEach(input => {
+                input.addEventListener('change', updatePeriodData);
+            });
+            tbody.querySelectorAll('.delete-period-btn').forEach(button => {
+                button.addEventListener('click', deletePeriod);
+            });
+        }
+        
+        function updatePeriodData(e) {
+            const row = e.target.closest('tr');
+            const index = parseInt(row.dataset.index);
+            const dataItem = periodData[index];
+            
+            if (e.target.classList.contains('period-start')) {
+                dataItem.start = e.target.value;
+            } else if (e.target.classList.contains('period-duration')) {
+                let duration = parseInt(e.target.value);
+                if (isNaN(duration) || duration < 10) {
+                    e.target.value = 10;
+                    duration = 10;
+                }
+                dataItem.duration = duration;
+            }
+            
+            // 重新計算結束時間並更新顯示
+            const endTime = calculateEndTime(dataItem.start, dataItem.duration);
+            row.querySelector('.period-end').textContent = `~ ${endTime}`;
+        }
+        
+        function deletePeriod(e) {
+            const index = parseInt(e.target.dataset.index);
+            periodData.splice(index, 1);
+            
+            // 重新編號
+            periodData.forEach((item, i) => item.period = i + 1);
+
+            renderPeriodsTable();
+        }
+
+        document.getElementById('add-period-btn').addEventListener('click', () => {
+            const newPeriodNum = periodData.length > 0 ? periodData[periodData.length - 1].period + 1 : 1;
+            const lastEndTime = periodData.length > 0 ? calculateEndTime(periodData[periodData.length - 1].start, periodData[periodData.length - 1].duration) : '08:00';
+            
+            // 處理休息時間：假設每節課間休息 10 分鐘
+            const [lastH, lastM] = lastEndTime.split(':').map(Number);
+            const nextStartMinutes = lastH * 60 + lastM + 10; 
+            const nextStartH = Math.floor(nextStartMinutes / 60) % 24;
+            const nextStartM = nextStartMinutes % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+            const nextStartTime = `${pad(nextStartH)}:${pad(nextStartM)}`;
+            
+            periodData.push({ period: newPeriodNum, start: nextStartTime, duration: 50 });
+            renderPeriodsTable();
+        });
+
 
         async function loadLatestAnnouncement() {
             const contentEl = document.getElementById('announcement-content');
@@ -126,49 +330,8 @@
             }
         }
         
-        document.getElementById('data-upload-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const teachersText = document.getElementById('teachers-data').value;
-            const rosterText = document.getElementById('roster-data').value;
-            const timetableText = document.getElementById('timetable-data').value;
-            
-            if (!teachersText || !rosterText || !timetableText) {
-                alert('請確認三個欄位都已貼上資料！');
-                return;
-            }
-
-            try {
-                const teachers = parseTeachers(teachersText);
-                const students = parseRoster(rosterText);
-                const { schedules, teacherTitles, teacherSubjects } = parseTimetable(timetableText);
-                const mergedTeachers = mergeTeacherData(teachers, teacherTitles, teacherSubjects);
-
-                const confirmationMessage = `
-資料解析完成，請確認：
-------------------------------------
-- 教師人數: ${Object.keys(mergedTeachers).length} 人
-- 學生人數: ${students.length} 人
-- 課表筆數 (已解析): ${Object.keys(schedules).length} 筆
-------------------------------------
-點擊「確定」將會覆蓋 Firestore 中現有的教師、學生與課表資料。
-此操作會保留已登入教師的 uid 與 email 資訊。
-                `;
-
-                if (confirm(confirmationMessage)) {
-                    await uploadAllData(mergedTeachers, students, schedules);
-                    alert('所有資料已成功上傳/更新！');
-                } else {
-                    alert('操作已取消。');
-                }
-
-            } catch (error) {
-                alert('資料解析或上傳時發生錯誤：\n' + error.message);
-                console.error(error);
-            }
-        });
+        // --- 資料解析函數 (保持不變) ---
         
-        // 【修改】parseTeachers 已改回只處理 Name, Department, Extension 的版本
         function parseTeachers(text) {
             const teachers = {};
             const lines = text.trim().split('\n');
@@ -201,28 +364,28 @@
 
 		function parseTimetable(text) {
             const OFFICIAL_SUBJECTS = ['國文', '英文', '英語', '數學', '社會', '自然', '綜合', '藝術', '健體', '科技', '公民', '歷史', '地理', '理化', '生物', '地科', '表演', '視覺', '音樂', '體育', '家政', '童軍', '輔導', '本土語', '資訊科技', '生活科技'];
+            const PERIOD_NAMES = ['第一節', '第二節', '第三節', '第四節', '第五節', '第六節', '第七節', '第八節'];
             const lines = text.trim().split('\n');
             const schedules = {};
             const teacherTitles = {};
             const teacherSubjects = {};
 
-            // 忽略 CSV 的第一行標頭
             for (let i = 1; i < lines.length; i++) {
-                const parts = lines[i].split(',');
+                const parts = lines[i].split(',').map(p => p.trim());
                 if (parts.length < 8) continue;
 
-                const [name, title, periodStr, mon, tue, wed, thu, fri] = parts.map(p => p.trim());
+                const [name, title, periodStr, mon, tue, wed, thu, fri] = parts;
                 
                 if (!name) continue;
 
                 if (!schedules[name]) {
-                    schedules[name] = Array.from({ length: 7 }, () => Array(5).fill(''));
+                    schedules[name] = Array.from({ length: 8 }, () => Array(5).fill('')); 
                     teacherSubjects[name] = new Set();
                     teacherTitles[name] = title;
                 }
 
-                const periodIndex = '第一節,第二節,第三節,第四節,第五節,第六節,第七節'.split(',').indexOf(periodStr);
-                if (periodIndex !== -1) {
+                const periodIndex = PERIOD_NAMES.indexOf(periodStr);
+                if (periodIndex !== -1 && periodIndex < 8) {
                     const dailyLessons = [mon, tue, wed, thu, fri];
                     schedules[name][periodIndex] = dailyLessons;
 
@@ -247,7 +410,6 @@
             return { schedules, teacherTitles, teacherSubjects };
         }
         
-        // 【修改】mergeTeacherData 已改回不處理 Email 的版本
         function mergeTeacherData(teachers, teacherTitles, teacherSubjects) {
             const merged = { ...teachers };
             for (const name in merged) {
@@ -267,63 +429,183 @@
             return merged;
         }
 
-        // 【【【此為本次修正的核心】】】
-        async function uploadAllData(mergedTeachers, students, schedules) {
-            const schoolRef = db.collection('schools').doc(schoolId);
-            
-            // --- 新增：讀取並保留舊的 uid 和 email ---
-            const preservedData = new Map();
-            const oldTeachersSnapshot = await schoolRef.collection('teachers').get();
-            oldTeachersSnapshot.forEach(doc => {
-                const data = doc.data();
-                if (data.uid || data.email) {
-                    preservedData.set(doc.id, { uid: data.uid, email: data.email });
-                }
-            });
-            // --- 新增結束 ---
+        // --- 單獨上傳函數 ---
 
-            const batch = db.batch();
+        async function uploadTeachers() {
+            const text = document.getElementById('teachers-data').value;
+            if (!text) return alert('請貼上教師資料！');
+            try {
+                const teachers = parseTeachers(text);
+                const confirmationMessage = `確認上傳 ${Object.keys(teachers).length} 筆教師資料？這將覆蓋現有資料並保留 UID。`;
+                if (!confirm(confirmationMessage)) return alert('操作已取消。');
 
-            // 刪除舊資料
-            oldTeachersSnapshot.forEach(doc => batch.delete(doc.ref));
-            const oldTimetables = await schoolRef.collection('timetables').get();
-            oldTimetables.forEach(doc => batch.delete(doc.ref));
-
-            // 寫入新資料
-            for (const name in mergedTeachers) {
-                const teacherData = { name: name, ...mergedTeachers[name] };
-                
-                // --- 新增：將保留的 uid 和 email 寫回去 ---
-                if (preservedData.has(name)) {
-                    const oldData = preservedData.get(name);
-                    teacherData.uid = oldData.uid || '';
-                    teacherData.email = oldData.email || '';
-                }
-                // --- 新增結束 ---
-                
-                const docRef = schoolRef.collection('teachers').doc(name);
-                batch.set(docRef, teacherData);
-            }
-
-            const rosterRef = schoolRef.collection('rosters').doc('current');
-            batch.set(rosterRef, { students: students, uploadedAt: new Date() });
-
-            for (const name in schedules) {
-                const scheduleObject = {};
-                schedules[name].forEach((dayData, periodIndex) => {
-                    scheduleObject[periodIndex] = dayData;
+                const schoolRef = db.collection('schools').doc(schoolId);
+                const preservedData = new Map();
+                const oldTeachersSnapshot = await schoolRef.collection('teachers').get();
+                oldTeachersSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (data.uid || data.email) {
+                        preservedData.set(doc.id, { uid: data.uid, email: data.email });
+                    }
                 });
-                const scheduleData = { periods: scheduleObject };
-                const docRef = schoolRef.collection('timetables').doc(name);
-                batch.set(docRef, scheduleData);
-            }
 
-            await batch.commit();
+                const batch = db.batch();
+                oldTeachersSnapshot.forEach(doc => batch.delete(doc.ref)); // 刪除舊資料
+
+                for (const name in teachers) {
+                    const teacherData = { name: name, ...teachers[name] };
+                    if (preservedData.has(name)) {
+                        const oldData = preservedData.get(name);
+                        teacherData.uid = oldData.uid || '';
+                        teacherData.email = oldData.email || '';
+                    }
+                    const docRef = schoolRef.collection('teachers').doc(name);
+                    batch.set(docRef, teacherData);
+                }
+                await batch.commit();
+                alert('教師資料已成功上傳/更新！');
+            } catch (error) {
+                alert('上傳教師資料時發生錯誤：\n' + error.message);
+                console.error(error);
+            }
         }
+        
+        async function uploadPeriods() {
+            try {
+                if (periodData.length === 0) return alert('請至少設定一節課的時間！');
+                
+                // 重新編號並計算 end time，確保數據結構正確
+                const periodsToUpload = periodData.map((item, index) => ({
+                    period: index + 1, // 重新確保節次編號
+                    start: item.start,
+                    duration: item.duration,
+                    end: calculateEndTime(item.start, item.duration)
+                }));
+                
+                const confirmationMessage = `確認上傳 ${periodsToUpload.length} 節課程時間表？`;
+                if (!confirm(confirmationMessage)) return alert('操作已取消。');
+                
+                const schoolRef = db.collection('schools').doc(schoolId);
+                const periodsRef = schoolRef.collection('periods').doc('current');
+                
+                await periodsRef.set({ times: periodsToUpload, uploadedAt: new Date() });
+                
+                alert('課程時間表已成功上傳/更新！');
+                renderPeriodsTable(); // 確保介面刷新
+            } catch (error) {
+                alert('上傳課程時間表時發生錯誤：\n' + error.message);
+                console.error(error);
+            }
+        }
+        
+        async function uploadRoster() {
+            const text = document.getElementById('roster-data').value;
+            if (!text) return alert('請貼上學生名冊資料！');
+            try {
+                const students = parseRoster(text);
+                const confirmationMessage = `確認上傳 ${students.length} 筆學生名冊資料？這將覆蓋現有資料。`;
+                if (!confirm(confirmationMessage)) return alert('操作已取消。');
+
+                const schoolRef = db.collection('schools').doc(schoolId);
+                const rosterRef = schoolRef.collection('rosters').doc('current');
+                
+                await rosterRef.set({ students: students, uploadedAt: new Date() });
+
+                alert('學生名冊已成功上傳/更新！');
+            } catch (error) {
+                alert('上傳學生名冊時發生錯誤：\n' + error.message);
+                console.error(error);
+            }
+        }
+        
+        async function uploadTimetable() {
+            const text = document.getElementById('timetable-data').value;
+            if (!text) return alert('請貼上全校課表資料！');
+            try {
+                const { schedules, teacherTitles, teacherSubjects } = parseTimetable(text);
+                
+                const teacherData = {};
+                const oldTeachersSnapshot = await db.collection('schools').doc(schoolId).collection('teachers').get();
+                oldTeachersSnapshot.forEach(doc => teacherData[doc.id] = doc.data());
+                
+                const mergedTeachers = mergeTeacherData(teacherData, teacherTitles, teacherSubjects);
+
+                const confirmationMessage = `確認上傳 ${Object.keys(schedules).length} 筆課表資料？這將覆蓋現有課表。`;
+                if (!confirm(confirmationMessage)) return alert('操作已取消。');
+
+                const schoolRef = db.collection('schools').doc(schoolId);
+                const batch = db.batch();
+                
+                const oldTimetables = await schoolRef.collection('timetables').get();
+                oldTimetables.forEach(doc => batch.delete(doc.ref)); // 刪除舊課表
+
+                for (const name in schedules) {
+                    const scheduleObject = {};
+                    schedules[name].forEach((dayData, periodIndex) => {
+                        scheduleObject[periodIndex] = dayData;
+                    });
+                    const scheduleData = { periods: scheduleObject };
+                    const docRef = schoolRef.collection('timetables').doc(name);
+                    batch.set(docRef, scheduleData);
+                }
+                
+                // 由於課表解析會更新教師的 title/subject，所以這裡也更新教師列表
+                for (const name in mergedTeachers) {
+                    const docRef = schoolRef.collection('teachers').doc(name);
+                    batch.set(docRef, mergedTeachers[name], { merge: true });
+                }
+
+                await batch.commit();
+                alert('全校課表已成功上傳/更新！');
+            } catch (error) {
+                alert('上傳全校課表時發生錯誤：\n' + error.message);
+                console.error(error);
+            }
+        }
+
+        // --- 事件監聽器 (綁定到各自的按鈕) ---
+        document.getElementById('upload-teachers-btn').addEventListener('click', uploadTeachers);
+        document.getElementById('upload-periods-btn').addEventListener('click', uploadPeriods);
+        document.getElementById('upload-roster-btn').addEventListener('click', uploadRoster);
+        document.getElementById('upload-timetable-btn').addEventListener('click', uploadTimetable);
 
         document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
         
-        document.getElementById('reset-semester-btn').addEventListener('click', async () => { /* ... (維持不變) ... */ });
+        document.getElementById('reset-semester-btn').addEventListener('click', async () => { 
+             const firstConfirm = confirm('警告：此操作將會刪除此學校所有老師的「成績紀錄」和「日常表現紀錄」！此操作無法復原。確定要繼續嗎？');
+             if (!firstConfirm) return;
+             
+             const secondConfirm = confirm('【最後確認】再次警告：您確定要永久刪除所有老師的成績和表現紀錄嗎？');
+             if (!secondConfirm) return;
+             
+             try {
+                // 這裡的刪除邏輯是針對所有老師的資料，不需要 schoolId 過濾（依賴 Firestore Rules）
+                
+                const deleteCollectionGroup = async (collectionName) => {
+                    const docs = await db.collectionGroup(collectionName).get();
+                    const batch = db.batch();
+                    docs.forEach(doc => batch.delete(doc.ref));
+                    if (docs.size > 0) await batch.commit();
+                    return docs.size;
+                };
+
+                const deletedGrades = await deleteCollectionGroup('assignments');
+                const deletedPerf = await deleteCollectionGroup('records');
+
+                // 刪除所有計算規則 (calculationRules) - 非 Collection Group
+                const ruleDocs = await db.collection('calculationRules').where('teacherId', '!=', '0').get();
+                const ruleBatch = db.batch();
+                ruleDocs.forEach(doc => ruleBatch.delete(doc.ref));
+                const deletedRules = ruleDocs.size;
+                if (deletedRules > 0) await ruleBatch.commit();
+
+                alert(`學期重設完成！已刪除 ${deletedGrades} 筆成績、${deletedPerf} 筆表現紀錄、${deletedRules} 筆計算規則。`);
+
+             } catch(error) {
+                console.error("執行學期重設失敗:", error);
+                alert("重設失敗：請檢查控制台錯誤訊息或 Firestore 權限。");
+             }
+        });
     </script>
 </body>
 </html>
