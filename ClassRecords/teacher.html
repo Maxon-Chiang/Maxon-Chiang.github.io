@@ -1063,7 +1063,7 @@
             <h3>課表系統</h3>
             <ul>
                 <li><strong>課表查詢</strong>: 查詢個人、班級、或場地的課表。</li>
-                <li><strong>智慧調課</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段。</li>
+                <li><strong>智慧調課</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段.</li>
                 <li><strong>指定代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」。</li>
                 <li><strong>加入行事曆</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
             </ul>
@@ -1155,8 +1155,8 @@
         // 【新增】編輯狀態追蹤變數
         let editingRecordId = null;
         
-        // 【新增】時間表數據變數 (不再是寫死常數)
-        let PERIOD_TIMES = []; // 從 Firestore 讀取到的課程時間表數據
+        // 【新增】時間表數據變數 (從 Firestore 讀取)
+        let PERIOD_TIMES = []; 
 
         // --- DOM Elements ---
         const appContainer = document.getElementById('app-container');
@@ -1448,6 +1448,10 @@
                 
                 // 啟動每 30 秒執行一次的時鐘偵測
                 setInterval(highlightCurrentClass, 30000); 
+                
+                // 【關鍵優化】: 載入後立即執行一次高亮偵測 (Fast-Launch)
+                highlightCurrentClass();
+
 
 				// 【【【修復點 1: 恢復自動彈出課表邏輯】】】
 				const preference = localStorage.getItem('homepagePreference');
