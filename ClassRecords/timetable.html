@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
 <style>
+/* CSS 樣式代碼... (保持不變) */
 :root {
     --primary-bg: #f8f9fa;
     --header-bg: #005a87;
@@ -592,7 +593,7 @@ const MAX_RECENT_ITEMS = 10;
 // 【新增】動態時間表數據
 let PERIOD_TIMES = []; 
 let scheduleSnapshot = null;
-let timetableIntervalId = null;
+let timetableIntervalId = null; // 【核心修正 2】: 定義全局變數，用於管理定時器
 
 // 【新增】用於緩存 teachers 集合資料
 let teachersDataCache = new Map(); 
@@ -1162,7 +1163,7 @@ async function main() {
     }
 
 	async function showSchedule(name, type) {
-		// 停止舊的定時器
+		// 【核心修正 2.1】：在開始載入新課表時，先清除舊的定時器
 		if (timetableIntervalId) clearInterval(timetableIntervalId);
 
 		addRecentSchedule(name, type);
@@ -1193,10 +1194,13 @@ async function main() {
 		if (type === 'teacher' && teacherSchedules.has(name)) {
 			schedule = teacherSchedules.get(name);
 			title = `${name} 課表`;
+			// 修正交互提示文字，明確指出長按或右鍵是 ICS 匯出
 			const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 			const interactionHint = isTouchDevice ? '長按' : '右鍵';
+			
 			if (name === currentUserDisplayName) {
-				titleEl2.textContent = `＊點擊有課格子可進行調/代/換課，${interactionHint}可加入行事曆註記＊`;
+				// 【修正：左鍵操作提示】
+				titleEl2.textContent = `＊點擊有課格子可進行調/代/換課（點擊自己課程，再點綠色建議格子），${interactionHint}可加入行事曆註記＊`;
 			} else {
 				titleEl2.textContent = `＊${interactionHint}可加入行事曆註記＊`;
 			}
@@ -1215,7 +1219,9 @@ async function main() {
 		const renderScheduleTable = () => {
 			 // 【核心修正 2】：定時器中直接使用已填充的 schedule 變數，不再運行 deriveSchedules
 			 if (!schedule) return; 
-
+			 // 【核心修正 2.2】：如果模態框已經關閉，則定時器不需要再重畫內容，直接結束
+             if (modal.style.display === 'none') return;
+             
 			 titleEl.textContent = title;
 			 const daysOfWeek = ['星期一', '星期二', '星期三', '星期四', '星期五'];
 			 let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
@@ -1252,7 +1258,7 @@ async function main() {
 					 
 					 const isCurrent = isCurrentWeek && day === currentDayIndex && period === currentPeriodIndex;
 					 if (isCurrent) {
-						  cellClass += ' current-timetable-cell'; // 應用高亮
+						  cellClass += ' current-timetable-cell'; // 应用高亮
 					 }
 				 
 					 if (cellData) {
@@ -1333,11 +1339,23 @@ async function main() {
 			// 重新綁定事件
 			if (type === 'teacher') {
 				teacherViewSelectedCell = null;
+				// 【核心修正 1.1】：只綁定 click, contextmenu (右鍵)
+				scheduleTable.removeEventListener('click', (e) => handleTeacherCellClick(e, name));
+				scheduleTable.removeEventListener('contextmenu', (e) => handleTeacherCellInteraction(e, name));
+
 				scheduleTable.addEventListener('click', (e) => handleTeacherCellClick(e, name));
 				scheduleTable.addEventListener('contextmenu', (e) => handleTeacherCellInteraction(e, name));
-				scheduleTable.addEventListener('touchstart', (e) => handleTeacherCellInteraction(e, name));
-				scheduleTable.addEventListener('touchend', () => clearTimeout(longPressTimer));
-				scheduleTable.addEventListener('touchmove', () => clearTimeout(longPressTimer));
+				
+				// 【核心修正 1.2】：新增 touchstart 和 touchend 來模擬長按 for ICS Export
+				scheduleTable.removeEventListener('touchstart', handleTouchStart);
+				scheduleTable.removeEventListener('touchend', handleTouchEnd);
+				scheduleTable.removeEventListener('touchmove', handleTouchEnd);
+
+				scheduleTable.addEventListener('touchstart', handleTouchStart);
+				scheduleTable.addEventListener('touchend', handleTouchEnd);
+				scheduleTable.addEventListener('touchmove', handleTouchEnd);
+
+
 			} else if (type === 'class') {
 				classViewSelectedCell = null;
 				scheduleTable.addEventListener('click', (e) => handleClassCellClick(e, name));
@@ -1350,11 +1368,8 @@ async function main() {
 		// 首次渲染
 		renderScheduleTable(); 
 
-		// 【核心修正 3】：啟動定時器，持續高亮
+		// 【核心修正 2.3】：啟動定時器，持續高亮
 		timetableIntervalId = setInterval(renderScheduleTable, 30000); 
-
-		// 【核心修正 4】：確保滑動偵測啟動
-		//setupSwipeDetection(bodyEl, name);
 
 
 		// 周導航按鈕事件 (保持不變)
@@ -1376,12 +1391,76 @@ async function main() {
 
 		// 關閉按鈕事件 (保持不變)
 		modal.querySelector('.close-button').onclick = () => {
+			// 【核心修正 2.4】：關閉按鈕點擊時清除定時器
 			if (timetableIntervalId) clearInterval(timetableIntervalId);
+			timetableIntervalId = null;
 			modal.style.display = 'none';
 		};
 		
 	}
     
+    // 【核心修正 1.3】：長按模擬輔助函數
+    let touchCell = null;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    
+    function handleTouchStart(e) {
+        // 阻止預設行為 (如頁面捲動)，但只在單點觸控時阻止
+        if (e.touches.length === 1) {
+             // 這裡必須阻止預設行為，否則長按無法觸發 contextmenu 模擬
+             // 但阻止後 click 事件也會被阻止，所以長按和單擊必須分開處理
+             // 為了讓單擊走 click 事件，這裡不阻止
+             
+             touchCell = e.target.closest('td');
+             if(!touchCell || touchCell.classList.contains('period-header')) return;
+             
+             touchStartX = e.touches[0].clientX;
+             touchStartY = e.touches[0].clientY;
+
+             clearTimeout(longPressTimer);
+             
+             // 500ms 後，模擬右鍵事件
+             longPressTimer = setTimeout(() => {
+                 // 模擬一個 contextmenu 事件，讓 handleTeacherCellInteraction 處理
+                 if(touchCell) {
+                     e.preventDefault(); // 在這裡阻止，防止手機的預設長按選單
+                     e.stopPropagation(); 
+                     
+                     // 執行 ICS 匯出的邏輯
+                     handleTeacherCellInteraction({
+                         type: 'contextmenu', 
+                         target: touchCell,
+                         preventDefault: () => {}, // 假裝阻止
+                         stopPropagation: () => {} // 假裝阻止
+                     }, activeSchedule.name);
+                 }
+                 touchCell = null; // 清除觸摸中的元素
+             }, LONG_PRESS_DURATION);
+        }
+    }
+    
+    function handleTouchEnd(e) {
+        clearTimeout(longPressTimer);
+        
+        // 【核心修正 1.4】：檢查是否為移動
+        const threshold = 10; // 移動超過 10px 視為移動
+        if (e.changedTouches && touchCell) {
+            const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
+            const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
+            
+            if (deltaX > threshold || deltaY > threshold) {
+                 // 如果是移動，則不做任何操作，防止長按誤觸
+                 return;
+            }
+        }
+        
+        // 如果沒有長按被觸發 (longPressTimer被清除)，click事件應該會自然觸發。
+        // 如果此時 touchCell 還有值，則可能是單擊，讓 click 處理即可。
+        // 如果已經是 long press (contextmenu 被觸發)，touchCell 會被設為 null。
+        touchCell = null; 
+    }
+    
+
     // 【新增】ICS 匯出需要的時間判斷邏輯 (用於定時器)
     function getPeriodIndexForTimetableHighlight() {
         if (PERIOD_TIMES.length === 0) return -1;
@@ -1408,8 +1487,18 @@ async function main() {
 
 	function handleTeacherCellClick(event, teacherName) {
 		if (teacherName !== currentUserDisplayName) {
+			
+			// 【核心修正 1.5】：對於非自己的課，點擊不應該觸發任何操作
+			const cell = event.target.closest('td');
+			if(cell && cell.dataset.courseData) {
+				alert(`您點擊了 ${teacherName} 老師的課。\n\n如需加入行事曆，請使用滑鼠右鍵或長按。`);
+			}
 			return;
 		}
+		
+		// 確保不是長按後被模擬的 click (雖然上面長按模擬已經把觸控事件處理掉了)
+		// if (event.type === 'click' && event.detail === 0) return; 
+
 		const cell = event.target.closest('td');
 		const substitutionBtn = document.getElementById('substitution-btn');
 		substitutionBtn.classList.remove('visible');
@@ -1438,6 +1527,7 @@ async function main() {
 		};
 
 		if (changeId) {
+			// 【核心修正 1.6】：點擊已異動的格子，觸發取消
 			const changeToCancel = activeChanges.find(c => c.id === changeId);
 			if (!changeToCancel) return;
 
@@ -1462,18 +1552,16 @@ async function main() {
 		}
 
 		if (isSuggestion) {
-			// 【關鍵修正區塊：新增錯誤處理，確保 JSON 解析成功】
+			// 【核心修正 1.7】：點擊調課建議格子，觸發確認
 			let originalLessonData, targetLessonData;
 			
 			try {
-				// 注意：如果 dataset 裡的值是 undefined 或 null，JSON.parse 會報錯，所以要先檢查
 				if (!cell.dataset.originalLesson || !cell.dataset.targetLesson) {
 					 throw new Error("Missing dataset keys.");
 				}
 				originalLessonData = JSON.parse(cell.dataset.originalLesson);
 				targetLessonData = JSON.parse(cell.dataset.targetLesson);
 			} catch (e) {
-				// 如果解析失敗，會彈出提示並在瀏覽器控制台留下錯誤訊息
 				alert("錯誤：調課建議資料解析失敗。請檢查課程名稱或聯繫開發人員。");
 				console.error("JSON Parse Error for swap-suggestion:", e);
 				clearAllSelections();
@@ -1481,7 +1569,6 @@ async function main() {
 			}
 
 			if (originalLessonData && targetLessonData) {
-				// 呼叫調課確認模態框
 				showSwapConfirmationModal({
 					original: originalLessonData,
 					target: targetLessonData
@@ -1529,6 +1616,7 @@ async function main() {
 		cell.classList.add('highlight');
 		teacherViewSelectedCell = cell;
 
+		// 顯示代課/換課按鈕
 		substitutionBtn.classList.add('visible');
 		substitutionBtn.onclick = () => showSubstitutionModal(clickedLesson, teacherViewSelectedCell.dataset.date, teacherName);
 
@@ -1641,12 +1729,13 @@ async function main() {
     }
 
 	/**
-	 * 【修正此函數】: 確保 right-click (contextmenu) 事件能正確開啟模態框
+	 * 【修正此函數】：專門處理右鍵或長按（ICS 匯出功能）
 	 */
 	function handleTeacherCellInteraction(event, teacherName) {
 		
-		// 1. 【核心修復 1】：立即阻止事件冒泡和預設行為 (右鍵菜單和長按選單)
-		if (event.type === 'touchstart' || event.type === 'contextmenu') {
+		// 1. 【核心修復 1】：立即阻止事件冒泡和預設行為 (右鍵菜單)
+		// 僅在 contextmenu 時阻止，touchstart/touchend 已經在外面處理
+		if (event.type === 'contextmenu') {
 			event.preventDefault(); 
 			event.stopPropagation();
 		}
@@ -1675,14 +1764,30 @@ async function main() {
         if (isSpecialChange) {
             // 對於異動的格子，從 activeChanges 中提取原始課程資訊
             const change = activeChanges.find(c => c.id === isSpecialChange);
+            
+            // 由於異動數據結構複雜，這裡必須確保 lesson 包含所有原始和異動資訊
             if (change.type === 'substitution') {
-                lesson = { ...change.lessonInfo, originalTeacherName: change.originalTeacherName, substituteTeacherName: change.substituteTeacherName, isSubstitutedOut: true };
+                // 原課程資訊 + 代課老師
+                lesson = { 
+                    ...change.lessonInfo, 
+                    reason: change.reason,
+                    isSubstitutedOut: true,
+                    substituteTeacherName: change.substituteTeacherName, 
+                };
             } else if (change.type === 'exchange') {
                 const isOut = change.originalLessonInfo.teacher === teacherName;
-                 lesson = isOut ? change.originalLessonInfo : change.exchangeLessonInfo;
-                 lesson.isExchangedOut = isOut;
-                 lesson.isExchangedIn = !isOut;
-            } else {
+                
+                // 課程內容使用 originalLessonInfo 或 exchangeLessonInfo 
+                lesson = isOut ? { ...change.originalLessonInfo } : { ...change.exchangeLessonInfo };
+                
+                // 異動標記
+                lesson.isExchangedOut = isOut;
+                lesson.isExchangedIn = !isOut;
+                lesson.reason = change.reason;
+
+                // 傳遞給 showSingleEventModal 內部邏輯所需的名字
+                lesson.targetTeacher = isOut ? change.exchangeLessonInfo.teacher : undefined;
+            } else if (change.type === 'swap') {
                  // 對於調課，不允許透過 ICS 匯出，由點擊處理
                  clearTimeout(longPressTimer);
                  return;
@@ -1715,27 +1820,43 @@ async function main() {
 		}
 		
 		// 3. 根據事件類型執行操作
-		const showModal = () => {
+        // ICS 匯出模態框
+        const showModal = () => {
              // 從 data-course-data 屬性中取得乾淨的課程數據
              const cleanCourseData = JSON.parse(cell.dataset.courseData || '{}');
-             showSingleEventModal({
-                subjectName: cleanCourseData.subjectName || lesson.subject,
-                className: cleanCourseData.className || lesson.class,
-                teacherName: cleanCourseData.teacherName || teacherName,
+             
+             // 構建傳遞給 showSingleEventModal 的最終 lesson 物件
+             const finalLesson = {
+                // 基礎資訊
+                subject: cleanCourseData.subjectName || lesson.subject,
+                class: cleanCourseData.className || lesson.class,
+                teacher: cleanCourseData.teacherName || teacherName,
                 periodNum: period + 1,
                 location: cleanCourseData.location || lesson.location,
-                ...lesson // 合併異動資訊
-             }, currentWeekStart, day + 1); // +1 轉換為 1-5
+                
+                // 【關鍵修正 1】：確保傳遞 ICS 匯出所需的 period 和 day 索引
+                period: period,
+                day: day,
+
+                // 【關鍵修正 2】：確保傳遞 showSingleEventModal 內部需要的特定異動鍵
+                isSubstitutedOut: lesson.isSubstitutedOut,
+                substituteTeacherName: lesson.substituteTeacherName, 
+                isExchangedOut: lesson.isExchangedOut,
+                targetTeacher: lesson.targetTeacher, 
+                isSwappedOut: lesson.isSwappedOut,
+                
+                // 【關鍵修正 3】：確保傳遞 reason 欄位
+                reason: lesson.reason
+             };
+
+             showSingleEventModal(finalLesson, currentWeekStart, day + 1); // +1 轉換為 1-5
         }
 		
 		if (event.type === 'contextmenu') {
-            // 【修復點】: 右鍵：直接觸發模態框
+            // 右鍵：直接觸發模態框
 			showModal();
-		} else if (event.type === 'touchstart') {
-			// 長按：啟動計時器
-			clearTimeout(longPressTimer);
-			longPressTimer = setTimeout(showModal, LONG_PRESS_DURATION);
-		}
+		} 
+        // 觸控事件已經在外部的 handleTouchStart/handleTouchEnd 中處理了長按模擬
 	}
    
 	/**
@@ -2463,12 +2584,13 @@ async function main() {
 	/**
 	 * 處理教師課表單元格的長按 (觸摸) 或右鍵點擊 (滑鼠) 事件。
 	 * 用於開啟行事曆匯出註記模態框。
-	 * 【修正點】：確保所有 ICS 匯出所需的特定異動鍵和 reason 欄位被傳遞。
+	 * 【修正點】：確保 right-click (contextmenu) 事件能正確開啟模態框
 	 */
 	function handleTeacherCellInteraction(event, teacherName) {
 		
 		// 1. 【核心修復 1】：立即阻止事件冒泡和預設行為 (右鍵菜單和長按選單)
-		if (event.type === 'touchstart' || event.type === 'contextmenu') {
+		// 這裡已經被長按模擬邏輯取代，所以只處理 contextmenu
+		if (event.type === 'contextmenu') {
 			event.preventDefault(); 
 			event.stopPropagation();
 		}
@@ -2485,7 +2607,7 @@ async function main() {
 		const day = parseInt(cell.dataset.day);
 		const cellDate = cell.dataset.date;
 		
-		// 檢查是否有課程數據，並且是有效的課
+		// 檢查 ICS 匯出功能只對有課程的單元格啟用
 		if (cell.classList.contains('empty-cell') && !cell.dataset.courseData) {
 			clearTimeout(longPressTimer);
 			return;
@@ -2587,11 +2709,8 @@ async function main() {
 		if (event.type === 'contextmenu') {
             // 右鍵：直接觸發模態框
 			showModal();
-		} else if (event.type === 'touchstart') {
-			// 長按：啟動計時器
-			clearTimeout(longPressTimer);
-			longPressTimer = setTimeout(showModal, LONG_PRESS_DURATION);
-		}
+		} 
+        // 觸控事件已經在外部的 handleTouchStart/handleTouchEnd 中處理了長按模擬
 	}
     
 	/**
@@ -2643,7 +2762,7 @@ async function main() {
 			<h3>${title}</h3>
 			<p><strong>日期：</strong>${dateStr} (週${dayNames[targetDayOfWeek]})</p>
 			<p><strong>時間：</strong>第 ${periodNum} 節 (${periodInfo.start} - ${periodInfo.end})</p>
-			<p><strong>細節：</strong>${details}</p>
+			<p><strong>細節：：</strong>${details}</p>
 			<p><strong>地點：</strong>${lesson.location || '無'}</p>
 		`;
 
@@ -2830,15 +2949,15 @@ async function main() {
 
         let summary = '';
         if (lesson.isSubstitutedIn) {
-            summary = `[${lesson.subjectName}] 代 ${lesson.originalTeacherName} (${lesson.className})`;
+            summary = `[${lesson.subject}] 代 ${lesson.originalTeacherName} (${lesson.class})`;
         } else if (lesson.isSubstitutedOut) {
-            summary = `[${lesson.subjectName}] 由 ${lesson.substituteTeacherName} 代課 (${lesson.className})`;
+            summary = `[${lesson.subject}] 由 ${lesson.substituteTeacherName} 代課 (${lesson.class})`;
         } else if (lesson.isExchangedIn) {
-            summary = `[${lesson.subjectName}] 換課: 代 ${lesson.originalTeacher} (${lesson.className})`;
+            summary = `[${lesson.subject}] 換課: 代 ${lesson.originalTeacher} (${lesson.class})`;
         } else if (lesson.isExchangedOut) {
-            summary = `[${lesson.subjectName}] 換課: 由 ${lesson.targetTeacher} 代 (${lesson.className})`;
+            summary = `[${lesson.subject}] 換課: 由 ${lesson.targetTeacher} 代 (${lesson.class})`;
         } else {
-            summary = `[${lesson.subjectName}] ${lesson.className} (${teacherName})`;
+            summary = `[${lesson.subject}] ${lesson.class} (${teacherName})`;
         }
 
         let eventDetails = [
@@ -2857,7 +2976,8 @@ async function main() {
         const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `${date}-${teacherName}-${lesson.subjectName}.ics`;
+        // 使用 lesson.subject 取代 subjectName
+        link.download = `${date}-${teacherName}-${lesson.subject}.ics`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -2932,16 +3052,24 @@ async function main() {
         }
     }
     
+    // 【核心修正 2.5】：點擊關閉按鈕時清除定時器
     document.querySelectorAll('.modal .close-button').forEach(btn => {
         btn.onclick = (e) => {
             const modal = e.target.closest('.modal');
-            if (modal.id === 'schedule-modal' && timetableIntervalId) clearInterval(timetableIntervalId); // 停止定時器
+            if (modal.id === 'schedule-modal') {
+                 if (timetableIntervalId) clearInterval(timetableIntervalId); // 停止定時器
+                 timetableIntervalId = null;
+            }
             modal.style.display = 'none';
         };
     });
+    // 【核心修正 2.6】：點擊背景時清除定時器
     window.onclick = (event) => {
         if (event.target.classList.contains('modal')) {
-             if (event.target.id === 'schedule-modal' && timetableIntervalId) clearInterval(timetableIntervalId); // 停止定時器
+             if (event.target.id === 'schedule-modal') {
+                 if (timetableIntervalId) clearInterval(timetableIntervalId); // 停止定時器
+                 timetableIntervalId = null;
+             }
             event.target.style.display = 'none';
         }
     };
