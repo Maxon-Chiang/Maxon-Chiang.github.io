@@ -1058,10 +1058,7 @@ async function main() {
         return true; 
     }
 
-    // 移除了 parseStaffDirectoryFromFirestore 函數
-    
-    // 移除了 populateTeacherList 函數 (依單位列表)
-
+ 
 	// 【修改】 populateTeacherListBySubject (僅使用 timetable doc 資訊)
 	function populateTeacherListBySubject(allTeachersWithSchedule) {
         const container = document.getElementById('teacher-list-by-subject-container');
@@ -1137,7 +1134,9 @@ async function main() {
                 const nameCell = row.insertCell();
                 nameCell.className = 'name-cell';
                 nameCell.textContent = member.name;
-                nameCell.onclick = () => showSchedule(member.name, 'teacher');
+				nameCell.onclick = async () => { 
+					await showSchedule(member.name, 'teacher');
+				};
                 // 移除了分機，改為佔位
                 row.insertCell().textContent = '';
             });
