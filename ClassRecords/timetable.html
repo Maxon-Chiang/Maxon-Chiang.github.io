@@ -1134,9 +1134,13 @@ async function main() {
                 const nameCell = row.insertCell();
                 nameCell.className = 'name-cell';
                 nameCell.textContent = member.name;
-				nameCell.onclick = async () => { 
-					await showSchedule(member.name, 'teacher');
-				};
+				nameCell.onclick = () => { 
+                    // 為了確保瀏覽器能夠在接收到點擊事件後，先完成所有同步的 DOM/事件處理，
+                    // 然後再執行耗時的 showSchedule，我們使用 setTimeout(0)。
+                    setTimeout(() => {
+                        showSchedule(member.name, 'teacher');
+                    }, 0); 
+                };
                 // 移除了分機，改為佔位
                 row.insertCell().textContent = '';
             });
@@ -3033,7 +3037,7 @@ async function main() {
                     lastSchedule.view = 'subject'; 
                     if (lastSchedule?.type && lastSchedule?.name) {
                         activeSchedule = { type: lastSchedule.type, name: lastSchedule.name };
-                        setTimeout(() => showSchedule(lastSchedule.name, lastSchedule.type), 100);
+						setTimeout(() => showSchedule(lastSchedule.name, lastSchedule.type), 0);
                     }
                 } else {
                     localStorage.removeItem('lastSchedule');
