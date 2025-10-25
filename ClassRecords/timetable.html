@@ -366,10 +366,8 @@ header .header-actions {
 		margin: 0;
 		display: block; /* 讓其內部元素垂直佈局 */
 	}
-	#class-selector {
-        width: 100% !important; /* 確保在網格欄位中佔滿寬度 */
-        justify-self: unset;
-        margin-right: 0;
+    #class-selector {
+        width: 100%;
     }
     #view-by-subject-btn {
         width: 100%;
@@ -385,11 +383,7 @@ header .header-actions {
     /* 僅保留一個列表容器，手機版單欄 */
     #teacher-list-by-subject-container { column-count: 1; } 
     .department-table { font-size: 14px; }
-	#search-teacher {
-        width: 100% !important; /* 確保在網格欄位中佔滿寬度 */
-        justify-self: unset;
-        margin-left: 0;
-    }
+    #search-teacher { width: 120px; }
     .schedule-table th { font-size: 12px; }
     .schedule-table td { font-size: 12px; height: 65px; }
     .schedule-table .details { font-size: 12px; }
