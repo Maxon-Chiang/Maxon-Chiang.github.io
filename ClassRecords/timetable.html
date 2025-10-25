@@ -104,7 +104,7 @@ header .header-actions button {
 /* 移除了單位 (department) 相關樣式，統一使用 department-table */
 .department-table th { background-color: var(--header-bg); color: white; padding: 2px; text-align: center; font-weight: normal; }
 .department-table td { border: 1px solid var(--border-color); padding: 2px 6px; white-space: normal; text-align: center; }
-.department-table .name-cell { width: 80px; cursor: pointer; color: var(--accent-color); text-decoration: underline; }
+.department-table .name-cell { width: 40%; cursor: pointer; color: var(--accent-color); text-decoration: underline; }
 .department-table .ext-cell { width: 50px; } /* 保留但不再顯示分機 */
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
 .modal-content { margin: 1% auto; padding: 15px; border: 1px solid var(--border-color); width: 100%; border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg); }
@@ -1123,14 +1123,7 @@ async function main() {
                 nameCell.className = 'name-cell';
                 nameCell.textContent = member.name;
 				nameCell.onclick = () => showSchedule(member.name, 'teacher');
-				//nameCell.onclick = () => { 
-                    // 為了確保瀏覽器能夠在接收到點擊事件後，先完成所有同步的 DOM/事件處理，
-                    // 然後再執行耗時的 showSchedule，我們使用 setTimeout(0)。
-                //    setTimeout(() => {
-                //        showSchedule(member.name, 'teacher');
-                //    }, 0); 
-                //};
-                // 移除了分機，改為佔位
+
                 row.insertCell().textContent = '';
             });
             container.appendChild(table);
@@ -1209,7 +1202,13 @@ async function main() {
 		
 		// 渲染函數，用於定時器
 		const renderScheduleTable = () => {
-			 // 【核心修正 2】：定時器中直接使用已填充的 schedule 變數，不再運行 deriveSchedules
+			 const modal = document.getElementById('schedule-modal');
+             if (modal.style.display === 'none' && timetableIntervalId) {
+                 clearInterval(timetableIntervalId); // 停止定時器
+                 timetableIntervalId = null;       // 確保 ID 被清除
+                 console.log("Timetable interval stopped due to modal closure.");
+                 return; // 如果模態框關閉，則不進行後續渲染
+             }			 // 【核心修正 2】：定時器中直接使用已填充的 schedule 變數，不再運行 deriveSchedules
 			 if (!schedule) return; 
 			 // 【核心修正 2.2】：如果模態框已經關閉，則定時器不需要再重畫內容，直接結束				
 			 // if (modal.style.display === 'none') return;
@@ -3028,7 +3027,7 @@ async function main() {
                     lastSchedule.view = 'subject'; 
                     if (lastSchedule?.type && lastSchedule?.name) {
                         activeSchedule = { type: lastSchedule.type, name: lastSchedule.name };
-						setTimeout(() => showSchedule(lastSchedule.name, lastSchedule.type), 0);
+						setTimeout(() => showSchedule(lastSchedule.name, lastSchedule.type), 100);
                     }
                 } else {
                     localStorage.removeItem('lastSchedule');
