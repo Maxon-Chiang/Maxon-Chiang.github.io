@@ -356,7 +356,7 @@ header .header-actions {
     .close-button { top: 10px; right: 15px; }
 	.controls-header {
 		display: grid;
-  grid-template-columnd: 1fr 1fr;
+		grid-template-columnd: 1fr 1fr;
 		gap: 10px 15px;
 		justify-content: unset;
 		margin-bottom: 1.5em;
@@ -364,27 +364,12 @@ header .header-actions {
 	}
 	.controls-header .control-group {
 		margin: 0;
+		display: block; /* 讓其內部元素垂直佈局 */
 	}
-	/* 簡化手機版控制項排版 */
-	.controls-header .control-group:nth-child(1) {
-		width: 100%;
-		order: -1;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-	}
-    /* 調整搜尋框和按鈕在手機上的寬度 */
-	.controls-header .control-group:nth-child(1) #search-teacher {
-        grid-column: span 2;
-        width: 100%;
-    }
-	.controls-header .control-group:nth-child(2) {
-		display: block; /* 只保留班級選單 */
-		width: 100%;
-		gap: 10px;
-	}
-    #class-selector {
-        width: 100%;
+	#class-selector {
+        width: 100% !important; /* 確保在網格欄位中佔滿寬度 */
+        justify-self: unset;
+        margin-right: 0;
     }
     #view-by-subject-btn {
         width: 100%;
@@ -400,7 +385,11 @@ header .header-actions {
     /* 僅保留一個列表容器，手機版單欄 */
     #teacher-list-by-subject-container { column-count: 1; } 
     .department-table { font-size: 14px; }
-    #search-teacher { width: 120px; }
+	#search-teacher {
+        width: 100% !important; /* 確保在網格欄位中佔滿寬度 */
+        justify-self: unset;
+        margin-left: 0;
+    }
     .schedule-table th { font-size: 12px; }
     .schedule-table td { font-size: 12px; height: 65px; }
     .schedule-table .details { font-size: 12px; }
