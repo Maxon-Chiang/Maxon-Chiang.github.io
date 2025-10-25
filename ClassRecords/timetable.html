@@ -1134,13 +1134,14 @@ async function main() {
                 const nameCell = row.insertCell();
                 nameCell.className = 'name-cell';
                 nameCell.textContent = member.name;
-				nameCell.onclick = () => { 
+				nameCell.onclick = () => showSchedule(member.name, 'teacher');
+				//nameCell.onclick = () => { 
                     // 為了確保瀏覽器能夠在接收到點擊事件後，先完成所有同步的 DOM/事件處理，
                     // 然後再執行耗時的 showSchedule，我們使用 setTimeout(0)。
-                    setTimeout(() => {
-                        showSchedule(member.name, 'teacher');
-                    }, 0); 
-                };
+                //    setTimeout(() => {
+                //        showSchedule(member.name, 'teacher');
+                //    }, 0); 
+                //};
                 // 移除了分機，改為佔位
                 row.insertCell().textContent = '';
             });
@@ -1222,9 +1223,10 @@ async function main() {
 		const renderScheduleTable = () => {
 			 // 【核心修正 2】：定時器中直接使用已填充的 schedule 變數，不再運行 deriveSchedules
 			 if (!schedule) return; 
-			 // 【核心修正 2.2】：如果模態框已經關閉，則定時器不需要再重畫內容，直接結束
-             if (modal.style.display === 'none') return;
-             
+			 // 【核心修正 2.2】：如果模態框已經關閉，則定時器不需要再重畫內容，直接結束				
+			 // if (modal.style.display === 'none') return;
+
+            
 			 titleEl.textContent = title;
 			 const daysOfWeek = ['星期一', '星期二', '星期三', '星期四', '星期五'];
 			 let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
@@ -1241,6 +1243,7 @@ async function main() {
 			 const now = new Date();
 			 const currentDayIndex = now.getDay() - 1; // 0=Mon, 4=Fri
 			 const currentPeriodIndex = getPeriodIndexForTimetableHighlight(); // 獲取當前節次 (0-7)
+
 
 			 for (let period = 0; period < 8; period++) {
 				 // 獲取時間資訊
