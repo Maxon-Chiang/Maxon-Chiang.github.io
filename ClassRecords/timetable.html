@@ -62,9 +62,7 @@ header .header-actions button {
     padding: 20px 30px; border-radius: 8px; box-shadow: 0 4px 8px var(--modal-shadow);
 }
 .controls-header {
-    /* 【CSS修正】: 簡化為 2 欄網格佈局 */
     display: grid;
-    /* 確保有足夠的空間讓內容靠左和靠右 */
     grid-template-columns: 1fr 1fr; 
     gap: 20px; 
     align-items: center; 
@@ -80,32 +78,26 @@ header .header-actions button {
     font-size: 1em; padding: 5px 8px; border-radius: 4px;
     border: 1px solid #ccc; font-family: inherit;
 }
-/* 【CSS修正】: 移除 controls-group-grid，直接對元素進行定位 */
 #search-teacher { 
-    /* 搜尋框靠左，設置固定寬度 */
     width: 300px; 
     min-width: 150px;
     justify-self: start;
-    margin-left: 0; /* 確保貼邊 */
+    margin-left: 0; 
 }
 #class-selector { 
-    /* 班級選單靠右，設置固定寬度 */
     width: 300px; 
     min-width: 150px; 
     justify-self: end;
-    margin-right: 0; /* 確保貼邊 */
+    margin-right: 0; 
 }
 
-/* 移除了不必要的 view-toggle-btn 樣式 */
 .hidden { display: none !important; }
-/* 簡化列表佈局 */
 #teacher-list-by-subject-container { column-count: 6; column-gap: 6px; } 
 .department-table { break-inside: avoid; margin-bottom: 15px; width: 100%; border-collapse: collapse; font-size: 15px; }
-/* 移除了單位 (department) 相關樣式，統一使用 department-table */
 .department-table th { background-color: var(--header-bg); color: white; padding: 2px; text-align: center; font-weight: normal; }
 .department-table td { border: 1px solid var(--border-color); padding: 2px 6px; white-space: normal; text-align: center; }
 .department-table .name-cell { width: 40%; cursor: pointer; color: var(--accent-color); text-decoration: underline; }
-.department-table .ext-cell { width: 50px; } /* 保留但不再顯示分機 */
+.department-table .ext-cell { width: 50px; } 
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
 .modal-content { margin: 1% auto; padding: 15px; border: 1px solid var(--border-color); width: 100%; border-radius: 8px; box-shadow: 0 5px 15px var(--modal-shadow); position: relative; background-color: var(--modal-bg); }
 .main-modal .modal-content { max-width: 1000px; }
@@ -153,9 +145,8 @@ header .header-actions button {
 .schedule-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .schedule-table th, .schedule-table td { border: 1px solid #999; padding: 2px; text-align: center; vertical-align: middle; word-wrap: break-word; box-sizing: border-box; position: relative; }
 .schedule-table th { background-color: var(--table-header-bg); font-weight: bold; height: 35px; }
-/* 【CSS修正】: 增加節次欄的寬度，讓時間和節次號碼能在同一行顯示 */
 .schedule-table th:first-child, .schedule-table td:first-child { 
-    width: 95px; /* 95px 寬度足以容納 HH:MM~HH:MM */
+    width: 95px; 
 }
 .schedule-table td { padding: 0px; font-size: 16px; height: 70px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg); }
 .schedule-table td.empty-cell { background-color: var(--cleared-bg); }
@@ -168,6 +159,28 @@ header .header-actions button {
 }
 .schedule-table .subject { font-weight: normal; display: block; }
 .schedule-table .details { font-size: 18px; color: #0000FF; font-weight: bold; display: block; line-height: 1.1; }
+.schedule-table .details { font-size: 18px; color: #0000FF; font-weight: bold; display: block; line-height: 1.1; }
+.schedule-table td.empty-cell { background-color: var(--cleared-bg); }
+.schedule-table td:hover { background-color: #f0f0f0; }
+.schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
+.schedule-table .period-header { 
+    font-weight: bold; 
+    background-color: var(--table-header-bg); 
+    font-size: 1.0em; 
+}
+.schedule-table .subject { font-weight: normal; display: block; }
+.schedule-table .details { font-size: 18px; color: #0000FF; font-weight: bold; display: block; line-height: 1.1; }
+/* 覆蓋班級課表 (Class View) 的整個表頭高度 */
+#schedule-modal.class-schedule-view .schedule-table th {
+    height: 40px; /* 範例：調整班級課表表頭為 40px */
+    padding: 2px;
+}
+
+/* 覆蓋班級課表 (Class View) 的內容格子高度 */
+#schedule-modal.class-schedule-view .schedule-table td {
+    height: 60px; /* 範例：調整班級課表格子為 60px */
+    padding: 0;
+}
 .highlight { background-color: var(--highlight-bg) !important; box-shadow: 0 0 5px rgba(0,0,0,0.3); }
 .swap-suggestion { background-color: var(--suggestion-bg) !important; color: #0f5132; outline: 2px dashed var(--suggestion-border); outline-offset: -2px; }
 .swap-suggestion .subject, .swap-suggestion .details {color: #0f5132;  line-height: 1.1;}
@@ -195,6 +208,24 @@ header .header-actions {
     border: 1px dashed #b19cd9;
     cursor: help;
 }
+/* ... (在 .swapped-cell 之後新增) ... */
+/* 【新增以下三種班級異動的樣式】 */
+.swapped-class-cell {
+    background-color: #e6f7ff !important; /* 淺藍色 */
+    border: 1px dashed #7ec6ff;
+    cursor: help;
+}
+.substituted-class-cell {
+    background-color: #fff8e6 !important; /* 淺橘黃色 */
+    border: 1px dashed #ffb74d;
+    cursor: help;
+}
+.exchanged-class-cell {
+    background-color: #e9f5e9 !important; /* 淺綠色 */
+    border: 1px dashed #66bb6a;
+    cursor: help;
+}
+/* 【新增結束】 */
 .swapped-cell-pulse {
     animation-name: pulse-purple;
     animation-duration: 1.2s;
@@ -335,6 +366,45 @@ header .header-actions {
 .dropdown-content.show {
 	display: block;
 }
+/* CSS 樣式代碼... */
+
+/* ... (在所有 .modal-content 之後新增) ... */
+
+/* 🎯 CORE FIX 🎯: 確保純瀏覽模態框的高度和佈局 */
+#view-only-modal .modal-content { 
+    max-width: 900px; 
+    display: flex; 
+    flex-direction: column; 
+    /* 移除頂部 margin，讓內容更往上 */
+    margin: 5vh auto; 
+}
+/* 🎯 CORE FIX 🎯: 設置課表主體可捲動 */
+#view-only-modal-body {
+    overflow-y: auto; 
+    overflow-x: auto;
+    flex-grow: 1; /* 讓內容佔滿剩餘空間 */
+    /* 增加內距，與標題區塊分開 */
+    padding-top: 15px; 
+}
+#view-only-modal .modal-header {
+    /* 確保標題區塊不會因為 flex-grow 而被壓縮 */
+    flex-shrink: 0;
+}
+#view-only-modal-body .schedule-table {
+    /* 確保表格在容器內自適應寬度 */
+    width: 100%;
+    min-width: 600px; /* 防止在極窄螢幕上壓縮太嚴重 */
+}
+/* 🎯 CORE FIX 🎯: 純瀏覽模式下，單獨設定表格單元格的高度 */
+#view-only-modal .schedule-table td {
+    height: 60px; /* 您希望設定的實際高度，例如 60px */
+    padding: 0;
+}
+
+/* 🎯 CORE FIX 🎯: 如果要調整表頭高度，可以在此處設定 */
+#view-only-modal .schedule-table th {
+    height: 30px; /* 例如 30px */
+}
 @media screen and (max-width: 768px) {
     body { padding: 0; }
     header {
@@ -364,7 +434,7 @@ header .header-actions {
 	}
 	.controls-header .control-group {
 		margin: 0;
-		display: block; /* 讓其內部元素垂直佈局 */
+		display: block; 
 	}
     #class-selector {
         width: 100%;
@@ -372,7 +442,6 @@ header .header-actions {
     #view-by-subject-btn {
         width: 100%;
     }
-    /* 移除不必要的按鈕樣式 */
     .view-toggle-btn {
 		padding: 5px 10px;
 		font-size: 1em; 
@@ -380,9 +449,7 @@ header .header-actions {
     .modal-header { flex-direction: column; gap: 10px; }
     .modal-content { width: 90%; margin: 5% auto; }
     #modal-title2 { font-size: 12px; }
-    /* 僅保留一個列表容器，手機版單欄 */
 	#teacher-list-by-subject-container { 
-		/* 修正處：將欄位數量從 6 調整為 4，以在平板或電腦上並排顯示更多領域 */
 		column-count: 2; 
 		column-gap: 2px; 
 	}
@@ -393,6 +460,7 @@ header .header-actions {
     .schedule-table td { font-size: 12px; height: 65px; }
     .schedule-table .details { font-size: 12px; }
 	.schedule-table th:first-child, .schedule-table td:first-child { width: 65px; padding: 0px;}
+    .schedule-table th:not(:first-child), .schedule-table td:not(:first-child) { width: 18%; }
     .swap-suggestion .details { display: block; margin-left: 0px; line-height: 1.2; }
 }
 
@@ -524,7 +592,18 @@ header .header-actions {
             <div id="exchange-modal-body"></div>
         </div>
     </div>
-    
+	<div id="view-only-modal" class="modal main-modal">
+        <div class="modal-content">
+            <span class="close-button" id="view-only-close-btn">&times;</span>
+            <div class="modal-header">
+                <button id="back-to-class-btn" style="padding: 5px 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    返回班級課表
+                </button>
+                <h2 id="view-only-modal-title" style="flex-grow: 1; text-align: center;"></h2>
+            </div>
+            <div id="view-only-modal-body"></div>
+        </div>
+    </div>
     <div id="welcome-modal-timetable" class="modal">
         <div class="modal-content" style="max-width: 500px; text-align: left; line-height: 1.8;">
             <span class="close-button">&times;</span>
@@ -578,15 +657,15 @@ const recentSchedulesBtn = document.getElementById('recent-schedules-btn');
 const recentSchedulesList = document.getElementById('recent-schedules-list');
 const MAX_RECENT_ITEMS = 10;
 
-// 【新增】動態時間表數據
+// 動態時間表數據
 let PERIOD_TIMES = []; 
 let scheduleSnapshot = null;
-let timetableIntervalId = null; // 【核心修正 2】: 定義全局變數，用於管理定時器
+let timetableIntervalId = null; 
 
-// 【新增】用於緩存 teachers 集合資料
+// 用於緩存 teachers 集合資料
 let teachersDataCache = new Map(); 
 
-// 【JS修正 1】: 定義領域列表的優先順序
+// 定義領域列表的優先順序
 const SUBJECT_ORDER = ['國文', '英語', '數學', '社會', '自然', '綜合', '藝術', '健體', '科技'];
 
 
@@ -610,7 +689,6 @@ auth.onAuthStateChanged(async (user) => {
                 displayElement.textContent = user.email;
             }
         } catch (e) {
-            console.error("讀取用戶資料失敗:", e);
             displayElement.textContent = user.email;
         }
 
@@ -628,8 +706,6 @@ document.getElementById('logout-btn').addEventListener('click', () => {
 
 /**
  * 根據節次號碼 (1-8) 查找其時間資訊。
- * @param {number} periodNum - 節次號碼 (1, 2, ... 8)
- * @returns {object|null} 包含 start, duration, end (計算所得) 的物件
  */
 function getPeriodTimeInfo(periodNum) {
     const info = PERIOD_TIMES.find(p => p.period === periodNum);
@@ -644,9 +720,7 @@ function getPeriodTimeInfo(periodNum) {
     return {
         start: info.start,
         duration: info.duration,
-        // end time 格式為 HH:MM
         end: `${pad(endH)}:${pad(endM)}`, 
-        // end time minutes 格式為 總分鐘數 (用於快速比較)
         endMinutes: totalMinutes
     };
 }
@@ -671,7 +745,6 @@ function formatDate(date, format = 'MM/DD') {
 
 /**
  * 載入學校設定的每節課開始時間和持續時間。
- * 數據來源: schools/{schoolId}/periods/current
  */
 async function loadPeriodTimesFromFirestore(schoolId) {
     try {
@@ -686,7 +759,6 @@ async function loadPeriodTimesFromFirestore(schoolId) {
             }));
             PERIOD_TIMES.sort((a, b) => a.period - b.period);
         } else {
-            console.warn("警告: 學校尚未設定課程時間表。使用預設時間。");
             PERIOD_TIMES = [
                 { period: 1, start: '08:10', duration: 50 },
                 { period: 2, start: '09:10', duration: 50 },
@@ -699,7 +771,6 @@ async function loadPeriodTimesFromFirestore(schoolId) {
             ];
         }
     } catch (error) {
-        console.error("載入課程時間表時發生錯誤:", error);
     }
 }
 
@@ -728,7 +799,6 @@ async function main() {
     const urlParams = new URLSearchParams(window.location.search);
     const teacherNameToShow = urlParams.get('teacher');
     
-    // log('正在獲取使用者資訊...');
     const userDoc = await db.collection('users').doc(currentUser.uid).get();
     if (!userDoc.exists || !userDoc.data().schoolId) {
         alert('錯誤：您的帳號資料不完整，找不到 schoolId。');
@@ -737,25 +807,19 @@ async function main() {
     }
     const userData = userDoc.data();
     const schoolId = userData.schoolId;
-    // log(`使用者資訊獲取成功，學校 ID: ${schoolId}`);
     
-    // 【核心修改】: 先載入節次時間
     await loadPeriodTimesFromFirestore(schoolId);
 
-	// log("正在從 Firestore 獲取課表資料...");
 	const schoolRef = db.collection('schools').doc(schoolId);
 	
-    // 1. 讀取 timetables 集合（課表資料）
 	scheduleSnapshot = await schoolRef.collection('timetables').get();
     
-    // 2. 【修正點】: 讀取 teachers 集合並緩存，以獲得 subject 和 title
     const teachersSnapshot = await schoolRef.collection('teachers').get();
     teachersDataCache.clear();
     teachersSnapshot.forEach(doc => {
         teachersDataCache.set(doc.id, doc.data());
     });
 
-    // 3. 重新建立 teacherNameToId (從 users 集合獲取 UID)
     const teacherNameToId = new Map();
     const usersSnapshot = await db.collection('users').where('schoolId', '==', schoolId).get();
     usersSnapshot.forEach(doc => {
@@ -765,12 +829,10 @@ async function main() {
         }
     });
 
-	// log("資料獲取完成。");
-
     const classSchedules = new Map();
     const teacherSchedules = new Map();
     
-    let currentView = 'subject'; // 預設為依領域檢視
+    let currentView = 'subject'; 
     let longPressTimer;
     const LONG_PRESS_DURATION = 500;
     
@@ -787,8 +849,6 @@ async function main() {
     function log(message) {
         console.log(message);
     }
-
-    // 移除了 teacherExtensions 相關邏輯
 
     function findNextAvailableDate(initialDate, period, day) {
         let nextAvailableDate = new Date(initialDate);
@@ -828,7 +888,6 @@ async function main() {
 	function isDateConflict(dateString, period, day) {
         const dayIndex = new Date(dateString).getDay() - 1;
         if (dayIndex !== day) {
-             // log("isDateConflict 檢查時，日期與星期不符。"); // 移除 log
         }
 
         const conflict = activeChanges.find(change => {
@@ -880,11 +939,9 @@ async function main() {
             }
             const teacherGrid = teacherSchedules.get(teacherName);
             
-            // 【核心修正點】: 從 teachersDataCache 獲取 subject 和 title
             const cachedData = teachersDataCache.get(teacherName) || {};
             const subject = cachedData.subject || data.subject || '其他';
             const title = cachedData.title || data.title || '專任教師'; 
-            // 移除了 department
             
 
             if (data.periods) {
@@ -897,7 +954,6 @@ async function main() {
                         const cellContent = dailyLessons[day];
                         if (cellContent) {
                             const [className, ...subjectParts] = cellContent.split(/\s+/);
-                            // 嘗試從課表內容中提取科目，否則使用文件中的主要科目
                             const extractedSubject = subjectParts.join(' ').trim(); 
                             const finalSubject = extractedSubject || subject; 
                             
@@ -905,9 +961,9 @@ async function main() {
                                 teacherGrid[period][day] = { 
                                     subject: finalSubject, 
                                     class: className, 
-                                    location: '', // 移除了 Location
+                                    location: '', 
                                     period, 
-                                    title // 儲存職稱
+                                    title 
                                 };
 
                                 if (!classSchedules.has(className)) {
@@ -915,7 +971,6 @@ async function main() {
                                 }
                                 classSchedules.get(className)[period][day] = { subject: finalSubject, teacher: teacherName, location: '' };
                                 
-                                // 移除了 locationSchedules 相關邏輯
                             }
                         }
                     }
@@ -926,15 +981,12 @@ async function main() {
 
 	/**
 	 * 載入基礎課表並應用所有當前週次的 active 課程異動（調課、代課、換課）。
-	 * @returns {Set<string>} 所有有課表資料的教師姓名。
 	 */
 	async function deriveSchedules() {
 		await loadActiveChanges();
 		
 		teacherSchedules.clear();
 		classSchedules.clear();
-		// 【修正點 1】：移除對棄用的 locationSchedules.clear() 的引用
-		// locationSchedules.clear(); 
 
 		const allTeachers = new Set();
 		const baseTeacherSchedules = new Map();
@@ -946,14 +998,12 @@ async function main() {
 		}
 
 		activeChanges.forEach(change => {
-			// ----------------------------------------------------
-			// --- 處理 SWAP (調課) 和 SUBSTITUTION (指定代課) ---
-			// ----------------------------------------------------
+			
 			if (change.type === 'swap' || change.type === 'substitution') {
 				const changeDateStr = change.type === 'swap' ? change.originalClassInfo.date : change.date;
 				const changeDate = new Date(changeDateStr);
 				const changeWeekStart = getMonday(changeDate);
-				// 僅處理當前週次的異動
+				
 				if (changeWeekStart.getTime() !== currentWeekStart.getTime()) return;
 				
 				if (change.type === 'swap') {
@@ -965,14 +1015,28 @@ async function main() {
 					if (scheduleA && scheduleB) {
 						const infoA = change.originalClassInfo;
 						const infoB = change.targetClassInfo;
-						// Teacher A's schedule
 						scheduleA[infoA.period][infoA.day] = { ...infoB, class: infoA.class, isSwappedIn: true, changeId: change.id };
 						scheduleA[infoB.period][infoB.day] = { ...infoA, isSwappedOut: true, changeId: change.id };
-						// Teacher B's schedule
 						scheduleB[infoB.period][infoB.day] = { ...infoA, class: infoB.class, isSwappedIn: true, changeId: change.id };
 						scheduleB[infoA.period][infoA.day] = { ...infoB, isSwappedOut: true, changeId: change.id };
+						/* 【新增以下班級課表更新邏輯】 */
+						const classA_schedule = classSchedules.get(infoA.class);
+						const classB_schedule = classSchedules.get(infoB.class); 
+						
+						if (classA_schedule) {
+							// 班級 A: 原始時段被 B 的課取代，調換時段被 B 的課取代
+							classA_schedule[infoA.period][infoA.day] = { subject: infoB.subject, teacher: teacherB_name, location: infoB.location, isSwapped: true, changeId: change.id };
+							classA_schedule[infoB.period][infoB.day] = { subject: infoA.subject, teacher: teacherA_name, location: infoA.location, isSwapped: true, changeId: change.id };
+						}
+						
+						if (classB_schedule) {
+							// 班級 B: 原始時段被 A 的課取代，調換時段被 A 的課取代
+							classB_schedule[infoB.period][infoB.day] = { subject: infoA.subject, teacher: teacherA_name, location: infoA.location, isSwapped: true, changeId: change.id };
+							classB_schedule[infoA.period][infoA.day] = { subject: infoB.subject, teacher: teacherB_name, location: infoB.location, isSwapped: true, changeId: change.id };
+						}
+						/* 【新增結束】 */
 					}
-				} else { // change.type === 'substitution'
+				} else { 
 					const originalTeacher = change.originalTeacherName;
 					const substituteTeacher = change.substituteTeacherName;
 					const scheduleOriginal = teacherSchedules.get(originalTeacher);
@@ -981,57 +1045,92 @@ async function main() {
 					const dayIndex = new Date(change.date).getDay() - 1; 
 
 					if (scheduleOriginal && dayIndex >= 0 && dayIndex < 5) {
-						// 原老師：課程被代掉
 						scheduleOriginal[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedOut: true, substituteTeacherName: substituteTeacher, reason: change.reason, changeId: change.id };
 					}
 					if (scheduleSubstitute && dayIndex >= 0 && dayIndex < 5) {
-						// 代課老師：課程被代入
 						scheduleSubstitute[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedIn: true, originalTeacherName: originalTeacher, reason: change.reason, changeId: change.id };
 					}
+					/* 【新增以下班級課表更新邏輯】 */
+					const classSchedule = classSchedules.get(lessonInfo.class);
+					if (classSchedule && dayIndex >= 0 && dayIndex < 5) {
+						// 班級課表: 該節次顯示代課老師
+						classSchedule[lessonInfo.period][dayIndex] = { 
+							subject: lessonInfo.subject, 
+							teacher: substituteTeacher, 
+							location: lessonInfo.location, 
+							isSubstituted: true, 
+							changeId: change.id 
+						};
+					}
+					/* 【新增結束】 */
 				}
 
-			// ----------------------------------------------------
-			// --- 處理 EXCHANGE (互相換課) ---
-			// ----------------------------------------------------
 			} else if (change.type === 'exchange') {
-				const teacherA = change.originalLessonInfo.teacher; // 請假人
-				const teacherB = change.exchangeLessonInfo.teacher; // 還課人
+				const teacherA = change.originalLessonInfo.teacher; 
+				const teacherB = change.exchangeLessonInfo.teacher; 
 				const scheduleA = teacherSchedules.get(teacherA);
 				const scheduleB = teacherSchedules.get(teacherB);
-				const infoA = change.originalLessonInfo; // 請假課
-				const infoB = change.exchangeLessonInfo; // 還課課
+				const infoA = change.originalLessonInfo; 
+				const infoB = change.exchangeLessonInfo; 
 
-				// 1. 處理請假課 (Teacher A 請假，Teacher B 代 A 的課)
-				const weekA = getMonday(new Date(infoA.date));
-				if (weekA.getTime() === currentWeekStart.getTime()) {
-					const dayA = new Date(infoA.date).getDay() - 1;
-					if (scheduleA && dayA >= 0 && dayA < 5) {
-						// Teacher A 課表：自己的課被換出
-						scheduleA[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: teacherB, changeId: change.id, reason: change.reason };
-					}
-					if (scheduleB && dayA >= 0 && dayA < 5) {
-						// Teacher B 課表：代 Teacher A 的課
-						scheduleB[infoA.period][dayA] = { ...infoA, isExchangedIn: true, originalTeacher: teacherA, changeId: change.id, reason: change.reason };
-					}
-				}
-
-				// 2. 處理還課課 (Teacher B 還課，Teacher A 代 B 的課)
+				// A 老師替 B 代課的時段 (Info B)
 				const weekB = getMonday(new Date(infoB.date));
 				if (weekB.getTime() === currentWeekStart.getTime()) {
 					const dayB = new Date(infoB.date).getDay() - 1;
 					if (scheduleB && dayB >= 0 && dayB < 5) {
-						// Teacher B 課表：自己的課被換出 (還課)
-						scheduleB[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: teacherB, changeId: change.id, reason: change.reason };
+						// 更新 B 老師課表: B 老師的課被 A 代走
+						scheduleB[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: teacherA, changeId: change.id, reason: change.reason };
 					}
 					if (scheduleA && dayB >= 0 && dayB < 5) {
-						// Teacher A 課表：代 Teacher B 的課 (還課)
-						scheduleA[infoB.period][dayB] = { ...infoB, isExchangedIn: true, originalTeacher: teacherA, changeId: change.id, reason: change.reason };
+						// 更新 A 老師課表: A 老師多了代 B 老師課的時段
+						scheduleA[infoB.period][dayB] = { ...infoB, isExchangedIn: true, originalTeacher: teacherB, changeId: change.id, reason: change.reason };
 					}
+					
+					/* 【新增以下班級課表更新邏輯 (時段 B)】 */
+					const classB_schedule = classSchedules.get(infoB.class);
+					if (classB_schedule && dayB >= 0 && dayB < 5) {
+						// 班級 B: 該節次顯示 A 老師代課
+						classB_schedule[infoB.period][dayB] = { 
+							subject: infoB.subject, 
+							teacher: teacherA, 
+							location: infoB.location, 
+							isExchanged: true, 
+							changeId: change.id 
+						};
+					}
+					/* 【新增結束】 */
 				}
+				
+				// B 老師替 A 代課的時段 (Info A)
+				const weekA = getMonday(new Date(infoA.date));
+				if (weekA.getTime() === currentWeekStart.getTime()) {
+					const dayA = new Date(infoA.date).getDay() - 1;
+					if (scheduleA && dayA >= 0 && dayA < 5) {
+						// 更新 A 老師課表: A 老師的課被 B 代走
+						scheduleA[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: teacherB, changeId: change.id, reason: change.reason };
+					}
+					if (scheduleB && dayA >= 0 && dayA < 5) {
+						// 更新 B 老師課表: B 老師多了代 A 老師課的時段
+						scheduleB[infoA.period][dayA] = { ...infoA, isExchangedIn: true, originalTeacher: teacherA, changeId: change.id, reason: change.reason };
+					}
+					
+					/* 【新增以下班級課表更新邏輯 (時段 A)】 */
+					const classA_schedule = classSchedules.get(infoA.class);
+					if (classA_schedule && dayA >= 0 && dayA < 5) {
+						// 班級 A: 該節次顯示 B 老師代課
+						classA_schedule[infoA.period][dayA] = { 
+							subject: infoA.subject, 
+							teacher: teacherB, 
+							location: infoA.location, 
+							isExchanged: true, 
+							changeId: change.id 
+						};
+					}
+					/* 【新增結束】 */
+				}				
 			}
 		});
 		
-		// 回傳所有教師集合
 		return allTeachers;
 	}
 
@@ -1042,31 +1141,27 @@ async function main() {
 
     function isValidClassForListing(name) {
         if (!name) return false;
-        // 假設班級代碼是 3 位數字
         return true; 
     }
 
- 
-	// 【修改】 populateTeacherListBySubject (僅使用 timetable doc 資訊)
+	/**
+	 * 根據領域渲染教師列表。
+	 */
 	function populateTeacherListBySubject(allTeachersWithSchedule) {
         const container = document.getElementById('teacher-list-by-subject-container');
         container.innerHTML = '';
         
         const subjectsMap = new Map();
         
-        // 遍歷所有有課表的教師
         scheduleSnapshot.forEach(doc => {
             const teacherName = doc.id;
             
             if (allTeachersWithSchedule.has(teacherName)) { 
                 
-                // 【核心修正】: 從 Cache 中獲取 subject
                 const cachedData = teachersDataCache.get(teacherName) || {};
                 
-                // 優先使用 teachers 集合中的 subject，如果沒有，才 fallback 到其他
                 const rawSubject = cachedData.subject || '其他';
                 
-                // 如果 subject 欄位是單一字串，我們假設它可以包含多個科目，用逗號、頓號或空格分隔
                 const subjects = rawSubject.split(/,|、|\s+/).map(s => s.trim()).filter(Boolean);
 
                 subjects.forEach(subjectName => {
@@ -1082,7 +1177,6 @@ async function main() {
             }
         });
 
-        // 【JS修正 1.2】: 根據 SUBJECT_ORDER 排序領域列表
         const customOrder = SUBJECT_ORDER.reduce((acc, subject, index) => {
             acc[subject] = index;
             return acc;
@@ -1095,7 +1189,6 @@ async function main() {
             if (orderA !== Infinity || orderB !== Infinity) {
                 return orderA - orderB;
             }
-            // 對於未在列表中定義的科目 (如'其他')，按字母順序排序
             return a.localeCompare(b, 'zh-Hant');
         });
 
@@ -1130,8 +1223,6 @@ async function main() {
         });
     }
 
-    // 移除了 populateLocationList 函數
-
     function populateClassList() {
         const selector = document.getElementById('class-selector');
         selector.innerHTML = '<option value="" disabled selected>班級課表</option>';
@@ -1141,18 +1232,20 @@ async function main() {
         });
         selector.onchange = function() {
             if (this.value) {
-                // 移除了 location-selector 的清理
                 showSchedule(this.value, 'class');
             }
         };
     }
 
+	/**
+	 * 顯示教師或班級課表，並啟動定時器以維持高亮。
+	 */
 	async function showSchedule(name, type) {
-		// 【核心修正 A】：在每次渲染開始時，強制隱藏「指定代課 / 換課」按鈕
+		// 🎯 CORE FIX 🎯：在每次渲染開始時，強制隱藏「指定代課 / 換課」按鈕
 		document.getElementById('substitution-btn').classList.remove('visible'); 
 
-		// 【核心修正 2.1】：在開始載入新課表時，先清除舊的定時器
 		if (timetableIntervalId) clearInterval(timetableIntervalId);
+		timetableIntervalId = null;
 
 		addRecentSchedule(name, type);
 		populateRecentList();
@@ -1165,6 +1258,11 @@ async function main() {
 		localStorage.setItem('lastSchedule', JSON.stringify(dataToStore));
 		
 		const modal = document.getElementById('schedule-modal');
+		if (type === 'class') {
+			modal.classList.add('class-schedule-view');
+		} else {
+			modal.classList.remove('class-schedule-view');
+		}		
 		const titleEl = document.getElementById('modal-title');
 		const titleEl2 = document.getElementById('modal-title2');
 		const bodyEl = document.getElementById('modal-body');
@@ -1174,7 +1272,6 @@ async function main() {
 		
 		document.getElementById('today-btn').classList.toggle('current', isCurrentWeek);
 		
-		// 【核心修正 1】：等待 deriveSchedules 完成，填充 schedule 變數
 		await deriveSchedules(); 
 		
 		let schedule, title;
@@ -1182,12 +1279,10 @@ async function main() {
 		if (type === 'teacher' && teacherSchedules.has(name)) {
 			schedule = teacherSchedules.get(name);
 			title = `${name} 課表`;
-			// 修正交互提示文字，明確指出長按或右鍵是 ICS 匯出
 			const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 			const interactionHint = isTouchDevice ? '長按' : '右鍵';
 			
 			if (name === currentUserDisplayName) {
-				// 【修正：左鍵操作提示】
 				titleEl2.textContent = `＊點擊有課格子可進行調/代/換課（點擊自己課程，再點綠色建議格子），${interactionHint}可加入行事曆註記＊`;
 			} else {
 				titleEl2.textContent = `＊${interactionHint}可加入行事曆註記＊`;
@@ -1203,19 +1298,15 @@ async function main() {
 			return;
 		}
 		
-		// 渲染函數，用於定時器
 		const renderScheduleTable = () => {
 			 const modal = document.getElementById('schedule-modal');
              if (modal.style.display === 'none' && timetableIntervalId) {
-                 clearInterval(timetableIntervalId); // 停止定時器
-                 timetableIntervalId = null;       // 確保 ID 被清除
+                 clearInterval(timetableIntervalId); 
+                 timetableIntervalId = null;       
                  console.log("Timetable interval stopped due to modal closure.");
-                 return; // 如果模態框關閉，則不進行後續渲染
-             }			 // 【核心修正 2】：定時器中直接使用已填充的 schedule 變數，不再運行 deriveSchedules
+                 return; 
+             }
 			 if (!schedule) return; 
-			 // 【核心修正 2.2】：如果模態框已經關閉，則定時器不需要再重畫內容，直接結束				
-			 // if (modal.style.display === 'none') return;
-
             
 			 titleEl.textContent = title;
 			 const daysOfWeek = ['星期一', '星期二', '星期三', '星期四', '星期五'];
@@ -1231,19 +1322,16 @@ async function main() {
 			 tableHtml += '</tr></thead><tbody>';
 
 			 const now = new Date();
-			 const currentDayIndex = now.getDay() - 1; // 0=Mon, 4=Fri
-			 const currentPeriodIndex = getPeriodIndexForTimetableHighlight(); // 獲取當前節次 (0-7)
+			 const currentDayIndex = now.getDay() - 1; 
+			 const currentPeriodIndex = getPeriodIndexForTimetableHighlight(); 
 
 
 			 for (let period = 0; period < 8; period++) {
-				 // 獲取時間資訊
 				 const periodTimeInfo = getPeriodTimeInfo(period + 1);
-				 // 【JS修正】: 將時間顯示在同一行，使用內聯 span 確保不換行
 				 const timeRangeStr = periodTimeInfo ? 
 					 `<span style="font-size: 0.7em; font-weight: normal; line-height: 1.2; white-space: nowrap;">${periodTimeInfo.start}~${periodTimeInfo.end}</span>` 
 					 : '';
 
-				 // 注意：節次號碼和時間範圍之間有一個 <br>
 				 tableHtml += `<tr><td class="period-header">${period + 1}<br>${timeRangeStr}</td>`;
 				 for (let day = 0; day < 5; day++) {
 					 const cellDate = formatDate(weekDates[day], 'YYYY-MM-DD');
@@ -1254,22 +1342,38 @@ async function main() {
 					 
 					 const isCurrent = isCurrentWeek && day === currentDayIndex && period === currentPeriodIndex;
 					 if (isCurrent) {
-						  cellClass += ' current-timetable-cell'; // 应用高亮
+						  cellClass += ' current-timetable-cell'; 
 					 }
 				 
 					 if (cellData) {
-						 if (cellData.isSwappedIn || cellData.isSwappedOut || cellData.isExchangedIn || cellData.isExchangedOut || cellData.isSubstitutedIn || cellData.isSubstitutedOut) {
-							 // --- 修正後的調課/異動邏輯 ---
+						 if (type === 'class') {
+                             if (cellData.isSwapped) {
+                                cellClass += ' swapped-class-cell';
+                             } else if (cellData.isSubstituted) {
+                                cellClass += ' substituted-class-cell';
+                             } else if (cellData.isExchanged) {
+                                cellClass += ' exchanged-class-cell';
+                             }
+							 
+							 // 如果是異動，添加 data-change-id 和 title
+							 if (cellData.isSwapped || cellData.isSubstituted || cellData.isExchanged) {
+                                 dataAttrs += ` data-change-id="${cellData.changeId}" title="課程異動"`;
+                             
+                                 // 確保內容顯示新的老師，並加上標籤
+                                 const tag = cellData.isSwapped ? '(調)' : (cellData.isSubstituted ? '(代)' : '(換)');
+                                 content = `<span class="subject">${cellData.subject || ''}</span><span class="details"><span style="color: blue;">${cellData.teacher || ''}${tag}</span></span>`;
+							 } else {
+                                 // 班級課表基礎顯示邏輯 (無異動)
+                                 content = `<span class="subject">${cellData.subject || ''}</span><span class="details"><span style="color: blue;">${cellData.teacher || ''}</span></span>`;
+							 }
+                         } else if (cellData.isSwappedIn || cellData.isSwappedOut || cellData.isExchangedIn || cellData.isExchangedOut || cellData.isSubstitutedIn || cellData.isSubstitutedOut) {
 							 cellClass += ' ' + (cellData.isSwappedIn || cellData.isSwappedOut ? 'swapped-cell swapped-cell-pulse' : (cellData.isExchangedIn || cellData.isExchangedOut ? 'exchanged-cell exchanged-cell-pulse' : 'substituted-cell'));
 							 dataAttrs += ` data-change-id="${cellData.changeId}"`;
 
-                             // **【新增修正：代課/異動事由顯示】**
                              if (cellData.reason && cellData.reason.trim() !== '') {
-                                 // 使用 reason 作為 title，並進行編碼以確保安全
                                  const escapedReason = cellData.reason.replace(/"/g, '&quot;');
                                  dataAttrs += ` title="${escapedReason}"`;
                              } else if (cellData.isSubstitutedIn || cellData.isSubstitutedOut) {
-                                 // 如果沒有事由，提供一個預設 title
                                  dataAttrs += ` title="代課異動"`;
                              } else if (cellData.isSwappedIn || cellData.isSwappedOut) {
                                  dataAttrs += ` title="調課異動"`;
@@ -1277,32 +1381,44 @@ async function main() {
                                  dataAttrs += ` title="換課異動"`;
                              }
                              
-                             // 【核心修正 1】：isSwappedIn (您代別人的課)
                              if (cellData.isSwappedIn) {
                                  content = `<span class="subject">${cellData.subject}</span><span class="details">${cellData.class}</span>`;
                                  content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellData.teacher}(調)</span>`;
                              } 
-                             // 【核心修正 2】：isSwappedOut (您的課被調出)
                              else if (cellData.isSwappedOut) {
                                  content = `<span class="subject">${cellData.subject}</span><span class="details">${cellData.class}</span>`;
                                  content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellData.teacher}(調)</span>`;
                              }
-                             // 【核心修正 3】：isSubstitutedOut (您的課被別人代)
                              else if (cellData.isSubstitutedOut) {
                                  content = `<span class="subject">${cellData.subject}</span><span class="details">${cellData.class || ''}</span>`;
                                  content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellData.substituteTeacherName || '不明'}(代)</span>`;
                              }
-                             // 【核心修正 4】：isSubstitutedIn (您去代別人的課)
                              else if (cellData.isSubstitutedIn) {
 								 content = `<span class="subject">${cellData.subject}</span><span class="details">${cellData.class || ''}</span>`;
                                  content += `<span style="font-size: 0.8em; color: #007bff; display: block;">(${cellData.originalTeacherName || '不明'}(代)</span>`;
                               }
-                             // 【核心修正 5】：isExchangedOut/In (換課)
                              else if (cellData.isExchangedOut || cellData.isExchangedIn) {
                                  const teacherName = cellData.isExchangedOut ? cellData.targetTeacher : cellData.originalTeacher;                                 
                                  content = `<span class="subject">${cellData.subject}</span><span class="details">${cellData.class || ''}</span>`;
                                  content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">${teacherName || '不明'}(換)</span>`;
                              }
+							 /* 【新增以下班級課表異動判斷邏輯】 */
+							 if (type === 'class' && (cellData.isSwapped || cellData.isSubstituted || cellData.isExchanged)) {
+								 if (cellData.isSwapped) {
+									cellClass += ' swapped-class-cell';
+								 } else if (cellData.isSubstituted) {
+									cellClass += ' substituted-class-cell';
+								 } else if (cellData.isExchanged) {
+									cellClass += ' exchanged-class-cell';
+								 }
+								 dataAttrs += ` data-change-id="${cellData.changeId}" title="課程異動"`;
+								 
+								 // 確保內容顯示新的老師，並加上標籤
+								 const tag = cellData.isSwapped ? '(調)' : (cellData.isSubstituted ? '(代)' : '(換)');
+								 content = `<span class="subject">${cellData.subject || ''}</span><span class="details"><span style="color: blue;">${cellData.teacher || ''}${tag}</span></span>`;
+							 }
+
+
 						 } else {
 							 if (type === 'teacher') {
 								 content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.class || ''}</span>`;
@@ -1335,14 +1451,12 @@ async function main() {
 			// 重新綁定事件
 			if (type === 'teacher') {
 				teacherViewSelectedCell = null;
-				// 【核心修正 1.1】：只綁定 click, contextmenu (右鍵)
 				scheduleTable.removeEventListener('click', (e) => handleTeacherCellClick(e, name));
 				scheduleTable.removeEventListener('contextmenu', (e) => handleTeacherCellInteraction(e, name));
 
 				scheduleTable.addEventListener('click', (e) => handleTeacherCellClick(e, name));
 				scheduleTable.addEventListener('contextmenu', (e) => handleTeacherCellInteraction(e, name));
 				
-				// 【核心修正 1.2】：新增 touchstart 和 touchend 來模擬長按 for ICS Export
 				scheduleTable.removeEventListener('touchstart', handleTouchStart);
 				scheduleTable.removeEventListener('touchend', handleTouchEnd);
 				scheduleTable.removeEventListener('touchmove', handleTouchEnd);
@@ -1361,14 +1475,11 @@ async function main() {
 				 modal.style.display = 'block';
 			 }
 		};        
-		// 首次渲染
 		renderScheduleTable(); 
 
-		// 【核心修正 2.3】：啟動定時器，持續高亮
 		timetableIntervalId = setInterval(renderScheduleTable, 30000); 
 
 
-		// 周導航按鈕事件 (保持不變)
 		document.getElementById('prev-week-btn').onclick = () => {
 			if (timetableIntervalId) clearInterval(timetableIntervalId);
 			timetableIntervalId = null
@@ -1388,9 +1499,7 @@ async function main() {
 			showSchedule(activeSchedule.name, activeSchedule.type);
 		};
 
-		// 關閉按鈕事件 (保持不變)
 		modal.querySelector('.close-button').onclick = () => {
-			// 【核心修正 2.4】：關閉按鈕點擊時清除定時器
 			if (timetableIntervalId) clearInterval(timetableIntervalId);
 			timetableIntervalId = null;
 			modal.style.display = 'none';
@@ -1398,17 +1507,12 @@ async function main() {
 		
 	}
     
-    // 【核心修正 1.3】：長按模擬輔助函數
     let touchCell = null;
     let touchStartX = 0;
     let touchStartY = 0;
     
     function handleTouchStart(e) {
-        // 阻止預設行為 (如頁面捲動)，但只在單點觸控時阻止
         if (e.touches.length === 1) {
-             // 這裡必須阻止預設行為，否則長按無法觸發 contextmenu 模擬
-             // 但阻止後 click 事件也會被阻止，所以長按和單擊必須分開處理
-             // 為了讓單擊走 click 事件，這裡不阻止
              
              touchCell = e.target.closest('td');
              if(!touchCell || touchCell.classList.contains('period-header')) return;
@@ -1418,22 +1522,19 @@ async function main() {
 
              clearTimeout(longPressTimer);
              
-             // 500ms 後，模擬右鍵事件
              longPressTimer = setTimeout(() => {
-                 // 模擬一個 contextmenu 事件，讓 handleTeacherCellInteraction 處理
                  if(touchCell) {
-                     e.preventDefault(); // 在這裡阻止，防止手機的預設長按選單
+                     e.preventDefault(); 
                      e.stopPropagation(); 
                      
-                     // 執行 ICS 匯出的邏輯
                      handleTeacherCellInteraction({
                          type: 'contextmenu', 
                          target: touchCell,
-                         preventDefault: () => {}, // 假裝阻止
-                         stopPropagation: () => {} // 假裝阻止
+                         preventDefault: () => {}, 
+                         stopPropagation: () => {} 
                      }, activeSchedule.name);
                  }
-                 touchCell = null; // 清除觸摸中的元素
+                 touchCell = null; 
              }, LONG_PRESS_DURATION);
         }
     }
@@ -1441,26 +1542,20 @@ async function main() {
     function handleTouchEnd(e) {
         clearTimeout(longPressTimer);
         
-        // 【核心修正 1.4】：檢查是否為移動
-        const threshold = 10; // 移動超過 10px 視為移動
+        const threshold = 10; 
         if (e.changedTouches && touchCell) {
             const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
             const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
             
             if (deltaX > threshold || deltaY > threshold) {
-                 // 如果是移動，則不做任何操作，防止長按誤觸
                  return;
             }
         }
         
-        // 如果沒有長按被觸發 (longPressTimer被清除)，click事件應該會自然觸發。
-        // 如果此時 touchCell 還有值，則可能是單擊，讓 click 處理即可。
-        // 如果已經是 long press (contextmenu 被觸發)，touchCell 會被設為 null。
         touchCell = null; 
     }
     
 
-    // 【新增】ICS 匯出需要的時間判斷邏輯 (用於定時器)
     function getPeriodIndexForTimetableHighlight() {
         if (PERIOD_TIMES.length === 0) return -1;
         const now = new Date();
@@ -1478,7 +1573,7 @@ async function main() {
             endTimeMinutes = endTimeMinutes + bufferMinutes;
 
             if (currentTimeMinutes >= startTimeMinutes && currentTimeMinutes < endTimeMinutes) {
-                return i; // 返回索引 (0-7)
+                return i; 
             }
         }
         return -1;
@@ -1486,8 +1581,6 @@ async function main() {
 
 	function handleTeacherCellClick(event, teacherName) {
 		if (teacherName !== currentUserDisplayName) {
-			
-			// 【核心修正 1.5】：對於非自己的課，點擊不應該觸發任何操作
 			const cell = event.target.closest('td');
 			if(cell && cell.dataset.courseData) {
 				alert(`您點擊了 ${teacherName} 老師的課。\n\n如需加入行事曆，請使用滑鼠右鍵或長按。`);
@@ -1495,9 +1588,6 @@ async function main() {
 			return;
 		}
 		
-		// 確保不是長按後被模擬的 click (雖然上面長按模擬已經把觸控事件處理掉了)
-		// if (event.type === 'click' && event.detail === 0) return; 
-
 		const cell = event.target.closest('td');
 		const substitutionBtn = document.getElementById('substitution-btn');
 		substitutionBtn.classList.remove('visible');
@@ -1509,7 +1599,6 @@ async function main() {
 		const table = cell.closest('table');
 
 		
-		// 獲取原始課程資訊（點擊前的課程）
 		const originalCell = document.querySelector('.schedule-table .highlight');
 		
 		const clearAllSelections = () => {
@@ -1527,7 +1616,6 @@ async function main() {
 		};
 
 		if (changeId) {
-			// 【核心修正 1.6】：點擊已異動的格子，觸發取消
 			clearAllSelections();
 			const changeToCancel = activeChanges.find(c => c.id === changeId);
 			if (!changeToCancel) return;
@@ -1553,7 +1641,6 @@ async function main() {
 		}
 
 		if (isSuggestion) {
-			// 【核心修正 1.7】：點擊調課建議格子，觸發確認
 			let originalLessonData, targetLessonData;
 			
 			try {
@@ -1576,7 +1663,7 @@ async function main() {
 				});
 			}
 			
-			clearAllSelections(); // 點擊後清除所有選擇
+			clearAllSelections(); 
 			return;
 		}
 
@@ -1593,7 +1680,6 @@ async function main() {
 		
 		if (!clickedLesson) return;
 		
-		// 【時間檢查區塊】: 僅用於初次點擊
 		const cellDate = cell.dataset.date;
 		const periodInfo = getPeriodTimeInfo(period + 1);
 		
@@ -1604,27 +1690,22 @@ async function main() {
 			lessonEnd.setHours(endH, endM, 0, 0);
 			
 			if (lessonEnd < now) {
-				// 課程已過時，無法操作
 				alert(`課程已過時：${cellDate} 第 ${period + 1} 節 [${clickedLesson.subject}] 已結束。\n\n無法進行調課或代課操作。`);
 				return; 
 			}
 		}
-		// ------------------------------------
 
-		// 檢查是否為午休、空白課，如果是則不允許操作
 		if (period >= 7 || (day === 4 && period >= 5)) return; 
 
 		cell.classList.add('highlight');
 		teacherViewSelectedCell = cell;
 
-		// 顯示代課/換課按鈕
 		substitutionBtn.classList.add('visible');
 		substitutionBtn.onclick = () => showSubstitutionModal(clickedLesson, teacherViewSelectedCell.dataset.date, teacherName);
 
 		const classSchedule = classSchedules.get(clickedLesson.class);
 		if (!classSchedule) return;
 
-		// 定義原始課程資訊 (被標記 highlight 的課程)
 		const originalLesson = {
 			teacher: teacherName,
 			class: clickedLesson.class,
@@ -1641,17 +1722,13 @@ async function main() {
 
 				const ownTargetCellData = teacherSchedules.get(teacherName)?.[p]?.[d];
 				if (!ownTargetCellData) {
-					// 目標時段自己沒課
 					const lessonAtTarget = classSchedule[p]?.[d];
-					// 目標時段班級有課，且不是自己教的
 					if (lessonAtTarget?.teacher && lessonAtTarget.teacher !== teacherName) {
 						const otherTeacherSchedule = teacherSchedules.get(lessonAtTarget.teacher);
-						// 該老師在原始時段 (period, day) 必須沒課
 						if (otherTeacherSchedule && !otherTeacherSchedule[period]?.[day]) {
 							const targetCell = table.querySelector(`td[data-period="${p}"][data-day="${d}"]`);
 							if (targetCell) {
 								
-								// 定義目標調課資訊
 								const targetLesson = {
 									teacher: lessonAtTarget.teacher,
 									class: originalLesson.class, 
@@ -1666,11 +1743,9 @@ async function main() {
 								targetCell.classList.add('swap-suggestion');
 								targetCell.dataset.originalText = targetCell.innerHTML;
 								
-								// 在生成建議時，將原始和目標資訊儲存到 dataset
 								targetCell.dataset.originalLesson = JSON.stringify(originalLesson);
 								targetCell.dataset.targetLesson = JSON.stringify(targetLesson);
 
-								// 移除了分機 ext
 								const extHtml = ''; 
 								targetCell.innerHTML = `<span class="subject">${lessonAtTarget.subject}</span><span class="class-details">${clickedLesson.class}</span><span class="teacher-details">${lessonAtTarget.teacher}</span>${extHtml}`;
 							}
@@ -1681,63 +1756,120 @@ async function main() {
 		}
 	}
 	
+	/**
+	 * 🎯 CORE FIX 🎯: 顯示純瀏覽模式的教師課表 (由班級課表點擊進入)
+	 * @param {string} teacherName - 要顯示課表的教師姓名。
+	 * @param {string} className - 原始的班級名稱 (用於返回)。
+	 * @param {string} subject - 課程科目。
+	 * @param {string} location - 課程地點。
+	 * @param {string} cellDate - 點擊的日期。
+	 */
+	function showPureTeacherSchedule(teacherName, className, subject, location, cellDate) {
+		const teacherSchedule = teacherSchedules.get(teacherName);
+		if (!teacherSchedule) {
+			alert(`找不到 ${teacherName} 老師的課表資料。`);
+			return;
+		}
+
+		const modal = document.getElementById('view-only-modal');
+		const titleEl = document.getElementById('view-only-modal-title');
+		const bodyEl = document.getElementById('view-only-modal-body');
+        const backBtn = document.getElementById('back-to-class-btn');
+        const closeBtn = document.getElementById('view-only-close-btn');
+
+        // 🎯 CORE FIX 🎯：強制停止任何現有的定時器，因為純瀏覽模式不需要高亮
+        if (timetableIntervalId) clearInterval(timetableIntervalId);
+        timetableIntervalId = null; 
+
+		titleEl.textContent = `${teacherName} 老師課表 (純瀏覽)`;
+		
+        // 1. 渲染課表
+		const daysOfWeek = ['星期一', '星期二', '星期三', '星期四', '星期五'];
+		let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
+		
+		const currentWeekStartLocal = getMonday(new Date(cellDate));
+		
+		const weekDates = [];
+		for (let i = 0; i < 5; i++) {
+			const date = new Date(currentWeekStartLocal);
+			date.setDate(currentWeekStartLocal.getDate() + i);
+			weekDates.push(date);
+			tableHtml += `<th>${daysOfWeek[i]}<br>(${formatDate(date)})</th>`;
+		}
+		tableHtml += '</tr></thead><tbody>';
+
+		for (let period = 0; period < 8; period++) {
+			const periodTimeInfo = getPeriodTimeInfo(period + 1);
+			const timeRangeStr = periodTimeInfo ? 
+				`<span style="font-size: 0.7em; font-weight: normal; line-height: 1.2; white-space: nowrap;">${periodTimeInfo.start}~${periodTimeInfo.end}</span>` 
+				: '';
+
+			tableHtml += `<tr><td class="period-header">${period + 1}<br>${timeRangeStr}</td>`;
+			
+			for (let day = 0; day < 5; day++) {
+				const cellData = teacherSchedule[period]?.[day];
+				let content = '';
+				let cellClass = 'view-only-cell'; // 新增 class 確保無法點擊
+				
+                // 🎯 CORE FIX 🎯：標記被點擊的那一節課
+                const isClickedLesson = cellDate === formatDate(weekDates[day], 'YYYY-MM-DD') && period === teacherSchedule[period][day]?.period;
+
+				if (cellData) {
+                    // 🎯 CORE FIX 🎯：移除所有異動/點擊/hover 效果，只顯示內容
+					content = `<span class="subject">${cellData.subject || ''}</span><span class="details">${cellData.class || ''}</span>`;
+                    
+                    if (isClickedLesson) {
+                         // 🎯 CORE FIX 🎯：高亮顯示原始被點擊的課
+                         cellClass += ' highlight';
+                    }
+				} else {
+					cellClass += ' empty-cell';
+				}
+				tableHtml += `<td class="${cellClass}" style="cursor: default;" data-period="${period}" data-day="${day}">${content}</td>`;
+			}
+			tableHtml += '</tr>';
+		}
+		tableHtml += '</tbody></table>';
+		bodyEl.innerHTML = tableHtml;
+
+        // 2. 設置返回邏輯
+        const returnToClassSchedule = () => {
+             modal.style.display = 'none';
+             // 🎯 CORE FIX 🎯：呼叫 showSchedule 返回班級課表
+             showSchedule(className, 'class');
+        };
+
+        // 3. 綁定按鈕和關閉事件
+        backBtn.onclick = returnToClassSchedule;
+        closeBtn.onclick = returnToClassSchedule; 
+
+        // 🎯 CORE FIX 🎯：隱藏原來的課表模態框
+        document.getElementById('schedule-modal').style.display = 'none';
+		modal.style.display = 'flex';
+	}
+	
     function handleClassCellClick(event, className) {
         const cell = event.target.closest('td');
         if (!cell || cell.classList.contains('period-header')) {
             if (classViewSelectedCell) showSchedule(className, 'class');
             return;
         }
-        if (cell === classViewSelectedCell || cell.classList.contains('empty-cell') || cell.classList.contains('cleared-cell')) {
-            showSchedule(className, 'class');
-            return;
+		// 🎯 CORE FIX 🎯：檢查是否點擊了有課的格子
+        const cellData = classSchedules.get(className)?.[parseInt(cell.dataset.period)]?.[parseInt(cell.dataset.day)];
+		if (cellData && cellData.teacher) {
+            // 🎯 CORE FIX 🎯：儲存當前班級課表狀態，並開啟純瀏覽模式
+            showPureTeacherSchedule(cellData.teacher, className, cellData.subject, cellData.location, cell.dataset.date);
+        } else {
+            // 點擊空白處或未載入的格子，恢復原狀
+            if (classViewSelectedCell) showSchedule(className, 'class');
         }
-        showSchedule(className, 'class');
-		/*
-        const freshTable = document.getElementById('modal-body').querySelector('table');
-        const freshCell = freshTable.querySelector(`td[data-period="${cell.dataset.period}"][data-day="${cell.dataset.day}"]`);
-        classViewSelectedCell = freshCell;
-        freshCell.classList.add('highlight');
-        const originalPeriod = parseInt(freshCell.dataset.period);
-        const originalDay = parseInt(freshCell.dataset.day);
-        const clickedLesson = classSchedules.get(className)?.[originalPeriod]?.[originalDay];
-        if (!clickedLesson?.teacher || originalPeriod >= 7 || (originalDay === 4 && originalDay >= 5)) return;
-        freshTable.querySelectorAll('tbody td:not(.period-header)').forEach(td => {
-            if (td !== freshCell) {
-                td.innerHTML = '';
-                td.classList.add('cleared-cell', 'empty-cell');
-            }
-        });
-        const teacherASchedule = teacherSchedules.get(clickedLesson.teacher);
-        if (!teacherASchedule) return;
-        for (let p = 0; p < 7; p++) {
-            for (let d = 0; d < 5; d++) {
-                if ((p === originalPeriod && d === originalDay) || (d === 4 && p >= 5)) continue;
-                const lessonAtTarget = classSchedules.get(className)?.[p]?.[d];
-                if (lessonAtTarget?.teacher && lessonAtTarget.teacher !== clickedLesson.teacher) {
-                    const teacherBSchedule = teacherSchedules.get(lessonAtTarget.teacher);
-                    if (teacherBSchedule && !teacherASchedule[p]?.[d] && !teacherBSchedule[originalPeriod]?.[originalDay]) {
-                        const targetCell = freshTable.querySelector(`td[data-period="${p}"][data-day="${d}"]`);
-                        if (targetCell) {
-                            targetCell.classList.remove('cleared-cell', 'empty-cell');
-                            targetCell.classList.add('swap-suggestion');
-                            // 移除了分機 ext
-                            const extHtml = ''; 
-                            targetCell.innerHTML = `<span class="subject">${lessonAtTarget.subject}</span><span class="class-details">${className}</span><span class="teacher-details">${lessonAtTarget.teacher}</span>${extHtml}`;
-                        }
-                    }
-                }
-            }
-        }
-		*/
     }
 
 	/**
-	 * 【修正此函數】：專門處理右鍵或長按（ICS 匯出功能）
+	 * 處理教師課表單元格的長按 (觸摸) 或右鍵點擊 (滑鼠) 事件。
 	 */
 	function handleTeacherCellInteraction(event, teacherName) {
 		
-		// 1. 【核心修復 1】：立即阻止事件冒泡和預設行為 (右鍵菜單)
-		// 僅在 contextmenu 時阻止，touchstart/touchend 已經在外面處理
 		if (event.type === 'contextmenu') {
 			event.preventDefault(); 
 			event.stopPropagation();
@@ -1745,7 +1877,6 @@ async function main() {
 		
 		const cell = event.target.closest('td');
 		
-		// 必須點擊到有 data-period 屬性的 td 元素，且不能是表頭
 		if (!cell || cell.classList.contains('period-header') || !cell.dataset.period) {
 			clearTimeout(longPressTimer);
 			return;
@@ -1755,7 +1886,6 @@ async function main() {
 		const day = parseInt(cell.dataset.day);
 		const cellDate = cell.dataset.date;
 		
-		// 檢查是否有課程數據，並且是有效的課
 		if (cell.classList.contains('empty-cell') && !cell.dataset.courseData) {
 			clearTimeout(longPressTimer);
 			return;
@@ -1765,12 +1895,9 @@ async function main() {
         let isSpecialChange = cell.dataset.changeId;
         
         if (isSpecialChange) {
-            // 對於異動的格子，從 activeChanges 中提取原始課程資訊
             const change = activeChanges.find(c => c.id === isSpecialChange);
             
-            // 由於異動數據結構複雜，這裡必須確保 lesson 包含所有原始和異動資訊
             if (change.type === 'substitution') {
-                // 原課程資訊 + 代課老師
                 lesson = { 
                     ...change.lessonInfo, 
                     reason: change.reason,
@@ -1780,33 +1907,26 @@ async function main() {
             } else if (change.type === 'exchange') {
                 const isOut = change.originalLessonInfo.teacher === teacherName;
                 
-                // 課程內容使用 originalLessonInfo 或 exchangeLessonInfo 
                 lesson = isOut ? { ...change.originalLessonInfo } : { ...change.exchangeLessonInfo };
                 
-                // 異動標記
                 lesson.isExchangedOut = isOut;
                 lesson.isExchangedIn = !isOut;
                 lesson.reason = change.reason;
 
-                // 傳遞給 showSingleEventModal 內部邏輯所需的名字
                 lesson.targetTeacher = isOut ? change.exchangeLessonInfo.teacher : undefined;
             } else if (change.type === 'swap') {
-                 // 對於調課，不允許透過 ICS 匯出，由點擊處理
                  clearTimeout(longPressTimer);
                  return;
             }
         } else {
-             // 正常課程
              lesson = teacherSchedules.get(teacherName)?.[period]?.[day];
         }
 
-		// 檢查是否為空白格子 (非異動，非正常課)
 		if (!lesson) {
 			clearTimeout(longPressTimer);
 			return;
 		}
 		
-		// 2. 確保課程未結束 (時間檢查)
 		const periodInfo = getPeriodTimeInfo(period + 1);
 		if (periodInfo) {
 			const now = new Date();
@@ -1815,57 +1935,44 @@ async function main() {
 			lessonEnd.setHours(endH, endM, 0, 0);
 			
 			if (lessonEnd < now) {
-				// 課程過時時，使用 alert 提示用戶
 				alert(`課程已過時：${cellDate} 第 ${period + 1} 節 [${lesson.subject || lesson.subjectName}] 已結束。\n\n無法新增行事曆註記。`);
 				clearTimeout(longPressTimer);
 				return;
 			}
 		}
 		
-		// 3. 根據事件類型執行操作
-        // ICS 匯出模態框
-        const showModal = () => {
-             // 從 data-course-data 屬性中取得乾淨的課程數據
+		const showModal = () => {
              const cleanCourseData = JSON.parse(cell.dataset.courseData || '{}');
              
-             // 構建傳遞給 showSingleEventModal 的最終 lesson 物件
              const finalLesson = {
-                // 基礎資訊
                 subject: cleanCourseData.subjectName || lesson.subject,
                 class: cleanCourseData.className || lesson.class,
                 teacher: cleanCourseData.teacherName || teacherName,
                 periodNum: period + 1,
                 location: cleanCourseData.location || lesson.location,
                 
-                // 【關鍵修正 1】：確保傳遞 ICS 匯出所需的 period 和 day 索引
                 period: period,
                 day: day,
 
-                // 【關鍵修正 2】：確保傳遞 showSingleEventModal 內部需要的特定異動鍵
                 isSubstitutedOut: lesson.isSubstitutedOut,
                 substituteTeacherName: lesson.substituteTeacherName, 
                 isExchangedOut: lesson.isExchangedOut,
                 targetTeacher: lesson.targetTeacher, 
                 isSwappedOut: lesson.isSwappedOut,
                 
-                // 【關鍵修正 3】：確保傳遞 reason 欄位
                 reason: lesson.reason
              };
 
-             showSingleEventModal(finalLesson, currentWeekStart, day + 1); // +1 轉換為 1-5
+             showSingleEventModal(finalLesson, currentWeekStart, day + 1); 
         }
 		
 		if (event.type === 'contextmenu') {
-            // 右鍵：直接觸發模態框
 			showModal();
 		} 
-        // 觸控事件已經在外部的 handleTouchStart/handleTouchEnd 中處理了長按模擬
 	}
    
 	/**
 	 * 顯示調課確認模態框。
-	 * 【修正點】：修改 UID 檢查邏輯，允許調課對象未登入，但給予警告。
-	 * @param {object} swapInfo - 包含 original 和 target 課程資訊的物件。
 	 */
 	function showSwapConfirmationModal(swapInfo) {
 		const modal = document.getElementById('swap-confirm-modal');
@@ -1875,21 +1982,17 @@ async function main() {
 		const targetDateInput = document.getElementById('target-class-date');
 		const confirmBtn = document.getElementById('confirm-swap-btn');
 
-		// 重新綁定確認按鈕 (移除舊事件)
 		const newConfirmBtn = confirmBtn.cloneNode(true);
 		confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
 		const days = ['日', '一', '二', '三', '四', '五', '六'];
 
-		// 獲取課程時間資訊
 		const originalPeriodInfo = getPeriodTimeInfo(swapInfo.original.period + 1);
 		const targetPeriodInfo = getPeriodTimeInfo(swapInfo.target.period + 1);
 
-		// 確保有時間資訊才顯示起訖
 		const originalTimeStr = originalPeriodInfo ? ` (${originalPeriodInfo.start} - ${originalPeriodInfo.end})` : '';
 		const targetTimeStr = targetPeriodInfo ? ` (${targetPeriodInfo.start} - ${targetPeriodInfo.end})` : '';
 		
-		// 修正顯示：增加時間資訊
 		originalInfoEl.innerHTML = `
 			<b>您的課程:</b> 週${days[swapInfo.original.day + 1]} 第 ${swapInfo.original.period + 1} 節${originalTimeStr} - ${swapInfo.original.subject} (${swapInfo.original.class})
 		`;
@@ -1902,33 +2005,27 @@ async function main() {
 		today.setHours(0, 0, 0, 0);
 		const todayString = formatDate(today, 'YYYY-MM-DD');
 
-		// --- 處理原始課程的預設日期 ---
 		let initialDateOriginal = new Date(swapInfo.original.date);
 		if (originalPeriodInfo) {
 			const lessonFullDateTime = new Date(initialDateOriginal);
 			const [endH, endM] = originalPeriodInfo.end.split(':').map(Number);
 			lessonFullDateTime.setHours(endH, endM, 0, 0);
-			// 如果課程已過時，預設日期跳到下一週
 			if (lessonFullDateTime < now) {
 				initialDateOriginal.setDate(initialDateOriginal.getDate() + 7);
 			}
 		}
-		// 檢查異動衝突並找到下一個可用日期
 		const defaultDateOriginal = findNextAvailableDate(initialDateOriginal, swapInfo.original.period, swapInfo.original.day);
 		originalDateInput.value = formatDate(defaultDateOriginal, 'YYYY-MM-DD');
 
-		// --- 處理目標課程的預設日期 ---
 		let initialDateTarget = new Date(swapInfo.target.date);
 		if (targetPeriodInfo) {
 			const lessonFullDateTime = new Date(initialDateTarget);
 			const [endH, endM] = targetPeriodInfo.end.split(':').map(Number);
 			lessonFullDateTime.setHours(endH, endM, 0, 0);
-			// 如果課程已過時，預設日期跳到下一週
 			if (lessonFullDateTime < now) {
 				initialDateTarget.setDate(initialDateTarget.getDate() + 7);
 			}
 		}
-		// 檢查異動衝突並找到下一個可用日期
 		const defaultDateTarget = findNextAvailableDate(initialDateTarget, swapInfo.target.period, swapInfo.target.day);
 		targetDateInput.value = formatDate(defaultDateTarget, 'YYYY-MM-DD');
 
@@ -1964,7 +2061,6 @@ async function main() {
 		originalDateInput.addEventListener('change', originalDateValidationHandler);
 		targetDateInput.addEventListener('change', targetDateValidationHandler);
 
-		// 【這裡使用 newConfirmBtn】
 		newConfirmBtn.addEventListener('click', async () => {
 			const originalDate = originalDateInput.value;
 			const targetDate = targetDateInput.value;
@@ -1984,23 +2080,13 @@ async function main() {
 			newConfirmBtn.disabled = true;
 			newConfirmBtn.textContent = '儲存中...';
 			
-			// --- 【核心修復點】：調課/Swap 的 UID 檢查邏輯 ---
-			// const targetTeacherId = teacherNameToId.get(swapInfo.target.teacher);
 			let involvedIds = [currentUser.uid];
 			
-			//if (targetTeacherId) {
-			//	involvedIds.push(targetTeacherId);
-			//} else {
-			//	// 允許繼續，但彈出警告
-			//	alert(`警告：教師 ${swapInfo.target.teacher} 尚未首次登入並綁定帳號，調課紀錄暫時不會在對方的課表上顯示。`);
-			//}
-			// --- 修復點結束 ---
-
 			const changeData = {
 				type: 'swap',
 				originalClassInfo: { ...swapInfo.original, teacher: swapInfo.original.teacher, date: originalDateInput.value },
 				targetClassInfo: { ...swapInfo.target, teacher: swapInfo.target.teacher, class: swapInfo.original.class, date: targetDateInput.value },
-				involvedTeacherIds: involvedIds, // 使用已過濾/檢查的陣列
+				involvedTeacherIds: involvedIds, 
 				status: 'active',
 				createdAt: firebase.firestore.FieldValue.serverTimestamp()
 			};
@@ -2017,7 +2103,6 @@ async function main() {
 				const exportConfirmed = confirm("調課成功！課表已自動跳轉至調課週次。\n\n是否將相關異動事件加入行事曆？");
                 
                 if (exportConfirmed) {
-                    // 確保 promptForIcsExport 接收正確的類型和數據
                     promptForIcsExport('swap', changeData); 
                 }
 				
@@ -2031,7 +2116,6 @@ async function main() {
 		});
 
 		modal.querySelector('.close-button').onclick = () => {
-			// 移除監聽器，防止它們在下次開啟時重複執行
 			originalDateInput.removeEventListener('change', originalDateValidationHandler);
 			targetDateInput.removeEventListener('change', targetDateValidationHandler);
 			modal.style.display = 'none';
@@ -2043,24 +2127,18 @@ async function main() {
 	async function cancelChange(changeId) {
         try {
             await db.collection('classChanges').doc(changeId).update({ status: 'cancelled' });
-            // 移除了 alert()
             console.log('課程異動已成功取消！');
             if (activeSchedule.type && activeSchedule.name) {
                 showSchedule(activeSchedule.name, activeSchedule.type);
             }
         } catch (error) {
             console.error("取消異動失敗:", error);
-            // 移除了 alert()
             console.error("取消失敗: " + error.message);
         }
     }
     
 	/**
 	 * 顯示指定代課/換課的模態框。
-	 * 【偵錯點 1】：移除所有 cloneNode(true) 邏輯，改為直接移除/添加事件。
-	 * @param {object} lesson - 原始課程的資訊 (從 teacherSchedules 取得)。
-	 * @param {string} date - 原始課程的日期 (YYYY-MM-DD)。
-	 * @param {string} ownTeacherName - 原始授課教師的姓名。
 	 */
 	function showSubstitutionModal(lesson, date, ownTeacherName) {
 		console.log('DEBUG: showSubstitutionModal called.');
@@ -2147,7 +2225,6 @@ async function main() {
 			confirmBtn.textContent = exchangeCheckbox.checked ? '下一步：選擇還課時段' : '確認指定代課';
 		};
 
-		// 匿名點擊處理函數，將會被事件監聽器使用
 		const confirmClickHandler = () => {
 			console.log('DEBUG: confirmClickHandler activated.');
 			const selectedTeacher = teacherSelect.value;
@@ -2160,17 +2237,14 @@ async function main() {
 			if (exchangeCheckbox.checked) {
 				showExchangeModal();
 			} else {
-				// 【關鍵點】：直接呼叫 confirmAndSaveChange，並傳入按鈕
 				confirmAndSaveChange('substitution', confirmBtn); 
 			}
 		};
 		
 		// --- 事件綁定與清理 ---
-		// 移除所有可能存在的舊事件監聽器 (包括可能被遺留的舊 confirmClickHandler)
 		confirmBtn.onclick = null;
-		confirmBtn.removeEventListener('click', confirmClickHandler); // 確保移除同名函數
+		confirmBtn.removeEventListener('click', confirmClickHandler); 
 		
-		// 重新綁定事件
 		dateInput.removeEventListener('change', dateValidationHandler);
 		dateInput.addEventListener('change', dateValidationHandler);
 
@@ -2185,10 +2259,9 @@ async function main() {
 
 		modal.querySelector('.close-button').onclick = () => {
 			dateInput.removeEventListener('change', dateValidationHandler);
-			 // 🎯 CORE FIX 🎯：關閉模態框時，明確移除事件，避免重複觸發和記憶體洩漏
-			 confirmBtn.onclick = null; 
-			 document.getElementById('exchange-modal').style.display = 'none'; 
-			 modal.style.display = 'none';
+			confirmBtn.onclick = null; 
+			document.getElementById('exchange-modal').style.display = 'none'; 
+			modal.style.display = 'none';
 		};
 		
 		updateButtonState();
@@ -2197,7 +2270,6 @@ async function main() {
 	
 	/**
 	 * 顯示換課（還課）模態框。
-	 * 讓使用者選擇代課老師一節沒有您課程的課來進行交換。
 	 */
 	function showExchangeModal() {
 		const modal = document.getElementById('exchange-modal');
@@ -2205,11 +2277,9 @@ async function main() {
 		const subtitleEl = document.getElementById('exchange-modal-subtitle');
 		const bodyEl = document.getElementById('exchange-modal-body');
 		
-		// 確保變數被宣告
 		const ownTeacherName = substitutionInfo.ownTeacherName;
 		const targetTeacherName = substitutionInfo.substituteTeacherName;
 		
-		// 【修正點 1】：確保 exchangeWeekStart 被宣告，以便周導航按鈕可以正確修改它
 		let exchangeWeekStart = getMonday(new Date(substitutionInfo.newDate));
 
 		titleEl.textContent = `請選擇一節 ${targetTeacherName} 老師的課來交換`;
@@ -2245,21 +2315,16 @@ async function main() {
 					const targetLesson = targetSchedule?.[period]?.[day];
 					const ownLesson = ownSchedule?.[period]?.[day];
 					
-					// 檢查是否是目標交換課時段 (您請假的時段)
 					const isOriginalExchangeTime = (period === substitutionInfo.originalLesson.period && day === originalDayIndex && exchangeWeekStart.getTime() === getMonday(new Date(substitutionInfo.newDate)).getTime());
 					
 					if (targetLesson) {
-						// 1. 目標老師有課
 						if (ownLesson || isOriginalExchangeTime) {
-							// 1a. 我自己有課 (無法還課) OR 這是我的請假時段 (邏輯上我不能還課給自己)
 							tableHtml += `<td class="disabled-cell"><span class="subject">${targetLesson.subject}</span><span class="details">${targetLesson.class}</span></td>`;
 						} else {
-							// 1b. 我沒課 (可以還課)
 							const cellDate = formatDate(weekDates[day], 'YYYY-MM-DD');
 							tableHtml += `<td class="exchange-target-cell" data-period="${period}" data-day="${day}" data-date="${cellDate}"><span class="subject">${targetLesson.subject}</span><span class="details">${targetLesson.class}</span></td>`;
 						}
 					} else {
-						// 2. 目標老師沒課 (不選)
 						tableHtml += `<td class="empty-cell"></td>`;
 					}
 				}
@@ -2282,7 +2347,6 @@ async function main() {
 						return;
 					}
 					
-					// 儲存換課的目標資訊
 					substitutionInfo.exchangeLessonInfo = {
 						...exchangeLesson,
 						teacher: targetTeacherName,
@@ -2291,17 +2355,13 @@ async function main() {
 						day
 					};
 					
-					// 獲取 tempBtnReference (即 #confirm-substitution-btn)
 					const tempBtnReference = document.getElementById('confirm-substitution-btn');
 						
-					// 【關鍵修正 2】：跳過中間的 confirm 步驟，直接進入最終儲存流程
-					// 最終的確認訊息會在 confirmAndSaveChange 中統一提示
 					confirmAndSaveChange('exchange', tempBtnReference);					
 				}
 			});
 		};
 
-		// 周導航事件（確保可以修改 exchangeWeekStart）
 		document.getElementById('exchange-prev-week-btn').onclick = () => {
 			exchangeWeekStart.setDate(exchangeWeekStart.getDate() - 7);
 			renderExchangeSchedule();
@@ -2325,8 +2385,6 @@ async function main() {
     
 	/**
 	 * 執行最終的代課或換課確認，進行異動衝突檢查並儲存到 Firestore。
-	 * @param {string} type - 'substitution' (代課) 或 'exchange' (換課)。
-	 * @param {HTMLElement} callingBtn - 傳入的按鈕 DOM 元素。
 	 */
 	async function confirmAndSaveChange(type, callingBtn) {
 		let message = '';
@@ -2372,20 +2430,10 @@ async function main() {
 			}
 			
 			// --- 3. 處理按鈕狀態和 UID 檢查 ---
-			// 使用傳入的按鈕
 			callingBtn.disabled = true;
 			callingBtn.textContent = '儲存中...';
 
-			// 檢查替代教師 UID
-			// let substituteTeacherId = teacherNameToId.get(substitutionInfo.substituteTeacherName);
 			let involvedIds = [currentUser.uid];
-			
-			// if (substituteTeacherId) {
-			//	involvedIds.push(substituteTeacherId);
-			// } else {
-			//	// 【核心修復點】：彈出警告並繼續執行，不中斷儲存
-			//	alert(`警告：教師 ${substitutionInfo.substituteTeacherName} 尚未首次登入並綁定帳號，調課紀錄暫時不會在對方的課表上顯示。`);
-			// }
 			
 			try {
 				// --- 4. 準備儲存的數據結構 ---
@@ -2440,10 +2488,9 @@ async function main() {
 				// 關閉模態框
 				document.getElementById('substitution-modal').style.display = 'none';
 				document.getElementById('exchange-modal').style.display = 'none';
-				//document.getElementById('schedule-modal').style.display = 'none';
 
 				let successTitle = '';
-				let successMessage = ''; // 新增變數用於儲存成功訊息
+				let successMessage = ''; 
 
                 if (type === 'substitution') {
                     successTitle = "代課指定成功！";
@@ -2458,10 +2505,8 @@ async function main() {
                     successTitle = "異動儲存成功！";
                     successMessage = "異動儲存成功！是否將相關事件加入行事曆？";
                 }
-				// 【修正 1：先 alert 成功，再 confirm 詢問】
-				// alert(successTitle); 
-
-                const exportConfirmed = confirm(successMessage); // 這裡會出現標準的「確定/取消」按鈕
+				
+                const exportConfirmed = confirm(successMessage); 
                 
                 if (exportConfirmed) {
                     promptForIcsExport(type, changeData);
@@ -2491,14 +2536,12 @@ async function main() {
 
 	/**
 	 * 根據異動類型，提示用戶匯出行事曆事件。
-	 * 【修正點】：調課/換課改為呼叫 showMultipleEventsModal 處理單一提示與合併 ICS。
 	 */
 	function promptForIcsExport(type, changeData) {
 		const eventsToExport = [];
 		const changeReason = changeData.reason || ''; 
 		const selfTeacherName = currentUser.displayName; 
 
-		// 1. 處理 Substitution (代課) - 仍使用單事件模式
 		if (type === 'substitution') {
 			const lessonInfo = changeData.lessonInfo;
 			const substituteTeacherName = changeData.substituteTeacherName || '不明代課老師'; 
@@ -2520,7 +2563,6 @@ async function main() {
 				isSubstitutedOut: true 
 			});
 
-			// 代課：仍使用單事件模式 (showSingleEventModal)
 			eventsToExport.forEach(event => {
 				const eventDate = new Date(event.date);
 				const weekStart = getMonday(eventDate);
@@ -2530,13 +2572,11 @@ async function main() {
 
 		} 
 		
-		// 2. 處理 Swap (調課) 和 Exchange (換課) - 【改為呼叫多事件模式】
 		else if (type === 'swap' || type === 'exchange') {
-			const infoA = type === 'swap' ? changeData.originalClassInfo : changeData.originalLessonInfo; // 原本的課 (被換出)
-			const infoB = type === 'swap' ? changeData.targetClassInfo : changeData.exchangeLessonInfo; // 新上的課 (換入)
+			const infoA = type === 'swap' ? changeData.originalClassInfo : changeData.originalLessonInfo; 
+			const infoB = type === 'swap' ? changeData.targetClassInfo : changeData.exchangeLessonInfo; 
 			const statusPrefix = type === 'swap' ? '[調課]' : '[換課]';
 
-			// --- Event A: 自己的課被代 (原課時間點事件 / Swapped/Exchanged OUT) ---
 			const reasonAContent = `${statusPrefix}${changeReason ? '事由: ' + changeReason + '。' : ''}`+ (type === 'swap'?` ${infoB.teacher}`:`由 ${infoB.teacher} 老師代。`);
 
 			eventsToExport.push({
@@ -2554,7 +2594,6 @@ async function main() {
 				isSwappedOut: type === 'swap'
 			});
 
-			// --- Event B: 代對方的課 (新上課時間事件 / Swapped/Exchanged IN) ---
 			const reasonBContent = `${statusPrefix}${changeReason ? '事由: ' + changeReason + '。' : ''}`+ (type === 'swap'?` ${infoA.teacher}`:`由 ${infoA.teacher} 老師代。`);
 
 			eventsToExport.push({
@@ -2571,20 +2610,15 @@ async function main() {
 				isSwappedIn: type === 'swap'
 			});
 			
-			// 【核心變更】：呼叫多事件模態框
 			showMultipleEventsModal(eventsToExport);
 		}
 	}
 
 	/**
 	 * 處理教師課表單元格的長按 (觸摸) 或右鍵點擊 (滑鼠) 事件。
-	 * 用於開啟行事曆匯出註記模態框。
-	 * 【修正點】：確保 right-click (contextmenu) 事件能正確開啟模態框
 	 */
 	function handleTeacherCellInteraction(event, teacherName) {
 		
-		// 1. 【核心修復 1】：立即阻止事件冒泡和預設行為 (右鍵菜單和長按選單)
-		// 這裡已經被長按模擬邏輯取代，所以只處理 contextmenu
 		if (event.type === 'contextmenu') {
 			event.preventDefault(); 
 			event.stopPropagation();
@@ -2592,7 +2626,6 @@ async function main() {
 		
 		const cell = event.target.closest('td');
 		
-		// 必須點擊到有 data-period 屬性的 td 元素，且不能是表頭
 		if (!cell || cell.classList.contains('period-header') || !cell.dataset.period) {
 			clearTimeout(longPressTimer);
 			return;
@@ -2602,7 +2635,6 @@ async function main() {
 		const day = parseInt(cell.dataset.day);
 		const cellDate = cell.dataset.date;
 		
-		// 檢查 ICS 匯出功能只對有課程的單元格啟用
 		if (cell.classList.contains('empty-cell') && !cell.dataset.courseData) {
 			clearTimeout(longPressTimer);
 			return;
@@ -2612,12 +2644,9 @@ async function main() {
         let isSpecialChange = cell.dataset.changeId;
         
         if (isSpecialChange) {
-            // 對於異動的格子，從 activeChanges 中提取原始課程資訊
             const change = activeChanges.find(c => c.id === isSpecialChange);
             
-            // 由於異動數據結構複雜，這裡必須確保 lesson 包含所有原始和異動資訊
             if (change.type === 'substitution') {
-                // 原課程資訊 + 代課老師
                 lesson = { 
                     ...change.lessonInfo, 
                     reason: change.reason,
@@ -2627,33 +2656,26 @@ async function main() {
             } else if (change.type === 'exchange') {
                 const isOut = change.originalLessonInfo.teacher === teacherName;
                 
-                // 課程內容使用 originalLessonInfo 或 exchangeLessonInfo 
                 lesson = isOut ? { ...change.originalLessonInfo } : { ...change.exchangeLessonInfo };
                 
-                // 異動標記
                 lesson.isExchangedOut = isOut;
                 lesson.isExchangedIn = !isOut;
                 lesson.reason = change.reason;
 
-                // 傳遞給 showSingleEventModal 內部邏輯所需的名字
                 lesson.targetTeacher = isOut ? change.exchangeLessonInfo.teacher : undefined;
             } else if (change.type === 'swap') {
-                 // 對於調課，不允許透過 ICS 匯出，由點擊處理
                  clearTimeout(longPressTimer);
                  return;
             }
         } else {
-             // 正常課程
              lesson = teacherSchedules.get(teacherName)?.[period]?.[day];
         }
 
-		// 檢查是否為空白格子 (非異動，非正常課)
 		if (!lesson) {
 			clearTimeout(longPressTimer);
 			return;
 		}
 		
-		// 2. 確保課程未結束 (時間檢查)
 		const periodInfo = getPeriodTimeInfo(period + 1);
 		if (periodInfo) {
 			const now = new Date();
@@ -2662,59 +2684,44 @@ async function main() {
 			lessonEnd.setHours(endH, endM, 0, 0);
 			
 			if (lessonEnd < now) {
-				// 課程過時時，使用 alert 提示用戶
 				alert(`課程已過時：${cellDate} 第 ${period + 1} 節 [${lesson.subject || lesson.subjectName}] 已結束。\n\n無法新增行事曆註記。`);
 				clearTimeout(longPressTimer);
 				return;
 			}
 		}
 		
-		// 3. 根據事件類型執行操作
 		const showModal = () => {
-             // 從 data-course-data 屬性中取得乾淨的課程數據
              const cleanCourseData = JSON.parse(cell.dataset.courseData || '{}');
              
-             // 構建傳遞給 showSingleEventModal 的最終 lesson 物件
              const finalLesson = {
-                // 基礎資訊
                 subject: cleanCourseData.subjectName || lesson.subject,
                 class: cleanCourseData.className || lesson.class,
                 teacher: cleanCourseData.teacherName || teacherName,
                 periodNum: period + 1,
                 location: cleanCourseData.location || lesson.location,
                 
-                // 【關鍵修正 1】：確保傳遞 ICS 匯出所需的 period 和 day 索引
                 period: period,
                 day: day,
 
-                // 【關鍵修正 2】：確保傳遞 showSingleEventModal 內部需要的特定異動鍵
                 isSubstitutedOut: lesson.isSubstitutedOut,
                 substituteTeacherName: lesson.substituteTeacherName, 
                 isExchangedOut: lesson.isExchangedOut,
                 targetTeacher: lesson.targetTeacher, 
                 isSwappedOut: lesson.isSwappedOut,
                 
-                // 【關鍵修正 3】：確保傳遞 reason 欄位
                 reason: lesson.reason
              };
 
-             showSingleEventModal(finalLesson, currentWeekStart, day + 1); // +1 轉換為 1-5
+             showSingleEventModal(finalLesson, currentWeekStart, day + 1); 
         }
 		
 		if (event.type === 'contextmenu') {
-            // 右鍵：直接觸發模態框
 			showModal();
 		} 
-        // 觸控事件已經在外部的 handleTouchStart/handleTouchEnd 中處理了長按模擬
 	}
     
 	/**
 	 * 顯示「將課程加入行事曆」的模態框。
-	 *
-	 * 備註: 雖然原始程式碼有傳入 weekStart，但為了確保邏輯穩定，我們從傳入的 lesson 中獲取 periodNum。
-	 * @param {object} lesson - 課程資訊物件，包含 subjectName, className, periodNum, location 等。
-	 * @param {Date} weekStart - 當前顯示週次的週一日期物件。
-	 * @param {number} dayIndex - 課程所在的星期幾 (1=Mon, 5=Fri)。
 	 */
 	function showSingleEventModal(lesson, weekStart, dayIndex) {
 		const modal = document.getElementById('single-event-modal');
@@ -2723,7 +2730,6 @@ async function main() {
 		const notesInput = document.getElementById('event-notes');
 		const downloadBtn = document.getElementById('download-single-ics-btn');
 
-		// 1. 獲取並處理時間資訊 (從 lesson.periodNum 獲取)
 		const periodNum = lesson.periodNum || (lesson.period !== undefined ? lesson.period + 1 : null);
 		const periodInfo = getPeriodTimeInfo(periodNum);
 		
@@ -2732,16 +2738,13 @@ async function main() {
 			return;
 		}
 
-		// 2. 計算目標日期
 		const targetDate = new Date(weekStart);
-		// dayIndex 是 1-5 (Mon-Fri)
 		targetDate.setDate(weekStart.getDate() + dayIndex - 1); 
 		const dateStr = formatDate(targetDate, 'YYYY-MM-DD');
 		
 		const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
-		const targetDayOfWeek = targetDate.getDay(); // 0 (Sun) to 6 (Sat)
+		const targetDayOfWeek = targetDate.getDay(); 
 
-		// 3. 準備顯示內容
 		let title = `${lesson.subjectName || lesson.subject} (${lesson.className || lesson.class})`;
 		let details = `由 ${lesson.teacherName || lesson.teacher} 老師授課`;
 
@@ -2761,14 +2764,12 @@ async function main() {
 			<p><strong>地點：</strong>${lesson.location || '無'}</p>
 		`;
 
-		// 4. 設置輸入框預設值
 		notesInput.value = lesson.reason || '';
-		dateInput.value = dateStr; // 設置預設日期
+		dateInput.value = dateStr; 
 		
-		// 5. 重新綁定下載按鈕
 		downloadBtn.onclick = () => {
 			generateIcsForLesson({
-				...lesson, // 傳遞所有異動資訊
+				...lesson, 
 				periodNum: periodNum
 			}, {
 				teacherName: lesson.teacherName || lesson.teacher,
@@ -2781,25 +2782,16 @@ async function main() {
 		modal.style.display = 'block';
 	}
 
-	/**
-	 * 輔助函數：將日期物件格式化為 ICS 格式 (YYYYMMDDTHHMMSSZ)
-	 */
 	function toIcsDateTime(date) {
-		// 確保時間戳記為 UTC 格式，並移除所有分隔符
 		return date.toISOString().replace(/[-:]/g, '').substring(0, 15) + 'Z';
 	}
 
-	/**
-	 * 【新增】生成包含多個 VEVENT 的 ICS 檔案內容
-	 * @param {Array<Object>} events - 包含多個事件物件的陣列
-	 */
 	function generateMultipleIcs(events) {
 		let icsContent = "BEGIN:VCALENDAR\r\n";
 		icsContent += "VERSION:2.0\r\n";
 		icsContent += "PRODID:-//TeacherScheduleSystem//NONSGML v1.0//EN\r\n";
 		
 		events.forEach(event => {
-			// 假設 getPeriodTimeInfo 是可用的
 			const periodInfo = getPeriodTimeInfo(event.period + 1);
 			if (!periodInfo) return;
 
@@ -2807,23 +2799,17 @@ async function main() {
 			const [startH, startM] = periodInfo.start.split(':').map(Number);
 			const [endH, endM] = periodInfo.end.split(':').map(Number);
 
-			// DTSTART
 			dateObj.setHours(startH, startM, 0, 0);
 			const dtstart = toIcsDateTime(dateObj);
 
-			// DTEND
 			dateObj.setHours(endH, endM, 0, 0);
 			const dtend = toIcsDateTime(dateObj);
 
-			// SUMMARY (標題)
 			const summary = `[${event.class}] ${event.subject} (${event.teacher})`;
 			
-			// DESCRIPTION (註記/事由，使用 reason 欄位)
 			let description = event.reason || '';
-			// 逃脫換行和逗號，這是 ICS 格式要求
 			description = description.replace(/,/g, '\\,').replace(/\n/g, '\\n'); 
 
-			// UID (必須是唯一的)
 			const uid = `${Date.now()}-${Math.random().toString(36).substring(2)}-${event.period}-${event.day}-${event.date.replace(/-/g, '')}`;
 
 			icsContent += "BEGIN:VEVENT\r\n";
@@ -2841,10 +2827,6 @@ async function main() {
 		return icsContent;
 	}	
 
-	/**
-	 * 【新增】顯示包含多個異動事件的模態框，並處理合併下載
-	 * @param {Array<Object>} events - 調換課的兩個事件物件
-	 */
 	function showMultipleEventsModal(events) {
 		const modal = document.getElementById('multiple-ics-export-modal');
 		const contentDiv = document.getElementById('multiple-ics-event-details');
@@ -2853,7 +2835,7 @@ async function main() {
 
 		if (!modal) return;
 		
-		contentDiv.innerHTML = ''; // 清除舊內容
+		contentDiv.innerHTML = ''; 
 
 		events.forEach((event, index) => {
 			const periodInfo = getPeriodTimeInfo(event.period + 1);
@@ -2862,7 +2844,6 @@ async function main() {
 			const dateStr = new Date(event.date).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', weekday: 'short' });
 			const timeStr = `${periodInfo.start} - ${periodInfo.end}`;
 			
-			// 判斷事件類型並標籤顏色
 			let typeLabel = '異動事件';
 			let color = '#333';
 			if (event.isSwappedOut || event.isExchangedOut) {
@@ -2890,24 +2871,20 @@ async function main() {
 			contentDiv.innerHTML += eventHtml;
 		});
 		
-		// 設置下載按鈕的邏輯
 		downloadBtn.onclick = () => {
 			const icsContent = generateMultipleIcs(events);
 			const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
 			const url = URL.createObjectURL(blob);
 			const link = document.createElement('a');
 			link.href = url;
-			// 使用日期作為檔名，並標註為異動
 			link.download = `課表異動_${new Date().toISOString().split('T')[0]}.ics`;
 			document.body.appendChild(link);
 			link.click();
 			document.body.removeChild(link);
 			
-			// 關閉模態框
 			modal.style.display = 'none';
 		};
 
-		// 關閉模態框的邏輯
 		closeBtn.onclick = () => {
 			modal.style.display = 'none';
 		};
@@ -2918,10 +2895,8 @@ async function main() {
 	function generateIcsForLesson(lesson, options) {
         const { teacherName, date, notes } = options;
         
-        // 【核心修正 9】: 使用動態載入的 PERIOD_TIMES
         const periodData = PERIOD_TIMES.find(p => p.period === lesson.periodNum);
         if(!periodData) {
-             // 移除了 alert()
              console.error("錯誤：找不到該節次的確切時間資訊，無法匯出 ICS 檔案。請聯繫管理員更新課程時間表。");
              return;
         }
@@ -2933,7 +2908,7 @@ async function main() {
         const startTime = new Date(`${date}T00:00:00`);
         startTime.setHours(startH, startM);
         
-        const endTime = new Date(startTime.getTime() + durationMinutes * 60000); // 使用 durationMinutes
+        const endTime = new Date(startTime.getTime() + durationMinutes * 60000); 
 
         const formatTime = (d) => {
             const pad = (n) => n.toString().padStart(2, '0');
@@ -2971,7 +2946,6 @@ async function main() {
         const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        // 使用 lesson.subject 取代 subjectName
         link.download = `${date}-${teacherName}-${lesson.subject}.ics`;
         document.body.appendChild(link);
         link.click();
@@ -2999,15 +2973,12 @@ async function main() {
         });
     }
 
-    // 【核心修改 10】: 將 main 函數改為調用頂部的輔助函數
     try {
         const allTeachersWithSchedule = await deriveSchedules();
         allTeachersList = [...allTeachersWithSchedule].sort((a, b) => a.localeCompare(b, 'zh-Hant'));
 
-        // 【修正 3.1】: 載入時立即渲染教師列表
         populateTeacherListBySubject(allTeachersWithSchedule); 
         populateClassList();
-        // bindNavEventListeners();
 
         if (teacherNameToShow) {
             setTimeout(() => {
@@ -3015,7 +2986,6 @@ async function main() {
                 if (teacherSchedules.has(decodedTeacherName)) {
                     showSchedule(decodedTeacherName, 'teacher');
                 } else {
-                    // 移除了 alert()
                     console.error(`找不到教師「${decodedTeacherName}」的課表資料。`);
                 }
             }, 100);
@@ -3025,7 +2995,6 @@ async function main() {
                 const savedData = JSON.parse(lastScheduleJSON);
                 if (savedData.savedBy && savedData.savedBy === currentUser.uid) {
                     const lastSchedule = savedData.schedule;
-                    // 由於移除了依單位列表，將預設檢視設定為 'subject'
                     lastSchedule.view = 'subject'; 
                     if (lastSchedule?.type && lastSchedule?.name) {
                         activeSchedule = { type: lastSchedule.type, name: lastSchedule.name };
@@ -3039,30 +3008,26 @@ async function main() {
     } catch (e) {
         console.error("程式執行時發生嚴重錯誤:", e);
         if (e.code === 'permission-denied') {
-             // 移除了 alert()
              console.error("權限不足，無法讀取課程異動資料。\n\n請聯繫管理員檢查 Firestore 的 'classChanges' 安全規則。");
         } else {
-             // 移除了 alert()
              console.error("程式執行時發生嚴重錯誤，請檢查主控台(F12)獲取更多資訊。");
         }
     }
     
-    // 【核心修正 2.5】：點擊關閉按鈕時清除定時器
     document.querySelectorAll('.modal .close-button').forEach(btn => {
         btn.onclick = (e) => {
             const modal = e.target.closest('.modal');
             if (modal.id === 'schedule-modal') {
-                 if (timetableIntervalId) clearInterval(timetableIntervalId); // 停止定時器
+                 if (timetableIntervalId) clearInterval(timetableIntervalId); 
                  timetableIntervalId = null;
             }
             modal.style.display = 'none';
         };
     });
-    // 【核心修正 2.6】：點擊背景時清除定時器
     window.onclick = (event) => {
         if (event.target.classList.contains('modal')) {
              if (event.target.id === 'schedule-modal') {
-                 if (timetableIntervalId) clearInterval(timetableIntervalId); // 停止定時器
+                 if (timetableIntervalId) clearInterval(timetableIntervalId); 
                  timetableIntervalId = null;
              }
             event.target.style.display = 'none';
@@ -3070,7 +3035,6 @@ async function main() {
     };
     document.getElementById('search-teacher').addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
-        // 僅使用依領域列表
         const container = document.getElementById('teacher-list-by-subject-container'); 
         container.querySelectorAll('.department-table').forEach(table => {
             let tableHasVisibleRow = false;
@@ -3084,12 +3048,6 @@ async function main() {
         });
     });
     
-    // 【JS修正 3.2】: 移除 updateView 相關邏輯和按鈕事件
-    // const subjectBtn = document.getElementById('view-by-subject-btn'); // 移除按鈕
-    // const subjectContainer = document.getElementById('teacher-list-by-subject-container');
-    // const updateView = ... // 移除整個函數
-    // subjectBtn.onclick = () => updateView('subject'); // 移除事件
-	
     function getRecentSchedules() {
         try {
             const stored = localStorage.getItem('recentSchedules');
@@ -3127,7 +3085,6 @@ async function main() {
             let typeText = '';
             if (item.type === 'teacher') typeText = ' (教師)';
             if (item.type === 'class') typeText = ' (班級)';
-            // 移除了 location
             btn.textContent = item.name + typeText;
             btn.onclick = () => {
                 showSchedule(item.name, item.type);
