@@ -1148,6 +1148,9 @@ async function main() {
     }
 
 	async function showSchedule(name, type) {
+		// 【核心修正 A】：在每次渲染開始時，強制隱藏「指定代課 / 換課」按鈕
+		document.getElementById('substitution-btn').classList.remove('visible'); 
+
 		// 【核心修正 2.1】：在開始載入新課表時，先清除舊的定時器
 		if (timetableIntervalId) clearInterval(timetableIntervalId);
 
@@ -1368,16 +1371,19 @@ async function main() {
 		// 周導航按鈕事件 (保持不變)
 		document.getElementById('prev-week-btn').onclick = () => {
 			if (timetableIntervalId) clearInterval(timetableIntervalId);
+			timetableIntervalId = null
 			currentWeekStart.setDate(currentWeekStart.getDate() - 7);
 			showSchedule(activeSchedule.name, activeSchedule.type);
 		};
 		document.getElementById('next-week-btn').onclick = () => {
 			if (timetableIntervalId) clearInterval(timetableIntervalId);
+			timetableIntervalId = null
 			currentWeekStart.setDate(currentWeekStart.getDate() + 7);
 			showSchedule(activeSchedule.name, activeSchedule.type);
 		};
 		document.getElementById('today-btn').onclick = () => {
 			if (timetableIntervalId) clearInterval(timetableIntervalId);
+			timetableIntervalId = null
 			currentWeekStart = getMonday(new Date());
 			showSchedule(activeSchedule.name, activeSchedule.type);
 		};
@@ -1501,6 +1507,7 @@ async function main() {
 		const changeId = cell.dataset.changeId;
 		const isSuggestion = cell.classList.contains('swap-suggestion');
 		const table = cell.closest('table');
+
 		
 		// 獲取原始課程資訊（點擊前的課程）
 		const originalCell = document.querySelector('.schedule-table .highlight');
@@ -1521,6 +1528,7 @@ async function main() {
 
 		if (changeId) {
 			// 【核心修正 1.6】：點擊已異動的格子，觸發取消
+			clearAllSelections();
 			const changeToCancel = activeChanges.find(c => c.id === changeId);
 			if (!changeToCancel) return;
 
@@ -1684,6 +1692,7 @@ async function main() {
             return;
         }
         showSchedule(className, 'class');
+		/*
         const freshTable = document.getElementById('modal-body').querySelector('table');
         const freshCell = freshTable.querySelector(`td[data-period="${cell.dataset.period}"][data-day="${cell.dataset.day}"]`);
         classViewSelectedCell = freshCell;
@@ -1719,6 +1728,7 @@ async function main() {
                 }
             }
         }
+		*/
     }
 
 	/**
@@ -2004,8 +2014,7 @@ async function main() {
 				}
 				
 				modal.style.display = 'none';
-				alert('調課成功！課表已自動跳轉至調課週次。');
-				const exportConfirmed = confirm("是否將相關異動事件加入行事曆？");
+				const exportConfirmed = confirm("調課成功！課表已自動跳轉至調課週次。\n\n是否將相關異動事件加入行事曆？");
                 
                 if (exportConfirmed) {
                     // 確保 promptForIcsExport 接收正確的類型和數據
@@ -2171,13 +2180,14 @@ async function main() {
 		teacherSelect.removeEventListener('change', updateButtonState);
 		teacherSelect.addEventListener('change', updateButtonState);
 		
-		// 重新綁定確認按鈕的點擊事件
-		confirmBtn.addEventListener('click', confirmClickHandler);
+		confirmBtn.onclick = confirmClickHandler;
 
 
 		modal.querySelector('.close-button').onclick = () => {
-			 dateInput.removeEventListener('change', dateValidationHandler);
-			 confirmBtn.removeEventListener('click', confirmClickHandler); // 清理 click 監聽器
+			dateInput.removeEventListener('change', dateValidationHandler);
+			 // 🎯 CORE FIX 🎯：關閉模態框時，明確移除事件，避免重複觸發和記憶體洩漏
+			 confirmBtn.onclick = null; 
+			 document.getElementById('exchange-modal').style.display = 'none'; 
 			 modal.style.display = 'none';
 		};
 		
@@ -2272,29 +2282,21 @@ async function main() {
 						return;
 					}
 					
-					const daysOfWeekForMessage = ['一', '二', '三', '四', '五']; 
-					const dayChar = daysOfWeekForMessage[day];
-
-					const confirmMessage = `您選擇了於 ${date} (週${dayChar}) 第 ${period + 1} 節，\n` +
-										 `前往 ${exchangeLesson.class} 班代 ${targetTeacherName} 老師的 [${exchangeLesson.subject}] 課。\n\n` +
-										 `確定選擇此節課來交換嗎？`;
-
-					if (confirm(confirmMessage)) {
-						// 儲存換課的目標資訊
-						substitutionInfo.exchangeLessonInfo = {
-							...exchangeLesson,
-							teacher: targetTeacherName,
-							date,
-							period,
-							day
-						};
-						// 進入最終儲存流程
-						const tempBtnReference = document.getElementById('confirm-substitution-btn');
-                            
-                            // 進入最終儲存流程
-                            // 【傳入 tempBtnReference 以解決 TypeError】
-                        confirmAndSaveChange('exchange', tempBtnReference);
-					}
+					// 儲存換課的目標資訊
+					substitutionInfo.exchangeLessonInfo = {
+						...exchangeLesson,
+						teacher: targetTeacherName,
+						date,
+						period,
+						day
+					};
+					
+					// 獲取 tempBtnReference (即 #confirm-substitution-btn)
+					const tempBtnReference = document.getElementById('confirm-substitution-btn');
+						
+					// 【關鍵修正 2】：跳過中間的 confirm 步驟，直接進入最終儲存流程
+					// 最終的確認訊息會在 confirmAndSaveChange 中統一提示
+					confirmAndSaveChange('exchange', tempBtnReference);					
 				}
 			});
 		};
@@ -2438,29 +2440,28 @@ async function main() {
 				// 關閉模態框
 				document.getElementById('substitution-modal').style.display = 'none';
 				document.getElementById('exchange-modal').style.display = 'none';
-				document.getElementById('schedule-modal').style.display = 'none';
+				//document.getElementById('schedule-modal').style.display = 'none';
 
 				let successTitle = '';
-                let confirmQuestion = '';
+				let successMessage = ''; // 新增變數用於儲存成功訊息
 
                 if (type === 'substitution') {
                     successTitle = "代課指定成功！";
-                    confirmQuestion = "是否將此代課事件加入行事曆？";
+                    successMessage = "代課指定成功！是否將此代課事件加入行事曆？";
                 } else if (type === 'swap') {
                     successTitle = "調課成功！";
-                    confirmQuestion = "是否將相關異動事件加入行事曆？";
+                    successMessage = "調課成功！是否將相關異動事件加入行事曆？";
                 } else if (type === 'exchange') {
                     successTitle = "換課成功！";
-                    confirmQuestion = "是否將相關異動事件加入行事曆？";
+                    successMessage = "換課成功！是否將相關異動事件加入行事曆？";
                 } else {
                     successTitle = "異動儲存成功！";
-                    confirmQuestion = "是否將相關事件加入行事曆？";
+                    successMessage = "異動儲存成功！是否將相關事件加入行事曆？";
                 }
-
 				// 【修正 1：先 alert 成功，再 confirm 詢問】
-				alert(successTitle); 
+				// alert(successTitle); 
 
-                const exportConfirmed = confirm(confirmQuestion); // 這裡會出現標準的「確定/取消」按鈕
+                const exportConfirmed = confirm(successMessage); // 這裡會出現標準的「確定/取消」按鈕
                 
                 if (exportConfirmed) {
                     promptForIcsExport(type, changeData);
@@ -2469,8 +2470,9 @@ async function main() {
 				// 跳轉到異動週次
 				const jumpDate = substitutionInfo.newDate;
 				currentWeekStart = getMonday(new Date(jumpDate));
-				if (activeSchedule.type && activeSchedule.name) {
+				if (activeSchedule && activeSchedule.name) {
 					showSchedule(activeSchedule.name, activeSchedule.type);
+				} else {
 				}
 
 			} catch (error) {
@@ -3005,7 +3007,7 @@ async function main() {
         // 【修正 3.1】: 載入時立即渲染教師列表
         populateTeacherListBySubject(allTeachersWithSchedule); 
         populateClassList();
-        bindNavEventListeners();
+        // bindNavEventListeners();
 
         if (teacherNameToShow) {
             setTimeout(() => {
