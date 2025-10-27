@@ -633,7 +633,7 @@
             vertical-align: middle; 
             word-wrap: break-word; 
             position: relative; 
-            height: 55px;
+            height: 60px;
         }
         .schedule-table th { 
             background-color: #e9ecef; 
@@ -705,6 +705,16 @@
 			font-size: 1.2em;
 			color: #888;
 		}
+		/* 【【【新增】】】課表系統 - 當前週次高亮樣式 */
+        .week-navigator button.current {
+            color: blue;
+            border-color: #007bff; /* 模仿 --accent-color */
+        }
+        .schedule-table thead.current-week th {
+            color: blue;
+            font-weight: bold;
+        }
+        /* 【【【新增結束】】】
 		
 		/* ---------------------------------------------------- */
         /* 【手機版樣式】: @media (max-width: 768px) */
@@ -1103,10 +1113,17 @@
 
     <div id="my-timetable-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" data-modal="my-timetable-modal">&times;</span>
-            <h2 id="my-timetable-title" style="text-align: center;"></h2>
+			<span class="close-btn" data-modal="my-timetable-modal">&times;</span>
+			<div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 40px 0 10px; margin-bottom: 10px;">
+                <h2 id="my-timetable-title" style="margin: 0; text-align: left; border: none; padding: 0;"></h2>
+                <div class="week-navigator" style="display: flex; align-items: center; gap: 10px;">
+                    <button id="prev-week-btn" style="padding: 3px 8px; font-size: 0.9em;">‹ 上一週</button>
+                    <button id="today-btn" style="padding: 3px 8px; font-size: 0.9em;">回到本週</button>
+                    <button id="next-week-btn" style="padding: 3px 8px; font-size: 0.9em;">下一週 ›</button>
+                </div>
+            </div>
             <div id="timetable-message" style="color: var(--danger-color); text-align: center; margin-bottom: 10px;"></div>
-            <div id="my-timetable-body"></div>
+            <div id="my-timetable-body"></div>		
         </div>
     </div>
 
@@ -1154,7 +1171,11 @@
         let teacherTimetableData = null; // 用於儲存課表原始數據
         let currentUserData = null; 
         let classTotalScores = {};      
-        
+		// 【【【新增以下變數】】】
+        let activeChanges = []; // 用於儲存課程異動
+        let currentWeekStart = getMonday(new Date()); // 用於追蹤目前顯示的週次
+        let timetableIntervalId = null; // 將課表計時器 ID 移到這裡
+        // 【【【新增結束】】】        
         // 排序狀態
         let rosterSortState = 0; 
         let classSortState = 0;
@@ -1236,6 +1257,149 @@
             }
         }
 
+		// 【【【新增以下三個函式】】】
+
+        /**
+         * 獲取指定日期所在星期的星期一。
+         */
+        function getMonday(d) {
+            d = new Date(d);
+            d.setHours(0, 0, 0, 0);
+            const day = d.getDay(),
+                diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(d.setDate(diff));
+        }
+
+        /**
+         * 格式化日期。
+         */
+        function formatDate(date, format = 'MM/DD') {
+            if (!date) return '';
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            if (format === 'YYYY-MM-DD') {
+                return `${date.getFullYear()}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            }
+            return `${month}/${day}`;
+        }
+
+        /**
+         * 載入當前使用者所有相關的 "active" 課程異動。
+         */
+        async function loadActiveChanges() {
+            if (!currentUser || !currentUser.uid) return;
+            
+            try {
+                const involvedQuery = db.collection('classChanges')
+                                        .where('involvedTeacherIds', 'array-contains', currentUser.uid)
+                                        .where('status', '==', 'active');
+                                        
+                const snapshot = await involvedQuery.get();
+                activeChanges = [];
+                snapshot.forEach(doc => {
+                    activeChanges.push({ id: doc.id, ...doc.data() });
+                });
+            } catch (error) {
+                console.error("載入課程異動時發生錯誤:", error);
+                timetableMessage.textContent = '載入課程異動失敗。';
+            }
+        }
+        // 【【【新增結束】】】
+		
+		// 【【【新增 課表衍生函式】】】
+        /**
+         * 根據基礎課表 (teacherTimetableData) 和 課程異動 (activeChanges)，
+         * 產生指定週次 (currentWeekStart) 的衍生課表。
+         */
+        function getDerivedCurrentUserSchedule() {
+            if (!teacherTimetableData || !teacherTimetableData.periods) {
+                return { periods: {} }; 
+            }
+            
+            // 1. 深度複製基礎課表，作為修改的基礎
+            const derivedSchedule = JSON.parse(JSON.stringify(teacherTimetableData));
+            const teacherName = currentUserData.displayName;
+
+            // 2. 遍歷所有 "active" 的異動
+            activeChanges.forEach(change => {
+                
+                // --- A. 處理調課 (swap) ---
+                if (change.type === 'swap') {
+                    const infoA = change.originalClassInfo;
+                    const infoB = change.targetClassInfo;
+                    
+                    // 檢查異動是否在本週
+                    const weekA = getMonday(new Date(infoA.date));
+                    const weekB = getMonday(new Date(infoB.date));
+
+                    // 規則：兩筆調課都必須在本週，才在兩邊顯示 (簡易處理)
+                    if (weekA.getTime() === currentWeekStart.getTime() && weekB.getTime() === currentWeekStart.getTime()) {
+                        if (infoA.teacher === teacherName) {
+                            derivedSchedule.periods[infoA.period][infoA.day] = { ...infoB, class: infoA.class, isSwappedIn: true, changeId: change.id };
+                            derivedSchedule.periods[infoB.period][infoB.day] = { ...infoA, isSwappedOut: true, changeId: change.id };
+                        } else if (infoB.teacher === teacherName) {
+                            derivedSchedule.periods[infoB.period][infoB.day] = { ...infoA, class: infoB.class, isSwappedIn: true, changeId: change.id };
+                            derivedSchedule.periods[infoA.period][infoA.day] = { ...infoB, isSwappedOut: true, changeId: change.id };
+                        }
+                    }
+                } 
+                // --- B. 處理代課 (substitution) ---
+                else if (change.type === 'substitution') {
+                    const changeDate = new Date(change.date);
+                    const changeWeekStart = getMonday(changeDate);
+                    
+                    if (changeWeekStart.getTime() !== currentWeekStart.getTime()) return; // 異動不在本週
+                    
+                    const lessonInfo = change.lessonInfo;
+                    const dayIndex = changeDate.getDay() - 1; 
+
+                    if (dayIndex >= 0 && dayIndex < 5) {
+                        if (change.originalTeacherName === teacherName) {
+                            // 我是原老師 (被代課)
+                            derivedSchedule.periods[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedOut: true, substituteTeacherName: change.substituteTeacherName, reason: change.reason, changeId: change.id };
+                        } else if (change.substituteTeacherName === teacherName) {
+                            // 我是代課老師
+                            derivedSchedule.periods[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedIn: true, originalTeacherName: change.originalTeacherName, reason: change.reason, changeId: change.id };
+                        }
+                    }
+                }
+                // --- C. 處理換課 (exchange) ---
+                else if (change.type === 'exchange') {
+                    const infoA = change.originalLessonInfo; // 我的課
+                    const infoB = change.exchangeLessonInfo; // 對方的課
+
+                    // 檢查我的課 (A) 是否在本週
+                    const weekA = getMonday(new Date(infoA.date));
+                    if (weekA.getTime() === currentWeekStart.getTime()) {
+                        const dayA = new Date(infoA.date).getDay() - 1;
+                        if (dayA >= 0 && dayA < 5) {
+                            if (infoA.teacher === teacherName) { // 我是原老師
+                                derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
+                            } else if (infoB.teacher === teacherName) { // 我是幫忙代 A 課的人
+                                derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedIn: true, originalTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
+                            }
+                        }
+                    }
+                    
+                    // 檢查對方的課 (B) 是否在本週
+                    const weekB = getMonday(new Date(infoB.date));
+                    if (weekB.getTime() === currentWeekStart.getTime()) {
+                        const dayB = new Date(infoB.date).getDay() - 1;
+                        if (dayB >= 0 && dayB < 5) {
+                             if (infoB.teacher === teacherName) { // 我是原老師
+                                derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
+                            } else if (infoA.teacher === teacherName) { // 我是幫忙代 B 課的人
+                                derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedIn: true, originalTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
+                            }
+                        }
+                    }
+                }
+            });
+            
+            return derivedSchedule;
+        }
+        // 【【【新增結束】】】
+		
         function runMainApp() {
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
@@ -2230,43 +2394,61 @@
             }
         });
         
-        // 【新增/修改】「我的課表」功能
+		// 【【【替換此事件監聽器】】】
         myTimetableBtn.addEventListener('click', async () => {
             document.getElementById('dropdown-menu').classList.remove('show');
             
-            // 確保數據已載入
+            // 1. 確保基礎課表數據已載入
             if (!scheduleDataLoaded) {
                  timetableMessage.textContent = '課表數據正在載入中...';
                  await fetchScheduleData();
             }
 
             myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
+            
+            // 2. 檢查資料是否齊全
             if (PERIOD_TIMES.length === 0) {
                  myTimetableBody.innerHTML = '<p style="text-align: center; color: var(--danger-color);">錯誤：未載入課程時間表數據，無法計算節次時間。</p>';
                  timetableMessage.textContent = '資料錯誤';
-                 // 即使沒有時間數據，也必須打開 Modal
-                 document.body.classList.add('modal-open');
-                 myTimetableModal.style.display = 'flex';
-                 return; 
             }
             else if (!teacherTimetableData || Object.keys(teacherTimetableData.periods).length === 0) {
                  myTimetableBody.innerHTML = '<p style="text-align: center;">找不到您的課表資料，請聯繫管理員上傳。</p>';
                  timetableMessage.textContent = '資料錯誤';
             } else {
-                 // 首次渲染
-                 renderMyTimetableTable();
+                 // 3. 【核心修改】: 每次打開時，都重設為當前週次
+                 currentWeekStart = getMonday(new Date());
+                 
+                 // 4. 【核心修改】: 呼叫新的主渲染函式
+                 await renderDerivedMyTimetable(); 
                  timetableMessage.textContent = '';
             }
             
+            // 5. 顯示 Modal
             document.body.classList.add('modal-open');
             myTimetableModal.style.display = 'flex';
             
-            // 【核心修正 1】: 啟動課表定時器，每 30 秒更新一次表格，實現即時高亮
+            // 6. 【核心修改】: 綁定週次導航按鈕
+            document.getElementById('prev-week-btn').onclick = () => {
+                currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+                renderDerivedMyTimetable(); // 換週時，重新衍生
+            };
+            document.getElementById('next-week-btn').onclick = () => {
+                currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                renderDerivedMyTimetable(); // 換週時，重新衍生
+            };
+            document.getElementById('today-btn').onclick = () => {
+                currentWeekStart = getMonday(new Date());
+                renderDerivedMyTimetable(); // 回到本週時，重新衍生
+            };
+            
+            // 7. 【核心修改】: 啟動定時器，並確保它呼叫的是新函式
             if (timetableIntervalId) clearInterval(timetableIntervalId);
-            timetableIntervalId = setInterval(renderMyTimetableTable, 30000); 
+            timetableIntervalId = setInterval(renderDerivedMyTimetable, 30000); 
         });
-
+        // 【【【替換結束】】】
+ 
         // 【新增】關閉模態框時，必須停止定時器
+		// 【【【替換此事件監聽器 (修正版)】】】
         document.getElementById('my-timetable-modal').querySelector('.close-btn').addEventListener('click', () => {
             document.getElementById('my-timetable-modal').style.display = 'none';
             document.body.classList.remove('modal-open');
@@ -2274,8 +2456,13 @@
                  clearInterval(timetableIntervalId);
                  timetableIntervalId = null;
             }
+            // 【新增】解綁按鈕事件，避免重複綁定
+            document.getElementById('prev-week-btn').onclick = null;
+            document.getElementById('next-week-btn').onclick = null;
+            document.getElementById('today-btn').onclick = null;
         });
-
+        // 【【【替換結束】】】
+ 
         // 【新增】點擊 Modal 背景時關閉並停止定時器 (修復 window.onclick 內的邏輯)
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
@@ -2292,74 +2479,187 @@
             }
         });
 
-		// 【【【替換 renderMyTimetableTable 函數】】】
-        function renderMyTimetableTable() {
-            if (!teacherTimetableData || PERIOD_TIMES.length === 0) return; // 安全檢查
-            
-            const days = ['一', '二', '三', '四', '五']; 
-            const periods = teacherTimetableData.periods;
-            const currentPeriodIndex = getCurrentPeriodIndex(); // 獲取當前節次 (0-7)
-            const currentDayIndex = new Date().getDay() - 1; // 獲取當前星期 (0-4)
-            
+		// 【【【替換此函式】】】
+        /**
+         * 根據傳入的「衍生課表」物件，渲染課表 HTML。
+         */
+        function renderMyTimetableTable(derivedSchedule) {
+            if (!derivedSchedule || !derivedSchedule.periods || PERIOD_TIMES.length === 0) {
+                 myTimetableBody.innerHTML = '<p style="text-align: center;">課表資料錯誤或未載入。</p>';
+                 return;
+            }
+
+            const days = ['一', '二', '三', '四', '五'];
+            const periods = derivedSchedule.periods;
+            const currentPeriodIndex = getCurrentPeriodIndex();
+            const currentDayIndex = new Date().getDay() - 1;
+            const todayWeekStart = getMonday(new Date());
+            const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
+
             let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
-            days.forEach(day => tableHtml += `<th>星期${day}</th>`);
-            tableHtml += '</tr></thead><tbody>';
             
-            // 遍歷所有已載入的節次時間
+            const weekDates = [];
+            for (let i = 0; i < 5; i++) {
+                const date = new Date(currentWeekStart);
+                date.setDate(currentWeekStart.getDate() + i);
+                weekDates.push(date);
+                // 標頭加入日期
+                tableHtml += `<th>星期${days[i]}<br><span style="color: #6c757d; font-size: 0.9em; font-weight:normal;">(${formatDate(date)})</span></th>`;
+            }
+            tableHtml += '</tr></thead><tbody>';
+
+            // 遍歷所有節次
             PERIOD_TIMES.forEach((periodItem, periodIndex) => {
-                const isCurrentPeriod = periodIndex === currentPeriodIndex;
+                const isCurrentPeriod = isCurrentWeek && periodIndex === currentPeriodIndex;
                 
-                // 計算並顯示起訖時間
+                // 計算起訖時間
                 const [startH, startM] = periodItem.start.split(':').map(Number);
                 const endH = Math.floor((startH * 60 + startM + periodItem.duration) / 60) % 24;
                 const endM = (startH * 60 + startM + periodItem.duration) % 60;
                 const pad = (n) => String(n).padStart(2, '0');
-                
                 const timeRange = `${periodItem.start}~${pad(endH)}:${pad(endM)}`;
 
-
                 tableHtml += `<tr><td class="period-header">${periodItem.period}<br><small style="font-weight:normal; font-size: 0.75em;">${timeRange}</small></td>`;
-                
+
                 for (let d = 0; d < 5; d++) {
                     const cellContent = periods[periodIndex] ? periods[periodIndex][d] : null;
                     let cellClass = '';
-                    
-                    // 【核心修正 2】: 檢查是否為當前時間和當前星期
+                    let content = '';
+                    let dataAttrs = `data-period="${periodIndex}" data-day="${d}" data-date="${formatDate(weekDates[d], 'YYYY-MM-DD')}"`;
+
+                    // 高亮當前課程
                     if (isCurrentPeriod && d === currentDayIndex) {
-                         cellClass = 'current-timetable-cell'; // 应用高亮
+                        cellClass = 'current-timetable-cell';
                     }
-                    
+
                     if (cellContent) {
-                        const [classCode, ...subjectParts] = cellContent.split(/\s+/);
-                        const subject = subjectParts.join(' ');
-                        
-                        tableHtml += `<td class="timetable-clickable-cell ${cellClass}" data-class-code="${classCode}">
-                            <span class="subject">${subject}</span>
-                            <span class="class-detail">${classCode}</span>
-                        </td>`;
+                        // --- 檢查是否為異動課程 (Swap, Substitute, Exchange) ---
+                        if (cellContent.isSwappedIn || cellContent.isSwappedOut || cellContent.isExchangedIn || cellContent.isExchangedOut || cellContent.isSubstitutedIn || cellContent.isSubstitutedOut) {
+                            
+                            // 決定格子樣式
+                            if (cellContent.isSwappedIn || cellContent.isSwappedOut) {
+                                cellClass += ' swapped-cell swapped-cell-pulse';
+                            } else if (cellContent.isExchangedIn || cellContent.isExchangedOut) {
+                                cellClass += ' exchanged-cell exchanged-cell-pulse';
+                            } else {
+                                cellClass += ' substituted-cell';
+                            }
+                            
+                            dataAttrs += ` data-change-id="${cellContent.changeId}"`;
+
+                            // 顯示事由 (hover 提示)
+                            if (cellContent.reason && cellContent.reason.trim() !== '') {
+                                const escapedReason = cellContent.reason.replace(/"/g, '&quot;');
+                                dataAttrs += ` title="${escapedReason}"`;
+                            }
+
+                            // --- 決定格子內容 ---
+                            if (cellContent.isSubstitutedOut) { // 我被代課
+                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+                                content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.substituteTeacherName || '不明'}(代)</span>`;
+                            } else if (cellContent.isSubstitutedIn) { // 我去代課
+                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+                                content += `<span style="font-size: 0.8em; color: #007bff; display: block;">(${cellContent.originalTeacherName || '不明'}(代)</span>`;
+                            } else if (cellContent.isExchangedOut) { // 我的課被換走
+                                const teacherName = cellContent.targetTeacher;
+                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+                                content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">${teacherName || '不明'}(換)</span>`;
+                            } else if (cellContent.isExchangedIn) { // 我去換課
+                                const teacherName = cellContent.originalTeacher;
+                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+                                content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">(${teacherName || '不明'}(換)</span>`;
+                            } else { // 調課 (Swapped)
+                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class}</span>`;
+                                content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.teacher}(調)</span>`;
+                            }
+                        } else {
+							// --- 【【【修正】】】 ---
+                            // 一般正常課程 (cellContent 是一個字串, 例如 "101 國文")
+                            const [className, ...subjectParts] = cellContent.split(/\s+/);
+                            const subjectName = subjectParts.join(' ');
+                            
+                            content = `<span class="subject">${subjectName || ''}</span><span class="class-detail">${className || ''}</span>`;
+                            // --- 【【【修正結束】】】 ---
+                        }
+                        tableHtml += `<td class="timetable-clickable-cell ${cellClass}" ${dataAttrs}>${content}</td>`;
                     } else {
-                        tableHtml += `<td class="timetable-empty-cell ${cellClass}"></td>`;
+                        // --- 空白格子 ---
+                        tableHtml += `<td class="timetable-empty-cell ${cellClass}" ${dataAttrs}></td>`;
                     }
                 }
                 tableHtml += '</tr>';
             });
-            
+
             tableHtml += '</tbody></table>';
             myTimetableBody.innerHTML = tableHtml;
 
-            // 綁定點擊事件 (導航至學生名單頁面)
+            // 標記當前週次
+            const scheduleTable = myTimetableBody.querySelector('.schedule-table');
+            if (isCurrentWeek) {
+                scheduleTable.querySelector('thead').classList.add('current-week');
+            }
+
+            // 重新綁定點擊事件 (導航至學生名單頁面)
             myTimetableBody.querySelectorAll('.timetable-clickable-cell').forEach(cell => {
                 cell.addEventListener('click', (e) => {
-                    const classCode = e.currentTarget.dataset.classCode;
-                    if (classCode) {
-                        // 關閉課表彈窗，並開啟學生名單，標註來源為 'timetable'
-                        document.getElementById('my-timetable-modal').style.display = 'none';
-                        openStudentRosterModal(classCode, 'timetable');
+                    const period = parseInt(e.currentTarget.dataset.period);
+                    const day = parseInt(e.currentTarget.dataset.day);
+                    
+                    // --- 【【【修正】】】 ---
+                    // 點擊時，從剛才渲染用的 derivedData 中撈資料
+                    const cellData = periods[period] ? periods[period][d] : null;
+                    
+                    if (cellData) {
+                        let derivedData;
+                        // 檢查資料是字串還是異動後的物件
+                        if (typeof cellData === 'string') {
+                            const [className, ...subjectParts] = cellData.split(/\s+/);
+                            derivedData = { class: className, subject: subjectParts.join(' ') };
+                        } else {
+                            derivedData = cellData; // 這是異動後的物件
+                        }
+
+                        if (derivedData && derivedData.class) {
+                            const classCode = derivedData.class;
+                            document.getElementById('my-timetable-modal').style.display = 'none';
+                            // 確保來源是 'timetable'，這樣名單關閉時才能正確返回課表
+                            openStudentRosterModal(classCode, 'timetable');
+                        }
                     }
+                    // --- 【【【修正結束】】】 ---
                 });
             });
         }
+        // 【【【替換結束】】】
         
+		// 【【【新增此函式】】】
+        /**
+         * 協調函式：
+         * 1. 載入最新的 ActiveChanges
+         * 2. 取得衍生的課表
+         * 3. 呼叫 renderMyTimetableTable 來渲染
+         * 4. 更新週次按鈕狀態
+         */
+        async function renderDerivedMyTimetable() {
+            // 1. 載入最新的異動
+            await loadActiveChanges();
+            
+            // 2. 根據 (全域的) currentWeekStart 取得衍生課表
+            const derivedSchedule = getDerivedCurrentUserSchedule();
+            
+            // 3. 呼叫渲染器
+            renderMyTimetableTable(derivedSchedule);
+            
+            // 4. 更新「回到本週」按鈕的樣式
+            const todayWeekStart = getMonday(new Date());
+            const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
+            const todayBtn = document.getElementById('today-btn');
+            if (todayBtn) { // 確保按鈕存在
+                 todayBtn.classList.toggle('current', isCurrentWeek);
+            }
+        }
+        // 【【【新增結束】】】
+		
         // 【新增/修改】主選單功能
  
 		newInfoBtn.addEventListener('click', () => {
