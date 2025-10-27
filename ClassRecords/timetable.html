@@ -1456,15 +1456,6 @@ async function main() {
 
 				scheduleTable.addEventListener('click', (e) => handleTeacherCellClick(e, name));
 				scheduleTable.addEventListener('contextmenu', (e) => handleTeacherCellInteraction(e, name));
-				
-				scheduleTable.removeEventListener('touchstart', handleTouchStart);
-				scheduleTable.removeEventListener('touchend', handleTouchEnd);
-				scheduleTable.removeEventListener('touchmove', handleTouchEnd);
-
-				scheduleTable.addEventListener('touchstart', handleTouchStart);
-				scheduleTable.addEventListener('touchend', handleTouchEnd);
-				scheduleTable.addEventListener('touchmove', handleTouchEnd);
-
 
 			} else if (type === 'class') {
 				classViewSelectedCell = null;
