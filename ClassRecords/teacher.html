@@ -710,6 +710,10 @@
             from { background-color: #fff3e0; } /* 從背景色開始 */
             to { background-color: ##ffddb3; }
         }
+		@keyframes pulse-gray {
+            from { background-color: #e9ecef; } /* 基礎灰色 ( substituted-cell 的底色 ) */
+            to { background-color: #dcdcdc; } /* 脈衝到的稍深灰色 */
+        }	
 		.swapped-cell-pulse {
             animation-name: pulse-purple; /* 使用名為 pulse-purple 的動畫 */
             animation-duration: 0.8s;      /* 動畫持續 1.2 秒 */
@@ -719,6 +723,12 @@
         .exchanged-cell-pulse {
             animation-name: pulse-orange; /* 使用名為 pulse-orange 的動畫 */
             animation-duration: 1.2s;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+        }
+		.substituted-cell-pulse {
+            animation-name: pulse-gray;
+            animation-duration: 1.0s; /* 呼吸速度 (可自行調整) */
             animation-iteration-count: infinite;
             animation-direction: alternate;
         }
@@ -2354,7 +2364,7 @@
                             } else if (cellContent.isExchangedIn || cellContent.isExchangedOut) {
                                 cellClass += ' exchanged-cell exchanged-cell-pulse';
                             } else {
-                                cellClass += ' substituted-cell';
+								cellClass += ' substituted-cell substituted-cell-pulse';								
                             }
 
                             dataAttrs += ` data-change-id="${cellContent.changeId}"`;
