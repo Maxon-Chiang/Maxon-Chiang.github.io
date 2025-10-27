@@ -1296,10 +1296,6 @@ async function main() {
 		
 		const renderScheduleTable = () => {
 			 const modal = document.getElementById('schedule-modal');
-             if (modal.style.display === 'none') {
-                 console.log("Timetable interval stopped due to modal closure.");
-                 return; 
-             }
 			 if (!schedule) return; 
             
 			 titleEl.textContent = title;
@@ -1469,6 +1465,7 @@ async function main() {
 				 modal.style.display = 'block';
 			 }
 		};        
+		
 		renderScheduleTable(); 
 
 
