@@ -148,7 +148,7 @@ header .header-actions button {
 .schedule-table th:first-child, .schedule-table td:first-child { 
     width: 95px; 
 }
-.schedule-table td { padding: 0px; font-size: 16px; height: 70px; cursor: pointer; transition: background-color 0.2s; background-color: var(--modal-bg); }
+.schedule-table td { padding: 0px; font-size: 16px; height: 70px; cursor: pointer; transition: background-color 0.2s;}
 .schedule-table td.empty-cell { background-color: var(--cleared-bg); }
 .schedule-table td:hover { background-color: #f0f0f0; }
 .schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
@@ -170,6 +170,10 @@ header .header-actions button {
 }
 .schedule-table .subject { font-weight: normal; display: block; }
 .schedule-table .details { font-size: 18px; color: #0000FF; font-weight: bold; display: block; line-height: 1.1; }
+/* 【【【新增】】】: 讓所有表頭日期都變粗體 */
+.schedule-table thead th .date-span {
+     font-weight: bold !important; /* 使用 !important 確保覆蓋可能殘留的 inline style */
+}
 /* 覆蓋班級課表 (Class View) 的整個表頭高度 */
 #schedule-modal.class-schedule-view .schedule-table th {
     height: 40px; /* 範例：調整班級課表表頭為 40px */
@@ -207,6 +211,7 @@ header .header-actions {
 .swapped-cell {
     border: 1px dashed #b19cd9;
     cursor: help;
+	background-color: #e6e0f4 !important; /* 新增：淺紫色背景 */
 }
 /* ... (在 .swapped-cell 之後新增) ... */
 /* 【新增以下三種班級異動的樣式】 */
@@ -235,6 +240,7 @@ header .header-actions {
 .exchanged-cell {
     border: 1px dashed #ffc994;
     cursor: help;
+	background-color: #fff3e0 !important; /* 新增：淺橘色背景 */
 }
 .exchanged-cell-pulse {
     animation-name: pulse-orange;
@@ -1307,7 +1313,7 @@ async function main() {
 				 const date = new Date(currentWeekStart);
 				 date.setDate(currentWeekStart.getDate() + i);
 				 weekDates.push(date);
-				 tableHtml += `<th>${daysOfWeek[i]}<br><span style="color: #6c757d; font-size: 0.9em; font-weight:normal;">(${formatDate(date)})</span></th>`;
+				 tableHtml += `<th>${daysOfWeek[i]}<br><span class="date-span" style="color: #6c757d; font-size: 0.9em;">(${formatDate(date)})</span></th>`;
 			 }
 			 tableHtml += '</tr></thead><tbody>';
 
@@ -1488,55 +1494,6 @@ async function main() {
 		
 	}
     
-    let touchCell = null;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    
-    function handleTouchStart(e) {
-        if (e.touches.length === 1) {
-             
-             touchCell = e.target.closest('td');
-             if(!touchCell || touchCell.classList.contains('period-header')) return;
-             
-             touchStartX = e.touches[0].clientX;
-             touchStartY = e.touches[0].clientY;
-
-             clearTimeout(longPressTimer);
-             
-             longPressTimer = setTimeout(() => {
-                 if(touchCell) {
-                     e.preventDefault(); 
-                     e.stopPropagation(); 
-                     
-                     handleTeacherCellInteraction({
-                         type: 'contextmenu', 
-                         target: touchCell,
-                         preventDefault: () => {}, 
-                         stopPropagation: () => {} 
-                     }, activeSchedule.name);
-                 }
-                 touchCell = null; 
-             }, LONG_PRESS_DURATION);
-        }
-    }
-    
-    function handleTouchEnd(e) {
-        clearTimeout(longPressTimer);
-        
-        const threshold = 10; 
-        if (e.changedTouches && touchCell) {
-            const deltaX = Math.abs(e.changedTouches[0].clientX - touchStartX);
-            const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY);
-            
-            if (deltaX > threshold || deltaY > threshold) {
-                 return;
-            }
-        }
-        
-        touchCell = null; 
-    }
-    
-
     function getPeriodIndexForTimetableHighlight() {
         if (PERIOD_TIMES.length === 0) return -1;
         const now = new Date();
@@ -3077,6 +3034,62 @@ async function main() {
             }
         }
     });
+
+
+    // 【【【新增】】】: 為課表 Modal 加入滑動換週功能
+    const scheduleModalBody = document.getElementById('modal-body'); // 主要課表容器
+    const exchangeModalBody = document.getElementById('exchange-modal-body'); // 換課選擇課表容器
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const swipeThreshold = 50; // 判定為滑動的最短像素距離
+
+    function handleTouchStart(event) {
+        if (event.touches.length === 1) {
+            touchStartX = event.touches[0].clientX;
+            touchEndX = 0;
+        }
+    }
+
+    function handleTouchMove(event) {
+        if (event.touches.length > 1) {
+            touchStartX = 0;
+        }
+    }
+
+    function handleTouchEnd(event, modalElement, prevBtnId, nextBtnId) {
+        if (event.changedTouches.length === 1 && touchStartX !== 0) {
+            touchEndX = event.changedTouches[0].clientX;
+            const deltaX = touchEndX - touchStartX;
+
+            // 檢查滑動距離和 Modal 是否可見
+            if (Math.abs(deltaX) > swipeThreshold && modalElement.style.display === 'block') {
+                if (deltaX < 0) {
+                    // 向左滑 -> 下一週
+                    document.getElementById(nextBtnId)?.click(); // 使用 ?. 避免按鈕不存在時出錯
+                } else {
+                    // 向右滑 -> 上一週
+                    document.getElementById(prevBtnId)?.click(); // 使用 ?. 避免按鈕不存在時出錯
+                }
+            }
+        }
+        touchStartX = 0;
+    }
+
+    // --- 綁定事件到主要課表 Modal ---
+    scheduleModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
+    scheduleModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
+    scheduleModalBody.addEventListener('touchend', (event) => {
+        handleTouchEnd(event, document.getElementById('schedule-modal'), 'prev-week-btn', 'next-week-btn');
+    });
+
+    // --- 綁定事件到換課 Modal ---
+    exchangeModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
+    exchangeModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
+    exchangeModalBody.addEventListener('touchend', (event) => {
+        handleTouchEnd(event, document.getElementById('exchange-modal'), 'exchange-prev-week-btn', 'exchange-next-week-btn');
+    });
+    // 【【【新增結束】】】
+
 }
 </script>
 </body>
