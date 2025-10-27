@@ -647,7 +647,7 @@
         }
         .timetable-clickable-cell {
 			cursor: pointer;
-            background-color: #e6f7ff;
+            // background-color: #e6f7ff;
             transition: background-color 0.2s;
 		}
 		.timetable-clickable-cell:hover {
@@ -688,15 +688,40 @@
 			font-size: 1.2em;
 			color: #888;
 		}
-        .week-navigator button.current {
+		.week-navigator button.current {
             color: blue;
             border-color: #007bff;
         }
-        .schedule-table thead.current-week th {
+        .schedule-table thead.current-week th:not(:first-child) { /* 修改選擇器，排除第一欄"節次" */
             color: blue;
             font-weight: bold;
+            background-color: #e6f7ff; /* 新增：淺藍色背景 */
         }
-
+		.schedule-table thead th .date-span {
+             font-weight: bold !important; /* 使用 !important 確保覆蓋 inline style */
+             /* font-size: 0.9em; */ /* 可以在這裡統一設定字體大小 */
+             /* color: #555; */   /* 可以在這裡統一設定顏色，覆蓋 inline style */
+        }
+		@keyframes pulse-purple {
+			from { background-color: #e6e0f4; }
+			to { background-color: #c9bddd; } /* 改成對比更強的紫色 */
+		}
+        @keyframes pulse-orange {
+            from { background-color: #fff3e0; } /* 從背景色開始 */
+            to { background-color: ##ffddb3; }
+        }
+		.swapped-cell-pulse {
+            animation-name: pulse-purple; /* 使用名為 pulse-purple 的動畫 */
+            animation-duration: 0.8s;      /* 動畫持續 1.2 秒 */
+            animation-iteration-count: infinite; /* 無限次重複 */
+            animation-direction: alternate; /* 播放方向來回交替 */
+        }
+        .exchanged-cell-pulse {
+            animation-name: pulse-orange; /* 使用名為 pulse-orange 的動畫 */
+            animation-duration: 1.2s;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+        }
 		@media (max-width: 768px) {
 
 			header {
@@ -2296,7 +2321,7 @@
                 const date = new Date(currentWeekStart);
                 date.setDate(currentWeekStart.getDate() + i);
                 weekDates.push(date);
-                tableHtml += `<th>星期${days[i]}<br><span style="color: #6c757d; font-size: 0.9em; font-weight:normal;">(${formatDate(date)})</span></th>`;
+				tableHtml += `<th>星期${days[i]}<br><span class="date-span" style="color: #6c757d; font-size: 0.9em; font-weight:normal;">(${formatDate(date)})</span></th>`;
             }
             tableHtml += '</tr></thead><tbody>';
 
