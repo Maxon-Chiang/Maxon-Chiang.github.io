@@ -2457,7 +2457,54 @@
 			alert('首頁設定已儲存！');
 			closeHomepageSettingsModal();
 		});
+		
+		// 【【【新增】】】: 為 "我的課表" Modal 加入滑動換週功能
+        const timetableBody = document.getElementById('my-timetable-body');
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const swipeThreshold = 50; // 判定為滑動的最短像素距離
+
+        timetableBody.addEventListener('touchstart', (event) => {
+            // 只記錄單指觸控的起始點
+            if (event.touches.length === 1) {
+                touchStartX = event.touches[0].clientX;
+                touchEndX = 0; // 重置結束點
+            }
+        }, { passive: true }); // 使用 passive: true 提升滾動性能
+
+        timetableBody.addEventListener('touchmove', (event) => {
+            // 如果有多於一指觸控，則不處理 (可能是縮放)
+            if (event.touches.length > 1) {
+                touchStartX = 0; // 重置起始點，取消滑動判定
+                return;
+            }
+            // 記錄最後移動到的 X 座標 (雖然 touchend 裡也會記錄，這裡先存著)
+            // touchEndX = event.touches[0].clientX;
+        }, { passive: true }); // 使用 passive: true 提升滾動性能
+
+        timetableBody.addEventListener('touchend', (event) => {
+            // 只處理單指觸控結束事件
+            if (event.changedTouches.length === 1 && touchStartX !== 0) {
+                touchEndX = event.changedTouches[0].clientX;
+                const deltaX = touchEndX - touchStartX;
+
+                // 判斷滑動距離是否足夠，以及 Modal 是否可見
+                if (Math.abs(deltaX) > swipeThreshold && myTimetableModal.style.display === 'flex') {
+                    if (deltaX < 0) {
+                        // 向左滑動 (手指向左移動，內容向左滾動) -> 下一週
+                        document.getElementById('next-week-btn').click();
+                    } else {
+                        // 向右滑動 (手指向右移動，內容向右滾動) -> 上一週
+                        document.getElementById('prev-week-btn').click();
+                    }
+                }
+            }
+            // 重置起始點，為下一次滑動做準備
+            touchStartX = 0;
+        });
+        // 【【【新增結束】】】
     });
+	
     </script>
 </body>
 </html>
