@@ -387,6 +387,7 @@ header .header-actions {
 /* 🎯 CORE FIX 🎯: 設置課表主體可捲動 */
 #view-only-modal-body {
     overflow-y: auto; 
+    overflow-x: hidden;
     flex-grow: 1; /* 讓內容佔滿剩餘空間 */
     /* 增加內距，與標題區塊分開 */
     padding-top: 15px; 
@@ -398,8 +399,12 @@ header .header-actions {
 #view-only-modal-body .schedule-table {
     /* 確保表格在容器內自適應寬度 */
     width: 100%;
-    min-width: 600px; /* 防止在極窄螢幕上壓縮太嚴重 */
 }
+
+#view-only-modal .schedule-table {
+    table-layout: fixed; /* 保持 fixed 佈局以均分寬度 */
+}
+		
 /* 🎯 CORE FIX 🎯: 純瀏覽模式下，單獨設定表格單元格的高度 */
 #view-only-modal .schedule-table td {
     height: 50px; /* 您希望設定的實際高度，例如 60px */
