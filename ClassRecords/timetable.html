@@ -660,7 +660,6 @@ const MAX_RECENT_ITEMS = 10;
 // 動態時間表數據
 let PERIOD_TIMES = []; 
 let scheduleSnapshot = null;
-let timetableIntervalId = null; 
 
 // 用於緩存 teachers 集合資料
 let teachersDataCache = new Map(); 
@@ -1244,9 +1243,6 @@ async function main() {
 		// 🎯 CORE FIX 🎯：在每次渲染開始時，強制隱藏「指定代課 / 換課」按鈕
 		document.getElementById('substitution-btn').classList.remove('visible'); 
 
-		if (timetableIntervalId) clearInterval(timetableIntervalId);
-		timetableIntervalId = null;
-
 		addRecentSchedule(name, type);
 		populateRecentList();
 
@@ -1300,9 +1296,7 @@ async function main() {
 		
 		const renderScheduleTable = () => {
 			 const modal = document.getElementById('schedule-modal');
-             if (modal.style.display === 'none' && timetableIntervalId) {
-                 clearInterval(timetableIntervalId); 
-                 timetableIntervalId = null;       
+             if (modal.style.display === 'none') {
                  console.log("Timetable interval stopped due to modal closure.");
                  return; 
              }
@@ -1477,31 +1471,21 @@ async function main() {
 		};        
 		renderScheduleTable(); 
 
-		// timetableIntervalId = setInterval(renderScheduleTable, 30000); 
-
 
 		document.getElementById('prev-week-btn').onclick = () => {
-			if (timetableIntervalId) clearInterval(timetableIntervalId);
-			timetableIntervalId = null
 			currentWeekStart.setDate(currentWeekStart.getDate() - 7);
 			showSchedule(activeSchedule.name, activeSchedule.type);
 		};
 		document.getElementById('next-week-btn').onclick = () => {
-			if (timetableIntervalId) clearInterval(timetableIntervalId);
-			timetableIntervalId = null
 			currentWeekStart.setDate(currentWeekStart.getDate() + 7);
 			showSchedule(activeSchedule.name, activeSchedule.type);
 		};
 		document.getElementById('today-btn').onclick = () => {
-			if (timetableIntervalId) clearInterval(timetableIntervalId);
-			timetableIntervalId = null
 			currentWeekStart = getMonday(new Date());
 			showSchedule(activeSchedule.name, activeSchedule.type);
 		};
 
 		modal.querySelector('.close-button').onclick = () => {
-			if (timetableIntervalId) clearInterval(timetableIntervalId);
-			timetableIntervalId = null;
 			modal.style.display = 'none';
 		};
 		
@@ -1777,9 +1761,6 @@ async function main() {
         const backBtn = document.getElementById('back-to-class-btn');
         const closeBtn = document.getElementById('view-only-close-btn');
 
-        // 🎯 CORE FIX 🎯：強制停止任何現有的定時器，因為純瀏覽模式不需要高亮
-        if (timetableIntervalId) clearInterval(timetableIntervalId);
-        timetableIntervalId = null; 
 
 		titleEl.textContent = `${teacherName} 老師課表 (純瀏覽)`;
 		
@@ -3017,19 +2998,11 @@ async function main() {
     document.querySelectorAll('.modal .close-button').forEach(btn => {
         btn.onclick = (e) => {
             const modal = e.target.closest('.modal');
-            if (modal.id === 'schedule-modal') {
-                 if (timetableIntervalId) clearInterval(timetableIntervalId); 
-                 timetableIntervalId = null;
-            }
             modal.style.display = 'none';
         };
     });
     window.onclick = (event) => {
         if (event.target.classList.contains('modal')) {
-             if (event.target.id === 'schedule-modal') {
-                 if (timetableIntervalId) clearInterval(timetableIntervalId); 
-                 timetableIntervalId = null;
-             }
             event.target.style.display = 'none';
         }
     };
