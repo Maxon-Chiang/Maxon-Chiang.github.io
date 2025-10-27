@@ -26,44 +26,39 @@
         button, input, select, textarea {
             font-family: inherit;
         }
-        
-        /* ---------------------------------------------------- */
-        /* 【電腦版預設樣式】: 維持所有內容在單行，主標題靠左，其他靠右 */
+
         header {
             background-color: var(--primary-color);
             color: white;
             padding: 0.6rem 1rem;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
-            justify-content: space-between; 
+            justify-content: space-between;
             align-items: center;
             position: sticky;
             top: 0;
             z-index: 1000;
-			flex-wrap: wrap; 
+			flex-wrap: wrap;
         }
-        
-        /* 【修正 Header 排版問題】: 將標題和排序按鈕視為一個組件 */
+
         .header-left-panel {
             display: flex;
             align-items: center;
             gap: 5px;
             flex-shrink: 0;
         }
-        
+
         header h1 {
             font-size: 1.6em;
             margin: 0;
             flex-shrink: 0;
         }
-        /* 確保右側元素組在電腦版能佔據空間 */
         .header-right-panel {
             display: flex;
             align-items: center;
             gap: 5px;
         }
-        
-        /* 【新增/修改】主標題排序按鈕容器 */
+
         #main-sort-container {
             display: flex;
             align-items: center;
@@ -80,29 +75,26 @@
             display: block;
             height: 1.8em;
             width: 1.5em;
-            position: relative; 
+            position: relative;
             flex-shrink: 0;
         }
-        /* 排序狀態的箭頭顏色 */
         .main-sort-arrow {
             color: #fff;
             transition: color 0.2s;
             font-weight: bold;
-            line-height: 1; 
+            line-height: 1;
             display: block;
-            position: absolute; 
+            position: absolute;
             left: 50%;
             transform: translateX(-50%);
         }
         #main-sort-up-arrow {
-            top: 0; 
+            top: 0;
         }
         #main-sort-down-arrow {
-            top: 50%; 
+            top: 50%;
         }
         .main-sort-arrow.active { color: #f4d03f; }
-        
-        /* ---------------------------------------------------- */
 
         .user-profile {
             display: flex;
@@ -167,11 +159,11 @@
         .show {
             display: block;
         }
-        
+
         main {
             padding: 1.5rem;
         }
-        
+
         .class-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -184,11 +176,11 @@
             display: flex;
             flex-direction: column;
             text-align: center;
-            min-height: 100px; 
+            min-height: 100px;
             justify-content: space-between;
             transition: background-color 0.3s ease;
         }
-        
+
         .class-block-title {
             padding: 5px 10px 0px 10px;
             font-size: 1.6em;
@@ -202,23 +194,21 @@
             border-radius: 8px 8px 0 0;
         }
         .class-block-title:hover {
-            background-color: rgba(240, 248, 255, 0.5); 
+            background-color: rgba(240, 248, 255, 0.5);
         }
-        
-        /* 新增：班級總分顯示樣式 */
+
         .class-total-score {
-            font-size: 1.0em; 
+            font-size: 1.0em;
             font-weight: bold;
-            color: #333; 
-            padding: 0px 10px 5px 10px; 
+            color: #333;
+            padding: 0px 10px 5px 10px;
             margin: 0;
             flex-shrink: 0;
         }
-        
-        /* 【新增】即時上課班級凸顯效果 */
+
         .current-class-highlight {
-            border: 4px solid #FF5733; /* 亮紅色邊框 */
-            box-shadow: 0 0 15px rgba(255, 87, 51, 0.8); /* 發光效果 */
+            border: 4px solid #FF5733;
+            box-shadow: 0 0 15px rgba(255, 87, 51, 0.8);
             animation: pulse-border 1.5s infinite;
         }
 
@@ -228,7 +218,7 @@
                 box-shadow: 0 0 15px rgba(255, 87, 51, 0.8);
             }
             50% {
-                border-color: #FFA500; /* 閃爍到橙色 */
+                border-color: #FFA500;
                 box-shadow: 0 0 20px rgba(255, 165, 0, 0.9);
             }
             100% {
@@ -245,23 +235,23 @@
             padding: 8px;
             border-top: 1px solid #eee;
         }
-        
+
         .class-block-actions a, .class-block-actions button {
             background: none;
             border: none;
-            font-size: 1.6em; 
+            font-size: 1.6em;
             cursor: pointer;
             color: #555;
             padding: 5px 10px;
             border-radius: 4px;
             text-decoration: none;
         }
-        
+
         .class-block-actions a:hover, .class-block-actions button:hover {
             background-color: #f1f1f1;
             color: var(--primary-color);
         }
-        
+
         #student-roster-modal .modal-content {
             max-width: 95%;
             width: 100%;
@@ -269,8 +259,7 @@
             display: flex;
             flex-direction: column;
         }
-        
-        /* 【修改】學生名單大標題容器排版 */
+
         #student-roster-modal .modal-content h2 {
             display: flex;
             justify-content: space-between;
@@ -278,10 +267,9 @@
             padding-right: 35px;
             text-align: left;
             flex-wrap: wrap;
-            min-height: 40px; 
+            min-height: 40px;
         }
-        
-        /* 【新增】學生名單大標題文字樣式 (包含總分統計) */
+
         .roster-title-text {
             display: flex;
             flex-direction: column;
@@ -307,16 +295,15 @@
             margin-top: 2px;
         }
 
-        /* 【新增/修改】排序按鈕樣式 */
         #roster-sort-btn {
             background: none;
             border: none;
             cursor: pointer;
             padding: 5px 0;
-            font-size: 1.5em; 
+            font-size: 1.5em;
             color: #999;
             flex-shrink: 0;
-            margin-left: 10px; 
+            margin-left: 10px;
             line-height: 1;
             display: block;
             height: 1.2em;
@@ -338,13 +325,12 @@
         #roster-sort-down-arrow {
             top: 50%;
         }
-        /* 排序狀態的箭頭顏色 */
 		.roster-sort-arrow.active { color: var(--primary-color); }
-        .roster-sort-arrow.inactive { 
-            color: #aaa; 
+        .roster-sort-arrow.inactive {
+            color: #aaa;
             opacity: 0.6;
         }
-        
+
         #student-grid-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -375,7 +361,7 @@
             margin-bottom: 5px;
         }
         .student-block-info .score {
-            font-size: 0.8em; 
+            font-size: 0.8em;
             font-weight: normal;
             color: #333;
         }
@@ -385,7 +371,7 @@
 		.score-negative { background-color: #ffebee; }
 		.score-positive-low { background-color: #e8f5e9; }
 		.score-positive-high { background-color: #fff8e1; }
-        
+
         .modal, .modal2, .modal-notes {
             display: none;
             position: fixed;
@@ -414,7 +400,7 @@
             max-height: 90vh;
             overflow-y: auto;
         }
-        
+
         #password-reset-overlay {
             display: none;
             position: fixed;
@@ -426,10 +412,10 @@
             z-index: 3000;
             justify-content: center;
             align-items: center;
-			padding: 15px; 
+			padding: 15px;
 			box-sizing: border-box;
         }
-        
+
         .close-btn {
             color: #aaa;
             position: absolute;
@@ -439,11 +425,11 @@
             font-weight: bold;
             cursor: pointer;
         }
-        
+
         #class-settings-list {
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 10px; 
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             background: none;
             border: none;
             padding: 0;
@@ -464,7 +450,7 @@
             margin-top: 20px;
             background-color: #28a745;
             padding: 12px 25px;
-            color: white; 
+            color: white;
         }
 
         .password-reset-box {
@@ -489,17 +475,15 @@
             font-size: 0.9em;
             margin-top: 10px;
         }
-        
-        /* 【修改此區塊】: 移除 h3 的樣式，改用 div 實現新的統計顯示 */
+
         .form-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
-            min-height: 30px; 
+            min-height: 30px;
         }
-        
-        /* 【新增】統計資訊容器樣式 */
+
         .record-stats-display {
             display: flex;
             gap: 15px;
@@ -510,14 +494,12 @@
              font-weight: normal;
              color: #555;
         }
-        /* 結束修改 */
-        
+
         #add-record-form {
             display: flex;
             gap: 10px;
             align-items: center;
         }
-        /* 禁用狀態的樣式 */
         #record-points[disabled] {
              background-color: #f1f1f1;
              color: #6c757d;
@@ -526,7 +508,6 @@
         #record-points { flex: 0 1 100px; max-width: 110px; }
         #record-text { flex: 1 1 auto; }
 
-        /* 【新增】手機版專用的分數增減按鈕樣式 */
         .mobile-score-controls {
             display: none;
             gap: 5px;
@@ -547,13 +528,12 @@
         .score-adjust-btn:hover {
             background-color: #e0e0e0;
         }
-        /* 結束新增 */
-        
+
 		#save-record-btn, #btn-cancel-edit { border: none !important; padding: 10px 15px; font-size: 1.1em; border-radius: 6px;}
-		#save-record-btn { color: white; /* 確保「新增/更新」按鈕文字是白色 */}
-		#save-record-btn.update-mode { background-color: #ff9800 !important; /* 橙色表示更新 */}
-		#save-record-btn.update-mode:hover { background-color: #e68900 !important; /* 新增 Hover 效果 */}
-		#btn-cancel-edit { display:none; color: white !important; /* 核心修正：深灰底配白字 */ background-color: #6c757d !important;}
+		#save-record-btn { color: white; }
+		#save-record-btn.update-mode { background-color: #ff9800 !important; }
+		#save-record-btn.update-mode:hover { background-color: #e68900 !important; }
+		#btn-cancel-edit { display:none; color: white !important; background-color: #6c757d !important;}
         #btn-cancel-edit:hover { background-color: #5a6268 !important; }
 
 
@@ -565,20 +545,20 @@
             padding: 12px 0;
             border-bottom: 1px solid #eee;
         }
-        .record-content { 
-            flex-grow: 1; 
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
-            min-width: 0; 
-            cursor: pointer; /* 讓內容可點擊 */
-            padding: 5px 10px; /* 增加點擊區域 */
+        .record-content {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-width: 0;
+            cursor: pointer;
+            padding: 5px 10px;
             border-radius: 4px;
         }
         .record-content:hover {
             background-color: #f5f5f5;
         }
-        
+
         .record-points { font-weight: bold; font-size: 1.1em; flex-shrink: 0; }
         .record-points.positive { color: #28a745; }
         .record-points.negative { color: var(--danger-color); }
@@ -596,7 +576,7 @@
             padding: 2px 8px;
             line-height: 1.2;
         }
-        
+
         #welcome-modal .modal-content { max-width: 500px; }
         #welcome-modal .modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
         #welcome-modal ul { list-style-type: disc; padding-left: 25px; }
@@ -606,58 +586,57 @@
         #reset-welcome-prefs-btn { margin: 0; padding: 6px 12px; font-size: 0.9em; flex-shrink: 0; background-color: var(--danger-color); color: white; }
         #info-modal ul { list-style-type: disc; padding-left: 25px; }
 
-        /* 【我的課表 Modal 樣式】 */
-        #my-timetable-modal .modal-content { 
-            max-width: 900px; 
-            max-height: 90vh; 
-            display: flex; 
-            flex-direction: column; 
+        #my-timetable-modal .modal-content {
+            max-width: 900px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
             padding: 20px;
         }
-        #my-timetable-body { 
-            overflow-y: auto; 
+        #my-timetable-body {
+            overflow-y: auto;
             overflow-x: auto;
             flex-grow: 1;
         }
-        .schedule-table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            table-layout: fixed; 
-            font-size: 0.9em; 
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 0.9em;
             min-width: 600px;
         }
-        .schedule-table th, .schedule-table td { 
-            border: 1px solid #999; 
-            padding: 2px; 
-            text-align: center; 
-            vertical-align: middle; 
-            word-wrap: break-word; 
-            position: relative; 
+        .schedule-table th, .schedule-table td {
+            border: 1px solid #999;
+            padding: 2px;
+            text-align: center;
+            vertical-align: middle;
+            word-wrap: break-word;
+            position: relative;
             height: 60px;
         }
-        .schedule-table th { 
-            background-color: #e9ecef; 
-            font-weight: bold; 
-            height: 35px; 
+        .schedule-table th {
+            background-color: #e9ecef;
+            font-weight: bold;
+            height: 35px;
         }
-        .schedule-table th:first-child, .schedule-table td:first-child { 
-            width: 10%; 
+        .schedule-table th:first-child, .schedule-table td:first-child {
+            width: 10%;
         }
-        .schedule-table .period-header { 
-            font-weight: bold; 
-            background-color: #e9ecef; 
+        .schedule-table .period-header {
+            font-weight: bold;
+            background-color: #e9ecef;
         }
-        .schedule-table .subject { 
-            font-weight: normal; 
-            display: block; 
+        .schedule-table .subject {
+            font-weight: normal;
+            display: block;
             font-size: 1.2em;
         }
-        .schedule-table .class-detail { 
-            font-size: 1.2em; 
-            color: #0000FF; 
-            display: block; 
-            line-height: 1.1; 
-			font-weight: bold; 
+        .schedule-table .class-detail {
+            font-size: 1.2em;
+            color: #0000FF;
+            display: block;
+            line-height: 1.1;
+			font-weight: bold;
         }
         .timetable-clickable-cell {
 			cursor: pointer;
@@ -671,14 +650,11 @@
             background-color: #f7f7f7;
         }
 
-		/* 【關鍵修正】: 確保高亮樣式能覆蓋表格單元格的默認背景 */
 		.current-timetable-cell {
-			background-color: #ffe0b2 !important; /* 淺橙色背景 */
-			border: 2px dashed #ff9800 !important; /* 橙色虛線邊框 */
+			background-color: #ffe0b2 !important;
+			border: 2px dashed #ff9800 !important;
 			box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
-		}		
-
-        /* End: My Timetable Modal Styles */
+		}
 
 		body.modal-open { overflow: hidden; }
 		.password-reset-box form {
@@ -705,219 +681,199 @@
 			font-size: 1.2em;
 			color: #888;
 		}
-		/* 【【【新增】】】課表系統 - 當前週次高亮樣式 */
         .week-navigator button.current {
             color: blue;
-            border-color: #007bff; /* 模仿 --accent-color */
+            border-color: #007bff;
         }
         .schedule-table thead.current-week th {
             color: blue;
             font-weight: bold;
         }
-        /* 【【【新增結束】】】
-		
-		/* ---------------------------------------------------- */
-        /* 【手機版樣式】: @media (max-width: 768px) */
+
 		@media (max-width: 768px) {
-			
-			/* --- 頁面結構與佈局修正 --- */
+
 			header {
 				flex-direction: column;
 				align-items: center;
-				padding-bottom: 5px; 
-				width: 100%; 
+				padding-bottom: 5px;
+				width: 100%;
 				box-sizing: border-box;
 			}
-			
+
 			.header-left-panel {
 				width: 100%;
 				justify-content: center;
-				padding-bottom: 5px; 
+				padding-bottom: 5px;
 			}
-			
+
 			header h1 {
 				text-align: center;
 				font-size: 1.5em;
 			}
-			
+
 			.header-right-panel {
-				width: 100%; 
+				width: 100%;
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
 			}
-			
+
 			.main-actions {
-				flex-grow: 1; 
-				flex-shrink: 1; 
+				flex-grow: 1;
+				flex-shrink: 1;
 				min-width: 0;
 			}
-			
-			.main-actions button, .main-actions a button { 
-				padding: 5px 5px; 
+
+			.main-actions button, .main-actions a button {
+				padding: 5px 5px;
 				font-size: 0.85em;
 				white-space: nowrap;
 			}
-			
-			.header-right-panel .user-profile, 
+
+			.header-right-panel .user-profile,
 			.header-right-panel .dropdown {
 				flex-shrink: 0;
 			}
-			
-			.user-profile { 
-				font-size: 0.8em; 
+
+			.user-profile {
+				font-size: 0.8em;
 			}
-			
-			main { 
-				padding: 1rem; 
-				width: 100%; 
+
+			main {
+				padding: 1rem;
+				width: 100%;
 				box-sizing: border-box;
-				overflow-x: hidden; /* 防止內容溢出導致的頁面捲動 */
+				overflow-x: hidden;
 			}
-			
-			/* --- 主畫面班級格子 --- */
-			.class-grid { 
-				grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); 
-				gap: 0.8rem; 
+
+			.class-grid {
+				grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+				gap: 0.8rem;
 			}
-			
-			.class-block { 
-				min-height: 90px; 
-			} 
-			
-			.class-block-title { 
-				font-size: 1.4em; 
-			} 
-			
-			.class-total-score { 
-				font-size: 0.9em; 
+
+			.class-block {
+				min-height: 90px;
 			}
-			
-			/* --- 學生名單 (Roster) Modal --- */
+
+			.class-block-title {
+				font-size: 1.4em;
+			}
+
+			.class-total-score {
+				font-size: 0.9em;
+			}
+
 			#student-roster-modal .modal-content h2 {
 				flex-wrap: nowrap;
-				padding-right: 25px; 
+				padding-right: 25px;
 			}
-			
+
 			.roster-title-text h3, .roster-title-clickable {
-				white-space: nowrap; 
+				white-space: nowrap;
 				overflow: hidden;
 				text-overflow: ellipsis;
-				max-width: 100%; 
+				max-width: 100%;
 			}
-			
-			#roster-sort-btn { 
+
+			#roster-sort-btn {
 				flex-shrink: 0;
-				font-size: 1.2em; 
+				font-size: 1.2em;
 			}
-			
+
 			#student-grid-container {
 				grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
 				gap: 5px;
 				padding: 5px;
 			}
-			
+
 			.student-block {
 				padding: 6px;
 			}
-			
-			.student-block-info { 
+
+			.student-block-info {
 				font-size: 0.9em;
 				margin-bottom: 0px;
 			}
-			
-			.student-block-name { 
+
+			.student-block-name {
 				font-size: 0.9em;
 			}
-			
-			/* --- 日常表現紀錄 Modal (modal2) --- */
+
 			.modal2 .modal-content {
 				padding: 15px;
 			}
-			
+
 			.mobile-score-controls {
-				display: flex; /* 顯示分數增減按鈕 */
+				display: flex;
 			}
-			
-			/* 【核心 CSS 修改點 1】: 手機版按鈕 padding 減半 */
+
 			#save-record-btn, #btn-cancel-edit {
-				padding: 5px 8px !important; 
-				font-size: 1em !important; 
+				padding: 5px 8px !important;
+				font-size: 1em !important;
 				flex-shrink: 0;
 			}
-			
+
 			#add-record-form {
 				flex-wrap: nowrap;
 				gap: 5px;
 			}
-			
+
 			#record-points {
-				max-width: 60px; 
-				flex: 0 0 60px; 
+				max-width: 60px;
+				flex: 0 0 60px;
 				padding: 8px;
 				text-align: center;
 			}
-			
+
 			#record-text {
 				 padding: 8px;
 			}
-			
+
 			.score-adjust-btn {
-				width: 35px; 
+				width: 35px;
 				height: 35px;
 				font-size: 1.1em;
 			}
-			
+
 			.form-header button[type="submit"] {
 				padding: 8px 10px;
 				font-size: 0.9em;
 				flex-shrink: 0;
 			}
-			
+
 			#records-list {
-				max-height: 25vh; 
-			}
-			
-			/* --- 我的課表 Modal --- */
-			.schedule-table { 
-				font-size: 0.8em; 
-			}
-			
-			/* --- 我的課表 Modal (自適應寬度修正) --- */
-			#my-timetable-modal .modal-content { 
-				max-width: 98%; 
-				padding: 10px; 
-			}
-			
-			/* 【關鍵修復】: 移除表格的固定寬度/最小寬度，讓它完全由父容器決定 */
-			.schedule-table { 
-				font-size: 0.8em; 
-				min-width: unset; 
-			}
-		    .schedule-table .subject { 
-				font-size: 0.8em;
-			}			
-			.schedule-table th, .schedule-table td { 
-				/* 讓欄位內容可以被擠壓 */
-				white-space: normal; 
-				word-wrap: break-word;
-			}
-			
-			.schedule-table th:first-child, .schedule-table td:first-child { 
-				/* 節次欄仍保持較小寬度 */
-				width: 20%; 
-	            padding: 0px; 
-			}
-			/* 讓周一到周五平均分配剩下的寬度 (80% / 5 = 16%) */
-			.schedule-table th:not(:first-child), .schedule-table td:not(:first-child) {
-				 width: 16%; 
+				max-height: 25vh;
 			}
 
-			.schedule-table td { 
-				height: 50px; 
+			#my-timetable-modal .modal-content {
+				max-width: 98%;
+				padding: 10px;
 			}
-			
-			/* 【修正】: 由於表格現在是自適應的，不需要 overflow-x: auto */
+
+			.schedule-table {
+				font-size: 0.8em;
+				min-width: unset;
+			}
+		    .schedule-table .subject {
+				font-size: 0.8em;
+			}
+			.schedule-table th, .schedule-table td {
+				white-space: normal;
+				word-wrap: break-word;
+			}
+
+			.schedule-table th:first-child, .schedule-table td:first-child {
+				width: 20%;
+	            padding: 0px;
+			}
+			.schedule-table th:not(:first-child), .schedule-table td:not(:first-child) {
+				 width: 16%;
+			}
+
+			.schedule-table td {
+				height: 50px;
+			}
+
 			#my-timetable-body {
 				overflow-x: hidden;
 			}
@@ -936,7 +892,7 @@
                 </button>
             </div>
         </div>
-        
+
         <div class="header-right-panel">
             <div class="main-actions">
 				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表系統</button></a>
@@ -1089,11 +1045,11 @@
             <p style="font-size: 0.9em; color: #666; margin-top: 25px;">您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
         </div>
     </div>
-    
+
     <div id="student-roster-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn" data-modal="student-roster-modal">&times;</span>
-            
+
             <h2 id="student-roster-title">
                 <div class="roster-title-text" id="roster-title-text-container">
                     <div id="roster-click-area" class="roster-title-clickable">
@@ -1106,7 +1062,7 @@
                     <span class="roster-sort-arrow" id="roster-sort-down-arrow">▼</span>
                 </button>
             </h2>
-            
+
             <div id="student-grid-container"></div>
         </div>
     </div>
@@ -1123,7 +1079,7 @@
                 </div>
             </div>
             <div id="timetable-message" style="color: var(--danger-color); text-align: center; margin-bottom: 10px;"></div>
-            <div id="my-timetable-body"></div>		
+            <div id="my-timetable-body"></div>
         </div>
     </div>
 
@@ -1162,33 +1118,27 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // --- Global Variables ---
-		let currentUser = null, studentsData = [], 
-            allPerformanceScores = {}, 
+		let currentUser = null, studentsData = [],
+            allPerformanceScores = {},
             allClassList = [], visibleClassList = [], modalOrigin = null, rosterModalOrigin = null;
 
         let scheduleDataLoaded = false;
-        let teacherTimetableData = null; // 用於儲存課表原始數據
-        let currentUserData = null; 
-        let classTotalScores = {};      
-		// 【【【新增以下變數】】】
-        let activeChanges = []; // 用於儲存課程異動
-        let currentWeekStart = getMonday(new Date()); // 用於追蹤目前顯示的週次
-        let timetableIntervalId = null; // 將課表計時器 ID 移到這裡
-        // 【【【新增結束】】】        
-        // 排序狀態
-        let rosterSortState = 0; 
+        let teacherTimetableData = null;
+        let currentUserData = null;
+        let classTotalScores = {};
+        let activeChanges = [];
+        let currentWeekStart = getMonday(new Date());
+        let timetableIntervalId = null;
+
+        let rosterSortState = 0;
         let classSortState = 0;
         let currentRosterClassId = null;
         let currentEntity = null;
-        
-        // 【新增】編輯狀態追蹤變數
-        let editingRecordId = null;
-        
-        // 【新增】時間表數據變數 (從 Firestore 讀取)
-        let PERIOD_TIMES = []; 
 
-        // --- DOM Elements ---
+        let editingRecordId = null;
+
+        let PERIOD_TIMES = [];
+
         const appContainer = document.getElementById('app-container');
         const welcomeModal = document.getElementById('welcome-modal');
         const modal = document.getElementById('modal');
@@ -1210,20 +1160,16 @@
         const saveHomepageSettingsBtn = document.getElementById('save-homepage-settings-btn');
         const rosterSortBtn = document.getElementById('roster-sort-btn');
         const mainSortBtn = document.getElementById('main-sort-btn');
-        // 【新增】課表系統連結 DOM 元素
         const timetableLink = document.getElementById('timetable-link');
-        
-        // 【新增】紀錄表單相關 DOM 元素
+
         const saveRecordBtn = document.getElementById('save-record-btn');
         const btnCancelEdit = document.getElementById('btn-cancel-edit');
         const recordPointsInput = document.getElementById('record-points');
         const recordTextInput = document.getElementById('record-text');
 
-
-        // 其他需要引用的 DOM 元素
-        const scorePlusBtn = document.getElementById('score-plus-btn'); 
-        const scoreMinusBtn = document.getElementById('score-minus-btn'); 
-        const recordCountDisplay = document.getElementById('record-count-display'); 
+        const scorePlusBtn = document.getElementById('score-plus-btn');
+        const scoreMinusBtn = document.getElementById('score-minus-btn');
+        const recordCountDisplay = document.getElementById('record-count-display');
         const recordTotalScoreDisplay = document.getElementById('record-total-score-display');
         const passwordResetForm = document.getElementById('password-reset-form');
         const changePasswordForm = document.getElementById('change-password-form');
@@ -1243,25 +1189,18 @@
         const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
         const homepageModalCloseBtn = homepageSettingsModal.querySelector('.close-btn');
 
-        // --- Core Application Logic ---
-        
         function getClassBlockColor(totalScore) {
             if (totalScore < 0) {
-                return '#D9E2E9'; 
+                return '#D9E2E9';
             } else if (totalScore < 10) {
-                return '#D4EDDA'; 
+                return '#D4EDDA';
             } else if (totalScore < 20) {
-                return '#FFFACD'; 
+                return '#FFFACD';
             } else {
-                return '#F8D7DA'; 
+                return '#F8D7DA';
             }
         }
 
-		// 【【【新增以下三個函式】】】
-
-        /**
-         * 獲取指定日期所在星期的星期一。
-         */
         function getMonday(d) {
             d = new Date(d);
             d.setHours(0, 0, 0, 0);
@@ -1270,9 +1209,6 @@
             return new Date(d.setDate(diff));
         }
 
-        /**
-         * 格式化日期。
-         */
         function formatDate(date, format = 'MM/DD') {
             if (!date) return '';
             const month = date.getMonth() + 1;
@@ -1283,17 +1219,14 @@
             return `${month}/${day}`;
         }
 
-        /**
-         * 載入當前使用者所有相關的 "active" 課程異動。
-         */
         async function loadActiveChanges() {
             if (!currentUser || !currentUser.uid) return;
-            
+
             try {
                 const involvedQuery = db.collection('classChanges')
                                         .where('involvedTeacherIds', 'array-contains', currentUser.uid)
                                         .where('status', '==', 'active');
-                                        
+
                 const snapshot = await involvedQuery.get();
                 activeChanges = [];
                 snapshot.forEach(doc => {
@@ -1304,35 +1237,24 @@
                 timetableMessage.textContent = '載入課程異動失敗。';
             }
         }
-        // 【【【新增結束】】】
-		
-		// 【【【新增 課表衍生函式】】】
-        /**
-         * 根據基礎課表 (teacherTimetableData) 和 課程異動 (activeChanges)，
-         * 產生指定週次 (currentWeekStart) 的衍生課表。
-         */
+
         function getDerivedCurrentUserSchedule() {
             if (!teacherTimetableData || !teacherTimetableData.periods) {
-                return { periods: {} }; 
+                return { periods: {} };
             }
-            
-            // 1. 深度複製基礎課表，作為修改的基礎
+
             const derivedSchedule = JSON.parse(JSON.stringify(teacherTimetableData));
             const teacherName = currentUserData.displayName;
 
-            // 2. 遍歷所有 "active" 的異動
             activeChanges.forEach(change => {
-                
-                // --- A. 處理調課 (swap) ---
+
                 if (change.type === 'swap') {
                     const infoA = change.originalClassInfo;
                     const infoB = change.targetClassInfo;
-                    
-                    // 檢查異動是否在本週
+
                     const weekA = getMonday(new Date(infoA.date));
                     const weekB = getMonday(new Date(infoB.date));
 
-                    // 規則：兩筆調課都必須在本週，才在兩邊顯示 (簡易處理)
                     if (weekA.getTime() === currentWeekStart.getTime() && weekB.getTime() === currentWeekStart.getTime()) {
                         if (infoA.teacher === teacherName) {
                             derivedSchedule.periods[infoA.period][infoA.day] = { ...infoB, class: infoA.class, isSwappedIn: true, changeId: change.id };
@@ -1342,64 +1264,57 @@
                             derivedSchedule.periods[infoA.period][infoA.day] = { ...infoB, isSwappedOut: true, changeId: change.id };
                         }
                     }
-                } 
-                // --- B. 處理代課 (substitution) ---
+                }
                 else if (change.type === 'substitution') {
                     const changeDate = new Date(change.date);
                     const changeWeekStart = getMonday(changeDate);
-                    
-                    if (changeWeekStart.getTime() !== currentWeekStart.getTime()) return; // 異動不在本週
-                    
+
+                    if (changeWeekStart.getTime() !== currentWeekStart.getTime()) return;
+
                     const lessonInfo = change.lessonInfo;
-                    const dayIndex = changeDate.getDay() - 1; 
+                    const dayIndex = changeDate.getDay() - 1;
 
                     if (dayIndex >= 0 && dayIndex < 5) {
                         if (change.originalTeacherName === teacherName) {
-                            // 我是原老師 (被代課)
                             derivedSchedule.periods[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedOut: true, substituteTeacherName: change.substituteTeacherName, reason: change.reason, changeId: change.id };
                         } else if (change.substituteTeacherName === teacherName) {
-                            // 我是代課老師
                             derivedSchedule.periods[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedIn: true, originalTeacherName: change.originalTeacherName, reason: change.reason, changeId: change.id };
                         }
                     }
                 }
-                // --- C. 處理換課 (exchange) ---
                 else if (change.type === 'exchange') {
-                    const infoA = change.originalLessonInfo; // 我的課
-                    const infoB = change.exchangeLessonInfo; // 對方的課
+                    const infoA = change.originalLessonInfo;
+                    const infoB = change.exchangeLessonInfo;
 
-                    // 檢查我的課 (A) 是否在本週
                     const weekA = getMonday(new Date(infoA.date));
                     if (weekA.getTime() === currentWeekStart.getTime()) {
                         const dayA = new Date(infoA.date).getDay() - 1;
                         if (dayA >= 0 && dayA < 5) {
-                            if (infoA.teacher === teacherName) { // 我是原老師
+                            if (infoA.teacher === teacherName) {
                                 derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
-                            } else if (infoB.teacher === teacherName) { // 我是幫忙代 A 課的人
+                            } else if (infoB.teacher === teacherName) {
                                 derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedIn: true, originalTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
                             }
                         }
                     }
-                    
-                    // 檢查對方的課 (B) 是否在本週
+
                     const weekB = getMonday(new Date(infoB.date));
                     if (weekB.getTime() === currentWeekStart.getTime()) {
                         const dayB = new Date(infoB.date).getDay() - 1;
                         if (dayB >= 0 && dayB < 5) {
-                             if (infoB.teacher === teacherName) { // 我是原老師
+                             if (infoB.teacher === teacherName) {
                                 derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
-                            } else if (infoA.teacher === teacherName) { // 我是幫忙代 B 課的人
+                            } else if (infoA.teacher === teacherName) {
                                 derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedIn: true, originalTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
                             }
                         }
                     }
                 }
             });
-            
+
             return derivedSchedule;
         }
-        // 【【【新增結束】】】
-		
+
         function runMainApp() {
             auth.onAuthStateChanged(async (user) => {
                 if (user) {
@@ -1407,7 +1322,7 @@
                     currentUser = user;
                     const userDoc = await db.collection('users').doc(user.uid).get();
                     if (userDoc.exists && userDoc.data().role === 'teacher') {
-                        currentUserData = userDoc.data(); 
+                        currentUserData = userDoc.data();
                         document.getElementById('user-email').textContent = currentUserData.displayName || user.email;
                         visibleClassList = currentUserData.visibleClasses || [];
                         if (currentUserData.passwordNeedsReset === true) {
@@ -1423,14 +1338,14 @@
                 }
             });
         }
-        
+
         const shouldShowWelcome = document.getElementById('welcome-modal') &&
                                   localStorage.getItem('hideLoginWelcome') !== 'true' &&
                                   sessionStorage.getItem('welcomeShownForSession') !== 'true';
 
         if (shouldShowWelcome) {
             sessionStorage.setItem('welcomeShownForSession', 'true');
-            
+
             const closeWelcome = () => {
                 if (document.getElementById('dont-show-again-login').checked) {
                     localStorage.setItem('hideLoginWelcome', 'true');
@@ -1438,53 +1353,42 @@
                 document.getElementById('welcome-modal').style.display = 'none';
                 runMainApp();
             };
-            
+
             document.getElementById('close-welcome-btn').onclick = closeWelcome;
             document.getElementById('welcome-modal').querySelector('.close-btn').onclick = closeWelcome;
-            
+
             document.getElementById('welcome-modal').style.display = 'flex';
         } else {
             runMainApp();
         }
 
-        // 【恢復】設置課表系統連結
         if (timetableLink) {
-             // 確保課表連結指向 timetable.html
              timetableLink.href = `./timetable.html?v=${Date.now()}`;
         }
-        
+
         function showPasswordResetUI() {
             document.querySelector('header').style.display = 'none';
             document.getElementById('app-container').style.display = 'none';
             document.getElementById('password-reset-overlay').style.display = 'flex';
         }
-        
-        /**
-         * 檢查當前時間屬於哪一節課（0-7）
-         * @returns {number} 當前節次 (0-7)，如果沒有課則返回 -1
-         */
+
         function getCurrentPeriodIndex() {
-            // 如果時間數據不存在，則無法判斷
             if (PERIOD_TIMES.length === 0) return -1;
-            
+
             const now = new Date();
-            // 獲取當前的分鐘數（小時 * 60 + 分鐘）
             const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
 
             for (let i = 0; i < PERIOD_TIMES.length; i++) {
                 const period = PERIOD_TIMES[i];
-                
-                // 將開始時間字串轉換為分鐘數
-                const [startH, startM] = period.start.split(':').map(Number);
-                
-                let startTimeMinutes = startH * 60 + startM;
-                let endTimeMinutes = startTimeMinutes + period.duration; // 結束時間 = 開始時間 + 持續時間
 
-                // === 【核心修改邏輯】擴大高亮時間區間：課前 5 分鐘開始，課後 5 分鐘結束 ===
-                const bufferMinutes = 5; 
+                const [startH, startM] = period.start.split(':').map(Number);
+
+                let startTimeMinutes = startH * 60 + startM;
+                let endTimeMinutes = startTimeMinutes + period.duration;
+
+                const bufferMinutes = 5;
                 startTimeMinutes = startTimeMinutes - bufferMinutes;
                 endTimeMinutes = endTimeMinutes + bufferMinutes;
-                // ===================================
 
                 if (currentTimeMinutes >= startTimeMinutes && currentTimeMinutes < endTimeMinutes) {
                     return i;
@@ -1493,43 +1397,32 @@
             return -1;
         }
 
-		/**
-         * 根據當前課表高亮顯示正在上課的班級卡片。
-         * 【修正點】：將所有對 'timetable' 的引用改為正確的 'teacherTimetableData'。
-         */
         function highlightCurrentClass() {
-            // 只有在 PERIOD_TIMES 載入完成且有課表數據時才執行
             if (PERIOD_TIMES.length === 0 || !teacherTimetableData || !scheduleDataLoaded) return;
 
-            // 1. 移除所有現有的高亮
             document.querySelectorAll('.class-block').forEach(el => {
                 el.classList.remove('current-class-highlight');
             });
 
             const now = new Date();
-            const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
-            
-            // 判斷是否為工作日 (Mon=1 to Fri=5)
-            if (dayOfWeek < 1 || dayOfWeek > 5) return; 
+            const dayOfWeek = now.getDay();
 
-            // 轉換為課表索引 (0 = Mon, 4 = Fri)
-            const dayIndex = dayOfWeek - 1; 
+            if (dayOfWeek < 1 || dayOfWeek > 5) return;
 
-            const currentPeriodIndex = getCurrentPeriodIndex(); // 獲取當前節次 (0-7)
+            const dayIndex = dayOfWeek - 1;
 
-            if (currentPeriodIndex === -1) return; // 當前不在上課時間
+            const currentPeriodIndex = getCurrentPeriodIndex();
 
-            const periods = teacherTimetableData.periods; // 使用正確的全域變數
-            
-            // 2. 從課表數據中找到正在上課的班級
-            // periods[periodIndex][dayIndex] = "101 國文"
+            if (currentPeriodIndex === -1) return;
+
+            const periods = teacherTimetableData.periods;
+
             const periodData = periods[currentPeriodIndex];
             if (periodData && periodData[dayIndex]) {
                 const cellContent = periodData[dayIndex];
                 const [classCode, ...rest] = cellContent.split(/\s+/);
-                
+
                 if (classCode) {
-                    // 3. 尋找對應的班級卡片並添加高亮類別
                     const targetCard = document.querySelector(`.class-block[data-class-id="${classCode}"]`);
                     if (targetCard) {
                         targetCard.classList.add('current-class-highlight');
@@ -1538,33 +1431,24 @@
             }
         }
 
-        /**
-         * 載入學校設定的每節課開始時間和持續時間。
-         * 數據來源: schools/{schoolId}/periods/current
-         */
         async function loadPeriodTimes() {
-            // 檢查 schoolId 是否已由 initialize 函數設定
-            if (!currentUserData.schoolId) return; 
-            
+            if (!currentUserData.schoolId) return;
+
             try {
-                // 1. 存取 Firestore 路徑以獲取課程時間表設定
                 const periodsDoc = await db.collection('schools').doc(currentUserData.schoolId)
                                            .collection('periods').doc('current').get();
 
                 if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
-                    // 2. 如果資料存在，將其轉換並儲存到全域變數 PERIOD_TIMES
                     PERIOD_TIMES = periodsDoc.data().times.map(item => ({
                         period: item.period,
                         start: item.start,
-                        duration: item.duration || 50 
+                        duration: item.duration || 50
                     }));
-                    
-                    // 確保數據是按照節次順序排列
+
                     PERIOD_TIMES.sort((a, b) => a.period - b.period);
-                    
+
                 } else {
                     console.warn("警告: 學校尚未設定課程時間表 (periods/current 不存在或為空)。將使用預設時間。");
-                    // 載入失敗或無資料時，設定一個合理的預設時間表
                     PERIOD_TIMES = [
                         { period: 1, start: '08:10', duration: 50 },
                         { period: 2, start: '09:10', duration: 50 },
@@ -1578,7 +1462,6 @@
                 }
             } catch (error) {
                 console.error("載入課程時間表時發生錯誤:", error);
-                // 發生錯誤時也給予預設值，保證程式不中斷
                 PERIOD_TIMES = [
                         { period: 1, start: '08:10', duration: 50 },
                         { period: 2, start: '09:10', duration: 50 },
@@ -1599,64 +1482,48 @@
                     document.getElementById('app-container').innerHTML = '<h2>帳號設定錯誤：找不到學校 ID。</h2>';
                     return;
                 }
-                
-                // 【核心修改點 1】: 先載入時間表，確保時間偵測可用
-                await loadPeriodTimes(); 
-                
+
+                await loadPeriodTimes();
+
                 const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-                
+
                 if (!rosterDoc.exists) {
                     document.getElementById('app-container').innerHTML = `<h2>找不到學校名冊，請聯繫學校管理者上傳。</h2>`;
                     return;
                 }
-                
+
                 studentsData = rosterDoc.data().students;
                 allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
                 if (visibleClassList.length === 0 && allClassList.length > 0) {
                     visibleClassList = allClassList;
                 }
-                
-                // 【核心修改點 2】: 必須在時間表載入後才呼叫 fetchAllScores/renderLayout
-                await fetchAllScores(); 
-                
-                // 【新增】預先載入課表數據
+
+                await fetchAllScores();
+
                 await fetchScheduleData();
 
-                // 首次渲染使用座號/班級排序
-                // renderLayout() 在 fetchAllScores 的 onSnapshot 裡呼叫
+                setInterval(highlightCurrentClass, 30000);
 
-                
-                // 啟動每 30 秒執行一次的時鐘偵測
-                setInterval(highlightCurrentClass, 30000); 
-                
-                // 【關鍵優化】: 載入後立即執行一次高亮偵測 (Fast-Launch)
                 highlightCurrentClass();
 
-
-				// 【【【修復點 1: 恢復自動彈出課表邏輯】】】
 				const preference = localStorage.getItem('homepagePreference');
 				if (preference === 'timetable') {
 					setTimeout(() => {
 						myTimetableBtn.click();
 					}, 100);
 				}
-                
-                // 【新增】綁定排序按鈕事件
+
                 rosterSortBtn.addEventListener('click', toggleRosterSort);
                 mainSortBtn.addEventListener('click', toggleClassSort);
-                
-                // 初始顯示狀態 (座號/班級排序，雙箭頭為非活動灰色/白色)
+
                 updateSortButtonDisplay(0, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
                 updateSortButtonDisplay(0, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
 
-                // 綁定儲存/更新按鈕
                 saveRecordBtn.addEventListener('click', handleAddRecord);
                 recordsList.addEventListener('click', handleDeleteRecord);
-                
-                // 【新增】綁定取消修改函數
+
                 btnCancelEdit.addEventListener('click', resetPerformanceForm);
-                
-                // 【新增】前景恢復時立即啟動偵測
+
                 document.addEventListener('visibilitychange', () => {
                     if (document.visibilityState === 'visible') {
                         highlightCurrentClass();
@@ -1669,30 +1536,29 @@
                 document.getElementById('app-container').innerHTML = '<h2>載入資料失敗...</h2>';
             }
         }
-		
+
         async function fetchAllScores() {
-            // 使用 onSnapshot 監聽紀錄，確保分數和紀錄列表同步更新
             db.collection('performanceRecords').doc(currentUser.uid).collection('records')
               .onSnapshot(snapshot => {
                 allPerformanceScores = {};
                 classTotalScores = {};
-                allPerformanceRecords = []; // 重置全域紀錄列表
-                
+                allPerformanceRecords = [];
+
                 snapshot.forEach(doc => {
                     const r = doc.data();
-                    r.id = doc.id; // 添加 ID
+                    r.id = doc.id;
                     allPerformanceRecords.push(r);
 
                     const p = r.points || 0;
                     const type = r.entityType || 'student';
                     const id = r.entityId || r.studentId;
                     if (!id) return;
-                    
+
                     if (type === 'student') {
                         const studentId = id;
                         if (!allPerformanceScores[studentId]) allPerformanceScores[studentId] = 0;
                         allPerformanceScores[studentId] += p;
-                    } 
+                    }
                     else if (type === 'class') {
                         const classId = id;
                         if (!classTotalScores[classId]) classTotalScores[classId] = 0;
@@ -1703,22 +1569,17 @@
                 studentsData.forEach(student => {
                     const studentId = student.id;
                     const className = studentId.substring(0, 3);
-                    const score = allPerformanceScores[studentId] || 0; 
-                    
+                    const score = allPerformanceScores[studentId] || 0;
+
                     classTotalScores[className] = (classTotalScores[className] || 0) + score;
                 });
-                
-                // 重新渲染UI，因為分數可能已改變
-                renderLayout();
-                highlightCurrentClass(); // 分數改變後，立即更新高亮狀態
-                
 
-                // 如果紀錄彈窗是開著的，則刷新它的列表
+                renderLayout();
+                highlightCurrentClass();
+
                 if (modal.style.display === 'flex' && currentEntity) {
-                    // 只更新統計和列表，不需要重新打開 Modal
                     renderModalRecords(currentEntity.id, currentEntity.type);
                 } else if (studentRosterModal.style.display === 'flex' && currentRosterClassId) {
-                     // 如果學生名單是開著的，重新渲染名單
                     renderStudentRoster(currentRosterClassId);
                 }
             }, error => {
@@ -1726,13 +1587,11 @@
             });
         }
 
-        // 【新增/修改課表數據抓取邏輯】
         async function fetchScheduleData() {
             if (scheduleDataLoaded) return;
             try {
                 const schoolRef = db.collection('schools').doc(currentUserData.schoolId);
-                // 假設教師名稱存放在 displayName
-                const scheduleDoc = await schoolRef.collection('timetables').doc(currentUserData.displayName).get(); 
+                const scheduleDoc = await schoolRef.collection('timetables').doc(currentUserData.displayName).get();
 
                 if (scheduleDoc.exists) {
                     teacherTimetableData = scheduleDoc.data();
@@ -1746,21 +1605,16 @@
                 teacherTimetableData = { periods: {} };
             }
         }
-        
-        // 【修改 renderLayout】以支援班級排序
+
         function renderLayout() {
             appContainer.innerHTML = '';
             let classesToRender = allClassList.filter(className => visibleClassList.includes(className));
-            
-            // 排序邏輯
+
             if (classSortState === 1) {
-                 // 總分高到低
                  classesToRender.sort((a, b) => (classTotalScores[b] || 0) - (classTotalScores[a] || 0) || a.localeCompare(b));
             } else if (classSortState === 2) {
-                 // 總分低到高
                  classesToRender.sort((a, b) => (classTotalScores[a] || 0) - (classTotalScores[b] || 0) || a.localeCompare(b));
             } else {
-                 // 狀態 0 或其他: 依班級代碼 (座號) 排序
                  classesToRender.sort((a, b) => a.localeCompare(b));
             }
 
@@ -1771,28 +1625,28 @@
             }
 
             classesToRender.forEach(className => {
-                
+
                 const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
                 const backgroundColor = getClassBlockColor(totalScore);
-                
+
                 const classBlock = document.createElement('div');
                 classBlock.className = 'class-block';
                 classBlock.style.backgroundColor = backgroundColor;
-                classBlock.dataset.classId = className; // 【新增】data-class-id 屬性，用於高亮偵測
+                classBlock.dataset.classId = className;
 
                 const titleDiv = document.createElement('div');
                 titleDiv.className = 'class-block-title';
                 titleDiv.textContent = `${className} 班`;
                 titleDiv.title = '點擊以紀錄班級共同事件';
-                titleDiv.addEventListener('click', () => openModal(className, 'class', 'main')); 
+                titleDiv.addEventListener('click', () => openModal(className, 'class', 'main'));
 
                 const scoreDiv = document.createElement('div');
                 scoreDiv.className = 'class-total-score';
                 scoreDiv.textContent = `總分: ${totalScore.toFixed(1)}`;
-                
+
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'class-block-actions';
-                
+
                 const studentBtn = document.createElement('button');
                 studentBtn.innerHTML = '🧑‍🎓';
                 studentBtn.title = '開啟學生名單';
@@ -1805,34 +1659,28 @@
 
                 actionsDiv.appendChild(studentBtn);
                 actionsDiv.appendChild(gradesLink);
-                
+
                 classBlock.appendChild(titleDiv);
-                classBlock.appendChild(scoreDiv); 
+                classBlock.appendChild(scoreDiv);
                 classBlock.appendChild(actionsDiv);
-                
+
                 appContainer.appendChild(classBlock);
             });
         }
-        
-        // 【新增函數】更新排序按鈕的視覺狀態 (通用函數)
+
         function updateSortButtonDisplay(state, downArrowEl, upArrowEl, activeColor, type) {
-            
-            // 處理箭頭顏色和顯示狀態
+
 			if (state === 0) {
-                // 狀態 0: 座號/班級 (雙箭頭灰色/白色)
                 downArrowEl.classList.remove('active');
                 upArrowEl.classList.remove('active');
-                // 恢復為非活動的顏色 (使用 CSS 處理顏色，這裡只需確保沒有 active)
                 downArrowEl.style.color = type === 'main' ? 'white' : '#999';
                 upArrowEl.style.color = type === 'main' ? 'white' : '#999';
             } else if (state === 1) {
-                // 狀態 1: 高到低 (藍色/黃色下箭頭)
                 downArrowEl.classList.add('active');
                 upArrowEl.classList.remove('active');
                 downArrowEl.style.color = activeColor;
                 upArrowEl.style.color = type === 'main' ? 'white' : '#999';
             } else if (state === 2) {
-                // 狀態 2: 低到高 (藍色/黃色上箭頭)
                 upArrowEl.classList.add('active');
                 downArrowEl.classList.remove('active');
                 downArrowEl.style.color = type === 'main' ? 'white' : '#999';
@@ -1840,84 +1688,66 @@
             }
         }
 
-        // 【新增函數】切換學生名單排序狀態
         function toggleRosterSort() {
-            // 由於 CSS 變數在 JS 裡需要額外處理，我們直接使用 color string
             const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
-            
+
             rosterSortState = (rosterSortState + 1) % 3;
             updateSortButtonDisplay(rosterSortState, rosterSortDownArrow, rosterSortUpArrow, activeColor, 'roster');
-            
+
             if (document.getElementById('student-roster-modal').style.display === 'flex' && currentRosterClassId) {
                 renderStudentRoster(currentRosterClassId);
             }
         }
-        
-		// 【新增函數】切換主畫面班級排序狀態
+
         function toggleClassSort() {
             classSortState = (classSortState + 1) % 3;
-            // 使用 #f4d03f 作為主要排序的醒目色 (黃色)
             updateSortButtonDisplay(classSortState, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
-            
-            // 1. 重新渲染 (更新排序)
-            renderLayout(); 
-            
-            // 2. 【核心修正】: 立即執行一次高亮檢查
-            highlightCurrentClass(); 
+
+            renderLayout();
+
+            highlightCurrentClass();
         }
 
-        // 【修改 openStudentRosterModal】重置排序並設定當前班級ID
 		function openStudentRosterModal(className, origin = 'main') {
-			rosterModalOrigin = origin; 
+			rosterModalOrigin = origin;
 			document.body.classList.add('modal-open');
-            
-            currentRosterClassId = className; // 設置當前班級 ID
-            
-            // 如果不是從課表（'timetable'）進來，才重置排序狀態為座號
+
+            currentRosterClassId = className;
+
             if (origin !== 'timetable') {
-                rosterSortState = 0; 
+                rosterSortState = 0;
             }
-            
-            // 初始化排序按鈕外觀
+
             updateSortButtonDisplay(rosterSortState, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
-            
+
             const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
-            
-            // 使用新的標題 DOM 元素
+
             rosterClassName.textContent = `${className} 班 學生名單`;
             document.getElementById('roster-total-score-display').textContent = `(累積總分: ${totalScore.toFixed(1)})`;
 
-            // 設置點擊標題開啟班級紀錄的事件
 			rosterClickArea.title = '點擊以紀錄班級共同事件';
 			rosterClickArea.onclick = (e) => {
-                // 確保點擊的是文字容器本身，而不是排序按鈕
-                if (!e.target.closest('#roster-sort-btn')) { 
+                if (!e.target.closest('#roster-sort-btn')) {
                     document.getElementById('student-roster-modal').style.display = 'none';
                     openModal(className, 'class', 'roster');
                 }
 			};
-            
-            // 渲染名單
+
             renderStudentRoster(className);
 			document.getElementById('student-roster-modal').style.display = 'flex';
 		}
-        
-        // 【新增函數】渲染學生名單 (分離邏輯以便排序)
+
         function renderStudentRoster(className) {
             studentGridContainer.innerHTML = '';
-            
+
             let studentsToRender = studentsData
 				.filter(s => s.id.startsWith(className));
-            
-            // 排序邏輯
+
             if (rosterSortState === 1) {
-                 // 總分高到低
                  studentsToRender.sort((a, b) => (allPerformanceScores[b.id] || 0) - (allPerformanceScores[a.id] || 0) || a.id.localeCompare(b.id));
             } else if (rosterSortState === 2) {
-                 // 總分低到高
                  studentsToRender.sort((a, b) => (allPerformanceScores[a.id] || 0) - (allPerformanceScores[b.id] || 0) || a.id.localeCompare(b.id));
             } else {
-                 // 狀態 0 或其他: 依座號排序
                  studentsToRender.sort((a, b) => a.id.localeCompare(b.id));
             }
 
@@ -1928,8 +1758,8 @@
 				studentsToRender.forEach(student => {
 					const studentBlock = document.createElement('div');
 					studentBlock.title = `點擊以紀錄 ${student.name} 的表現`;
-					
-					const score = allPerformanceScores[student.id] || 0; 
+
+					const score = allPerformanceScores[student.id] || 0;
 					let scoreClass = '';
 					if (score < 0) {
 						scoreClass = 'score-negative';
@@ -1939,14 +1769,14 @@
 						scoreClass = 'score-positive-high';
 					}
 					studentBlock.className = 'student-block ' + scoreClass;
-					
+
 					studentBlock.innerHTML = `
 						<div class="student-block-info">
 							${student.id.substring(3)} <span class="score">(${score.toFixed(1)}分)</span>
 						</div>
 						<div class="student-block-name">${student.name}</div>
 					`;
-					
+
 					studentBlock.addEventListener('click', () => {
 						document.getElementById('student-roster-modal').style.display = 'none';
 						openModal(student.id, 'student', 'roster');
@@ -1957,67 +1787,55 @@
 			}
         }
 
-		/* 【修改 closeModal 函數】: 處理課表導回邏輯 */
         function closeModal(id = 'modal') {
-			document.getElementById(id).style.display = 'none'; 
+			document.getElementById(id).style.display = 'none';
 			document.getElementById('add-record-form').reset();
-			
+
             const refreshAndClose = () => {
                 const originalEntityId = currentEntity ? currentEntity.id : null;
                 const originalType = currentEntity ? currentEntity.type : null;
                 currentEntity = null;
-                
-                // 重置編輯狀態
+
                 resetPerformanceForm();
 
                 if (modalOrigin === 'roster' && originalEntityId) {
                     const className = originalType === 'student' ? originalEntityId.substring(0, 3) : originalEntityId;
-                    
+
                     if (rosterModalOrigin === 'timetable') {
-                        // 從課表 -> 名單 -> 紀錄 -> 回到名單 (來源為課表)
-                        rosterModalOrigin = null; 
-                        openStudentRosterModal(className, 'timetable'); 
+                        rosterModalOrigin = null;
+                        openStudentRosterModal(className, 'timetable');
                     } else {
-                        // 從主頁 -> 名單 -> 紀錄 -> 回到名單 (來源為主頁)
-                        openStudentRosterModal(className); 
+                        openStudentRosterModal(className);
                     }
                 } else {
-                    // 只有當直接從班級紀錄關閉並回到主頁時才執行
                     renderLayout();
-                    highlightCurrentClass(); 
+                    highlightCurrentClass();
                     document.body.classList.remove('modal-open');
                 }
-                modalOrigin = null; 
+                modalOrigin = null;
             };
 
             refreshAndClose();
 		}
-        
-		/* 【修改 closeStudentRosterModal 函數】: 處理課表導回邏輯 */
+
         function closeStudentRosterModal() {
-			document.getElementById('student-roster-modal').style.display = 'none'; 
+			document.getElementById('student-roster-modal').style.display = 'none';
             currentRosterClassId = null;
             document.body.classList.remove('modal-open');
 
 			if (rosterModalOrigin === 'timetable') {
-				// 如果是從課表點擊進入名單，則回到課表彈窗
-				document.getElementById('my-timetable-modal').style.display = 'flex'; 
+				document.getElementById('my-timetable-modal').style.display = 'flex';
 			} else {
-                // 回到主頁
                 renderLayout();
-                // 立即觸發一次高亮檢查
-                highlightCurrentClass(); 
+                highlightCurrentClass();
 			}
-			rosterModalOrigin = null; 
+			rosterModalOrigin = null;
 		}
-        
-		/**
-         * 【修正】統一的保存函數 (處理新增或更新)
-         */
-        async function handleAddRecord(e) { 
-            e.preventDefault(); 
-            
-            const t = recordTextInput.value.trim(); 
+
+        async function handleAddRecord(e) {
+            e.preventDefault();
+
+            const t = recordTextInput.value.trim();
             const sid = currentEntity;
             const docRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
 
@@ -2026,89 +1844,75 @@
                 entityType: sid.type,
                 text: t,
                 teacherId: currentUser.uid,
-                studentId: sid.type === 'student' ? sid.id : null 
-            }; 
-            
-            try { 
+                studentId: sid.type === 'student' ? sid.id : null
+            };
+
+            try {
 				if (editingRecordId) {
-                    // **更新模式：**
                     const originalRecord = allPerformanceRecords.find(r => r.id === editingRecordId);
                     if (!originalRecord) {
                          alert('更新紀錄失敗: 找不到原始記錄');
                          return;
                     }
-                    
+
                     data.points = originalRecord.points;
-                    
+
                     if (t === '') {
                         alert('更新紀錄時，文字描述不可為空！');
                         return;
                     }
 
-                    // 不更新 timestamp (createdAt)
                     await docRef.doc(editingRecordId).set(data, { merge: true });
                     alert('紀錄已更新！');
-                    
+
 				} else {
-                    // **新增模式：** 【核心修正】: 必須從 input 中獲取 rawPoints
-                    const rawPoints = parseFloat(recordPointsInput.value) || 0; 
-                    
+                    const rawPoints = parseFloat(recordPointsInput.value) || 0;
+
                     const p = Math.round(rawPoints * 10) / 10;
-                    
-                    // 檢查是否需要新增
-                    if (p === 0 && t === '') return; 
-                    
+
+                    if (p === 0 && t === '') return;
+
                     data.points = p;
-                    data.timestamp = firebase.firestore.FieldValue.serverTimestamp(); // 新增時記錄創建時間
+                    data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
                     await docRef.add(data);
                     alert('紀錄已新增！');
 				}
-                
-                // 數據更新完成後，調用 closeModal 觸發刷新和畫面回溯 (onSnapshot 會處理實際刷新)
-				closeModal(); 
-            } catch (err) { 
-                console.error(err); 
+
+				closeModal();
+            } catch (err) {
+                console.error(err);
                 alert((editingRecordId ? '更新' : '新增') + '紀錄失敗: ' + err.message);
-            } 
+            }
         }
 
-        /**
-         * 刪除紀錄
-         */
-        async function handleDeleteRecord(e) { 
-			if (e.target.classList.contains('delete-btn')) { 
-				const rid = e.target.dataset.id; 
-				if (confirm('確定刪除？')) { 
-					try { 
+        async function handleDeleteRecord(e) {
+			if (e.target.classList.contains('delete-btn')) {
+				const rid = e.target.dataset.id;
+				if (confirm('確定刪除？')) {
+					try {
 						await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
-                        
+
                         if (editingRecordId === rid) {
                             resetPerformanceForm();
                         }
 
-                        // 數據更新完成後，調用 closeModal 觸發刷新和畫面回溯
-						closeModal(); 
-					} catch (err) { 
-						console.error(err); 
-					} 
-				} 
-			} 
+						closeModal();
+					} catch (err) {
+						console.error(err);
+					}
+				}
+			}
 		}
 
-        /**
-         * 【新增】重置表單狀態
-         */
         function resetPerformanceForm() {
             editingRecordId = null;
             recordPointsInput.value = '1';
             recordTextInput.value = '';
-            
-            // 啟用分數欄位，用於新增模式
-            recordPointsInput.disabled = false; 
+
+            recordPointsInput.disabled = false;
             if (window.innerWidth > 768) {
                  recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)';
             }
-            // 顯示手機分數調整按鈕 (如果它們是啟用的)
             scorePlusBtn.style.display = window.innerWidth <= 768 ? 'inline-block' : 'none';
             scoreMinusBtn.style.display = window.innerWidth <= 768 ? 'inline-block' : 'none';
 
@@ -2116,35 +1920,27 @@
             saveRecordBtn.textContent = '新增';
             saveRecordBtn.classList.remove('update-mode');
             saveRecordBtn.style.backgroundColor = 'var(--success-color)';
-			btnCancelEdit.textContent = '取消';			
-            btnCancelEdit.style.display = 'none'; // 隱藏取消按鈕
+			btnCancelEdit.textContent = '取消';
+            btnCancelEdit.style.display = 'none';
         }
 
-        /**
-         * 【新增】載入紀錄到表單中進行編輯
-         */
         function editRecord(recordId) {
             const record = allPerformanceRecords.find(r => r.id === recordId);
             if (!record) return;
 
-            // 1. 設定編輯狀態
             editingRecordId = recordId;
             saveRecordBtn.textContent = '更新';
             saveRecordBtn.classList.add('update-mode');
-			btnCancelEdit.textContent = '取消'; 
-            btnCancelEdit.style.display = 'inline-block'; // 顯示取消按鈕
+			btnCancelEdit.textContent = '取消';
+            btnCancelEdit.style.display = 'inline-block';
 
-            // 2. 填寫表單
-            // 【核心修改 3】: 顯示原始分數，但禁用欄位
             recordPointsInput.value = record.points || 0;
-            recordPointsInput.disabled = true; 
-            // 隱藏手機分數調整按鈕
+            recordPointsInput.disabled = true;
             scorePlusBtn.style.display = 'none';
             scoreMinusBtn.style.display = 'none';
-            
+
             recordTextInput.value = record.text || '';
-            
-            // 滾動到表單頂部
+
             modalTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
@@ -2153,8 +1949,7 @@
 			modalOrigin = origin;
             document.body.classList.add('modal-open');
             currentEntity = { id, type };
-            
-            // 進入新增模式時，重置表單
+
             resetPerformanceForm();
 
             let titleText = '';
@@ -2168,29 +1963,25 @@
 
             document.getElementById('modal-title').textContent = titleText;
 
-            // loadRecords 將會負責更新兩個新的統計顯示 DOM
             renderModalRecords(id, type);
 			loadRecentTexts();
             document.getElementById('modal').style.display = 'flex';
         }
-        
-        // 【修改函數】分離渲染邏輯 (確保顯示 createdAt)
+
         function renderModalRecords(id, type) {
             recordsList.innerHTML = '載入中...';
             document.getElementById('record-count-display').textContent = '事件數: 0';
             document.getElementById('record-total-score-display').textContent = '總分: 0.0';
 
-            // 從全域變數中篩選紀錄
             const allRecords = allPerformanceRecords.filter(r => {
                 if (type === 'class' && r.entityType === 'class') {
                     return r.entityId === id;
                 } else if (type === 'student' && (r.entityType === 'student' || !r.entityType)) {
-                    return r.entityId === id || r.studentId === id; // 兼容舊數據結構
+                    return r.entityId === id || r.studentId === id;
                 }
                 return false;
             }).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-            // 統計
             let totalScore = 0;
             let recordCount = 0;
             allRecords.forEach(record => {
@@ -2200,17 +1991,15 @@
 
             document.getElementById('record-count-display').textContent = `事件數: ${recordCount}`;
             document.getElementById('record-total-score-display').textContent = `總分: ${totalScore.toFixed(1)}`;
-            
-            // 渲染列表
+
             recordsList.innerHTML = '';
             if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; }
-            
+
             allRecords.forEach(record => {
                 const recordItem = document.createElement('div');
                 recordItem.className = 'record-item';
                 const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
-                
-                // 【核心修改 4】: 使用 timestamp (即 createdAt) 作為時間點
+
                 const timestamp = record.timestamp ? new Date(record.timestamp.seconds * 1000).toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' }) : '日期不明';
 
                 recordItem.innerHTML = `
@@ -2223,8 +2012,7 @@
                 `;
                 recordsList.appendChild(recordItem);
             });
-            
-            // 重新綁定點擊事件
+
             recordsList.querySelectorAll('.record-content').forEach(element => {
                 element.addEventListener('click', (e) => {
                     const recordId = e.currentTarget.dataset.id;
@@ -2236,15 +2024,15 @@
 
 		async function loadRecentTexts() {
 			const datalist = document.getElementById('recent-texts-list');
-			datalist.innerHTML = ''; 
+			datalist.innerHTML = '';
 
 			try {
 				const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records')
 					.orderBy('timestamp', 'desc')
-					.limit(50) 
+					.limit(50)
 					.get();
-				
-				const recentTexts = new Set(); 
+
+				const recentTexts = new Set();
 				snapshot.forEach(doc => {
 					const text = doc.data().text;
 					if (text && text.trim() !== '') {
@@ -2279,10 +2067,6 @@
              };
         });
 
-        // addRecordForm.addEventListener('submit', handleAddRecord); // 已改為點擊按鈕
-        // recordsList.addEventListener('click', handleDeleteRecord); // 已改為在 handleDeleteRecord 裡處理
-        
-        // 【新增】取消修改按鈕事件
         btnCancelEdit.addEventListener('click', resetPerformanceForm);
 
 
@@ -2294,39 +2078,36 @@
             }
         });
 
-        // 【新增：分數增減按鈕的事件監聽器】
         const adjustScore = (amount) => {
-            if (window.innerWidth > 768) return; // 僅在手機版啟用
-            if (recordPointsInput.disabled) return; // 禁用時不能調整分數
+            if (window.innerWidth > 768) return;
+            if (recordPointsInput.disabled) return;
 
             let currentValue = parseFloat(document.getElementById('record-points').value) || 0;
             let newValue = currentValue + amount;
-            
-            // 將結果四捨五入到小數點後一位
+
             document.getElementById('record-points').value = (Math.round(newValue * 10) / 10).toFixed(1);
         };
 
         scorePlusBtn.addEventListener('click', () => adjustScore(1));
         scoreMinusBtn.addEventListener('click', () => adjustScore(-1));
-        // 結束新增
 
 
         passwordResetForm.addEventListener('submit', async (e) => { e.preventDefault(); const p1 = document.getElementById('new-password').value; const p2 = document.getElementById('confirm-password').value; document.getElementById('password-error-message').textContent = ''; if (p1.length < 6) { document.getElementById('password-error-message').textContent = '密碼至少6字元'; return; } if (p1 !== p2) { document.getElementById('password-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(p1); await db.collection('users').doc(currentUser.uid).update({ passwordNeedsReset: false }); alert('密碼修改成功，請重新登入'); auth.signOut(); } catch (err) { document.getElementById('password-error-message').textContent = '更新失敗: ' + err.message; } });
         document.getElementById('force-logout-btn').addEventListener('click', () => {
 			auth.signOut();
 		});
-		
+
         changePasswordBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); document.getElementById('dropdown-menu').classList.remove('show'); document.getElementById('change-password-modal').style.display = 'flex'; });
         document.getElementById('change-password-modal').querySelector('.close-btn').addEventListener('click', () => { document.body.classList.remove('modal-open'); document.getElementById('change-password-modal').style.display = 'none'; document.getElementById('change-password-form').reset(); document.getElementById('cp-error-message').textContent = ''; });
         document.getElementById('change-password-form').addEventListener('submit', async (e) => { e.preventDefault(); const newPassword = document.getElementById('cp-new-password').value; const confirmPassword = document.getElementById('cp-confirm-password').value; document.getElementById('cp-error-message').textContent = ''; if (newPassword.length < 6) { document.getElementById('cp-error-message').textContent = '密碼至少6字元'; return; } if (newPassword !== confirmPassword) { document.getElementById('cp-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(newPassword); alert('密碼更新成功！'); document.getElementById('change-password-modal').querySelector('.close-btn').click(); } catch (error) { if (error.code === 'auth/requires-recent-login') { document.getElementById('cp-error-message').textContent = '此為敏感操作，請先登出再重新登入後再試。'; } else { document.getElementById('cp-error-message').textContent = '更新失敗：' + error.message; } } });
-        
-        classSettingsBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); document.getElementById('dropdown-menu').classList.remove('show'); classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; 
-            itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${className} 班</label>`; 
+
+        classSettingsBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); document.getElementById('dropdown-menu').classList.remove('show'); classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item';
+            itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${className} 班</label>`;
             classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; document.getElementById('class-settings-modal').style.display = 'flex'; });
         selectAllVisibleClasses.addEventListener('change', (e) => { document.querySelectorAll('.visible-class-checkbox').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
         document.getElementById('class-settings-modal').querySelector('.close-btn').addEventListener('click', () => { document.body.classList.remove('modal-open'); document.getElementById('class-settings-modal').style.display = 'none'; });
         saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); document.getElementById('class-settings-modal').querySelector('.close-btn').click(); alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
-        
+
         function openInfoModal() {
             document.body.classList.add('modal-open');
             document.getElementById('info-modal').style.display = 'flex';
@@ -2359,9 +2140,12 @@
                 } else if (modalId === 'welcome-modal') {
                     document.getElementById('close-welcome-btn').onclick();
                 } else if (modalId === 'my-timetable-modal') {
-                    // 點擊 Modal 背景時關閉
                     e.target.style.display = 'none';
                     document.body.classList.remove('modal-open');
+                    if (timetableIntervalId) {
+                         clearInterval(timetableIntervalId);
+                         timetableIntervalId = null;
+                     }
                 } else if (modalId === 'homepage-settings-modal') {
                     closeHomepageSettingsModal();
                 } else if (modalId === 'student-roster-modal') {
@@ -2369,7 +2153,7 @@
                 }
             }
         });
-		
+
         const dropdownBtn = document.getElementById('dropdown-btn');
         const dropdownMenu = document.getElementById('dropdown-menu');
 		const newInfoBtn = document.getElementById('info-btn-new');
@@ -2385,7 +2169,7 @@
             event.stopPropagation();
             dropdownMenu.classList.toggle('show');
         });
-		
+
         window.addEventListener('click', function(event) {
             if (!event.target.matches('#dropdown-btn') && !event.target.matches('#user-email')) {
                 if (dropdownMenu.classList.contains('show')) {
@@ -2393,20 +2177,17 @@
                 }
             }
         });
-        
-		// 【【【替換此事件監聽器】】】
+
         myTimetableBtn.addEventListener('click', async () => {
             document.getElementById('dropdown-menu').classList.remove('show');
-            
-            // 1. 確保基礎課表數據已載入
+
             if (!scheduleDataLoaded) {
                  timetableMessage.textContent = '課表數據正在載入中...';
                  await fetchScheduleData();
             }
 
             myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
-            
-            // 2. 檢查資料是否齊全
+
             if (PERIOD_TIMES.length === 0) {
                  myTimetableBody.innerHTML = '<p style="text-align: center; color: var(--danger-color);">錯誤：未載入課程時間表數據，無法計算節次時間。</p>';
                  timetableMessage.textContent = '資料錯誤';
@@ -2415,40 +2196,32 @@
                  myTimetableBody.innerHTML = '<p style="text-align: center;">找不到您的課表資料，請聯繫管理員上傳。</p>';
                  timetableMessage.textContent = '資料錯誤';
             } else {
-                 // 3. 【核心修改】: 每次打開時，都重設為當前週次
                  currentWeekStart = getMonday(new Date());
-                 
-                 // 4. 【核心修改】: 呼叫新的主渲染函式
-                 await renderDerivedMyTimetable(); 
+
+                 await renderDerivedMyTimetable();
                  timetableMessage.textContent = '';
             }
-            
-            // 5. 顯示 Modal
+
             document.body.classList.add('modal-open');
             myTimetableModal.style.display = 'flex';
-            
-            // 6. 【核心修改】: 綁定週次導航按鈕
+
             document.getElementById('prev-week-btn').onclick = () => {
                 currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-                renderDerivedMyTimetable(); // 換週時，重新衍生
+                renderDerivedMyTimetable();
             };
             document.getElementById('next-week-btn').onclick = () => {
                 currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-                renderDerivedMyTimetable(); // 換週時，重新衍生
+                renderDerivedMyTimetable();
             };
             document.getElementById('today-btn').onclick = () => {
                 currentWeekStart = getMonday(new Date());
-                renderDerivedMyTimetable(); // 回到本週時，重新衍生
+                renderDerivedMyTimetable();
             };
-            
-            // 7. 【核心修改】: 啟動定時器，並確保它呼叫的是新函式
+
             if (timetableIntervalId) clearInterval(timetableIntervalId);
-            timetableIntervalId = setInterval(renderDerivedMyTimetable, 30000); 
+            timetableIntervalId = setInterval(renderDerivedMyTimetable, 30000);
         });
-        // 【【【替換結束】】】
- 
-        // 【新增】關閉模態框時，必須停止定時器
-		// 【【【替換此事件監聽器 (修正版)】】】
+
         document.getElementById('my-timetable-modal').querySelector('.close-btn').addEventListener('click', () => {
             document.getElementById('my-timetable-modal').style.display = 'none';
             document.body.classList.remove('modal-open');
@@ -2456,17 +2229,13 @@
                  clearInterval(timetableIntervalId);
                  timetableIntervalId = null;
             }
-            // 【新增】解綁按鈕事件，避免重複綁定
             document.getElementById('prev-week-btn').onclick = null;
             document.getElementById('next-week-btn').onclick = null;
             document.getElementById('today-btn').onclick = null;
         });
-        // 【【【替換結束】】】
- 
-        // 【新增】點擊 Modal 背景時關閉並停止定時器 (修復 window.onclick 內的邏輯)
+
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
-                // ... (省略其他 modal 邏輯) ...
                 if (e.target.id === 'my-timetable-modal') {
                      e.target.style.display = 'none';
                      document.body.classList.remove('modal-open');
@@ -2475,14 +2244,9 @@
                          timetableIntervalId = null;
                      }
                 }
-                // ... (省略其他 modal 邏輯) ...
             }
         });
 
-		// 【【【替換此函式】】】
-        /**
-         * 根據傳入的「衍生課表」物件，渲染課表 HTML。
-         */
         function renderMyTimetableTable(derivedSchedule) {
             if (!derivedSchedule || !derivedSchedule.periods || PERIOD_TIMES.length === 0) {
                  myTimetableBody.innerHTML = '<p style="text-align: center;">課表資料錯誤或未載入。</p>';
@@ -2497,22 +2261,19 @@
             const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
 
             let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
-            
+
             const weekDates = [];
             for (let i = 0; i < 5; i++) {
                 const date = new Date(currentWeekStart);
                 date.setDate(currentWeekStart.getDate() + i);
                 weekDates.push(date);
-                // 標頭加入日期
                 tableHtml += `<th>星期${days[i]}<br><span style="color: #6c757d; font-size: 0.9em; font-weight:normal;">(${formatDate(date)})</span></th>`;
             }
             tableHtml += '</tr></thead><tbody>';
 
-            // 遍歷所有節次
             PERIOD_TIMES.forEach((periodItem, periodIndex) => {
                 const isCurrentPeriod = isCurrentWeek && periodIndex === currentPeriodIndex;
-                
-                // 計算起訖時間
+
                 const [startH, startM] = periodItem.start.split(':').map(Number);
                 const endH = Math.floor((startH * 60 + startM + periodItem.duration) / 60) % 24;
                 const endM = (startH * 60 + startM + periodItem.duration) % 60;
@@ -2527,16 +2288,13 @@
                     let content = '';
                     let dataAttrs = `data-period="${periodIndex}" data-day="${d}" data-date="${formatDate(weekDates[d], 'YYYY-MM-DD')}"`;
 
-                    // 高亮當前課程
                     if (isCurrentPeriod && d === currentDayIndex) {
                         cellClass = 'current-timetable-cell';
                     }
 
                     if (cellContent) {
-                        // --- 檢查是否為異動課程 (Swap, Substitute, Exchange) ---
                         if (cellContent.isSwappedIn || cellContent.isSwappedOut || cellContent.isExchangedIn || cellContent.isExchangedOut || cellContent.isSubstitutedIn || cellContent.isSubstitutedOut) {
-                            
-                            // 決定格子樣式
+
                             if (cellContent.isSwappedIn || cellContent.isSwappedOut) {
                                 cellClass += ' swapped-cell swapped-cell-pulse';
                             } else if (cellContent.isExchangedIn || cellContent.isExchangedOut) {
@@ -2544,46 +2302,40 @@
                             } else {
                                 cellClass += ' substituted-cell';
                             }
-                            
+
                             dataAttrs += ` data-change-id="${cellContent.changeId}"`;
 
-                            // 顯示事由 (hover 提示)
                             if (cellContent.reason && cellContent.reason.trim() !== '') {
                                 const escapedReason = cellContent.reason.replace(/"/g, '&quot;');
                                 dataAttrs += ` title="${escapedReason}"`;
                             }
 
-                            // --- 決定格子內容 ---
-                            if (cellContent.isSubstitutedOut) { // 我被代課
+                            if (cellContent.isSubstitutedOut) {
                                 content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
                                 content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.substituteTeacherName || '不明'}(代)</span>`;
-                            } else if (cellContent.isSubstitutedIn) { // 我去代課
+                            } else if (cellContent.isSubstitutedIn) {
                                 content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
                                 content += `<span style="font-size: 0.8em; color: #007bff; display: block;">(${cellContent.originalTeacherName || '不明'}(代)</span>`;
-                            } else if (cellContent.isExchangedOut) { // 我的課被換走
+                            } else if (cellContent.isExchangedOut) {
                                 const teacherName = cellContent.targetTeacher;
                                 content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
                                 content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">${teacherName || '不明'}(換)</span>`;
-                            } else if (cellContent.isExchangedIn) { // 我去換課
+                            } else if (cellContent.isExchangedIn) {
                                 const teacherName = cellContent.originalTeacher;
                                 content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
                                 content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">(${teacherName || '不明'}(換)</span>`;
-                            } else { // 調課 (Swapped)
+                            } else {
                                 content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class}</span>`;
                                 content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.teacher}(調)</span>`;
                             }
                         } else {
-							// --- 【【【修正】】】 ---
-                            // 一般正常課程 (cellContent 是一個字串, 例如 "101 國文")
                             const [className, ...subjectParts] = cellContent.split(/\s+/);
                             const subjectName = subjectParts.join(' ');
-                            
+
                             content = `<span class="subject">${subjectName || ''}</span><span class="class-detail">${className || ''}</span>`;
-                            // --- 【【【修正結束】】】 ---
                         }
                         tableHtml += `<td class="timetable-clickable-cell ${cellClass}" ${dataAttrs}>${content}</td>`;
                     } else {
-                        // --- 空白格子 ---
                         tableHtml += `<td class="timetable-empty-cell ${cellClass}" ${dataAttrs}></td>`;
                     }
                 }
@@ -2593,75 +2345,52 @@
             tableHtml += '</tbody></table>';
             myTimetableBody.innerHTML = tableHtml;
 
-            // 標記當前週次
             const scheduleTable = myTimetableBody.querySelector('.schedule-table');
             if (isCurrentWeek) {
                 scheduleTable.querySelector('thead').classList.add('current-week');
             }
 
-            // 重新綁定點擊事件 (導航至學生名單頁面)
             myTimetableBody.querySelectorAll('.timetable-clickable-cell').forEach(cell => {
                 cell.addEventListener('click', (e) => {
                     const period = parseInt(e.currentTarget.dataset.period);
                     const day = parseInt(e.currentTarget.dataset.day);
-                    
-                    // --- 【【【修正】】】 ---
-                    // 點擊時，從剛才渲染用的 derivedData 中撈資料
+
                     const cellData = periods[period] ? periods[period][d] : null;
-                    
+
                     if (cellData) {
                         let derivedData;
-                        // 檢查資料是字串還是異動後的物件
                         if (typeof cellData === 'string') {
                             const [className, ...subjectParts] = cellData.split(/\s+/);
                             derivedData = { class: className, subject: subjectParts.join(' ') };
                         } else {
-                            derivedData = cellData; // 這是異動後的物件
+                            derivedData = cellData;
                         }
 
                         if (derivedData && derivedData.class) {
                             const classCode = derivedData.class;
                             document.getElementById('my-timetable-modal').style.display = 'none';
-                            // 確保來源是 'timetable'，這樣名單關閉時才能正確返回課表
                             openStudentRosterModal(classCode, 'timetable');
                         }
                     }
-                    // --- 【【【修正結束】】】 ---
                 });
             });
         }
-        // 【【【替換結束】】】
-        
-		// 【【【新增此函式】】】
-        /**
-         * 協調函式：
-         * 1. 載入最新的 ActiveChanges
-         * 2. 取得衍生的課表
-         * 3. 呼叫 renderMyTimetableTable 來渲染
-         * 4. 更新週次按鈕狀態
-         */
+
         async function renderDerivedMyTimetable() {
-            // 1. 載入最新的異動
             await loadActiveChanges();
-            
-            // 2. 根據 (全域的) currentWeekStart 取得衍生課表
+
             const derivedSchedule = getDerivedCurrentUserSchedule();
-            
-            // 3. 呼叫渲染器
+
             renderMyTimetableTable(derivedSchedule);
-            
-            // 4. 更新「回到本週」按鈕的樣式
+
             const todayWeekStart = getMonday(new Date());
             const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
             const todayBtn = document.getElementById('today-btn');
-            if (todayBtn) { // 確保按鈕存在
+            if (todayBtn) {
                  todayBtn.classList.toggle('current', isCurrentWeek);
             }
         }
-        // 【【【新增結束】】】
-		
-        // 【新增/修改】主選單功能
- 
+
 		newInfoBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
 			openInfoModal();
@@ -2672,10 +2401,10 @@
 				const passwordInput = document.getElementById(targetId);
 				if (passwordInput.type === 'password') {
 					passwordInput.type = 'text';
-					toggle.textContent = '🙈'; 
+					toggle.textContent = '🙈';
 				} else {
 					passwordInput.type = 'password';
-					toggle.textContent = '👁️'; 
+					toggle.textContent = '👁️';
 				}
 			});
 		});
