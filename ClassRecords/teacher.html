@@ -593,6 +593,13 @@
             flex-direction: column;
             padding: 20px;
         }
+		/* 新增：我的課表 Modal 中的週次導航按鈕容器 */
+		#my-timetable-modal .modal-week-nav {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			/* 電腦版不需要 width: 100% 或 justify-content 或 margin-top */
+		}
         #my-timetable-body {
             overflow-y: auto;
             overflow-x: auto;
@@ -877,6 +884,26 @@
 			#my-timetable-body {
 				overflow-x: hidden;
 			}
+			#my-timetable-modal .modal-header {
+                padding: 0 35px 0 10px;
+                margin-bottom: 5px;
+                flex-wrap: wrap; /* 確保允許換行 */
+            }
+            #my-timetable-modal .modal-title-container {
+                width: 100%; /* 強制標題佔滿第一行 */
+                text-align: center; /* 手機版標題居中可能更好看 */
+                margin-bottom: 8px; /* 標題和按鈕間距 */
+            }
+            #my-timetable-modal .modal-week-nav {
+                width: 100%; /* 強制按鈕佔滿第二行 */
+                margin-top: 0; /* 因為標題已有 margin-bottom，這裡設為 0 */
+                justify-content: space-around;
+                padding: 5px 0;
+            }
+            #my-timetable-modal .modal-week-nav button {
+                 padding: 4px 6px;
+                 font-size: 0.85em;
+            }			
 		}
     </style>
 </head>
@@ -1070,9 +1097,11 @@
     <div id="my-timetable-modal" class="modal">
         <div class="modal-content">
 			<span class="close-btn" data-modal="my-timetable-modal">&times;</span>
-			<div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0 40px 0 10px; margin-bottom: 10px;">
-                <h2 id="my-timetable-title" style="margin: 0; text-align: left; border: none; padding: 0;"></h2>
-                <div class="week-navigator" style="display: flex; align-items: center; gap: 10px;">
+			<div class="modal-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 0 40px 0 10px; margin-bottom: 10px;">
+                <div class="modal-title-container" style="flex-grow: 1;">
+                     <h2 id="my-timetable-title" style="margin: 0; text-align: left; border: none; padding: 0; font-size: 1.4em;"></h2>
+                </div>
+                <div class="week-navigator modal-week-nav">
                     <button id="prev-week-btn" style="padding: 3px 8px; font-size: 0.9em;">‹ 上一週</button>
                     <button id="today-btn" style="padding: 3px 8px; font-size: 0.9em;">回到本週</button>
                     <button id="next-week-btn" style="padding: 3px 8px; font-size: 0.9em;">下一週 ›</button>
