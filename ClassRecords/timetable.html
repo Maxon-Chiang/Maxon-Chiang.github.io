@@ -124,8 +124,9 @@ header .header-actions button {
     cursor: pointer; font-family: inherit;
 }
 .week-navigator button.current {
-    color: blue;
+    color: black;
     border-color: var(--accent-color);
+	background-color: #e6f7ff; /* 新增：淺藍色背景 */
 }
 #swap-confirm-modal .modal-content, #substitution-modal .modal-content { text-align: left; }
 #swap-details, #substitution-details { background-color: #f1f1f1; border-radius: 4px; padding: 10px; margin-bottom: 20px; }
@@ -290,11 +291,6 @@ header .header-actions {
 .substituted-cell .details {
     font-style: italic;
     color: #6c757d;
-}
-
-.week-navigator button.current {
-    color: blue;
-    border-color: var(--accent-color);
 }
 .schedule-table thead.current-week th {
     color:blue;
