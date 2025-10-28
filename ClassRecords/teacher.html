@@ -2420,8 +2420,8 @@
                     const period = parseInt(e.currentTarget.dataset.period);
                     const day = parseInt(e.currentTarget.dataset.day);
 
-                    const cellData = periods[period] ? periods[period][d] : null;
-
+					const cellData = periods[period] ? periods[period][day] : null;
+					
                     if (cellData) {
                         let derivedData;
                         if (typeof cellData === 'string') {
@@ -2544,3 +2544,4 @@
     </script>
 </body>
 </html>
+
