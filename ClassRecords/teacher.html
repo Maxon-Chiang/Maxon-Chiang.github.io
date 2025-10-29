@@ -1540,7 +1540,6 @@
             }
         }
 
-
 		async function initialize(userData) {
             try {
                 if (!userData.schoolId) {
@@ -1558,14 +1557,52 @@
                 }
 
                 studentsData = rosterDoc.data().students;
-                allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
-                if (visibleClassList.length === 0 && allClassList.length > 0) {
-                    visibleClassList = allClassList;
-                }
+                allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort(); //
 
-                await fetchAllScores();
+                // 【【【修改 1】】】: 將 fetchScheduleData() 提前到這裡
+                // 我們需要課表資料 (teacherTimetableData) 來判斷預設顯示的班級
+                await fetchScheduleData(); //
 
-                await fetchScheduleData();
+                // 檢查是否為第一次登入 (沒有儲存過班級顯示偏好)
+                if (visibleClassList.length === 0 && allClassList.length > 0) { //
+                    
+                    // 【【【修改 2】】】: (替換原有邏輯)
+                    // 原邏輯: visibleClassList = allClassList;
+                    
+                    // 新邏輯: 從課表 (teacherTimetableData) 中提取教師的任課班級
+                    const taughtClasses = new Set();
+                    if (teacherTimetableData && teacherTimetableData.periods) {
+                        // 遍歷課表中的每一天、每一節
+                        Object.values(teacherTimetableData.periods).forEach(dayArray => {
+                            dayArray.forEach(cellContent => {
+                                // 判斷是否為 "XXX 班級" 格式的字串
+                                if (typeof cellContent === 'string' && cellContent.trim() !== '') {
+                                    const classCode = cellContent.split(/\s+/)[0]; 
+                                    // 確保這個班級代碼存在於學校名冊 (allClassList) 中
+                                    if (classCode && allClassList.includes(classCode)) {
+                                        taughtClasses.add(classCode);
+                                    }
+                                }
+                            });
+                        });
+                    }
+
+                    const taughtClassesArray = Array.from(taughtClasses);
+                    
+                    if (taughtClassesArray.length > 0) {
+                        // 【【【修改 3】】】: 找到了任課班級，預設顯示這些班級
+                        visibleClassList = taughtClassesArray.sort();
+                    } else {
+                        // 如果課表是空的或分析不出來 (例如新老師)，則維持原案，顯示所有班級
+                        visibleClassList = allClassList; 
+                    }
+                    
+                } 
+                // (如果 visibleClassList.length > 0，代表使用者已有設定，不需更動)
+
+                await fetchAllScores(); //
+
+                // (fetchScheduleData() 已移至上方，故刪除此處的原呼叫)
 
                 setInterval(highlightCurrentClass, 30000);
 
