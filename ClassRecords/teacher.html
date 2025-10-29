@@ -2089,23 +2089,48 @@
 
 		async function loadRecentTexts() {
 			const datalist = document.getElementById('recent-texts-list');
-			datalist.innerHTML = '';
+            // 【【【修改點 1】】】: 取得文字輸入框的 DOM 元素
+        	const recordTextInput = document.getElementById('record-text'); 
+			
+            datalist.innerHTML = ''; // 清空 datalist 提示
+        	// 【【【修改點 2】】】: 永遠先預設為空字串 (這滿足了「最近是空的就預設空」的基礎)
+        	recordTextInput.value = ''; 
 
 			try {
 				const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records')
-					.orderBy('timestamp', 'desc')
-					.limit(50)
+					.orderBy('timestamp', 'desc') // 依照時間倒序排列
+					.limit(50) // 限制查詢筆數
 					.get();
 
+				// 【【【修改點 3】】】: (處理預設值) 檢查是否有任何查詢結果
+				if (snapshot.docs.length > 0) {
+					// 取得「絕對」最近的一筆紀錄 (index 0)
+					const mostRecentDoc = snapshot.docs[0];
+					const mostRecentText = mostRecentDoc.data().text;
+
+					// 檢查這筆紀錄的文字是否為 null 或 undefined
+                    // 如果 mostRecentText 是 "" (空字串), 條件也會成立, 這正是我們要的
+					if (mostRecentText !== null && mostRecentText !== undefined) {
+                        // (滿足您的需求：最近是空的(text:"")就預設空，最近有文字就預設為該文字)
+						recordTextInput.value = mostRecentText; 
+					}
+                    // 如果 mostRecentText 是 null/undefined (例如舊資料)，輸入框會維持我們在【修改點 2】設定的空字串 ''
+				}
+                
+                // 【【【修改點 4】】】: (處理提示選單) 建立 datalist 的邏輯
+                // 這部分仍然需要過濾掉空字串
 				const recentTexts = new Set();
-				snapshot.forEach(doc => {
+				snapshot.forEach(doc => { // 遍歷抓回來的 50 筆
 					const text = doc.data().text;
-					if (text && text.trim() !== '') {
-						recentTexts.add(text.trim());
+                    // (此判斷式已滿足您的需求：空文字紀錄不能記錄在提示的歷史紀錄中)
+					if (text && text.trim() !== '') { // 只有非空的才加入 Set
+                        const trimmedText = text.trim();
+						recentTexts.add(trimmedText);
 					}
 				});
-
-				Array.from(recentTexts).slice(0, 10).forEach(text => {
+                
+                // 填充 datalist (下拉提示選單)
+				Array.from(recentTexts).slice(0, 10).forEach(text => { // 只顯示 10 筆提示
 					const option = document.createElement('option');
 					option.value = text;
 					datalist.appendChild(option);
