@@ -583,7 +583,17 @@
 		#info-modal .modal-content { width: 100%; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
         .info-modal-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-right: 40px; }
         .info-modal-header h2 { margin: 0; padding: 0; border: none; font-size: 1.5em; }
-        #reset-welcome-prefs-btn { margin: 0; padding: 6px 12px; font-size: 0.9em; flex-shrink: 0; background-color: var(--danger-color); color: white; }
+		#reset-welcome-prefs-btn { 
+            margin: 0; 
+            padding: 6px 12px; 
+            font-size: 0.9em; 
+            flex-shrink: 0; 
+            background-color: var(--danger-color); 
+            color: white; 
+            border: none; 
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); 
+            transition: background-color 0.2s, box-shadow 0.2s; /* 添加過渡效果 */
+        }
         #info-modal ul { list-style-type: disc; padding-left: 25px; }
 
         #my-timetable-modal .modal-content {
@@ -955,12 +965,12 @@
                 </button>
             </div>
         </div>
-
-        <div class="header-right-panel">
+       <div class="header-right-panel">
             <div class="main-actions">
 				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表系統</button></a>
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
                 <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
+                <button id="my-timetable-btn">我的課表</button>
             </div>
            <div class="user-profile">
                 <span id="user-email"></span>
@@ -968,7 +978,6 @@
             <div class="dropdown">
                 <button id="dropdown-btn" class="icon-btn" title="設定與功能">⚙️</button>
                 <div id="dropdown-menu" class="dropdown-content">
-                    <button id="my-timetable-btn">我的課表</button>
                     <button id="class-settings-btn">班級顯示設定</button>
                     <button id="homepage-settings-btn">首頁顯示設定</button>
                     <button id="change-password-btn">修改密碼</button>
@@ -1093,17 +1102,17 @@
             </div>
             <h3>學生綜合紀錄系統 (主系統)</h3>
             <ul>
-                <li><strong>主系統</strong>: 快速登記學生日常表現、管理成績項目、計算學期總分、產出數據報告。</li>
-                <li><strong>成績登錄</strong>: 進入班級專頁，建立如作業、小考等不同的成績項目，並為每位學生輸入分數與註解。</li>
-                <li><strong>成績計算</strong>: 高度客製化的學期總成績計算工具，可自訂複雜的計分規則並一鍵算出最終成績。</li>
-                <li><strong>數據報告</strong>: 提供多維度的數據分析，包含日常表現紀錄與多種成績報告，並支援匯出 CSV.</li>
+                <li><strong>主系統</strong>: 透過班級格子，快速進入**學生名單 (🧑‍🎓)** 進行日常表現紀錄，或進入**成績登錄 (📋)** 管理成績項目。</li>
+                <li><strong>成績登錄 (📋)</strong>: 建立如作業、小考等成績項目，並為每位學生輸入分數與個別註解。支援成績項目名稱的歷史紀錄建議。</li>
+                <li><strong>成績計算</strong>: 專業的學期總成績計算工具，可自訂「特定作業加權」、「前N高平均」等複雜計分規則並一鍵算出最終成績。</li>
+                <li><strong>數據報告</strong>: 提供多維度報表：可查詢「表現紀錄明細/統計摘要」或「成績明細/班級分析/跨班級比較」報告，並支援匯出 CSV。</li>
             </ul>
-            <h3>課表系統</h3>
+            <h3>課表系統 (位於頁首/頁尾按鈕)</h3>
             <ul>
-                <li><strong>課表查詢</strong>: 查詢個人、班級、或場地的課表。</li>
-                <li><strong>智慧調課</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段.</li>
-                <li><strong>指定代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」。</li>
-                <li><strong>加入行事曆</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
+                <li><strong>課表查詢</strong>: 查詢個人、班級、或場地的課表。點擊班級課表中的課程，可純瀏覽該任課老師的課表。</li>
+                <li><strong>調課操作</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段 (智慧調課)。</li>
+                <li><strong>代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」，並支援檢查時段衝突。</li>
+                <li><strong>行事曆匯出</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
             </ul>
             <p style="font-size: 0.9em; color: #666; margin-top: 25px;">您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
         </div>
