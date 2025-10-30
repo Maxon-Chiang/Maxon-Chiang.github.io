@@ -373,7 +373,7 @@
 		.score-positive-high { background-color: #fff8e1; }
 
         .modal, .modal2, .modal-notes {
-            display: none;
+			display: none;
             position: fixed;
             z-index: 2000;
             left: 0;
@@ -389,17 +389,55 @@
         }
 
         .modal-content {
-            background-color: #fefefe;
+			background-color: #fefefe;
             padding: 25px;
             border: 1px solid #888;
             width: 100%;
             max-width: 600px;
             border-radius: 10px;
-            position: relative;
+            /* 讓 .close-btn 可以相對於此定位 */
+            position: relative; 
             box-sizing: border-box;
-            max-height: 90vh;
-            overflow-y: auto;
+            /* 保持這個容器的高度限制 */
+            max-height: 90vh; 
+            /* 移除這個容器的捲動條 */
+            overflow-y: hidden; /* 改為 hidden，讓內層容器處理捲動 */
         }
+		/* ------------------------------------------- */
+        /* 【新增】info-modal 和 tutorial-modal 的樣式區塊 */
+        /* ------------------------------------------- */
+		#info-modal .modal-content,
+		#tutorial-modal .modal-content {
+			/* 1. 確保內容區塊有最大的高度限制 */
+            max-height: 90vh;
+			/* 2. 移除 padding-top, 確保標題緊貼頂部 */
+			padding-top: 50px; 
+			/* 3. 確保 Modal 內容可以隨意伸縮，但不影響按鈕定位 */
+			overflow: hidden; 
+			display: flex; /* 使用 flex 佈局來分隔 fixed header/footer 和 scrollable body */
+			flex-direction: column;
+		}
+		
+		/* 【新增】固定 header 的樣式 */
+		#info-modal .info-modal-header {
+			position: absolute; /* 相對於 .modal-content 定位 */
+			top: 0;
+			left: 0;
+			right: 0;
+			background-color: white; /* 確保標題區塊在捲動時覆蓋內容 */
+			z-index: 2001; /* 比內容高，比關閉按鈕低 */
+			padding-top: 25px;
+			padding-left: 25px;
+		}
+
+		/* 【新增】可捲動內容的容器 */
+		#info-modal-body, #tutorial-modal-body {
+			overflow-y: auto; /* 核心：讓這個內層容器捲動 */
+			flex-grow: 1; /* 佔滿剩餘空間 */
+			padding-top: 0px; /* 增加頂部內距，讓內容和標題區塊分開 */
+			padding-right: 15px; /* 讓內容不要被捲動條擋住 */
+			padding-bottom: 25px;
+		}
 
         #password-reset-overlay {
             display: none;
@@ -417,13 +455,15 @@
         }
 
         .close-btn {
-            color: #aaa;
+			color: #aaa;
+            /* 關鍵：將 position 改為 absolute，使其相對於父容器 (.modal-content) 定位 */
             position: absolute;
             top: 10px;
             right: 20px;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
+            z-index: 3000; /* 確保它在最上層，不被捲動內容覆蓋 */
         }
 
         #class-settings-list {
@@ -581,6 +621,33 @@
         #welcome-modal .modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
         #welcome-modal ul { list-style-type: disc; padding-left: 25px; }
 		#info-modal .modal-content { width: 100%; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
+		#tutorial-modal .modal-content {
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: left;
+            padding: 30px;
+            line-height: 1.6;
+        }
+        #tutorial-modal h2 {
+            border-bottom: 2px solid #4a90e2;
+            padding-bottom: 5px;
+            margin-bottom: 0px;
+			border-bottom: none;
+        }
+        #tutorial-modal h3 {
+            border-bottom: 2px solid #4a90e2;
+            padding-bottom: 5px;
+            margin-top: 0px;
+        }		
+        #tutorial-modal ul {
+            padding-left: 20px;
+            margin-bottom: 20px;
+        }
+        .instruction-highlight {
+            font-weight: bold;
+            color: #d0021b;
+        }
         .info-modal-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-right: 40px; }
         .info-modal-header h2 { margin: 0; padding: 0; border: none; font-size: 1.5em; }
 		#reset-welcome-prefs-btn { 
@@ -742,7 +809,7 @@
             animation-duration: 1.0s; /* 呼吸速度 (可自行調整) */
             animation-iteration-count: infinite;
             animation-direction: alternate;
-        }
+        }		
 		@media (max-width: 768px) {
 
 			header {
@@ -979,8 +1046,9 @@
                 <button id="dropdown-btn" class="icon-btn" title="設定與功能">⚙️</button>
                 <div id="dropdown-menu" class="dropdown-content">
                     <button id="class-settings-btn">班級顯示設定</button>
-                    <button id="homepage-settings-btn">首頁顯示設定</button>
+					<button id="homepage-settings-btn">首頁顯示設定</button>
                     <button id="change-password-btn">修改密碼</button>
+                    <button id="tutorial-btn">操作說明</button>
                     <button id="info-btn-new">功能說明</button>
                     <hr style="margin: 4px 10px; border-color: #eee; border-style: solid; border-width: 1px 0 0 0;">
                     <button id="logout-btn">登出</button>
@@ -1100,21 +1168,72 @@
                 <h2>系統功能說明</h2>
                 <button id="reset-welcome-prefs-btn">重設歡迎訊息</button>
             </div>
-            <h3>學生綜合紀錄系統 (主系統)</h3>
-            <ul>
-                <li><strong>主系統</strong>: 透過班級格子，快速進入**學生名單 (🧑‍🎓)** 進行日常表現紀錄，或進入**成績登錄 (📋)** 管理成績項目。</li>
-                <li><strong>成績登錄 (📋)</strong>: 建立如作業、小考等成績項目，並為每位學生輸入分數與個別註解。支援成績項目名稱的歷史紀錄建議。</li>
-                <li><strong>成績計算</strong>: 專業的學期總成績計算工具，可自訂「特定作業加權」、「前N高平均」等複雜計分規則並一鍵算出最終成績。</li>
-                <li><strong>數據報告</strong>: 提供多維度報表：可查詢「表現紀錄明細/統計摘要」或「成績明細/班級分析/跨班級比較」報告，並支援匯出 CSV。</li>
-            </ul>
-            <h3>課表系統 (位於頁首按鈕)</h3>
-            <ul>
-                <li><strong>課表查詢</strong>: 查詢個人、班級、或場地的課表。點擊班級課表中的課程，可純瀏覽該任課老師的課表。</li>
-                <li><strong>調課操作</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段 (智慧調課)。</li>
-                <li><strong>代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」，並支援檢查時段衝突。</li>
-                <li><strong>行事曆匯出</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
-            </ul>
-            <p style="font-size: 0.9em; color: #666; margin-top: 25px;">您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
+            <div id="info-modal-body">
+                <h3>學生綜合紀錄系統 (主系統)</h3>
+                <ul>
+                    <li><strong>主系統</strong>: 透過班級格子，快速進入**學生名單 (🧑‍🎓)** 進行日常表現紀錄，或進入**成績登錄 (📋)** 管理成績項目。</li>
+                    <li><strong>成績登錄 (📋)</strong>: 建立如作業、小考等成績項目，並為每位學生輸入分數與個別註解。支援成績項目名稱的歷史紀錄建議。</li>
+                    <li><strong>成績計算</strong>: 專業的學期總成績計算工具，可自訂「特定作業加權」、「前N高平均」等複雜計分規則並一鍵算出最終成績。</li>
+                    <li><strong>數據報告</strong>: 提供多維度報表：可查詢「表現紀錄明細/統計摘要」或「成績明細/班級分析/跨班級比較」報告，並支援匯出 CSV。</li>
+                </ul>
+                <h3>課表系統 (位於頁首按鈕)</h3>
+                <ul>
+                    <li><strong>課表查詢</strong>: 查詢個人、班級、或場地的課表。點擊班級課表中的課程，可純瀏覽該任課老師的課表。</li>
+                    <li><strong>調課操作</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段 (智慧調課)。</li>
+                    <li><strong>代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」，並支援檢查時段衝突。</li>
+                    <li><strong>行事曆匯出</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
+                </ul>
+                <p style="font-size: 0.9em; color: #666; margin-top: 25px;">您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
+            </div>
+        </div>
+    </div>
+	
+	<div id="tutorial-modal" class="modal-notes">
+        <div class="modal-content">
+            <span class="close-btn" data-modal="tutorial-modal">&times;</span>
+			<div class="info-modal-header">
+				<h2>📖 系統操作說明指南</h2>
+			</div>
+            <div id="tutorial-modal-body">
+                <h3>一、 首頁 - 班級格子操作</h3>
+                <ul>
+                    <li><span class="instruction-highlight">進入班級共同紀錄</span>：點擊班級格子中的<span class="instruction-highlight">班級名稱</span>（例如：「701 班」）。</li>
+                    <li><span class="instruction-highlight">進入學生名單</span>：點擊班級格子下方的<span class="instruction-highlight">🧑‍🎓 學生按鈕</span>。</li>
+                    <li><span class="instruction-highlight">進入成績登錄</span>：點擊班級格子下方的<span class="instruction-highlight">📋 成績按鈕</span>。</li>
+                    <li><span class="instruction-highlight">班級排序切換</span>：點擊標題列 <span class="instruction-highlight">h1 旁的 ▲▼ 按鈕</span>，可在「預設班級代碼排序」、「總分高到低排序」與「總分低到高排序」之間切換。</li>
+                    <li><span class="instruction-highlight">自動高亮</span>：當前上課時段的班級格子會自動出現<span class="instruction-highlight">閃爍邊框高亮</span>。</li>
+                </ul>
+
+                <h3>二、 學生/班級紀錄 Modal 操作</h3>
+                <ul>
+                    <li><span class="instruction-highlight">切換紀錄對象</span>：在學生名單中，點擊 <span class="instruction-highlight">「班級名稱及總分」區域</span> 可切換回班級共同紀錄 Modal。</li>
+                    <li><span class="instruction-highlight">紀錄預設文字</span>：Modal 開啟時，**文字輸入框** 會自動<span class="instruction-highlight">預設為您「最近一筆」紀錄的文字內容</span>（若最近一筆無文字則預設為空）。</li>
+                    <li><span class="instruction-highlight">分數調整（手機）</span>：在手機上，可使用分數輸入框旁的 <span class="instruction-highlight">「+」或「-」按鈕</span> 快速增減分數。</li>
+                    <li><span class="instruction-highlight">編輯歷史紀錄</span>：<span class="instruction-highlight">點擊歷史事件紀錄列表中的「文字內容」</span>即可載入該紀錄的文字到輸入框進行更新。</li>
+                    <li><span class="instruction-highlight">刪除歷史紀錄</span>：點擊歷史事件紀錄列表右側的<span class="instruction-highlight">「🗑️」按鈕</span>。</li>
+                </ul>
+                
+                <h3>三、 學生名單（Roster）操作</h3>
+                <ul>
+                    <li><span class="instruction-highlight">進入學生單人紀錄</span>：點擊名單中的<span class="instruction-highlight">任一位學生卡片</span>。</li>
+                    <li><span class="instruction-highlight">排序切換</span>：點擊名單標題列右方的 <span class="instruction-highlight">▲▼ 按鈕</span>，可在「預設座號排序」、「總分高到低排序」與「總分低到高排序」之間切換。</li>
+                </ul>
+
+                <h3>四、 我的課表 Modal 操作</h3>
+                <ul>
+                    <li><span class="instruction-highlight">週次巡航</span>：使用 Modal 上方的 <span class="instruction-highlight">「‹ 上一週」、「下一週 ›」按鈕</span>切換週次。</li>
+                    <li><span class="instruction-highlight">快速切換（手機）</span>：在 Modal 內<span class="instruction-highlight">左右滑動</span>，可快速切換上一週或下一週。</li>
+                    <li><span class="instruction-highlight">進入學生名單</span>：<span class="instruction-highlight">點擊課表中有課的格子</span>，可直接進入該課程所屬班級的學生名單。</li>
+                </ul>
+                
+                <h3>五、 課表系統 (Timetable.html) 操作</h3>
+                <ul>
+                    <li><span class="instruction-highlight">點擊有課格子（本人）</span>：滑鼠<span class="instruction-highlight">左鍵點擊</span>自己課表上有課的格子，可啟動<span class="instruction-highlight">智慧調課模式</span>，或進行<span class="instruction-highlight">指定代課/換課</span>。</li>
+                    <li><span class="instruction-highlight">取消異動</span>：在課表上<span class="instruction-highlight">點擊已被設定為「調課/代課/換課」的格子</span>，會跳出對話框詢問是否<span class="instruction-highlight">取消此異動</span>。</li>
+                    <li><span class="instruction-highlight">點擊有課格子（他人）</span>：在班級課表或他人課表上<span class="instruction-highlight">點擊有課的格子</span>，會開啟<span class="instruction-highlight">純瀏覽模式</span>，顯示該任課老師的完整課表。</li>
+                    <li><span class="instruction-highlight">匯出行事曆</span>：在任何課表上，使用滑鼠<span class="instruction-highlight">右鍵點擊</span>，或手機<span class="instruction-highlight">長按</span>有課的格子，即可匯出該課程的 .ics 檔案。</li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -2531,6 +2650,17 @@
 			document.getElementById('dropdown-menu').classList.remove('show');
 			openInfoModal();
 		});
+		document.getElementById('tutorial-btn').addEventListener('click', () => {
+			document.getElementById('dropdown-menu').classList.remove('show');
+			document.body.classList.add('modal-open');
+			document.getElementById('tutorial-modal').style.display = 'flex';
+		});
+
+		document.getElementById('tutorial-modal').querySelector('.close-btn').addEventListener('click', () => {
+			document.body.classList.remove('modal-open');
+			document.getElementById('tutorial-modal').style.display = 'none';
+		});
+		
 		document.querySelectorAll('.toggle-password').forEach(toggle => {
 			toggle.addEventListener('click', () => {
 				const targetId = toggle.dataset.target;
