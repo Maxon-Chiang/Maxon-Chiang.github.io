@@ -431,7 +431,15 @@
 		}
 
 		/* 【新增】可捲動內容的容器 */
-		#info-modal-body, #tutorial-modal-body {
+		#info-modal-body {
+			overflow-y: auto; /* 核心：讓這個內層容器捲動 */
+			flex-grow: 1; /* 佔滿剩餘空間 */
+			padding-top: 10px; /* 增加頂部內距，讓內容和標題區塊分開 */
+			padding-right: 15px; /* 讓內容不要被捲動條擋住 */
+			padding-bottom: 5px;
+		}
+		
+		#tutorial-modal-body {
 			overflow-y: auto; /* 核心：讓這個內層容器捲動 */
 			flex-grow: 1; /* 佔滿剩餘空間 */
 			padding-top: 0px; /* 增加頂部內距，讓內容和標題區塊分開 */
