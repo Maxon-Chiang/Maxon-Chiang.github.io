@@ -849,8 +849,18 @@
         /* 調整 reload 按鈕和 icon 按鈕的間距和對齊 */
         .header-left-panel button {
             /* 讓按鈕的文字對齊到基線，防止與標題文字錯位 */
-            vertical-align: middle;
+            vertical-align: middle;:
             line-height: 1; 
+			gap: 0px;
+        }
+		#my-timetable-icon-btn {
+            font-size: 1.5em !important; /* 手機版略小 */
+			padding-left: 5px;
+        }
+        #reload-cache-btn {
+			margin-left: 0px; /* 移除額外間距 */
+            margin-right: 0; /* 移除額外間距 */
+			padding-left: 5px;
         }
 		@media (max-width: 768px) {
 
@@ -861,21 +871,13 @@
 				width: 100%;
 				box-sizing: border-box;
 			}
-
 			.header-left-panel {
 				width: 100%;
 				justify-content: center;
 				padding-bottom: 5px;
-				gap: 0px;
 			}
 			#my-timetable-icon-btn {
                 font-size: 1.4em !important; /* 手機版略小 */
-				padding-left: 5px;
-            }
-            #reload-cache-btn {
-                margin-left: 0px; /* 移除額外間距 */
-                margin-right: 0; /* 移除額外間距 */
-				padding-left: 5px;
             }
 			header h1 {
 				text-align: center;
