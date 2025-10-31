@@ -1053,15 +1053,15 @@
                     <span class="main-sort-arrow" id="main-sort-down-arrow">▼</span>
                 </button>
             </div>
+            <button id="reload-cache-btn" title="重新載入基本資料 (學生名冊/課表)">🔄</button>
+            <button id="my-timetable-icon-btn" title="我的課表" style="font-size: 1.2em; background: none; border: none; color: white;">📅</button>
         </div>
        <div class="header-right-panel">
-            <button id="reload-cache-btn" title="重新載入基本資料 (學生名冊/課表)">🔄</button>
             <div class="main-actions">
 				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表系統</button></a>
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
                 <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
-                <button id="my-timetable-btn">我的課表</button>
-            </div>
+                </div>
            <div class="user-profile">
                 <span id="user-email"></span>
             </div>
@@ -1372,7 +1372,7 @@
         const classSettingsBtn = document.getElementById('class-settings-btn');
         const infoModal = document.getElementById('info-modal');
         const myTimetableModal = document.getElementById('my-timetable-modal');
-        const myTimetableBtn = document.getElementById('my-timetable-btn');
+		const myTimetableIconBtn = document.getElementById('my-timetable-icon-btn');
         const myTimetableTitle = document.getElementById('my-timetable-title');
         const myTimetableBody = document.getElementById('my-timetable-body');
         const timetableMessage = document.getElementById('timetable-message');
@@ -1850,7 +1850,7 @@
 				const preference = localStorage.getItem('homepagePreference');
 				if (preference === 'timetable') {
 					setTimeout(() => {
-						myTimetableBtn.click();
+						myTimetableIconBtn.click();
 					}, 100);
 				}
 
@@ -2516,7 +2516,7 @@
             }
         });
 
-        myTimetableBtn.addEventListener('click', async () => {
+        myTimetableIconBtn.addEventListener('click', async () => {
             document.getElementById('dropdown-menu').classList.remove('show');
 
             if (!scheduleDataLoaded) {
