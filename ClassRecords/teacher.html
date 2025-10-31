@@ -832,6 +832,26 @@
             animation-iteration-count: infinite;
             animation-direction: alternate;
         }		
+		#my-timetable-icon-btn {
+            background: none !important;
+            border: none !important;
+            color: white !important;
+            font-size: 1.5em !important; /* 稍微放大，使其更清晰 */
+            padding: 0 5px;
+            /* 針對 Safari/iOS 等系統，嘗試移除預設按鈕背景 */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            /* 針對圖像/Emoji，強制背景透明 */
+            background-color: transparent !important;
+        }
+
+        /* 調整 reload 按鈕和 icon 按鈕的間距和對齊 */
+        .header-left-panel button {
+            /* 讓按鈕的文字對齊到基線，防止與標題文字錯位 */
+            vertical-align: middle;
+            line-height: 1; 
+        }
 		@media (max-width: 768px) {
 
 			header {
@@ -846,8 +866,15 @@
 				width: 100%;
 				justify-content: center;
 				padding-bottom: 5px;
+				gap: 10px;
+                padding-left: 10px;
 			}
-
+			#my-timetable-icon-btn {
+                font-size: 1.4em !important; /* 手機版略小 */
+            }
+            #reload-cache-btn {
+                margin-right: 0; /* 移除額外間距 */
+            }
 			header h1 {
 				text-align: center;
 				font-size: 1.5em;
