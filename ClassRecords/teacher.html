@@ -242,7 +242,15 @@
                 box-shadow: 0 0 15px rgba(255, 87, 51, 0.8);
             }
         }
-
+		
+		/* 3. 綁定到課表容器的過渡 class */
+		.schedule-table.slide-in {
+			animation: slideInRight 0.35s ease-out forwards; /* 應用滑入動畫 */
+		}
+		.schedule-table.slide-out {
+			animation: slideOutLeft 0.35s ease-in forwards; /* 應用滑出動畫 */
+		}
+		/* --- 課表滑動效果 CSS 結束 --- */
 
         .class-block-actions {
             display: flex;
@@ -881,6 +889,71 @@
 			
 			/* 移除或減少陰影，模擬底座消失 */
 			box-shadow: 0 0 0 0 #28a745; 
+		}
+		
+		/* --- CSS 動畫新增/調整 --- */
+
+		/* 1. 定義滑入動畫 (從右側進入) */
+		@keyframes slideInRight {
+			from {
+				transform: translateX(100%); 
+				opacity: 0.5;
+			}
+			to {
+				transform: translateX(0); 
+				opacity: 1;
+			}
+		}
+
+		/* 【新增】定義滑入動畫 (從左側進入) */
+		@keyframes slideInLeft {
+			from {
+				transform: translateX(-100%); /* 從左側 -100% 的位置開始 */
+				opacity: 0.5;
+			}
+			to {
+				transform: translateX(0); 
+				opacity: 1;
+			}
+		}
+
+
+		/* 2. 定義滑出動畫 (向左側退出) */
+		@keyframes slideOutLeft {
+			from {
+				transform: translateX(0); 
+				opacity: 1;
+			}
+			to {
+				transform: translateX(-100%); 
+				opacity: 0.5;
+			}
+		}
+
+		/* 【新增】定義滑出動畫 (向右側退出) */
+		@keyframes slideOutRight {
+			from {
+				transform: translateX(0); 
+				opacity: 1;
+			}
+			to {
+				transform: translateX(100%); /* 內容滑出到右側 100% 的位置 */
+				opacity: 0.5;
+			}
+		}
+
+		/* 3. 綁定到課表容器的過渡 class (這裡保持不變，因為我們會在 JS 中直接應用 Keyframes) */
+		.schedule-table.slide-in-right {
+			animation: slideInRight 0.35s ease-out forwards;
+		}
+		.schedule-table.slide-in-left {
+			animation: slideInLeft 0.35s ease-out forwards;
+		}
+		.schedule-table.slide-out-left {
+			animation: slideOutLeft 0.35s ease-in forwards;
+		}
+		.schedule-table.slide-out-right {
+			animation: slideOutRight 0.35s ease-in forwards;
 		}
 
 		@media (max-width: 768px) {
@@ -2605,15 +2678,15 @@
 
             document.getElementById('prev-week-btn').onclick = () => {
                 currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-                renderDerivedMyTimetable();
+                renderDerivedMyTimetable(-1);
             };
             document.getElementById('next-week-btn').onclick = () => {
                 currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-                renderDerivedMyTimetable();
+                renderDerivedMyTimetable(1);
             };
             document.getElementById('today-btn').onclick = () => {
                 currentWeekStart = getMonday(new Date());
-                renderDerivedMyTimetable();
+                renderDerivedMyTimetable(0);
             };
 
             if (timetableIntervalId) clearInterval(timetableIntervalId);
@@ -2774,21 +2847,54 @@
             });
         }
 
-        async function renderDerivedMyTimetable() {
-            await loadActiveChanges();
+		// direction: 1=Next (下一週, 內容向左), -1=Prev (上一週, 內容向右), 0=None/Today
+		async function renderDerivedMyTimetable(direction = 0) { 
+			await loadActiveChanges();
+			const derivedSchedule = getDerivedCurrentUserSchedule();
+			
+			const myTimetableBody = document.getElementById('my-timetable-body');
+			const oldTable = myTimetableBody.querySelector('.schedule-table');
+			
+			// --- 核心修改邏輯 ---
+			if (oldTable && direction !== 0) {
+				
+				// 根據方向決定滑出和滑入的動畫名稱
+				const slideOutClass = direction > 0 ? 'slide-out-left' : 'slide-out-right'; // 下一週 -> 舊表格向左滑出
+				const slideInClass = direction > 0 ? 'slide-in-right' : 'slide-in-left';     // 上一週 -> 舊表格向右滑出
+				
+				// 1. 應用滑出動畫
+				oldTable.classList.add(slideOutClass); 
 
-            const derivedSchedule = getDerivedCurrentUserSchedule();
-
-            renderMyTimetableTable(derivedSchedule);
-
-            const todayWeekStart = getMonday(new Date());
-            const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
-            const todayBtn = document.getElementById('today-btn');
-            if (todayBtn) {
-                 todayBtn.classList.toggle('current', isCurrentWeek);
-            }
-        }
-
+				// 2. 在動畫結束後替換內容並滑入新表格
+				setTimeout(() => {
+					// 替換 HTML 內容
+					renderMyTimetableTable(derivedSchedule); 
+					
+					const newTable = myTimetableBody.querySelector('.schedule-table');
+					if (newTable) {
+						 // 應用滑入動畫
+						 // 先移除可能殘留的 class，再加入新的 slide-in class
+						 newTable.classList.remove('slide-in-right', 'slide-in-left'); 
+						 newTable.classList.add(slideInClass); 
+						 
+						 // 清除動畫 class，防止影響後續操作
+						 setTimeout(() => {
+							  newTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left'); 
+						 }, 400); 
+					}
+				}, 350); 
+				
+			} else {
+				// 初次載入或回到本週 (direction = 0)
+				renderMyTimetableTable(derivedSchedule); 
+				
+				// 【新增：確保初次載入時沒有殘留的動畫 class】
+				const table = myTimetableBody.querySelector('.schedule-table');
+				if (table) {
+					 table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left');
+				}
+			}
+		}
 		newInfoBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
 			openInfoModal();
