@@ -892,7 +892,6 @@
 		}
 		
 		/* --- CSS 動畫新增/調整 --- */
-
 		/* 1. 定義滑入動畫 (從右側進入) */
 		@keyframes slideInRight {
 			from {
@@ -904,7 +903,6 @@
 				opacity: 1;
 			}
 		}
-
 		/* 【新增】定義滑入動畫 (從左側進入) */
 		@keyframes slideInLeft {
 			from {
@@ -917,7 +915,6 @@
 			}
 		}
 
-
 		/* 2. 定義滑出動畫 (向左側退出) */
 		@keyframes slideOutLeft {
 			from {
@@ -929,7 +926,6 @@
 				opacity: 0.5;
 			}
 		}
-
 		/* 【新增】定義滑出動畫 (向右側退出) */
 		@keyframes slideOutRight {
 			from {
@@ -941,21 +937,51 @@
 				opacity: 0.5;
 			}
 		}
+		/* 【新增】定義垂直滑入動畫 (從上方滑入) */
+		@keyframes slideInDown {
+			from {
+				transform: translateY(-100%); /* 從上方 -100% 的位置開始 */
+				opacity: 0.5;
+			}
+			to {
+				transform: translateY(0);
+				opacity: 1;
+			}
+		}
 
+		/* 【新增】定義垂直滑出動畫 (向上方滑出) */
+		@keyframes slideOutUp {
+			from {
+				transform: translateY(0);
+				opacity: 1;
+			}
+			to {
+				transform: translateY(-100%); /* 內容滑出到上方 -100% 的位置 */
+				opacity: 0.5;
+			}
+		}
+		/* --- CSS 動畫新增/調整 結束 --- */
 		/* 3. 綁定到課表容器的過渡 class (這裡保持不變，因為我們會在 JS 中直接應用 Keyframes) */
 		.schedule-table.slide-in-right {
-			animation: slideInRight 0.35s ease-out forwards;
+			animation: slideInRight 0.2s ease-out forwards;
 		}
 		.schedule-table.slide-in-left {
-			animation: slideInLeft 0.35s ease-out forwards;
+			animation: slideInLeft 0.2s ease-out forwards;
 		}
 		.schedule-table.slide-out-left {
-			animation: slideOutLeft 0.35s ease-in forwards;
+			animation: slideOutLeft 0.2s ease-in forwards;
 		}
 		.schedule-table.slide-out-right {
-			animation: slideOutRight 0.35s ease-in forwards;
+			animation: slideOutRight 0.2s ease-in forwards;
 		}
-
+		/* --- CSS 動畫新增/調整 結束 --- */
+		/* 請確認新增以下兩個垂直滑動的類別，或將它們的持續時間改為 0.2s 以與其他動畫匹配 */
+		.schedule-table.slide-in-down {
+			animation: slideInDown 0.2s ease-out forwards;
+		}
+		.schedule-table.slide-out-up {
+			animation: slideOutUp 0.2s ease-in forwards;
+		}
 		@media (max-width: 768px) {
 
 			header {
@@ -2718,183 +2744,226 @@
             }
         });
 
-        function renderMyTimetableTable(derivedSchedule) {
-            if (!derivedSchedule || !derivedSchedule.periods || PERIOD_TIMES.length === 0) {
-                 myTimetableBody.innerHTML = '<p style="text-align: center;">課表資料錯誤或未載入。</p>';
-                 return;
-            }
+		// 注意：此處加入了 parentElement = null 參數，以適應並排滑動的邏輯
+		function renderMyTimetableTable(derivedSchedule, parentElement = null) {
+			const myTimetableBody = document.getElementById('my-timetable-body');
+			const targetElement = parentElement || myTimetableBody; // 輸出目標元素
 
-            const days = ['一', '二', '三', '四', '五'];
-            const periods = derivedSchedule.periods;
-            const currentPeriodIndex = getCurrentPeriodIndex();
-            const currentDayIndex = new Date().getDay() - 1;
-            const todayWeekStart = getMonday(new Date());
-            const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
+			if (!derivedSchedule || !derivedSchedule.periods || PERIOD_TIMES.length === 0) {
+				 targetElement.innerHTML = '<p style="text-align: center;">課表資料錯誤或未載入。</p>';
+				 return;
+			}
 
-            let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
+			const days = ['一', '二', '三', '四', '五'];
+			const periods = derivedSchedule.periods;
+			const currentPeriodIndex = getCurrentPeriodIndex();
+			const currentDayIndex = new Date().getDay() - 1;
+			const todayWeekStart = getMonday(new Date());
+			const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
 
-            const weekDates = [];
-            for (let i = 0; i < 5; i++) {
-                const date = new Date(currentWeekStart);
-                date.setDate(currentWeekStart.getDate() + i);
-                weekDates.push(date);
+			let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
+
+			const weekDates = [];
+			for (let i = 0; i < 5; i++) {
+				const date = new Date(currentWeekStart);
+				date.setDate(currentWeekStart.getDate() + i);
+				weekDates.push(date);
 				tableHtml += `<th>星期${days[i]}<br><span class="date-span" style="color: #6c757d; font-size: 0.9em; font-weight:normal;">(${formatDate(date)})</span></th>`;
-            }
-            tableHtml += '</tr></thead><tbody>';
+			}
+			tableHtml += '</tr></thead><tbody>';
 
-            PERIOD_TIMES.forEach((periodItem, periodIndex) => {
-                const isCurrentPeriod = isCurrentWeek && periodIndex === currentPeriodIndex;
+			PERIOD_TIMES.forEach((periodItem, periodIndex) => {
+				const isCurrentPeriod = isCurrentWeek && periodIndex === currentPeriodIndex;
 
-                const [startH, startM] = periodItem.start.split(':').map(Number);
-                const endH = Math.floor((startH * 60 + startM + periodItem.duration) / 60) % 24;
-                const endM = (startH * 60 + startM + periodItem.duration) % 60;
-                const pad = (n) => String(n).padStart(2, '0');
-                const timeRange = `${periodItem.start}~${pad(endH)}:${pad(endM)}`;
+				const [startH, startM] = periodItem.start.split(':').map(Number);
+				const endH = Math.floor((startH * 60 + startM + periodItem.duration) / 60) % 24;
+				const endM = (startH * 60 + startM + periodItem.duration) % 60;
+				const pad = (n) => String(n).padStart(2, '0');
+				const timeRange = `${periodItem.start}~${pad(endH)}:${pad(endM)}`;
 
-                tableHtml += `<tr><td class="period-header">${periodItem.period}<br><small style="font-weight:normal; font-size: 0.75em;">${timeRange}</small></td>`;
+				tableHtml += `<tr><td class="period-header">${periodItem.period}<br><small style="font-weight:normal; font-size: 0.75em;">${timeRange}</small></td>`;
 
-                for (let d = 0; d < 5; d++) {
-                    const cellContent = periods[periodIndex] ? periods[periodIndex][d] : null;
-                    let cellClass = '';
-                    let content = '';
-                    let dataAttrs = `data-period="${periodIndex}" data-day="${d}" data-date="${formatDate(weekDates[d], 'YYYY-MM-DD')}"`;
+				for (let d = 0; d < 5; d++) {
+					const cellContent = periods[periodIndex] ? periods[periodIndex][d] : null;
+					let cellClass = '';
+					let content = '';
+					let dataAttrs = `data-period="${periodIndex}" data-day="${d}" data-date="${formatDate(weekDates[d], 'YYYY-MM-DD')}"`;
 
-                    if (isCurrentPeriod && d === currentDayIndex) {
-                        cellClass = 'current-timetable-cell';
-                    }
+					if (isCurrentPeriod && d === currentDayIndex) {
+						cellClass = 'current-timetable-cell';
+					}
 
-                    if (cellContent) {
-                        if (cellContent.isSwappedIn || cellContent.isSwappedOut || cellContent.isExchangedIn || cellContent.isExchangedOut || cellContent.isSubstitutedIn || cellContent.isSubstitutedOut) {
+					if (cellContent) {
+						if (cellContent.isSwappedIn || cellContent.isSwappedOut || cellContent.isExchangedIn || cellContent.isExchangedOut || cellContent.isSubstitutedIn || cellContent.isSubstitutedOut) {
 
-                            if (cellContent.isSwappedIn || cellContent.isSwappedOut) {
-                                cellClass += ' swapped-cell swapped-cell-pulse';
-                            } else if (cellContent.isExchangedIn || cellContent.isExchangedOut) {
-                                cellClass += ' exchanged-cell exchanged-cell-pulse';
-                            } else {
+							if (cellContent.isSwappedIn || cellContent.isSwappedOut) {
+								cellClass += ' swapped-cell swapped-cell-pulse';
+							} else if (cellContent.isExchangedIn || cellContent.isExchangedOut) {
+								cellClass += ' exchanged-cell exchanged-cell-pulse';
+							} else {
 								cellClass += ' substituted-cell substituted-cell-pulse';								
-                            }
+							}
 
-                            dataAttrs += ` data-change-id="${cellContent.changeId}"`;
+							dataAttrs += ` data-change-id="${cellContent.changeId}"`;
 
-                            if (cellContent.reason && cellContent.reason.trim() !== '') {
-                                const escapedReason = cellContent.reason.replace(/"/g, '&quot;');
-                                dataAttrs += ` title="${escapedReason}"`;
-                            }
+							if (cellContent.reason && cellContent.reason.trim() !== '') {
+								const escapedReason = cellContent.reason.replace(/"/g, '&quot;');
+								dataAttrs += ` title="${escapedReason}"`;
+							}
 
-                            if (cellContent.isSubstitutedOut) {
-                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
-                                content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.substituteTeacherName || '不明'}(代)</span>`;
-                            } else if (cellContent.isSubstitutedIn) {
-                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
-                                content += `<span style="font-size: 0.8em; color: #007bff; display: block;">(${cellContent.originalTeacherName || '不明'}(代)</span>`;
-                            } else if (cellContent.isExchangedOut) {
-                                const teacherName = cellContent.targetTeacher;
-                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
-                                content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">${teacherName || '不明'}(換)</span>`;
-                            } else if (cellContent.isExchangedIn) {
-                                const teacherName = cellContent.originalTeacher;
-                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
-                                content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">(${teacherName || '不明'}(換)</span>`;
-                            } else {
-                                content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class}</span>`;
-                                content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.teacher}(調)</span>`;
-                            }
-                        } else {
-                            const [className, ...subjectParts] = cellContent.split(/\s+/);
-                            const subjectName = subjectParts.join(' ');
+							if (cellContent.isSubstitutedOut) {
+								content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+								content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.substituteTeacherName || '不明'}(代)</span>`;
+							} else if (cellContent.isSubstitutedIn) {
+								content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+								content += `<span style="font-size: 0.8em; color: #007bff; display: block;">(${cellContent.originalTeacherName || '不明'}(代)</span>`;
+							} else if (cellContent.isExchangedOut) {
+								const teacherName = cellContent.targetTeacher;
+								content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+								content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">${teacherName || '不明'}(換)</span>`;
+							} else if (cellContent.isExchangedIn) {
+								const teacherName = cellContent.originalTeacher;
+								content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+								content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">(${teacherName || '不明'}(換)</span>`;
+							} else {
+								content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class}</span>`;
+								content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.teacher}(調)</span>`;
+							}
+						} else {
+							const [className, ...subjectParts] = cellContent.split(/\s+/);
+							const subjectName = subjectParts.join(' ');
 
-                            content = `<span class="subject">${subjectName || ''}</span><span class="class-detail">${className || ''}</span>`;
-                        }
-                        tableHtml += `<td class="timetable-clickable-cell ${cellClass}" ${dataAttrs}>${content}</td>`;
-                    } else {
-                        tableHtml += `<td class="timetable-empty-cell ${cellClass}" ${dataAttrs}></td>`;
-                    }
-                }
-                tableHtml += '</tr>';
-            });
+							content = `<span class="subject">${subjectName || ''}</span><span class="class-detail">${className || ''}</span>`;
+						}
+						tableHtml += `<td class="timetable-clickable-cell ${cellClass}" ${dataAttrs}>${content}</td>`;
+					} else {
+						tableHtml += `<td class="timetable-empty-cell ${cellClass}" ${dataAttrs}></td>`;
+					}
+				}
+				tableHtml += '</tr>';
+			});
 
-            tableHtml += '</tbody></table>';
-            myTimetableBody.innerHTML = tableHtml;
+			tableHtml += '</tbody></table>';
+			
+			// 【修改點】將結果輸出到指定的父元素
+			targetElement.innerHTML = tableHtml;
 
-            const scheduleTable = myTimetableBody.querySelector('.schedule-table');
-            if (isCurrentWeek) {
-                scheduleTable.querySelector('thead').classList.add('current-week');
-            }
+			const scheduleTable = targetElement.querySelector('.schedule-table');
+			if (isCurrentWeek) {
+				scheduleTable.querySelector('thead').classList.add('current-week');
+			}
 
-            myTimetableBody.querySelectorAll('.timetable-clickable-cell').forEach(cell => {
-                cell.addEventListener('click', (e) => {
-                    const period = parseInt(e.currentTarget.dataset.period);
-                    const day = parseInt(e.currentTarget.dataset.day);
+			targetElement.querySelectorAll('.timetable-clickable-cell').forEach(cell => {
+				cell.addEventListener('click', (e) => {
+					const period = parseInt(e.currentTarget.dataset.period);
+					const day = parseInt(e.currentTarget.dataset.day);
 
 					const cellData = periods[period] ? periods[period][day] : null;
 					
-                    if (cellData) {
-                        let derivedData;
-                        if (typeof cellData === 'string') {
-                            const [className, ...subjectParts] = cellData.split(/\s+/);
-                            derivedData = { class: className, subject: subjectParts.join(' ') };
-                        } else {
-                            derivedData = cellData;
-                        }
+					if (cellData) {
+						let derivedData;
+						if (typeof cellData === 'string') {
+							const [className, ...subjectParts] = cellData.split(/\s+/);
+							derivedData = { class: className, subject: subjectParts.join(' ') };
+						} else {
+							derivedData = cellData;
+						}
 
-                        if (derivedData && derivedData.class) {
-                            const classCode = derivedData.class;
-                            document.getElementById('my-timetable-modal').style.display = 'none';
-                            openStudentRosterModal(classCode, 'timetable');
-                        }
-                    }
-                });
-            });
-        }
+						if (derivedData && derivedData.class) {
+							const classCode = derivedData.class;
+							document.getElementById('my-timetable-modal').style.display = 'none';
+							// 確保這裡使用 'timetable' 作為 origin
+							openStudentRosterModal(classCode, 'timetable');
+						}
+					}
+				});
+			});
+		}
 
-		// direction: 1=Next (下一週, 內容向左), -1=Prev (上一週, 內容向右), 0=None/Today
-		async function renderDerivedMyTimetable(direction = 0) { 
+		// direction: 1=Next (下一週, 內容向左), -1=Prev (上一週, 內容向右), 0=None/Today (由上往下滑入)
+		async function renderDerivedMyTimetable(direction = 0) {
 			await loadActiveChanges();
 			const derivedSchedule = getDerivedCurrentUserSchedule();
-			
+
 			const myTimetableBody = document.getElementById('my-timetable-body');
 			const oldTable = myTimetableBody.querySelector('.schedule-table');
-			
-			// --- 核心修改邏輯 ---
-			if (oldTable && direction !== 0) {
-				
-				// 根據方向決定滑出和滑入的動畫名稱
-				const slideOutClass = direction > 0 ? 'slide-out-left' : 'slide-out-right'; // 下一週 -> 舊表格向左滑出
-				const slideInClass = direction > 0 ? 'slide-in-right' : 'slide-in-left';     // 上一週 -> 舊表格向右滑出
-				
-				// 1. 應用滑出動畫
-				oldTable.classList.add(slideOutClass); 
+			const todayWeekStart = getMonday(new Date());
+			const isReturningToCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
 
-				// 2. 在動畫結束後替換內容並滑入新表格
-				setTimeout(() => {
-					// 替換 HTML 內容
-					renderMyTimetableTable(derivedSchedule); 
-					
-					const newTable = myTimetableBody.querySelector('.schedule-table');
-					if (newTable) {
-						 // 應用滑入動畫
-						 // 先移除可能殘留的 class，再加入新的 slide-in class
-						 newTable.classList.remove('slide-in-right', 'slide-in-left'); 
-						 newTable.classList.add(slideInClass); 
-						 
-						 // 清除動畫 class，防止影響後續操作
-						 setTimeout(() => {
-							  newTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left'); 
-						 }, 400); 
-					}
-				}, 350); 
-				
-			} else {
-				// 初次載入或回到本週 (direction = 0)
-				renderMyTimetableTable(derivedSchedule); 
-				
-				// 【新增：確保初次載入時沒有殘留的動畫 class】
+			// 1. 如果沒有舊表格 (第一次載入)，或是在本週但方向是 0 (避免重複動畫)
+			if (!oldTable || (direction === 0 && isReturningToCurrentWeek && oldTable.classList.length === 0)) {
+				renderMyTimetableTable(derivedSchedule, null);
 				const table = myTimetableBody.querySelector('.schedule-table');
 				if (table) {
-					 table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left');
+					table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
 				}
+				return;
 			}
+
+			// 2. 準備父容器的環境 (關鍵點：必須設定 position: relative 和 overflow: hidden)
+			myTimetableBody.style.position = 'relative';
+			myTimetableBody.style.overflow = 'hidden';
+
+			// 3. 準備一個新容器來容納新表格
+			const newTableContainer = document.createElement('div');
+			newTableContainer.style.position = 'absolute';
+			newTableContainer.style.top = '0';
+			newTableContainer.style.left = '0';
+			newTableContainer.style.width = '100%';
+			newTableContainer.style.height = '100%';
+			newTableContainer.style.overflow = 'hidden';
+
+			// 4. 渲染新表格到新容器
+			myTimetableBody.appendChild(newTableContainer);
+			renderMyTimetableTable(derivedSchedule, newTableContainer);
+
+			const newTable = newTableContainer.querySelector('.schedule-table');
+
+			// 5. 調整舊表格的 z-index 和 position (確保動畫中兩者疊加)
+			oldTable.style.zIndex = 10;
+			oldTable.style.position = 'relative';
+
+			// 6. 根據方向決定動畫 class
+			let slideOutClass, slideInClass;
+
+			if (direction === 1) { // 下一週 (左滑)
+				slideOutClass = 'slide-out-left';
+				slideInClass = 'slide-in-right';
+			} else if (direction === -1) { // 上一週 (右滑)
+				slideOutClass = 'slide-out-right';
+				slideInClass = 'slide-in-left';
+			} else if (direction === 0) { // 回到本週 (上往下滑)
+				// 確保舊表格從上方滑出，新表格從上方滑入
+				slideOutClass = 'slide-out-up';
+				slideInClass = 'slide-in-down';
+			} else {
+				// 如果方向未知，不執行動畫，直接替換
+				myTimetableBody.innerHTML = newTableContainer.innerHTML;
+				myTimetableBody.style.overflow = ''; // 恢復
+				return;
+			}
+
+			// 7. 同時應用滑出和滑入動畫
+			// **重點：這裡必須應用 CSS Class**
+			oldTable.classList.add(slideOutClass);
+			newTable.classList.add(slideInClass);
+
+			// 8. 在動畫結束後清理 DOM 結構和動畫 class
+			setTimeout(() => {
+				// 替換舊表格，只保留新表格的內容
+				myTimetableBody.innerHTML = newTableContainer.innerHTML;
+
+				// 清理動畫 class，防止影響後續操作
+				const finalTable = myTimetableBody.querySelector('.schedule-table');
+				if (finalTable) {
+					 finalTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+				}
+				// 恢復 myTimetableBody 的 overflow 屬性
+				myTimetableBody.style.overflow = '';
+
+			}, 200); // 確保與 CSS 動畫時間 (0.2s) 匹配
 		}
+
 		newInfoBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
 			openInfoModal();
