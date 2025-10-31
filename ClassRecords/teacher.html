@@ -1116,6 +1116,7 @@
                     <hr style="margin: 4px 10px; border-color: #eee; border-style: solid; border-width: 1px 0 0 0;">
                     <button id="logout-btn">登出</button>
                 </div>
+				<button id="exit-app-btn">離開</button>
             </div>
         </div>
     </header>
@@ -2863,6 +2864,15 @@
             touchStartX = 0;
         });
         // 【【【新增結束】】】
+		document.getElementById('exit-app-btn').addEventListener('click', () => {
+			// 嘗試關閉當前視窗或標籤頁
+			window.close();
+			
+			// 某些瀏覽器可能禁止未經使用者操作開啟的視窗直接關閉
+			setTimeout(() => {
+				alert('視窗已關閉，若無反應，請手動關閉當前分頁或視窗。');
+			}, 100); 
+		});
     });
 	
     </script>
