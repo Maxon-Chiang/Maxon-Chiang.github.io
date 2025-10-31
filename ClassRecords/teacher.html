@@ -116,6 +116,19 @@
             cursor: pointer;
             font-size: 1em;
         }
+        
+        /* 【新增】重新載入按鈕樣式 */
+        #reload-cache-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0 0px;
+            line-height: 1;
+            margin-right: 10px;
+        }
+        /* 【新增結束】 */
 
         .dropdown {
             position: relative;
@@ -1042,6 +1055,7 @@
             </div>
         </div>
        <div class="header-right-panel">
+            <button id="reload-cache-btn" title="重新載入基本資料 (學生名冊/課表)">🔄</button>
             <div class="main-actions">
 				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表系統</button></a>
                 <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
@@ -1331,6 +1345,11 @@
         let activeChanges = [];
         let currentWeekStart = getMonday(new Date());
         let timetableIntervalId = null;
+        
+        // 【快取關鍵變數】
+        const CACHE_KEY = 'teacher_static_cache_v1';
+        let CACHE_DATA = {};
+        // 【快取關鍵變數結束】
 
         let rosterSortState = 0;
         let classSortState = 0;
@@ -1363,6 +1382,10 @@
         const rosterSortBtn = document.getElementById('roster-sort-btn');
         const mainSortBtn = document.getElementById('main-sort-btn');
         const timetableLink = document.getElementById('timetable-link');
+        
+        // 【新增 DOM 元素】
+        const reloadCacheBtn = document.getElementById('reload-cache-btn');
+        // 【新增 DOM 元素結束】
 
         const saveRecordBtn = document.getElementById('save-record-btn');
         const btnCancelEdit = document.getElementById('btn-cancel-edit');
@@ -1525,12 +1548,24 @@
                     const userDoc = await db.collection('users').doc(user.uid).get();
                     if (userDoc.exists && userDoc.data().role === 'teacher') {
                         currentUserData = userDoc.data();
+                        
+                        // 【快取邏輯：優先從快取載入用戶名稱】
+                        try {
+                            const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+                            if (cached && cached.userData && cached.userData.uid === user.uid) {
+                                currentUserData = cached.userData;
+                            }
+                        } catch (e) {
+                            // 快取損壞，忽略
+                        }
+                        
                         document.getElementById('user-email').textContent = currentUserData.displayName || user.email;
-                        visibleClassList = currentUserData.visibleClasses || [];
+                        
                         if (currentUserData.passwordNeedsReset === true) {
                             showPasswordResetUI();
                         } else {
-                            await initialize(currentUserData);
+                            // 呼叫 initialize，並傳遞參數 `forceReload` 決定是否使用快取
+                            await initialize(currentUserData, false); 
                         }
                     } else {
                         window.location.href = `login.html?from=teacher`;
@@ -1633,11 +1668,17 @@
             }
         }
 
-        async function loadPeriodTimes() {
-            if (!currentUserData.schoolId) return;
+        // 【修改 loadPeriodTimes 函數：支援快取讀取】
+        async function loadPeriodTimes(schoolId, useCache) {
+            if (!schoolId) return;
+            
+            if (useCache && CACHE_DATA.PERIOD_TIMES) {
+                PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES;
+                return;
+            }
 
             try {
-                const periodsDoc = await db.collection('schools').doc(currentUserData.schoolId)
+                const periodsDoc = await db.collection('schools').doc(schoolId)
                                            .collection('periods').doc('current').get();
 
                 if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
@@ -1646,11 +1687,9 @@
                         start: item.start,
                         duration: item.duration || 50
                     }));
-
                     PERIOD_TIMES.sort((a, b) => a.period - b.period);
-
                 } else {
-                    console.warn("警告: 學校尚未設定課程時間表 (periods/current 不存在或為空)。將使用預設時間。");
+                    console.warn("警告: 學校尚未設定課程時間表。使用預設值。");
                     PERIOD_TIMES = [
                         { period: 1, start: '08:10', duration: 50 },
                         { period: 2, start: '09:10', duration: 50 },
@@ -1662,8 +1701,10 @@
                         { period: 8, start: '16:10', duration: 50 }
                     ];
                 }
+                CACHE_DATA.PERIOD_TIMES = PERIOD_TIMES; // 寫入快取
             } catch (error) {
                 console.error("載入課程時間表時發生錯誤:", error);
+                // 使用預設值
                 PERIOD_TIMES = [
                         { period: 1, start: '08:10', duration: 50 },
                         { period: 2, start: '09:10', duration: 50 },
@@ -1676,46 +1717,111 @@
                     ];
             }
         }
+        // 【修改 loadPeriodTimes 函數結束】
 
-		async function initialize(userData) {
+        // 【修改 fetchScheduleData 函數：支援快取讀取】
+        async function fetchScheduleData(teacherName, schoolId, useCache) {
+            scheduleDataLoaded = false;
+            teacherTimetableData = { periods: {} };
+            
+            if (useCache && CACHE_DATA.teacherTimetableData) {
+                teacherTimetableData = CACHE_DATA.teacherTimetableData;
+                scheduleDataLoaded = true;
+                return;
+            }
+            
             try {
-                if (!userData.schoolId) {
-                    document.getElementById('app-container').innerHTML = '<h2>帳號設定錯誤：找不到學校 ID。</h2>';
-                    return;
+                const schoolRef = db.collection('schools').doc(schoolId);
+                const scheduleDoc = await schoolRef.collection('timetables').doc(teacherName).get();
+
+                if (scheduleDoc.exists) {
+                    teacherTimetableData = scheduleDoc.data();
+                    scheduleDataLoaded = true;
+                } else {
+                    teacherTimetableData = { periods: {} };
+                }
+                
+                CACHE_DATA.teacherTimetableData = teacherTimetableData; // 寫入快取
+
+            } catch (error) {
+                console.error("載入課表資料失敗:", error);
+                teacherTimetableData = { periods: {} };
+            }
+        }
+        // 【修改 fetchScheduleData 函數結束】
+
+
+		// 【修改 initialize 函數：核心快取讀寫邏輯】
+		async function initialize(userData, forceReload = false) {
+            
+            const schoolId = userData.schoolId;
+            const teacherName = userData.displayName;
+            appContainer.innerHTML = '<h2>載入中...</h2>';
+            
+            // --- 步驟 1: 嘗試從 Local Storage 讀取靜態快取 ---
+            let useCache = false;
+            if (!forceReload) {
+                try {
+                    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+                    if (cached && cached.userData && cached.userData.uid === currentUser.uid && cached.rosterData && cached.rosterData.length > 0) {
+                        CACHE_DATA = cached;
+                        useCache = true;
+                        
+                        // 從快取還原主要靜態資料
+                        studentsData = CACHE_DATA.rosterData;
+                        allClassList = CACHE_DATA.allClassList;
+                        teacherTimetableData = CACHE_DATA.teacherTimetableData || { periods: {} };
+                        PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES || [];
+                        scheduleDataLoaded = true; // 假設快取載入是成功的
+                        console.log('快取命中，加速載入基本資料...');
+                    }
+                } catch (e) {
+                    console.error('快取讀取錯誤或損壞:', e);
+                    localStorage.removeItem(CACHE_KEY); 
+                    forceReload = true; 
+                    useCache = false;
+                }
+            }
+
+
+            try {
+                // --- 步驟 2: 處理使用者基本資料 (僅在第一次或快取失效時讀取 Firestore) ---
+                if (!useCache) {
+                    const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                    if (!userDoc.exists || userDoc.data().role !== 'teacher' || !userDoc.data().schoolId) {
+                        throw new Error('帳號設定錯誤或無權限。');
+                    }
+                    currentUserData = userDoc.data();
+                }
+                visibleClassList = currentUserData.visibleClasses || [];
+                
+                // --- 步驟 3: 載入課程時間表 (優先快取) ---
+                await loadPeriodTimes(schoolId, useCache);
+                
+                // --- 步驟 4: 載入學生名冊 (優先快取) ---
+                if (!useCache) {
+                    const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
+                    if (!rosterDoc.exists) {
+                        document.getElementById('app-container').innerHTML = `<h2>找不到學校名冊，請聯繫學校管理者上傳。</h2>`;
+                        return;
+                    }
+                    studentsData = rosterDoc.data().students;
+                    allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort(); 
+                    CACHE_DATA.rosterData = studentsData;
+                    CACHE_DATA.allClassList = allClassList;
                 }
 
-                await loadPeriodTimes();
-
-                const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-
-                if (!rosterDoc.exists) {
-                    document.getElementById('app-container').innerHTML = `<h2>找不到學校名冊，請聯繫學校管理者上傳。</h2>`;
-                    return;
-                }
-
-                studentsData = rosterDoc.data().students;
-                allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort(); //
-
-                // 【【【修改 1】】】: 將 fetchScheduleData() 提前到這裡
-                // 我們需要課表資料 (teacherTimetableData) 來判斷預設顯示的班級
-                await fetchScheduleData(); //
-
-                // 檢查是否為第一次登入 (沒有儲存過班級顯示偏好)
-                if (visibleClassList.length === 0 && allClassList.length > 0) { //
-                    
-                    // 【【【修改 2】】】: (替換原有邏輯)
-                    // 原邏輯: visibleClassList = allClassList;
-                    
-                    // 新邏輯: 從課表 (teacherTimetableData) 中提取教師的任課班級
+                // --- 步驟 5: 載入教師課表 (優先快取) ---
+                await fetchScheduleData(teacherName, schoolId, useCache); 
+                
+                // --- 步驟 6: 處理首次登入的班級顯示偏好 ---
+                if (visibleClassList.length === 0 && allClassList.length > 0) {
                     const taughtClasses = new Set();
                     if (teacherTimetableData && teacherTimetableData.periods) {
-                        // 遍歷課表中的每一天、每一節
                         Object.values(teacherTimetableData.periods).forEach(dayArray => {
                             dayArray.forEach(cellContent => {
-                                // 判斷是否為 "XXX 班級" 格式的字串
                                 if (typeof cellContent === 'string' && cellContent.trim() !== '') {
                                     const classCode = cellContent.split(/\s+/)[0]; 
-                                    // 確保這個班級代碼存在於學校名冊 (allClassList) 中
                                     if (classCode && allClassList.includes(classCode)) {
                                         taughtClasses.add(classCode);
                                     }
@@ -1726,21 +1832,17 @@
 
                     const taughtClassesArray = Array.from(taughtClasses);
                     
-                    if (taughtClassesArray.length > 0) {
-                        // 【【【修改 3】】】: 找到了任課班級，預設顯示這些班級
-                        visibleClassList = taughtClassesArray.sort();
-                    } else {
-                        // 如果課表是空的或分析不出來 (例如新老師)，則維持原案，顯示所有班級
-                        visibleClassList = allClassList; 
-                    }
-                    
+                    visibleClassList = taughtClassesArray.length > 0 ? taughtClassesArray.sort() : allClassList; 
                 } 
-                // (如果 visibleClassList.length > 0，代表使用者已有設定，不需更動)
 
-                await fetchAllScores(); //
+                // --- 步驟 7: 將所有基本資料寫入 Local Storage (如果讀取了新資料) ---
+                if (!useCache || forceReload) {
+                    CACHE_DATA.userData = currentUserData; // 儲存用戶資料
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE_DATA));
+                }
 
-                // (fetchScheduleData() 已移至上方，故刪除此處的原呼叫)
-
+                // --- 步驟 8: 啟動動態資料載入與 UI 渲染 ---
+                await fetchAllScores(); 
                 setInterval(highlightCurrentClass, 30000);
 
                 highlightCurrentClass();
@@ -1754,6 +1856,7 @@
 
                 rosterSortBtn.addEventListener('click', toggleRosterSort);
                 mainSortBtn.addEventListener('click', toggleClassSort);
+                reloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); // 綁定重新載入
 
                 updateSortButtonDisplay(0, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
                 updateSortButtonDisplay(0, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
@@ -1772,9 +1875,11 @@
 
             } catch (error) {
                 console.error("初始化失敗:", error);
-                document.getElementById('app-container').innerHTML = '<h2>載入資料失敗...</h2>';
+                document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
             }
         }
+        // 【修改 initialize 函數結束】
+
 
         async function fetchAllScores() {
             db.collection('performanceRecords').doc(currentUser.uid).collection('records')
@@ -1824,25 +1929,6 @@
             }, error => {
                 console.error("監聽紀錄失敗:", error);
             });
-        }
-
-        async function fetchScheduleData() {
-            if (scheduleDataLoaded) return;
-            try {
-                const schoolRef = db.collection('schools').doc(currentUserData.schoolId);
-                const scheduleDoc = await schoolRef.collection('timetables').doc(currentUserData.displayName).get();
-
-                if (scheduleDoc.exists) {
-                    teacherTimetableData = scheduleDoc.data();
-                    scheduleDataLoaded = true;
-                } else {
-                    teacherTimetableData = { periods: {} };
-                }
-
-            } catch (error) {
-                console.error("載入課表資料失敗:", error);
-                teacherTimetableData = { periods: {} };
-            }
         }
 
         function renderLayout() {
@@ -2263,48 +2349,36 @@
 
 		async function loadRecentTexts() {
 			const datalist = document.getElementById('recent-texts-list');
-            // 【【【修改點 1】】】: 取得文字輸入框的 DOM 元素
         	const recordTextInput = document.getElementById('record-text'); 
 			
-            datalist.innerHTML = ''; // 清空 datalist 提示
-        	// 【【【修改點 2】】】: 永遠先預設為空字串 (這滿足了「最近是空的就預設空」的基礎)
+            datalist.innerHTML = ''; 
         	recordTextInput.value = ''; 
 
 			try {
 				const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records')
-					.orderBy('timestamp', 'desc') // 依照時間倒序排列
-					.limit(50) // 限制查詢筆數
+					.orderBy('timestamp', 'desc') 
+					.limit(50) 
 					.get();
 
-				// 【【【修改點 3】】】: (處理預設值) 檢查是否有任何查詢結果
 				if (snapshot.docs.length > 0) {
-					// 取得「絕對」最近的一筆紀錄 (index 0)
 					const mostRecentDoc = snapshot.docs[0];
 					const mostRecentText = mostRecentDoc.data().text;
 
-					// 檢查這筆紀錄的文字是否為 null 或 undefined
-                    // 如果 mostRecentText 是 "" (空字串), 條件也會成立, 這正是我們要的
 					if (mostRecentText !== null && mostRecentText !== undefined) {
-                        // (滿足您的需求：最近是空的(text:"")就預設空，最近有文字就預設為該文字)
 						recordTextInput.value = mostRecentText; 
 					}
-                    // 如果 mostRecentText 是 null/undefined (例如舊資料)，輸入框會維持我們在【修改點 2】設定的空字串 ''
 				}
                 
-                // 【【【修改點 4】】】: (處理提示選單) 建立 datalist 的邏輯
-                // 這部分仍然需要過濾掉空字串
 				const recentTexts = new Set();
-				snapshot.forEach(doc => { // 遍歷抓回來的 50 筆
+				snapshot.forEach(doc => { 
 					const text = doc.data().text;
-                    // (此判斷式已滿足您的需求：空文字紀錄不能記錄在提示的歷史紀錄中)
-					if (text && text.trim() !== '') { // 只有非空的才加入 Set
+					if (text && text.trim() !== '') { 
                         const trimmedText = text.trim();
 						recentTexts.add(trimmedText);
 					}
 				});
                 
-                // 填充 datalist (下拉提示選單)
-				Array.from(recentTexts).slice(0, 10).forEach(text => { // 只顯示 10 筆提示
+				Array.from(recentTexts).slice(0, 10).forEach(text => { 
 					const option = document.createElement('option');
 					option.value = text;
 					datalist.appendChild(option);
@@ -2447,7 +2521,7 @@
 
             if (!scheduleDataLoaded) {
                  timetableMessage.textContent = '課表數據正在載入中...';
-                 await fetchScheduleData();
+                 // 這裡不需要重新載入，因為 initialize 已經處理了靜態資料的載入。
             }
 
             myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
@@ -2754,4 +2828,3 @@
     </script>
 </body>
 </html>
-
