@@ -862,6 +862,30 @@
             margin-right: 0; /* 移除額外間距 */
 			padding-left: 5px;
         }
+		#save-homepage-settings-btn {
+			/* 基礎樣式 */
+			padding: 10px 15px;
+			font-size: 1.1em;
+			color: white;
+			background-color: #28a745; /* 主要顏色 */
+			border: none;
+			border-radius: 8px;
+			cursor: pointer;
+			outline: none;
+			margin-top: 15px;
+			box-shadow: 0 3px 0 0 #008020; /* 更深的顏色作為立體感的底部 */
+			/* 平滑過渡 */
+			transition: all 0.1s ease;
+		}
+
+		/* 點擊時的按壓效果 */
+		#save-homepage-settings-btn:active {
+			/* 向上移動 5px，讓按鈕「陷」下去 */
+			transform: translateY(5px); 
+			
+			/* 移除或減少陰影，模擬底座消失 */
+			box-shadow: 0 0 0 0 #28a745; 
+		}
 
 		@media (max-width: 768px) {
 
@@ -1354,7 +1378,7 @@
                     <label for="pref-timetable">我的課表 (自動彈出)</label>
                 </div>
             </div>
-            <button id="save-homepage-settings-btn" style="margin-top: 20px; background-color: #28a745; padding: 10px 15px; color: white; font-size: 1.1em; border:none; box-shadow: 0 2px 2px 2px #cccccc;">儲存設定</button>
+            <button id="save-homepage-settings-btn">儲存設定</button>
         </div>
     </div>
 
