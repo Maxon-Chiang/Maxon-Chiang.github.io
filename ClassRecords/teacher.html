@@ -2741,7 +2741,8 @@
             // 【新增結束】
 
             if (timetableIntervalId) clearInterval(timetableIntervalId);
-            timetableIntervalId = setInterval(renderDerivedMyTimetable, 30000);
+            // 每 30 秒執行一次高光檢查刷新。傳入 'noslide' 參數來告知函數：這次只是靜態刷新，不要執行滑動動畫。
+            timetableIntervalId = setInterval(() => renderDerivedMyTimetable(10), 30000);
         });
 
         document.getElementById('my-timetable-modal').querySelector('.close-btn').addEventListener('click', () => {
@@ -2951,6 +2952,7 @@
 			// 6. 根據方向決定動畫 class
 			let slideOutClass, slideInClass;
 
+		
 			if (direction === 1) { // 下一週 (左滑)
 				slideOutClass = 'slide-out-left';
 				slideInClass = 'slide-in-right';
