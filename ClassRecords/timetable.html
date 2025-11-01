@@ -411,6 +411,96 @@ header .header-actions {
 #view-only-modal .schedule-table th {
     height: 30px; /* 例如 30px */
 }
+/* --- CSS 動畫新增/調整 --- */
+/* 1. 定義滑入動畫 (從右側進入) */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%); 
+        opacity: 0.5;
+    }
+    to {
+        transform: translateX(0); 
+        opacity: 1;
+    }
+}
+/* 定義滑入動畫 (從左側進入) */
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%); /* 從左側 -100% 的位置開始 */
+        opacity: 0.5;
+    }
+    to {
+        transform: translateX(0); 
+        opacity: 1;
+    }
+}
+
+/* 2. 定義滑出動畫 (向左側退出) */
+@keyframes slideOutLeft {
+    from {
+        transform: translateX(0); 
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-100%); 
+        opacity: 0.5;
+    }
+}
+/* 定義滑出動畫 (向右側退出) */
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0); 
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%); /* 內容滑出到右側 100% 的位置 */
+        opacity: 0.5;
+    }
+}
+/* 定義垂直滑入動畫 (從上方滑入) */
+@keyframes slideInDown {
+    from {
+        transform: translateY(-100%); /* 從上方 -100% 的位置開始 */
+        opacity: 0.5;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 定義垂直滑出動畫 (向上方滑出) */
+@keyframes slideOutUp {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-100%); /* 內容滑出到上方 -100% 的位置 */
+        opacity: 0.5;
+    }
+}
+/* --- CSS 動畫新增/調整 結束 --- */
+
+/* 3. 綁定到課表容器的過渡 class */
+.schedule-table.slide-in-right {
+    animation: slideInRight 0.2s ease-out forwards;
+}
+.schedule-table.slide-in-left {
+    animation: slideInLeft 0.2s ease-out forwards;
+}
+.schedule-table.slide-out-left {
+    animation: slideOutLeft 0.2s ease-in forwards;
+}
+.schedule-table.slide-out-right {
+    animation: slideOutRight 0.2s ease-in forwards;
+}
+.schedule-table.slide-in-down {
+    animation: slideInDown 0.2s ease-out forwards;
+}
+.schedule-table.slide-out-up {
+    animation: slideOutUp 0.2s ease-in forwards;
+}
 @media screen and (max-width: 768px) {
     body { padding: 0; }
     header {
@@ -1129,7 +1219,7 @@ async function main() {
 						scheduleB[infoA.period][dayA] = { ...infoA, isExchangedIn: true, originalTeacher: teacherA, changeId: change.id, reason: change.reason };
 					}
 					
-					/* 【新增以下班級課表更新邏輯 (時段 A)】 */
+					/* 【新增以下班級課表更新邏gic (時段 A)】 */
 					const classA_schedule = classSchedules.get(infoA.class);
 					if (classA_schedule && dayA >= 0 && dayA < 5) {
 						// 班級 A: 該節次顯示 B 老師代課
@@ -1247,28 +1337,38 @@ async function main() {
         });
         selector.onchange = function() {
             if (this.value) {
+                // 【修改點】: 首次載入或切換班級時，重設週次為本週
+                currentWeekStart = getMonday(new Date()); 
                 showSchedule(this.value, 'class');
             }
         };
     }
 
 	/**
-	 * 顯示教師或班級課表，並啟動定時器以維持高亮。
+	 * 🎯 替換函數：顯示教師或班級課表，並支援滑動動畫
+	 * @param {string} name - 教師姓名或班級名稱。
+	 * @param {string} type - 'teacher' 或 'class'。
+	 * @param {number} direction - 1=Next (左滑), -1=Prev (右滑), 0=None/Today (上往下滑入), 10=Static
 	 */
-	async function showSchedule(name, type) {
-		// 🎯 CORE FIX 🎯：在每次渲染開始時，強制隱藏「指定代課 / 換課」按鈕
+	async function showSchedule(name, type, direction = 10) {
+		
+		// 1. 準備工作
 		document.getElementById('substitution-btn').classList.remove('visible'); 
 
-		addRecentSchedule(name, type);
-		populateRecentList();
+		const isStatic = direction === 10;
+		if (isStatic) {
+			addRecentSchedule(name, type);
+			populateRecentList();
+			activeSchedule = { type, name };
+			const dataToStore = { 
+				savedBy: currentUser.uid, 
+				schedule: { view: currentView, ...activeSchedule } 
+			};
+			localStorage.setItem('lastSchedule', JSON.stringify(dataToStore));
+		} else if (activeSchedule.name !== name || activeSchedule.type !== type) {
+            activeSchedule = { type, name };
+        }
 
-		activeSchedule = { type, name };
-		const dataToStore = { 
-			savedBy: currentUser.uid, 
-			schedule: { view: currentView, ...activeSchedule } 
-		};
-		localStorage.setItem('lastSchedule', JSON.stringify(dataToStore));
-		
 		const modal = document.getElementById('schedule-modal');
 		if (type === 'class') {
 			modal.classList.add('class-schedule-view');
@@ -1310,9 +1410,10 @@ async function main() {
 			return;
 		}
 		
-		const renderScheduleTable = () => {
-			 const modal = document.getElementById('schedule-modal');
-			 if (!schedule) return; 
+		// 2. 核心渲染與動畫邏輯
+		
+		const renderScheduleTable = (targetElement) => {
+             if (!schedule) return; 
             
 			 titleEl.textContent = title;
 			 const daysOfWeek = ['星期一', '星期二', '星期三', '星期四', '星期五'];
@@ -1446,9 +1547,11 @@ async function main() {
 				 tableHtml += '</tr>';
 			 }
 			 tableHtml += '</tbody></table>';
-			 bodyEl.innerHTML = tableHtml;
+			 
+			 // 【修改點】: 將內容輸出到目標元素
+			 targetElement.innerHTML = tableHtml;
 
-			 const scheduleTable = bodyEl.querySelector('.schedule-table');
+			 const scheduleTable = targetElement.querySelector('.schedule-table');
 			 
 			 if (isCurrentWeek) {
 				 scheduleTable.querySelector('thead').classList.add('current-week');
@@ -1473,22 +1576,101 @@ async function main() {
 			 }
 		};        
 		
-		renderScheduleTable(); 
+        // 3. 動畫邏輯實作
+        const oldTable = bodyEl.querySelector('.schedule-table');
+        const isReturningToCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
 
+        // 🎯 核心修改 🎯
+        // 條件判斷：
+        // 1. 如果是靜態呼叫 (isStatic=true)，或者
+        // 2. 這是第一次載入 (沒有 oldTable)，則執行靜態渲染。
+        // 3. 否則，執行動畫渲染。
 
+        if (isStatic || !oldTable) { 
+            renderScheduleTable(bodyEl);
+            const table = bodyEl.querySelector('.schedule-table');
+            if (table) {
+                // 清理所有可能的動畫 class
+                table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+            }
+        } else {
+            // 準備父容器的環境
+            bodyEl.style.position = 'relative';
+            bodyEl.style.overflow = 'hidden';
+
+            // 準備新容器
+            const newTableContainer = document.createElement('div');
+            newTableContainer.style.position = 'absolute';
+            newTableContainer.style.top = '0';
+            newTableContainer.style.left = '0';
+            newTableContainer.style.width = '100%';
+            newTableContainer.style.height = '100%';
+            newTableContainer.style.overflow = 'hidden';
+            
+            // 渲染新表格
+            bodyEl.appendChild(newTableContainer);
+            renderScheduleTable(newTableContainer);
+
+            const newTable = newTableContainer.querySelector('.schedule-table');
+
+            // 調整舊表格的 z-index 和 position
+            oldTable.style.zIndex = 10;
+            oldTable.style.position = 'relative';
+
+            // 根據方向決定動畫 class
+            let slideOutClass, slideInClass;
+
+            // 🎯 核心判斷：如果是回到本週 (direction=0)
+            if (direction === 0) { 
+                slideOutClass = 'slide-out-up'; // 舊的往上滑出
+                slideInClass = 'slide-in-down'; // 新的從上往下滑入
+            } else if (direction === 1) { // 下一週 (內容向左滑出)
+                slideOutClass = 'slide-out-left';
+                slideInClass = 'slide-in-right';
+            } else if (direction === -1) { // 上一週 (內容向右滑出)
+                slideOutClass = 'slide-out-right';
+                slideInClass = 'slide-in-left';
+            } else {
+                // 如果方向未知，不執行動畫，直接替換
+                bodyEl.innerHTML = newTableContainer.innerHTML;
+                bodyEl.style.overflow = ''; 
+                return;
+            }
+
+            // 同時應用滑出和滑入動畫
+            oldTable.classList.add(slideOutClass);
+            newTable.classList.add(slideInClass);
+
+            // 在動畫結束後清理 DOM 結構和動畫 class
+            setTimeout(() => {
+                // 替換舊表格，只保留新表格的內容
+                bodyEl.innerHTML = newTableContainer.innerHTML;
+
+                // 清理動畫 class
+                const finalTable = bodyEl.querySelector('.schedule-table');
+                if (finalTable) {
+                    finalTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+                }
+                // 恢復 bodyEl 的 overflow 屬性
+                bodyEl.style.overflow = '';
+
+            }, 200); // 確保與 CSS 動畫時間 (0.2s) 匹配
+        }
+
+		// 4. 綁定事件監聽器 (使用新的呼叫方式傳遞方向)
 		document.getElementById('prev-week-btn').onclick = () => {
 			currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-			showSchedule(activeSchedule.name, activeSchedule.type);
+			showSchedule(activeSchedule.name, activeSchedule.type, -1);
 		};
 		document.getElementById('next-week-btn').onclick = () => {
 			currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-			showSchedule(activeSchedule.name, activeSchedule.type);
+			showSchedule(activeSchedule.name, activeSchedule.type, 1);
 		};
 		document.getElementById('today-btn').onclick = () => {
 			currentWeekStart = getMonday(new Date());
-			showSchedule(activeSchedule.name, activeSchedule.type);
+			showSchedule(activeSchedule.name, activeSchedule.type, 0); // 傳入 0 觸發回到本週動畫
 		};
-		// 【修改點：異動週次巡航按鈕事件綁定】
+		// 異動週次巡航按鈕
 		const prevChangeBtn = document.getElementById('prev-change-week-btn');
 		const nextChangeBtn = document.getElementById('next-change-week-btn');
 
@@ -1496,7 +1678,7 @@ async function main() {
 			const targetWeek = findNextChangeWeek(-1);
 			if (targetWeek) {
 				currentWeekStart = targetWeek;
-				showSchedule(activeSchedule.name, activeSchedule.type);
+				showSchedule(activeSchedule.name, activeSchedule.type, -1);
 			} else {
 				alert('沒有找到更早的異動週次了。');
 			}
@@ -1506,7 +1688,7 @@ async function main() {
 			const targetWeek = findNextChangeWeek(1);
 			if (targetWeek) {
 				currentWeekStart = targetWeek;
-				showSchedule(activeSchedule.name, activeSchedule.type);
+				showSchedule(activeSchedule.name, activeSchedule.type, 1);
 			} else {
 				alert('沒有找到更晚的異動週次了。');
 			}
@@ -2055,7 +2237,8 @@ async function main() {
 				
 				currentWeekStart = getMonday(new Date(originalDateInput.value));
 				if (activeSchedule.type && activeSchedule.name) {
-					showSchedule(activeSchedule.name, activeSchedule.type);
+					// 【修改點】: 調課成功後，強制觸發一次本週切換，避免動畫錯誤
+					showSchedule(activeSchedule.name, activeSchedule.type, 0); 
 				}
 				
 				modal.style.display = 'none';
@@ -2088,7 +2271,8 @@ async function main() {
             await db.collection('classChanges').doc(changeId).update({ status: 'cancelled' });
             console.log('課程異動已成功取消！');
             if (activeSchedule.type && activeSchedule.name) {
-                showSchedule(activeSchedule.name, activeSchedule.type);
+                // 【修改點】: 取消異動成功後，強制觸發一次本週切換，避免動畫錯誤
+                showSchedule(activeSchedule.name, activeSchedule.type, 0); 
             }
         } catch (error) {
             console.error("取消異動失敗:", error);
@@ -2475,7 +2659,8 @@ async function main() {
 				const jumpDate = substitutionInfo.newDate;
 				currentWeekStart = getMonday(new Date(jumpDate));
 				if (activeSchedule && activeSchedule.name) {
-					showSchedule(activeSchedule.name, activeSchedule.type);
+					// 【修改點】: 代課/換課成功後，強制觸發一次本週切換，避免動畫錯誤
+					showSchedule(activeSchedule.name, activeSchedule.type, 0); 
 				} else {
 				}
 
@@ -2972,24 +3157,7 @@ async function main() {
     }
 	
     function bindNavEventListeners() {
-        document.getElementById('prev-week-btn').addEventListener('click', () => {
-            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-            if (activeSchedule.type && activeSchedule.name) {
-                showSchedule(activeSchedule.name, activeSchedule.type);
-            }
-        });
-        document.getElementById('next-week-btn').addEventListener('click', () => {
-            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-            if (activeSchedule.type && activeSchedule.name) {
-                showSchedule(activeSchedule.name, activeSchedule.type);
-            }
-        });
-        document.getElementById('today-btn').addEventListener('click', () => {
-            currentWeekStart = getMonday(new Date());
-            if (activeSchedule.type && activeSchedule.name) {
-                showSchedule(activeSchedule.name, activeSchedule.type);
-            }
-        });
+        // 這些事件監聽器現在由 showSchedule 內部管理
     }
 
     try {
@@ -3163,7 +3331,21 @@ async function main() {
     scheduleModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
     scheduleModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
     scheduleModalBody.addEventListener('touchend', (event) => {
-        handleTouchEnd(event, document.getElementById('schedule-modal'), 'prev-week-btn', 'next-week-btn');
+        // 【修改點】: 將 showSchedule 的週次巡航替換為動畫模式
+        if (event.changedTouches.length === 1 && touchStartX !== 0) {
+            touchEndX = event.changedTouches[0].clientX;
+            const deltaX = touchEndX - touchStartX;
+            if (Math.abs(deltaX) > swipeThreshold && document.getElementById('schedule-modal').style.display === 'block') {
+                if (deltaX < 0) {
+                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                    showSchedule(activeSchedule.name, activeSchedule.type, 1);
+                } else {
+                    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+                    showSchedule(activeSchedule.name, activeSchedule.type, -1);
+                }
+            }
+        }
+        touchStartX = 0;
     });
 
     // --- 綁定事件到換課 Modal ---
