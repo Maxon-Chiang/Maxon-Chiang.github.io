@@ -1447,10 +1447,12 @@
                 <div class="modal-title-container" style="flex-grow: 1;">
                      <h2 id="my-timetable-title" style="margin: 0; text-align: left; border: none; padding: 0; font-size: 1.4em;"></h2>
                 </div>
-                <div class="week-navigator modal-week-nav">
-                    <button id="prev-week-btn" style="padding: 3px 8px; font-size: 0.9em;">‹ 上一週</button>
-                    <button id="today-btn" style="padding: 3px 8px; font-size: 0.9em;">回到本週</button>
-                    <button id="next-week-btn" style="padding: 3px 8px; font-size: 0.9em;">下一週 ›</button>
+				<div class="week-navigator modal-week-nav">
+                    <button id="prev-change-week-btn" style="padding: 3px 8px; font-size: 0.9em;">‹ 上異動週</button>
+                    <button id="prev-week-btn" style="padding: 3px 8px; font-size: 0.9em;">‹ 上週</button>
+                    <button id="today-btn" style="padding: 3px 8px; font-size: 0.9em;">本週</button>
+                    <button id="next-week-btn" style="padding: 3px 8px; font-size: 0.9em;">下週 ›</button>
+                    <button id="next-change-week-btn" style="padding: 3px 8px; font-size: 0.9em;">下異動週 ›</button>
                 </div>
             </div>
             <div id="timetable-message" style="color: var(--danger-color); text-align: center; margin-bottom: 10px;"></div>
@@ -2699,7 +2701,7 @@
                  timetableMessage.textContent = '';
             }
 
-            document.body.classList.add('modal-open');
+			document.body.classList.add('modal-open');
             myTimetableModal.style.display = 'flex';
 
             document.getElementById('prev-week-btn').onclick = () => {
@@ -2714,6 +2716,28 @@
                 currentWeekStart = getMonday(new Date());
                 renderDerivedMyTimetable(0);
             };
+            
+            // 【新增：異動週次巡航按鈕事件綁定】
+            document.getElementById('prev-change-week-btn').onclick = () => {
+                const targetWeek = findNextChangeWeek(-1);
+                if (targetWeek) {
+                    currentWeekStart = targetWeek;
+                    renderDerivedMyTimetable(-1);
+                } else {
+                    alert('沒有找到更早的異動週次了。');
+                }
+            };
+            
+            document.getElementById('next-change-week-btn').onclick = () => {
+                const targetWeek = findNextChangeWeek(1);
+                if (targetWeek) {
+                    currentWeekStart = targetWeek;
+                    renderDerivedMyTimetable(1);
+                } else {
+                    alert('沒有找到更晚的異動週次了。');
+                }
+            };
+            // 【新增結束】
 
             if (timetableIntervalId) clearInterval(timetableIntervalId);
             timetableIntervalId = setInterval(renderDerivedMyTimetable, 30000);
@@ -2963,6 +2987,66 @@
 
 			}, 200); // 確保與 CSS 動畫時間 (0.2s) 匹配
 		}
+		
+		/**
+         * 尋找下一個/上一個包含課程異動的週次。
+         * @param {number} direction - 尋找方向 (+1: 下異動週, -1: 上異動週)。
+         * @returns {Date | null} 找到的週一日期，或 null。
+         */
+        function findNextChangeWeek(direction) {
+            if (activeChanges.length === 0) {
+                return null;
+            }
+
+            const currentWeekStartTS = currentWeekStart.getTime();
+            const changeWeeksTS = new Set();
+            
+            // 1. 找出所有異動紀錄所屬的週一日期 (毫秒)
+            activeChanges.forEach(change => {
+                let dateStr;
+                if (change.type === 'swap') {
+                    // 調課同時影響兩個週次
+                    dateStr = change.originalClassInfo.date;
+                    const dateBStr = change.targetClassInfo.date;
+                    changeWeeksTS.add(getMonday(new Date(dateBStr)).getTime());
+                } else if (change.type === 'substitution') {
+                    dateStr = change.date;
+                } else if (change.type === 'exchange') {
+                    // 換課同時影響兩個週次
+                    dateStr = change.originalLessonInfo.date;
+                    const dateBStr = change.exchangeLessonInfo.date;
+                    changeWeeksTS.add(getMonday(new Date(dateBStr)).getTime());
+                } else {
+                    return;
+                }
+                changeWeeksTS.add(getMonday(new Date(dateStr)).getTime());
+            });
+
+            const sortedChangeWeeks = Array.from(changeWeeksTS).sort((a, b) => a - b);
+            
+            let targetWeekTS = null;
+
+            if (direction === 1) { // 尋找下一異動週 (時間戳 > currentWeekStartTS)
+                for (const ts of sortedChangeWeeks) {
+                    // 確保是「嚴格大於」當前週次
+                    if (ts > currentWeekStartTS) {
+                        targetWeekTS = ts;
+                        break;
+                    }
+                }
+            } else if (direction === -1) { // 尋找上一異動週 (時間戳 < currentWeekStartTS)
+                for (let i = sortedChangeWeeks.length - 1; i >= 0; i--) {
+                    const ts = sortedChangeWeeks[i];
+                    // 確保是「嚴格小於」當前週次
+                    if (ts < currentWeekStartTS) {
+                        targetWeekTS = ts;
+                        break;
+                    }
+                }
+            }
+
+            return targetWeekTS ? new Date(targetWeekTS) : null;
+        }
 
 		newInfoBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
