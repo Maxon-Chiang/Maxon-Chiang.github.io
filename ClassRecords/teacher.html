@@ -2917,15 +2917,26 @@
 			const isReturningToCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
 
 			// 1. 如果沒有舊表格 (第一次載入)，或是在本週但方向是 0 (避免重複動畫)
-			if (!oldTable || (direction === 0 && isReturningToCurrentWeek && oldTable.classList.length === 0)) {
-				renderMyTimetableTable(derivedSchedule, null);
-				const table = myTimetableBody.querySelector('.schedule-table');
-				if (table) {
-					table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+			if (!oldTable || direction === 10) { 
+				// 創建一個臨時容器來渲染新表格
+				const tempContainer = document.createElement('div');
+				renderMyTimetableTable(derivedSchedule, tempContainer);
+				const newTable = tempContainer.querySelector('.schedule-table');
+				
+				if (newTable && oldTable) {
+				    // 如果舊表格存在，則用新的 DOM 節點替換舊的 DOM 節點
+				    oldTable.replaceWith(newTable);
+				} else if (newTable) {
+				    // 如果舊表格不存在，則直接添加新表格
+				    myTimetableBody.appendChild(newTable);
 				}
+				
+				// 清理所有可能的動畫 class
+				myTimetableBody.querySelectorAll('.schedule-table').forEach(table => {
+					table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+				});
 				return;
 			}
-
 			// 2. 準備父容器的環境 (關鍵點：必須設定 position: relative 和 overflow: hidden)
 			myTimetableBody.style.position = 'relative';
 			myTimetableBody.style.overflow = 'hidden';
@@ -2977,17 +2988,28 @@
 
 			// 8. 在動畫結束後清理 DOM 結構和動畫 class
 			setTimeout(() => {
-				// 替換舊表格，只保留新表格的內容
-				myTimetableBody.innerHTML = newTableContainer.innerHTML;
+				// 1. 確保 newTableContainer 仍然存在並包含一個表格
+				const finalTable = newTableContainer.querySelector('.schedule-table');
+				
+				// 2. 移除舊的表格
+				oldTable.remove();
 
-				// 清理動畫 class，防止影響後續操作
-				const finalTable = myTimetableBody.querySelector('.schedule-table');
+				// 3. 將新的表格元素 (它帶有正確的事件監聽器) 移動到父容器中
 				if (finalTable) {
-					 finalTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+					// 先將 newTableContainer 裡的所有內容移動到 myTimetableBody
+					// 由於 newTableContainer 只有 finalTable，最簡單的方式是
+					// 將 newTableContainer 替換為 finalTable 本身
+					newTableContainer.replaceWith(finalTable);
+					
+					// 4. 清理動畫 class
+					finalTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+				} else {
+					// 以防萬一，如果找不到新表格，則清空容器
+					myTimetableBody.innerHTML = '';
 				}
-				// 恢復 myTimetableBody 的 overflow 屬性
-				myTimetableBody.style.overflow = '';
 
+				// 5. 恢復 myTimetableBody 的 overflow 屬性
+				myTimetableBody.style.overflow = '';
 			}, 200); // 確保與 CSS 動畫時間 (0.2s) 匹配
 		}
 		
@@ -3150,3 +3172,4 @@
     </script>
 </body>
 </html>
+
