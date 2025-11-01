@@ -452,6 +452,15 @@ header .header-actions {
 		padding: 5px 10px;
 		font-size: 1em; 
 	}
+	#schedule-modal .week-navigator {
+		padding: 2px 0;
+		gap: 5px;
+    }
+    #schedule-modal .week-navigator button {
+        padding: 2px;
+        font-size: 0.85em;
+    }
+
     .modal-header { flex-direction: column; gap: 10px; }
     .modal-content { width: 90%; margin: 5% auto; }
     #modal-title2 { font-size: 12px; }
@@ -506,11 +515,13 @@ header .header-actions {
             <span class="close-button">&times;</span>
             <div class="modal-header">
                 <h2 id="modal-title"></h2>
-                <div class="week-navigator">
-                    <button id="prev-week-btn">‹ 上一週</button>
-                    <button id="today-btn">回到本週</button>
-                    <button id="next-week-btn">下一週 ›</button>
-                </div>
+				<div class="week-navigator">
+					<button id="prev-change-week-btn">‹異動</button>
+					<button id="prev-week-btn">‹上週</button>
+					<button id="today-btn">本週</button>
+					<button id="next-week-btn">下週›</button>
+					<button id="next-change-week-btn">異動›</button>
+				</div>
             </div>
 			<div class="subtitle-header">
                 <h3 id="modal-title2"></h3>
@@ -590,9 +601,9 @@ header .header-actions {
             <h3 id="exchange-modal-subtitle" style="text-align: center; color: #555; font-weight: normal;"></h3>
             <div class="modal-header" style="padding: 0; margin-bottom: 15px;">
                 <div class="week-navigator" style="margin: auto;">
-                    <button id="exchange-prev-week-btn">‹ 上一週</button>
-                    <button id="exchange-today-btn">回到本週</button>
-                    <button id="exchange-next-week-btn">下一週 ›</button>
+                    <button id="exchange-prev-week-btn">‹ 上週</button>
+                    <button id="exchange-today-btn">本週</button>
+                    <button id="exchange-next-week-btn">下週 ›</button>
                 </div>
             </div>
             <div id="exchange-modal-body"></div>
@@ -1478,7 +1489,30 @@ async function main() {
 			currentWeekStart = getMonday(new Date());
 			showSchedule(activeSchedule.name, activeSchedule.type);
 		};
+		// 【修改點：異動週次巡航按鈕事件綁定】
+		const prevChangeBtn = document.getElementById('prev-change-week-btn');
+		const nextChangeBtn = document.getElementById('next-change-week-btn');
 
+		prevChangeBtn.onclick = () => {
+			const targetWeek = findNextChangeWeek(-1);
+			if (targetWeek) {
+				currentWeekStart = targetWeek;
+				showSchedule(activeSchedule.name, activeSchedule.type);
+			} else {
+				alert('沒有找到更早的異動週次了。');
+			}
+		};
+
+		nextChangeBtn.onclick = () => {
+			const targetWeek = findNextChangeWeek(1);
+			if (targetWeek) {
+				currentWeekStart = targetWeek;
+				showSchedule(activeSchedule.name, activeSchedule.type);
+			} else {
+				alert('沒有找到更晚的異動週次了。');
+			}
+		};
+		
 		modal.querySelector('.close-button').onclick = () => {
 			modal.style.display = 'none';
 		};
@@ -2876,6 +2910,66 @@ async function main() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+
+	/**
+     * 尋找下一個/上一個包含課程異動的週次。
+     * @param {number} direction - 尋找方向 (+1: 下異動週, -1: 上異動週)。
+     * @returns {Date | null} 找到的週一日期，或 null。
+     */
+    function findNextChangeWeek(direction) {
+        if (activeChanges.length === 0) {
+            return null;
+        }
+
+        const currentWeekStartTS = currentWeekStart.getTime();
+        const changeWeeksTS = new Set();
+        
+        // 1. 找出所有異動紀錄所屬的週一日期 (毫秒)
+        activeChanges.forEach(change => {
+            let dateStr;
+            if (change.type === 'swap') {
+                // 調課同時影響兩個週次
+                dateStr = change.originalClassInfo.date;
+                const dateBStr = change.targetClassInfo.date;
+                changeWeeksTS.add(getMonday(new Date(dateBStr)).getTime());
+            } else if (change.type === 'substitution') {
+                dateStr = change.date;
+            } else if (change.type === 'exchange') {
+                // 換課同時影響兩個週次
+                dateStr = change.originalLessonInfo.date;
+                const dateBStr = change.exchangeLessonInfo.date;
+                changeWeeksTS.add(getMonday(new Date(dateBStr)).getTime());
+            } else {
+                return;
+            }
+            changeWeeksTS.add(getMonday(new Date(dateStr)).getTime());
+        });
+
+        const sortedChangeWeeks = Array.from(changeWeeksTS).sort((a, b) => a - b);
+        
+        let targetWeekTS = null;
+
+        if (direction === 1) { // 尋找下一異動週 (時間戳 > currentWeekStartTS)
+            for (const ts of sortedChangeWeeks) {
+                // 確保是「嚴格大於」當前週次
+                if (ts > currentWeekStartTS) {
+                    targetWeekTS = ts;
+                    break;
+                }
+            }
+        } else if (direction === -1) { // 尋找上一異動週 (時間戳 < currentWeekStartTS)
+            for (let i = sortedChangeWeeks.length - 1; i >= 0; i--) {
+                const ts = sortedChangeWeeks[i];
+                // 確保是「嚴格小於」當前週次
+                if (ts < currentWeekStartTS) {
+                    targetWeekTS = ts;
+                    break;
+                }
+            }
+        }
+
+        return targetWeekTS ? new Date(targetWeekTS) : null;
     }
 	
     function bindNavEventListeners() {
