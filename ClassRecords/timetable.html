@@ -1643,17 +1643,23 @@ async function main() {
 
             // 在動畫結束後清理 DOM 結構和動畫 class
             setTimeout(() => {
-                // 替換舊表格，只保留新表格的內容
-                bodyEl.innerHTML = newTableContainer.innerHTML;
+				// 1. 移除舊的表格
+                oldTable.remove();
 
-                // 清理動畫 class
-                const finalTable = bodyEl.querySelector('.schedule-table');
+                // 2. 從 newTableContainer 中取出已經綁定事件的新課表元素
+                const finalTable = newTableContainer.querySelector('.schedule-table');
+                
                 if (finalTable) {
+                    // 3. 將 newTableContainer 替換為 finalTable，使其成為 bodyEl 的直接子元素
+                    //    這樣 finalTable 上的所有事件監聽器都會被保留。
+                    newTableContainer.replaceWith(finalTable); 
+
+                    // 4. 清理動畫 class
                     finalTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
                 }
+                
                 // 恢復 bodyEl 的 overflow 屬性
                 bodyEl.style.overflow = '';
-
             }, 200); // 確保與 CSS 動畫時間 (0.2s) 匹配
         }
 
