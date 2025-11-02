@@ -10,7 +10,11 @@
         button, input, select, textarea {
             font-family: inherit;
         }
-		header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+		header { 
+            background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; 
+            justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; 
+        }
         header h1 { font-size: 1.6em; margin: 0; }
         header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em; }
         main { padding: 20px; max-width: 1000px; margin: auto; padding-bottom: 80px; }
@@ -31,19 +35,25 @@
             margin-bottom: 5px;
         }
 
-        /* 學生分數輸入區塊樣式 */
+        /* --- 學生分數輸入區塊樣式 (統一佈局) --- */
         #student-scores-container {
             display: block; 
             border: 1px solid var(--border-color);
             border-radius: 4px;
         }
         
-        .score-entry-header {
+        /* 設置四欄寬度比例 */
+        .score-columns {
             display: grid;
-            grid-template-columns: 80px 1fr 100px 1.5fr; 
+            grid-template-columns: 15% 30% 20% 35%; 
+            gap: 5px;
+            padding: 0 10px; 
+        }
+        
+        .score-entry-header {
             font-weight: bold;
             background-color: #f7f7f7;
-            padding: 10px;
+            padding: 10px 0;
             text-align: center;
             border-bottom: 2px solid var(--border-color);
             border-top-left-radius: 4px;
@@ -55,11 +65,8 @@
         }
 
         .score-entry-grid {
-            display: grid;
-            grid-template-columns: 80px 1fr 100px 1.5fr; 
-            align-items: center;
-            gap: 10px;
-            padding: 5px 10px;
+            /* 學生數據行繼承 Grid 佈局 */
+            padding: 5px 0; 
             border-bottom: 1px solid #eee;
         }
         .score-entry-grid:last-child { 
@@ -72,24 +79,21 @@
             width: 100%;
             text-align: center;
         }
-
+        
         .student-id-cell { text-align: center; font-size: 0.9em; color: #555; }
-        .student-name-cell { 
-            text-align: center; /* 修正：將姓名置中 */
-            font-weight: 500; 
-        }
+        .student-name-cell { text-align: center; font-weight: 500; }
         
         /* 浮動按鈕樣式 */
         .float-actions {
             position: fixed;
             bottom: 0;
             left: 0;
-            right: 0; /* 修正：確保按鈕容器不會被擠壓到 */
+            right: 0; 
             width: 100%;
             background-color: white;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             padding: 10px 20px;
-            box-sizing: border-box; /* 修正：確保 padding 不會導致總寬度超過 100% */
+            box-sizing: border-box; 
             display: flex;
             justify-content: flex-end;
             gap: 10px;
@@ -105,70 +109,70 @@
         #save-grades-btn { background-color: var(--success-color); }
         #cancel-edit-btn { background-color: var(--cancel-color); }
 
-        /* RWD 調整 */
+        /* --- RWD 調整 (手機專用佈局修正) --- */
         @media (max-width: 768px) {
-            main { padding: 10px; padding-bottom: 70px; }
-            .section { padding: 10px; margin-bottom: 15px; }
-            .form-grid { grid-template-columns: 1fr; gap: 15px; } 
-
-            .score-entry-header {
-                display: none;
+            
+            header {
+                /* 移除登出按鈕並縮小標題 */
+                padding: 0.6rem 10px;
             }
             
-            #student-scores-container {
-                border: none;
-                padding: 0;
+            .header-actions {
+                /* 隱藏用戶名和登出按鈕，只顯示返回清單 */
+                justify-content: flex-end;
+            }
+            
+            #user-email, #logout-btn {
+                display: none !important;
+            }
+            
+            main { padding: 10px; padding-bottom: 70px; }
+            .section { padding: 10px; margin-bottom: 15px; }
+            
+            /* 修正：成績項目名稱/說明區 - 垂直堆疊 */
+            .form-grid { 
+                grid-template-columns: 1fr; 
+                gap: 5px; 
+                margin-bottom: 15px;
+            } 
+            .form-grid label { font-size: 0.9em; }
+
+            /* 修正：學生分數登錄區 (標題) - 縮小文字 */
+            #grade-entry-section h3 {
+                font-size: 1.2em;
+                padding-bottom: 5px;
+            }
+            
+            /* 修正：學生分數登錄區 (內容) - 移除重複標籤 */
+            
+            .score-entry-header {
+                 /* 確保標題列在手機上可以正常顯示四欄 */
+                 padding: 8px 10px;
+            }
+            
+            .score-columns {
+                padding: 0; /* 移除額外 padding */
+                /* 繼承寬度 */
             }
 
             .score-entry-grid {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: flex-start;
-                padding: 10px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                margin-bottom: 8px;
-            }
-            
-            .student-id-cell, .student-name-cell {
-                flex: 0 0 100%; 
-                text-align: left;
-                padding: 0;
-                margin-bottom: 5px;
-                /* 修正：小螢幕下姓名靠左 */
-                text-align: left !important;
-            }
-            .student-id-cell {
-                font-size: 0.85em;
+                /* 修正：確保內容區的 input/text 欄位能對齊 */
+                padding: 5px 10px;
+                gap: 5px;
             }
 
-            .score-input-cell, .comment-input-cell {
-                flex: 0 0 49%; 
-                display: flex;
-                flex-direction: column;
-                gap: 2px;
-                padding: 0;
-            }
-            
-            .score-input-cell input, .comment-input-cell input {
-                order: 2; 
+            .score-entry-grid input {
                 padding: 6px;
             }
-
-            .score-input-cell::before, .comment-input-cell::before {
-                content: attr(data-label);
-                order: 1; 
-                font-size: 0.75em;
-                color: #555;
-                font-weight: bold;
-                margin-top: 5px;
-            }
+            
+            .student-id-cell { font-size: 0.8em; }
+            .student-name-cell { font-size: 0.9em; }
             
             .float-actions {
                 padding: 8px 15px; 
             }
             .float-actions button {
-                padding: 10px 20px;
+                padding: 10px 15px;
                 font-size: 1.0em;
                 min-width: 80px; 
             }
@@ -204,7 +208,7 @@
 		<div id="grade-entry-section" class="section">
             <h3>學生分數登錄</h3>
             <div id="student-scores-container">
-                <div class="score-entry-header">
+                <div class="score-entry-header score-columns">
                     <div>座號</div>
                     <div>姓名</div>
                     <div>分數</div>
@@ -250,7 +254,7 @@
         const studentScoresContainer = document.getElementById('student-scores-container');
         const saveGradesBtn = document.getElementById('save-grades-btn');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
-        const backToListBtn = document.getElementById('back-to-list-btn'); // 取得新的返回按鈕
+        const backToListBtn = document.getElementById('back-to-list-btn');
 
         // 修正：設置返回清單按鈕的導航邏輯
         function navigateBackToList() {
@@ -298,7 +302,6 @@
             const assignmentComment = decodeURIComponent(urlParams.get('assignmentComment') || '');
 
 			if (!classId) {
-				// 如果未指定班級，導航回主頁或顯示錯誤
                 appContainer.innerHTML = '<h2>錯誤：未指定班級，請從主頁重新進入。</h2>';
 				appContainer.style.display = 'block';
 				backToListBtn.textContent = '返回主頁';
@@ -339,6 +342,10 @@
             
             renderStudentScores();
 			appContainer.style.display = 'block';
+			
+			// 修正：隱藏 Header 中的用戶名和登出按鈕
+			document.getElementById('user-email').style.display = 'none';
+			document.getElementById('logout-btn').style.display = 'none';
 		}
         
         function renderStudentScores() {
@@ -348,7 +355,7 @@
                 studentScoresContainer.appendChild(existingHeader);
             } else {
                 const headerDiv = document.createElement('div');
-                headerDiv.className = 'score-entry-header';
+                headerDiv.className = 'score-entry-header score-columns';
                 headerDiv.innerHTML = `<div>座號</div><div>姓名</div><div>分數</div><div>備註</div>`;
                 studentScoresContainer.appendChild(headerDiv);
             }
@@ -360,16 +367,16 @@
                 const existingComment = currentGradesData[studentId] ? currentGradesData[studentId].comment : '';
 
                 const studentDiv = document.createElement('div');
-                studentDiv.className = 'score-entry-grid';
+                studentDiv.className = 'score-entry-grid score-columns'; // 使用 score-columns 類別
                 studentDiv.dataset.id = studentId;
 
                 studentDiv.innerHTML = `
                     <div class="student-id-cell">${studentSeat}</div>
                     <div class="student-name-cell">${student.name}</div>
-                    <div class="score-input-cell" data-label="分數">
+                    <div class="score-input-cell">
                         <input type="number" step="0.5" min="0" max="100" class="student-score-input" data-id="${studentId}" value="${existingScore}" placeholder="分數">
                     </div>
-                    <div class="comment-input-cell" data-label="備註">
+                    <div class="comment-input-cell">
                         <input type="text" class="student-comment-input" data-id="${studentId}" value="${existingComment}" placeholder="備註 (選填)">
                     </div>
                 `;
