@@ -46,7 +46,6 @@
         .score-columns {
             display: grid;
             grid-template-columns: 10% 30% 20% 40%; 
-			text-align: center;
             gap: 5px;
             padding: 0 10px; 
         }
@@ -61,8 +60,8 @@
             border-top-right-radius: 4px;
         }
         .score-entry-header > div { 
-            text-align: center;
-            padding: 0; 
+			text-align: center !important; /* 確保標題置中 */
+			padding: 0 !important; /* 清除所有內邊距 */
         }
 
         .score-entry-grid {
@@ -82,7 +81,10 @@
         }
         
         .student-id-cell { text-align: center; font-size: 0.9em; color: #555; }
-        .student-name-cell { text-align: center; font-weight: 500; }
+        .student-name-cell { 
+			text-align: center !important; /* 確保姓名內容置中 */
+			font-weight: 500;		
+		}
         
         /* 浮動按鈕樣式 */
         .float-actions {
@@ -523,4 +525,3 @@
     </script>
 </body>
 </html>
-
