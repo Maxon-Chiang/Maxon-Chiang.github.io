@@ -180,12 +180,18 @@
 				font-size: 1.0em; 
 			}
 			
-            /* 修正：強制在手機上顯示為單欄 */
 			.form-grid {
-				grid-template-columns: 1fr;
-				gap: 10px; 
+				grid-template-columns: 1fr 1fr; /* 強制兩欄平行 */
+				gap: 5px; /* 縮小間距 */
+				margin-bottom: 10px; /* 縮小底部間距 */
 			}
-			.form-grid label { font-size: 0.85em; }
+			.form-grid label { 
+				font-size: 0.8em; /* 縮小標籤字體以適應兩欄 */
+				margin-bottom: 2px;
+			}
+			.form-grid input {
+				padding: 8px; /* 縮小輸入框內邊距 */
+			}
         }
     </style>
 </head>
