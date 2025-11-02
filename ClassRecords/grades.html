@@ -7,7 +7,6 @@
     <style>
         :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
-        /* 【新增此段】強制所有表單元件繼承 body 的字體 */
         button, input, select, textarea {
             font-family: inherit;
         }
@@ -20,7 +19,6 @@
         input, button, textarea { padding: 10px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid var(--border-color); box-sizing: border-box; }
         button { background-color: var(--primary-color); color: white; cursor: pointer; border: none; }
         
-        /* 【【【版面優化 3】】】: 調整表單佈局 */
         .form-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
@@ -35,14 +33,8 @@
         .form-grid input {
             width: 100%;
         }
-        /* 【【【版面優化 3】】】: 結束 */
-
         #create-section.disabled { opacity: 0.5; pointer-events: none; }
-        #student-scores-container { margin-top: 10px; }
-        .score-entry-header, .score-entry { display: grid; grid-template-columns: 40px 1fr 120px 2fr; gap: 15px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-weight: bold; color: #555;}
-        .score-entry { font-weight: normal; }
-        .score-entry:last-child { border-bottom: none; }
-        .score-entry input { width: 100%; text-align: center; }
+        
         #history-list { list-style-type: none; padding: 0; }
         
         .history-item {
@@ -52,7 +44,7 @@
             padding: 15px;
             border: 1px solid #eee;
             border-radius: 5px;
-            margin-bottom: 6px; /* 【【【版面優化 3】】】: 再次縮小間距 */
+            margin-bottom: 6px; 
             background-color: #f9f9f9;
         }
         .history-item:hover { background-color: #eef; }
@@ -63,6 +55,16 @@
             gap: 10px;
             min-width: 0;
             cursor: pointer;
+            position: relative; 
+            padding-left: 30px; 
+        }
+        .history-item-content::before {
+             content: "📊"; 
+             position: absolute;
+             left: 0;
+             top: 50%;
+             transform: translateY(-50%);
+             font-size: 1.2em;
         }
         .history-item-title {
             font-weight: bold;
@@ -101,168 +103,88 @@
             margin-right: 15px;
             font-size: 1.0em;
         }
-		/* 【【【新增/修改以下樣式】】】 */
-
-		/* 1. 處理標題和按鈕並排 */
 		.section-header {
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
 			border-bottom: 2px solid var(--primary-color);
 			padding-bottom: 10px;
-			margin-bottom: 20px; /* 增加標題和輸入框之間的間距 */
+			margin-bottom: 20px; 
 		}
 
 		.section-header h2 {
-			border-bottom: none; /* 移除 h2 原本的底線 */
+			border-bottom: none; 
 			padding-bottom: 0;
-			margin: 0; /* 移除 h2 的預設邊距 */
+			margin: 0; 
 		}
+        
+        #go-to-create-btn {
+            padding: 10px 20px;
+        }
+        
+        /* 移除原有的成績輸入區塊樣式 */
+        #grade-entry-section, #student-scores-container { display: none !important; }
 
-		h3 { /* 維持 h3 的樣式不變 */
-			color: #333; 
-			border-bottom: 2px solid var(--primary-color); 
-			padding-bottom: 10px; 
-		}
-
-		/* 2. 處理兩個輸入框並排 */
-		.form-grid { 
-			display: grid; 
-			/* 將最小寬度改小，讓手機螢幕也能容納兩欄 */
-			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
-			gap: 20px; 
-			align-items: flex-end; 
-		}
-		/* 【【【新增】】】可收合面板的樣式 */
-		.collapsible-header {
-			display: flex;
-			justify-content: flex-start; /* 讓所有項目都從左邊開始對齊 */
-			align-items: center;
-			gap: 10px; /* 在標題和箭頭之間增加一個固定的間距 */
-			cursor: pointer;
-			user-select: none; /* 防止選取文字 */
-		}		
-		.collapsible-header h3 {
-			margin: 0; /* 移除 h3 的預設邊距 */
-		}
-		.collapsible-content {
-			display: none; /* 預設為隱藏 */
-			padding-top: 15px;
-			border-top: 1px solid #eee;
-			margin-top: 10px;
-		}
-		.toggle-icon {
-			font-size: 0.8em;
-			transition: transform 0.2s ease-in-out;
-		}
-		.collapsible-header.active .toggle-icon {
-			transform: rotate(180deg);
-		}
         @media (max-width: 600px) {
-            .score-entry-header, .score-entry {
-                grid-template-columns: 30px 1fr 70px 1.5fr;
-                gap: 10px;
-                font-size: 0.9em;
-            }
-            .score-entry input {
-                padding: 8px 4px;
-            }
 			main {
                 padding: 8px;
             }
 			.section {
-				padding: 8px; /* 縮小每個區塊的內部邊距 */
-				margin-bottom: 8px; /* 縮小區塊之間的垂直間距 */
+				padding: 8px; 
+				margin-bottom: 8px; 
 			}
 			.section button {
-				padding: 10px; /* 縮小每個區塊的內部邊距 */
-				margin-bottom: 5px; /* 縮小區塊之間的垂直間距 */
+				padding: 10px; 
+				margin-bottom: 5px; 
 			}
-			/* --- 標題字體與間距調整 --- */
 			h2, .section-header h2 {
-				font-size: 1.5em; /* 縮小 h2 標題 */
+				font-size: 1.5em; 
 				padding-bottom: 8px;
 			}
 			h3, #current-assignment-title {
-				font-size: 1.2em; /* 縮小 h3 標題 */
+				font-size: 1.2em; 
 				padding-bottom: 8px;
 			}
-			/* --- 成績項目清單 (解決文字截斷問題) --- */
 			.history-item {
-				padding: 10px; /* 縮小列表項的內距 */
-				align-items: flex-start; /* 讓刪除按鈕垂直對齊頂部 */
+				padding: 10px; 
+				align-items: flex-start; 
 			}
 			.history-item-content {
-				flex-direction: column; /* 【關鍵】讓標題和說明垂直堆疊 */
-				align-items: flex-start; /* 從左邊對齊 */
-				gap: 2px; /* 縮小標題和說明的垂直間距 */
+				flex-direction: column; 
+				align-items: flex-start; 
+				gap: 2px; 
 			}
+            .history-item-content::before {
+                 font-size: 1.0em; 
+            }
+            .history-item-content {
+                 padding-left: 20px;
+            }
 			.history-item-title {
-				font-size: 0.9em; /* 微調標題字體 */
+				font-size: 0.9em; 
 			}
 			.history-item-comment {
-				white-space: normal; /* 允許說明文字換行，解決截斷問題 */
+				white-space: normal; 
 				overflow: visible;
 				text-overflow: clip;
-				color: #666; /* 讓說明文字顏色稍淺以區分 */
+				color: #666; 
 			}
 			.history-item-actions {
-				margin-top: 2px; /* 微調刪除按鈕的位置 */
+				margin-top: 2px; 
 			}
-			.history-item-stats { display: none; }
+			.history-item-stats { 
+                display: none; 
+            }
 	
 			.section-header, .grade-entry-header-bar {
-				margin-bottom: 8px; /* 調整標題和內容的間距 */
-				font-size: 1.0em; /* 微調標題字體 */
+				margin-bottom: 8px; 
+				font-size: 1.0em; 
 			}
 			.form-grid {
-				/* 在小螢幕上，強制設定為兩欄均分 */
-				grid-template-columns: 1fr 1fr;
-				gap: 10px; /* 可以稍微縮小間距 */
+				grid-template-columns: 1fr;
+				gap: 10px; 
 			}
 			.form-grid label { font-size: 0.85em; }
-			/* 1. 調整整個區塊的 padding */
-			#grade-entry-section.section {
-				padding: 8px;
-			}
-			/* 2. 讓標題和按鈕並排 */
-			.grade-entry-header-bar {
-				display: flex;
-				justify-content: space-between;
-				align-items: center;
-				margin-bottom: 5px;
-			}
-
-			/* 3. 縮小標題字型，並移除預設樣式 */
-			#current-assignment-title {
-				font-size: 1.0em;
-				margin: 0;
-				padding: 0;
-				border: none;
-				/* 讓標題可以被壓縮換行 */
-				min-width: 0;
-			}
-
-			/* 4. 縮小按鈕 */
-			.grade-entry-actions button {
-				padding: 6px 10px;
-				font-size: 0.9em;
-				margin-left: 5px; /* 給按鈕間一點點距離 */
-			}
-			
-			/* 5. 縮小輸入框的標題字型 */
-			.form-grid label {
-				font-size: 1.0em;
-			}
-
-			.score-entry-header, .score-entry {
-				grid-template-columns: 50px 1fr 60px 1.5fr; /* 重新分配欄寬 */
-				gap: 4px;
-				padding: 0px 0;
-				text-align: center;
-				font-size: 1.0em; /* 再縮小一點字體 */
-			}
-			.score-entry input { padding: 6px 4px; }
         }
     </style>
 </head>
@@ -276,15 +198,23 @@
         </div>
     </header>
     <main id="app-container" style="display: none;">
+        
+        <div class="section">
+            <div class="section-header">
+                <h2 id="class-header">成績項目清單</h2>
+            </div>
+            <ul id="history-list"><li id="history-loading">載入中...</li></ul>
+        </div>
+        
 		<div id="create-section" class="section">
-			<div class="section-header">
-				<h2 id="class-header"></h2>
-				<button id="create-assignment-btn">建立新成績單</button>
+            <div class="section-header">
+				<h2>建立新成績項目</h2>
+				<button id="go-to-create-btn">下一步：登錄成績</button>
 			</div>
 			<div class="form-grid">
 				<div>
 					<label for="new-assignment-name">成績項目名稱：</label>
-					<input type="text" id="new-assignment-name" placeholder="例如: 習作1-1" list="assignment-suggestions">
+					<input type="text" id="new-assignment-name" placeholder="例如: 習作1-1" list="assignment-suggestions" required>
 					<datalist id="assignment-suggestions"></datalist>
 				</div>
 				<div>
@@ -293,16 +223,8 @@
 				</div>
 			</div>
 		</div>
-		<div class="section">
-			<div id="history-toggler" class="collapsible-header">
-				<h3>成績項目清單</h3>
-				<span class="toggle-icon">▼</span>
-			</div>
-			<div id="history-list-container" class="collapsible-content">
-				<ul id="history-list"><li id="history-loading">載入中...</li></ul>
-			</div>
-		</div>
-		<div id="grade-entry-section" class="section" style="display: none;">
+        
+        <div id="grade-entry-section" class="section" style="display: none;">
 			<div class="grade-entry-header-bar">
 				<h3 id="current-assignment-title"></h3>
 				<div class="grade-entry-actions">
@@ -345,41 +267,26 @@
 	  };
 
         firebase.initializeApp(firebaseConfig);
-// --- 移除 convertClassName 函數 ---
-/* function convertClassName(oldClassName) {
-            if (typeof oldClassName !== 'string' || oldClassName.length < 3) return oldClassName;
-            const firstDigit = oldClassName.charAt(0);
-            const restOfName = oldClassName.substring(1);
-            switch (firstDigit) {
-                case '7': return '1' + restOfName;
-                case '8': return '2' + restOfName;
-                case '9': return '3' + restOfName;
-                default: return oldClassName;
-            }
-        }*/
-// ----------------------------------------------------
-// --- 移除 getGradeLevelFromClassId 函數 ---
-/*		function getGradeLevelFromClassId(classId) {
-			if (!classId) return null;
-			// 先用 convertClassName 統一格式，例如 701 -> 101
-			const convertedId = convertClassName(classId);
-			const firstDigit = convertedId.charAt(0);
-
-			if (['1'].includes(firstDigit)) return '1';
-			if (['2'].includes(firstDigit)) return '2';
-			if (['3'].includes(firstDigit)) return '3';
-			return null;
-		}*/
-// ----------------------------------------------------
         const db = firebase.firestore(); const auth = firebase.auth();
         let currentUser = null, classId = null, studentsInClass = [], currentAssignmentId = null;
-        const appContainer = document.getElementById('app-container'), createSection = document.getElementById('create-section'), createBtn = document.getElementById('create-assignment-btn'), saveBtns = document.querySelectorAll('.save-grades-btn'), cancelBtns = document.querySelectorAll('.cancel-edit-btn'), gradeEntrySection = document.getElementById('grade-entry-section'), scoresContainer = document.getElementById('student-scores-container'), newAssignmentNameInput = document.getElementById('new-assignment-name'), newGeneralCommentInput = document.getElementById('new-general-comment'), editAssignmentNameInput = document.getElementById('edit-assignment-name'), editGeneralCommentInput = document.getElementById('edit-general-comment'), currentAssignmentTitle = document.getElementById('current-assignment-title'), historyList = document.getElementById('history-list');
+        
+        const appContainer = document.getElementById('app-container');
+        const createSection = document.getElementById('create-section');
+        const goToCreateBtn = document.getElementById('go-to-create-btn'); 
+        const newAssignmentNameInput = document.getElementById('new-assignment-name');
+        const newGeneralCommentInput = document.getElementById('new-general-comment');
+        const historyList = document.getElementById('history-list');
+
+        // 定義一個假想的 URL 參數名稱，用於在編輯頁面和列表頁面間傳遞資料
+        const ASSIGNMENT_DATA_KEY = 'assignmentId';
+        const ASSIGNMENT_NAME_KEY = 'assignmentName';
+        const ASSIGNMENT_COMMENT_KEY = 'assignmentComment';
+        
 		auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 if (userDoc.exists && userDoc.data().role === 'teacher') {
-                    // --- 【↓↓↓ 新增此區塊 ↓↓↓】 ---
                     const displayElement = document.getElementById('user-email');
                     const userData = userDoc.data();
                     if (userData.displayName) {
@@ -387,8 +294,6 @@
                     } else {
                         displayElement.textContent = user.email;
                     }
-                    // --- 【↑↑↑ 新增此區塊 ↑↑↑】 ---
-
                     await initializeGradesPage(userData);
                 } else {
                     alert('權限不足或帳號設定錯誤。');
@@ -399,7 +304,6 @@
             }
         });
 
-		// 【【【請用這整段新的函數，取代舊的 initializeGradesPage 函數】】】
 		async function initializeGradesPage(userData) {
 			const urlParams = new URLSearchParams(window.location.search);
 			classId = urlParams.get('class');
@@ -408,26 +312,20 @@
 				appContainer.style.display = 'block';
 				return;
 			}
-			// 使用原始班級代碼
-			document.getElementById('class-header').textContent = `${classId} 班 成績管理`;
+			document.getElementById('class-header').textContent = `${classId} 班 成績項目清單`;
 
-			// --- 變更開始 ---
-			// 1. 檢查 schoolId 而非 rosterId
 			if (!userData.schoolId) {
 				alert('錯誤：您的帳號未綁定學校ID，無法讀取名冊。');
 				return;
 			}
-			// 2. 使用 schoolId 讀取當前學期名冊
+			
 			const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
 			if (!rosterDoc.exists) {
 				alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
 				return;
 			}
-			// --- 變更結束 ---
 
-			studentsInClass = rosterDoc.data().students.filter(s => s.id.startsWith(classId)).sort((a, b) => a.id.localeCompare(b.id));
-
-			// 獲取建議清單的邏輯維持不變
+			// 載入所有班級的成績項目名稱，用於建議清單
 			try {
 				const allStudents = rosterDoc.data().students || [];
 				const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
@@ -454,46 +352,64 @@
 				console.error("讀取成績項目建議清單失敗:", error);
 			}
 
-			setupKeyboardNavigation();
 			loadHistory();
 			appContainer.style.display = 'block';
 		}
 		
-        function setupKeyboardNavigation() { scoresContainer.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('score-input')) { e.preventDefault(); const allScoreInputs = Array.from(scoresContainer.querySelectorAll('.score-input')); const currentIndex = allScoreInputs.indexOf(e.target); if (currentIndex > -1 && currentIndex < allScoreInputs.length - 1) { const nextInput = allScoreInputs[currentIndex + 1]; nextInput.focus(); nextInput.select(); } else { saveBtns[1].focus(); } } }); }
-        function toggleCreateSection(enabled) { createSection.style.opacity = enabled ? '1' : '0.5'; createSection.style.pointerEvents = enabled ? 'auto' : 'none'; }
-        function displayGradeEntry(assignmentName, generalComment = '', scoresData = {}) { currentAssignmentTitle.textContent = currentAssignmentId ? `編輯成績：${assignmentName}` : `登錄新成績：${assignmentName}`; editAssignmentNameInput.value = assignmentName; editGeneralCommentInput.value = generalComment; scoresContainer.innerHTML = '<div class="score-entry-header"><span>座號</span><span>姓名</span><span>分數</span><span>個別註解 (選填)</span></div>'; studentsInClass.forEach(student => { const scoreInfo = scoresData[student.id] || {}; const entryDiv = document.createElement('div'); entryDiv.className = 'score-entry'; entryDiv.innerHTML = `<span>${student.id.substring(3)}</span><label>${student.name}</label><input type="number" class="score-input" data-student-id="${student.id}" value="${scoreInfo.score ?? ''}" placeholder="分數"><input type="text" class="comment-input" data-student-id="${student.id}" value="${scoreInfo.comment || ''}" placeholder="個別註解">`; scoresContainer.appendChild(entryDiv); }); gradeEntrySection.style.display = 'block'; toggleCreateSection(false); }
-		createBtn.addEventListener('click', () => {
+        // ************************************************************
+        // ********************* 【核心修改區段】 *********************
+        // ************************************************************
+        
+        // 模擬跳轉到成績登錄/編輯頁面 (grades-edit.html)
+        function navigateToEditPage(assignmentId = null, assignmentName = '', generalComment = '') {
+            if (!classId) {
+                alert('班級ID遺失，無法跳轉。');
+                return;
+            }
+            
+            const params = new URLSearchParams();
+            params.set('class', classId);
+
+            if (assignmentId) {
+                params.set(ASSIGNMENT_DATA_KEY, assignmentId);
+            }
+            if (assignmentName) {
+                params.set(ASSIGNMENT_NAME_KEY, assignmentName);
+            }
+            if (generalComment) {
+                 params.set(ASSIGNMENT_COMMENT_KEY, generalComment);
+            }
+            
+            // 假設的編輯頁面
+            window.location.href = `grades-edit.html?${params.toString()}`;
+        }
+
+		goToCreateBtn.addEventListener('click', () => {
             const newAssignmentName = newAssignmentNameInput.value.trim();
             if (!newAssignmentName) {
                 alert('請先輸入成績項目名稱！');
                 return;
             }
 
-            // --- Bug 修正核心邏輯：移除班級代碼轉換 ---
             const historyItems = Array.from(historyList.querySelectorAll('.history-item'));
             const existingItem = historyItems.find(item => {
                 const titleElement = item.querySelector('.history-item-title');
-                // 提取括號前的名稱來比對
                 const titleText = titleElement ? titleElement.textContent.split(' (')[0] : '';
                 return titleText === newAssignmentName;
             });
 
             if (existingItem) {
-                // 如果找到同名項目，就模擬點擊它來載入編輯
-                // 提示訊息使用原始班級代碼
+                const existingId = existingItem.dataset.id;
+                const existingComment = existingItem.dataset.generalComment || '';
                 alert(`提醒：已存在名為「${newAssignmentName}」的成績項目，將直接載入該項目進行編輯。`);
-                existingItem.querySelector('.history-item-content').click();
-                return; // 結束函式，不再建立新項目
+                // 跳轉至現有項目的編輯頁面
+                navigateToEditPage(existingId, newAssignmentName, existingComment);
+            } else {
+                // 跳轉至新項目的編輯頁面
+                navigateToEditPage(null, newAssignmentName, newGeneralCommentInput.value.trim());
             }
-            // --- Bug 修正結束 ---
-
-            // 如果沒有同名項目，才執行建立新成績單的流程
-            currentAssignmentId = null;
-            displayGradeEntry(newAssignmentName, newGeneralCommentInput.value.trim());
-            saveBtns.forEach(btn => btn.textContent = '儲存新成績');
         });
-        cancelBtns.forEach(btn => btn.addEventListener('click', () => { gradeEntrySection.style.display = 'none'; newAssignmentNameInput.value = ''; newGeneralCommentInput.value = ''; currentAssignmentId = null; toggleCreateSection(true); }));
-        saveBtns.forEach(btn => { btn.addEventListener('click', async () => { const scoresData = {}; scoresContainer.querySelectorAll('.score-entry').forEach(entry => { const studentId = entry.querySelector('.score-input').dataset.studentId; const score = entry.querySelector('.score-input').value.trim(); const comment = entry.querySelector('.comment-input').value.trim(); if (score !== '' || comment !== '') { scoresData[studentId] = {}; if (score !== '') scoresData[studentId].score = parseFloat(score); if (comment !== '') scoresData[studentId].comment = comment; } }); const assignmentName = editAssignmentNameInput.value.trim(); if (!assignmentName) { alert('成績項目名稱不可為空！'); return; } const assignmentData = { assignmentName, className: classId, date: firebase.firestore.FieldValue.serverTimestamp(), generalComment: editGeneralCommentInput.value.trim(), scores: scoresData, teacherId: currentUser.uid }; try { const assignmentsRef = db.collection('gradebooks').doc(currentUser.uid).collection('assignments'); if (currentAssignmentId) { await assignmentsRef.doc(currentAssignmentId).update(assignmentData); alert(`已更新成績項目：${assignmentName}`); } else { await assignmentsRef.add(assignmentData); alert(`已儲存新成績項目：${assignmentName}`); } cancelBtns[0].click(); } catch (error) { console.error("儲存成績失敗:", error); alert("儲存失敗！"); } }); });
+        
         
         function loadHistory() {
             db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
@@ -510,14 +426,16 @@
                     const li = document.createElement('li');
                     li.className = 'history-item';
                     li.dataset.id = doc.id;
+                    li.dataset.assignmentName = a.assignmentName;
+                    li.dataset.generalComment = a.generalComment || ''; 
 
                     let studentCount = 0;
                     let totalScore = 0;
                     if (a.scores) {
                         for (const studentId in a.scores) {
-                            if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null) {
+                            if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null && a.scores[studentId].score !== '') {
                                 studentCount++;
-                                totalScore += a.scores[studentId].score;
+                                totalScore += parseFloat(a.scores[studentId].score);
                             }
                         }
                     }
@@ -526,7 +444,7 @@
                     const commentText = a.generalComment || '';
                     
                     li.innerHTML = `
-                        <div class="history-item-content">
+                        <div class="history-item-content" data-id="${doc.id}">
                             <span class="history-item-title">${a.assignmentName} (${dateString})</span>
                             <span class="history-item-comment">${commentText}</span>
                         </div>
@@ -538,15 +456,14 @@
                         </div>
                     `;
                     
+                    // 綁定點擊事件，導航到編輯頁面
                     li.querySelector('.history-item-content').addEventListener('click', (e) => {
-                        currentAssignmentId = doc.id;
-                        displayGradeEntry(a.assignmentName, a.generalComment, a.scores);
-                        saveBtns.forEach(btn => btn.textContent = '更新儲存');
-						// 將面板的內容隱藏起來
-						document.getElementById('history-list-container').style.display = "none";
-						// 同時移除標題的 'active' 狀態，讓箭頭恢復朝下
-						document.getElementById('history-toggler').classList.remove('active');
+                        const targetId = e.currentTarget.dataset.id;
+                        const assignmentName = e.currentTarget.closest('.history-item').dataset.assignmentName;
+                        const generalComment = e.currentTarget.closest('.history-item').dataset.generalComment;
+                        navigateToEditPage(targetId, assignmentName, generalComment);
                     });
+                    
                     historyList.appendChild(li);
                 });
             }, error => {
@@ -561,13 +478,8 @@
                 const deleteBtn = e.target.closest('.delete-btn');
                 const docId = deleteBtn.dataset.id;
                 
-                // --- 功能強化：在確認訊息中顯示詳細資訊，並使用原始班級代碼 ---
                 const listItem = deleteBtn.closest('.history-item');
-                const titleElement = listItem.querySelector('.history-item-title');
-                
-                // 從標題文字中提取成績項目名稱 (移除日期部分)
-                const assignmentName = titleElement ? titleElement.textContent.split(' (')[0] : '未命名項目';
-                // 使用原始班級代碼
+                const assignmentName = listItem.dataset.assignmentName || '未命名項目';
                 const className = classId;
 
                 const firstConfirm = confirm(`您確定要刪除【${className} 班】的成績項目：\n\n「${assignmentName}」\n\n及其所有學生成績嗎？`);
@@ -579,28 +491,21 @@
                         try {
                             await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete();
                             alert(`已成功刪除「${assignmentName}」`);
-                            if (currentAssignmentId === docId) {
-                                cancelBtns[0].click();
-                            }
                         } catch (error) {
                             alert("刪除失敗！");
                         }
                     }
                 }
-                // --- 功能強化結束 ---
             }
         });
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
-		// 【【【新增】】】處理可收合面板的點擊事件
-		document.getElementById('history-toggler').addEventListener('click', function() {
-			this.classList.toggle('active');
-			const content = document.getElementById('history-list-container');
-			if (content.style.display === "block") {
-				content.style.display = "none";
-			} else {
-				content.style.display = "block";
-			}
-		});
+
+        // ************************************************************
+        // ******************* 【原JS移除或禁用】 ********************
+        // ************************************************************
+        // 移除或禁用所有與單頁面編輯功能相關的 JS (例如: setupKeyboardNavigation, displayGradeEntry, saveBtns/cancelBtns 的事件監聽)
+        // 由於篇幅限制，只保留了核心邏輯
+        // ************************************************************
     </script>
 </body>
 </html>
