@@ -45,7 +45,7 @@
         /* 設置四欄寬度比例 */
         .score-columns {
             display: grid;
-            grid-template-columns: 15% 30% 20% 35%; 
+            grid-template-columns: 10% 30% 20% 40%; 
             gap: 5px;
             padding: 0 10px; 
         }
@@ -129,13 +129,18 @@
             main { padding: 10px; padding-bottom: 70px; }
             .section { padding: 10px; margin-bottom: 15px; }
             
-            /* 修正：成績項目名稱/說明區 - 垂直堆疊 */
-            .form-grid { 
-                grid-template-columns: 1fr; 
-                gap: 5px; 
-                margin-bottom: 15px;
-            } 
-            .form-grid label { font-size: 0.9em; }
+			.form-grid { 
+				grid-template-columns: 1fr 1fr; /* 強制兩欄平行 */
+				gap: 5px; /* 縮小間距 */
+				margin-bottom: 15px; 
+			} 
+			.form-grid label {
+				font-size: 0.8em; /* 縮小標籤字體 */
+				margin-bottom: 2px;
+			}
+			.form-grid input {
+				padding: 8px; /* 縮小輸入框內邊距 */
+			}
 
             /* 修正：學生分數登錄區 (標題) - 縮小文字 */
             #grade-entry-section h3 {
