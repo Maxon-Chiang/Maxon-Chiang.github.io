@@ -122,7 +122,6 @@
             padding: 10px 20px;
         }
         
-        /* 移除原有的成績輸入區塊樣式 */
         #grade-entry-section, #student-scores-container { display: none !important; }
 
         @media (max-width: 600px) {
@@ -180,6 +179,8 @@
 				margin-bottom: 8px; 
 				font-size: 1.0em; 
 			}
+			
+            /* 修正：強制在手機上顯示為單欄 */
 			.form-grid {
 				grid-template-columns: 1fr;
 				gap: 10px; 
@@ -193,7 +194,7 @@
         <h1 id="header-title">成績登錄</h1>
         <div class="header-actions">
             <span id="user-email"></span>
-            <button onclick="history.back()">返回主頁</button>
+            <button onclick="window.location.href='teacher.html'">返回主頁</button>
             <button id="logout-btn">登出</button>
         </div>
     </header>
@@ -224,7 +225,7 @@
 			</div>
 		</div>
         
-        <div id="grade-entry-section" class="section" style="display: none;">
+		<div id="grade-entry-section" class="section" style="display: none;">
 			<div class="grade-entry-header-bar">
 				<h3 id="current-assignment-title"></h3>
 				<div class="grade-entry-actions">
@@ -268,7 +269,7 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); const auth = firebase.auth();
-        let currentUser = null, classId = null, studentsInClass = [], currentAssignmentId = null;
+        let currentUser = null, classId = null, studentsInClass = [];
         
         const appContainer = document.getElementById('app-container');
         const createSection = document.getElementById('create-section');
@@ -277,7 +278,6 @@
         const newGeneralCommentInput = document.getElementById('new-general-comment');
         const historyList = document.getElementById('history-list');
 
-        // 定義一個假想的 URL 參數名稱，用於在編輯頁面和列表頁面間傳遞資料
         const ASSIGNMENT_DATA_KEY = 'assignmentId';
         const ASSIGNMENT_NAME_KEY = 'assignmentName';
         const ASSIGNMENT_COMMENT_KEY = 'assignmentComment';
@@ -307,8 +307,9 @@
 		async function initializeGradesPage(userData) {
 			const urlParams = new URLSearchParams(window.location.search);
 			classId = urlParams.get('class');
+            
 			if (!classId) {
-				appContainer.innerHTML = '<h2>錯誤：未指定班級。</h2>';
+				appContainer.innerHTML = '<h2>錯誤：未指定班級。請返回主頁選擇班級後重新進入。</h2>';
 				appContainer.style.display = 'block';
 				return;
 			}
@@ -325,7 +326,6 @@
 				return;
 			}
 
-			// 載入所有班級的成績項目名稱，用於建議清單
 			try {
 				const allStudents = rosterDoc.data().students || [];
 				const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
@@ -356,11 +356,6 @@
 			appContainer.style.display = 'block';
 		}
 		
-        // ************************************************************
-        // ********************* 【核心修改區段】 *********************
-        // ************************************************************
-        
-        // 模擬跳轉到成績登錄/編輯頁面 (grades-edit.html)
         function navigateToEditPage(assignmentId = null, assignmentName = '', generalComment = '') {
             if (!classId) {
                 alert('班級ID遺失，無法跳轉。');
@@ -374,13 +369,12 @@
                 params.set(ASSIGNMENT_DATA_KEY, assignmentId);
             }
             if (assignmentName) {
-                params.set(ASSIGNMENT_NAME_KEY, assignmentName);
+                params.set(ASSIGNMENT_NAME_KEY, encodeURIComponent(assignmentName));
             }
             if (generalComment) {
-                 params.set(ASSIGNMENT_COMMENT_KEY, generalComment);
+                 params.set(ASSIGNMENT_COMMENT_KEY, encodeURIComponent(generalComment));
             }
             
-            // 假設的編輯頁面
             window.location.href = `grades-edit.html?${params.toString()}`;
         }
 
@@ -388,6 +382,7 @@
             const newAssignmentName = newAssignmentNameInput.value.trim();
             if (!newAssignmentName) {
                 alert('請先輸入成績項目名稱！');
+                newAssignmentNameInput.focus();
                 return;
             }
 
@@ -402,10 +397,8 @@
                 const existingId = existingItem.dataset.id;
                 const existingComment = existingItem.dataset.generalComment || '';
                 alert(`提醒：已存在名為「${newAssignmentName}」的成績項目，將直接載入該項目進行編輯。`);
-                // 跳轉至現有項目的編輯頁面
                 navigateToEditPage(existingId, newAssignmentName, existingComment);
             } else {
-                // 跳轉至新項目的編輯頁面
                 navigateToEditPage(null, newAssignmentName, newGeneralCommentInput.value.trim());
             }
         });
@@ -456,7 +449,6 @@
                         </div>
                     `;
                     
-                    // 綁定點擊事件，導航到編輯頁面
                     li.querySelector('.history-item-content').addEventListener('click', (e) => {
                         const targetId = e.currentTarget.dataset.id;
                         const assignmentName = e.currentTarget.closest('.history-item').dataset.assignmentName;
@@ -499,13 +491,6 @@
             }
         });
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
-
-        // ************************************************************
-        // ******************* 【原JS移除或禁用】 ********************
-        // ************************************************************
-        // 移除或禁用所有與單頁面編輯功能相關的 JS (例如: setupKeyboardNavigation, displayGradeEntry, saveBtns/cancelBtns 的事件監聽)
-        // 由於篇幅限制，只保留了核心邏輯
-        // ************************************************************
     </script>
 </body>
 </html>
