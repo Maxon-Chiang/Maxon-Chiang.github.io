@@ -59,7 +59,7 @@
 
         @media (max-width: 768px) {
             main { padding: 10px; }
-            .section { padding: 0px 15px 0px; }
+            .section { padding: 2px 15px; }
             header h1 { font-size: 1.6em; }
             h2 {
                 flex-direction: column;
@@ -107,25 +107,50 @@
         </div>
         <div id="performance-tab" class="tab-content active">
             <div class="section">
-                <h2><span>查詢條件</span><div class="sub-nav"><label><input type="radio" name="perf-report-type" value="log" checked> 事件明細</label><label><input type="radio" name="perf-report-type" value="stats"> 統計摘要</label></div></h2>
+                <h2>
+                    <span>查詢條件</span>
+                    <div class="sub-nav">
+                        <label><input type="radio" name="perf-report-type" value="log" checked> 事件明細</label>
+                        <label><input type="radio" name="perf-report-type" value="stats"> 統計摘要</label>
+                    </div>
+                </h2>
                 <div class="filter-grid">
                     <div class="filter-group"><label for="start-date">開始日期:</label><input type="date" id="start-date"></div>
                     <div class="filter-group"><label for="end-date">結束日期:</label><input type="date" id="end-date"></div>
-					<div class="filter-grid" style="grid-template-columns: 1fr; margin-top: 20px;" id="event-select"><div class="filter-group"><label>事件類型:</label><select id="event-type-filter"><option value="all">全部事件</option><option value="with_points">僅有分數</option><option value="text_only">僅純文字</option></select></div></div>
-                </div>
-                <!-- 【修改點 1：年段篩選器容器 (改為複選框)】 -->
-                <div id="perf-grade-filter-container" class="filter-group" style="margin-top: 20px; display: none;">
-                    <label>選擇年段 (可複選):</label>
-                    <div id="perf-grade-checkbox-container">
-                        <div class="class-checkbox">
-                            <input type="checkbox" id="select-all-grades" class="grade-selector" data-grade="all" checked>
-                            <label for="select-all-grades">全選</label>
+					<div class="filter-grid" style="grid-template-columns: 1fr; margin-top: 20px;" id="event-select">
+                        <div class="filter-group">
+                            <label>事件類型:</label>
+                            <select id="event-type-filter">
+                                <option value="all">全部事件</option>
+                                <option value="with_points">僅有分數</option>
+                                <option value="text_only">僅純文字</option>
+                            </select>
                         </div>
-                        <!-- 年段選項由 JavaScript 填充 -->
                     </div>
                 </div>
-                <!-- 結束修改點 1 -->
                 
+				<div id="perf-stats-options" style="margin-top: 20px; display: none;">
+					<div class="filter-grid" id="perf-stats-filter-grid">
+						<div class="filter-group">
+							<label style="font-weight: bold;">加總對象:</label>
+							<div style="display: flex; gap: 20px; padding-top: 5px; height: 40px; align-items: center;">
+								<label><input type="radio" name="sum-target" value="class" checked> 班級</label>
+								<label><input type="radio" name="sum-target" value="student"> 學生</label>
+							</div>
+						</div>
+						
+						<div id="perf-grade-filter-container" class="filter-group">
+							<label>選擇年段 (可複選):</label>
+							<div id="perf-grade-checkbox-container">
+								<div class="class-checkbox">
+									<input type="checkbox" id="select-all-grades" class="grade-selector" data-grade="all" checked>
+									<label for="select-all-grades">全選</label>
+								</div>
+								</div>
+						</div>
+					</div>
+				</div>
+ 
                 <div id="perf-log-filters">                    
                     <div class="filter-group" style="margin-top: 20px;"><label>班級 (可複選):</label><div id="class-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-classes" checked> <label for="select-all-classes">全選</label></div></div></div>
                 </div>
@@ -167,9 +192,9 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); const auth = firebase.auth();
-        let currentUser = null, studentsData = [], classList = [], currentPerfResults = [], currentPerfStats = {}, allAssignments = [];
+        let currentUser = null, studentsData = [], studentMap = new Map(), classList = [], currentPerfResults = [], currentPerfStats = {}, allAssignments = [];
         let perfSortState = { key: 'class', direction: 'asc' };
-        let perfStatsSortState = { key: 'total', direction: 'desc' };
+        let perfStatsSortState = { key: 'total', direction: 'desc', target: 'class' }; // 【修改點 2：增加 target 屬性】
         let gradeAssignmentSortState = { key: 'date', direction: 'desc' };
         let gradeCrossClassSortState = { key: 'className', direction: 'asc' };
 
@@ -228,13 +253,17 @@
             }
 
             studentsData = rosterDoc.data().students;
+            // 【修改點 3：建立學生ID到學生物件的映射】
+            studentMap.clear();
+            studentsData.forEach(s => studentMap.set(s.id, s));
+            
             classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
             
             const perfClassFilter = document.getElementById('class-filter-container');
             const gradesClassSelect = document.getElementById('grades-class-select');
             const gradesClassSelectSingle = document.getElementById('grades-class-select-single');
             
-            // 【修改點 2：年段篩選器相關邏輯，改為複選框】
+            // 【修改點 4：年段篩選器相關邏輯，改為複選框】
             const perfGradeContainer = document.getElementById('perf-grade-checkbox-container'); 
             const selectAllGrades = document.getElementById('select-all-grades');
             const gradeGroups = {}; 
@@ -300,28 +329,38 @@
         
         document.querySelectorAll('.tab-btn').forEach(button => { button.addEventListener('click', () => { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); button.classList.add('active'); document.getElementById(button.dataset.tab + '-tab').classList.add('active'); }); });
         
-        // 【修改點 3：切換事件明細/統計摘要的邏輯】
+        // 【修改點 5：切換事件明細/統計摘要的邏輯 - 顯示統計選項】
         document.querySelectorAll('input[name="perf-report-type"]').forEach(radio => { 
             radio.addEventListener('change', () => { 
                 const isLog = radio.value === 'log'; 
                 document.getElementById('perf-log-filters').style.display = isLog ? 'block' : 'none'; 
                 document.getElementById('event-select').style.display = isLog ? 'block' : 'none'; 
                 
-                // 【關鍵修改】: 顯示或隱藏年段篩選器
+                // 【關鍵修改】: 顯示/隱藏統計選項和年段篩選器
+                document.getElementById('perf-stats-options').style.display = isLog ? 'none' : 'block';
+                // 確保年段篩選器在統計摘要模式下是可見的
                 document.getElementById('perf-grade-filter-container').style.display = isLog ? 'none' : 'flex';
-                // -----------------------------
                 
                 document.getElementById('perf-results-container').innerHTML = '<p>請設定條件後執行查詢。</p>'; 
                 document.getElementById('export-perf-csv-btn').disabled = true; 
                 document.getElementById('perf-results-title').innerHTML = '<span>查詢結果</span>'; 
             }); 
         });
+        
+        // 【修改點 6：切換加總對象時重置排序狀態】
+        document.querySelectorAll('input[name="sum-target"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                perfStatsSortState = { key: 'total', direction: 'desc', target: e.target.value };
+                document.getElementById('perf-results-container').innerHTML = '<p>請設定條件後執行查詢。</p>'; 
+                document.getElementById('export-perf-csv-btn').disabled = true; 
+            });
+        });
 
         document.querySelectorAll('input[name="grades-report-type"]').forEach(radio => { radio.addEventListener('change', (e) => { document.getElementById('grades-student-filters').style.display = 'none'; document.getElementById('grades-assignment-filters').style.display = 'none'; document.getElementById('grades-cross-class-filters').style.display = 'none'; document.getElementById(`grades-${e.target.value}-filters`).style.display = 'block'; document.getElementById('grades-results-container').innerHTML = '<p>請設定條件後執行查詢。</p>'; document.getElementById('export-grades-csv-btn').disabled = true; document.getElementById('grades-results-title').innerHTML = '<span>查詢結果</span>'; }); });
         
         document.getElementById('select-all-classes').addEventListener('change', (e) => { document.querySelectorAll('#performance-tab .class-selector').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
         
-        // 【修改點 4：執行表現查詢的邏輯】
+        // 【修改點 7：執行表現查詢的邏輯 - 整合學生統計】
         document.getElementById('run-perf-query-btn').addEventListener('click', async () => {
             const container = document.getElementById('perf-results-container');
             container.innerHTML = '查詢中...'; document.getElementById('export-perf-csv-btn').disabled = true;
@@ -346,9 +385,10 @@
                 } 
                 // 【B. 統計摘要 (Stats) 查詢邏輯】
                 else {
-                    // 【關鍵修改】: 獲取所有選中的年級代碼
+                    const sumTarget = document.querySelector('input[name="sum-target"]:checked').value;
+                    perfStatsSortState.target = sumTarget;
+
                     const selectedGrades = [...document.querySelectorAll('.grade-checkbox:checked')].map(cb => cb.value); 
-                    const stats = {};
                     
                     if (selectedGrades.length === 0) {
                         container.innerHTML = '<p style="color:red;">請至少選擇一個年段進行統計！</p>'; 
@@ -358,35 +398,182 @@
                     // 根據選定的年級篩選出要計算的班級列表
                     const classesToProcess = classList.filter(c => {
                         const grade = getGradeLevelFromClassId(c);
-                        return grade && selectedGrades.includes(grade); // 確保年級存在且在選中列表中
-                    });
-
-                    classesToProcess.forEach(c => { 
-                        stats[c] = { className: c, total: 0, positive: 0, negative: 0, count: 0 }; 
-                    });
-
-                    allRecordsInRange.forEach(record => {
-                        const className = (record.entityType === 'class') ? record.entityId : (record.entityId || record.studentId).substring(0, 3);
-                        // 確保只統計選定年級內的班級
-                        if (classesToProcess.includes(className)) {
-                            if (stats[className]) {
-                                const points = record.points || 0;
-                                stats[className].count++;
-                                stats[className].total += points;
-                                if (points > 0) stats[className].positive += points;
-                                if (points < 0) stats[className].negative += points;
-                            }
-                        }
+                        return grade && selectedGrades.includes(grade); 
                     });
                     
-                    currentPerfStats = { allRecords: allRecordsInRange, stats: Object.values(stats).filter(s => s.count > 0) };
-                    perfStatsSortState = { key: 'total', direction: 'desc' };
-                    sortAndRenderPerfStats();
+                    if (sumTarget === 'class') {
+                        // 班級統計邏輯 (原邏輯)
+                        const stats = {};
+                        classesToProcess.forEach(c => { 
+                            stats[c] = { className: c, total: 0, positive: 0, negative: 0, count: 0 }; 
+                        });
+
+                        allRecordsInRange.forEach(record => {
+                            const className = (record.entityType === 'class') ? record.entityId : (record.entityId || record.studentId).substring(0, 3);
+                            if (classesToProcess.includes(className)) {
+                                if (stats[className]) {
+                                    const points = record.points || 0;
+                                    stats[className].count++;
+                                    stats[className].total += points;
+                                    if (points > 0) stats[className].positive += points;
+                                    if (points < 0) stats[className].negative += points;
+                                }
+                            }
+                        });
+                        
+                        currentPerfStats = { target: 'class', allRecords: allRecordsInRange, stats: Object.values(stats).filter(s => s.count > 0) };
+                        perfStatsSortState.key = 'total'; 
+                        perfStatsSortState.direction = 'desc';
+                        sortAndRenderPerfStats();
+                    } else if (sumTarget === 'student') {
+                        // 學生統計邏輯 (新邏輯)
+                        const stats = {};
+                        
+                        // 確定要統計的學生列表
+                        const studentsToProcess = studentsData.filter(s => {
+                            const grade = getGradeLevelFromClassId(s.id.substring(0, 3));
+                            return grade && selectedGrades.includes(grade);
+                        }).map(s => s.id);
+
+                        studentsToProcess.forEach(sId => {
+                            const student = studentMap.get(sId);
+                            stats[sId] = { studentId: sId, className: student.id.substring(0, 3), name: student.name, total: 0, positive: 0, negative: 0, count: 0 };
+                        });
+                        
+                        allRecordsInRange.forEach(record => {
+                            const studentId = record.entityId || record.studentId;
+                            if (record.entityType !== 'class' && studentsToProcess.includes(studentId)) {
+                                if (stats[studentId]) {
+                                    const points = record.points || 0;
+                                    stats[studentId].count++;
+                                    stats[studentId].total += points;
+                                    if (points > 0) stats[studentId].positive += points;
+                                    if (points < 0) stats[studentId].negative += points;
+                                }
+                            }
+                        });
+
+                        currentPerfStats = { target: 'student', allRecords: allRecordsInRange, stats: Object.values(stats).filter(s => s.count > 0) };
+                        perfStatsSortState.key = 'total'; 
+                        perfStatsSortState.direction = 'desc';
+                        sortAndRenderPerfStudentStats();
+                    }
                 }
             } catch (error) { console.error("查詢失敗:", error); container.innerHTML = `<p style="color:red;">查詢失敗！請檢查 Console。</p>`; }
         });
 
-        function sortAndRenderPerfLog(fromDrillDown = false) { 
+        // 【修改點 8：學生統計的排序和渲染函數】
+
+        function sortAndRenderPerfStudentStats() {
+            const sortedStats = [...currentPerfStats.stats]; 
+            sortedStats.sort((a, b) => { 
+                const key = perfStatsSortState.key;
+                const direction = perfStatsSortState.direction === 'asc' ? 1 : -1;
+                let valA, valB;
+
+                if (key === 'avg') { 
+                    valA = a.count > 0 ? (a.total / a.count) : -Infinity; 
+                    valB = b.count > 0 ? (b.total / b.count) : -Infinity; 
+                } else if (key === 'className') {
+                     valA = a.className;
+                     valB = b.className;
+                } else if (key === 'studentId') {
+                     valA = a.studentId;
+                     valB = b.studentId;
+                } else { 
+                    valA = a[key]; 
+                    valB = b[key]; 
+                } 
+
+                // 處理字串和數字比較
+                if (typeof valA === 'string' && typeof valB === 'string') {
+                    return valA.localeCompare(valB, 'zh-TW') * direction;
+                } else {
+                    if (valA < valB) return -1 * direction; 
+                    if (valA > valB) return 1 * direction; 
+                }
+                
+                return a.studentId.localeCompare(b.studentId); // 次要排序鍵 (座號)
+            }); 
+            renderPerfStudentStats(sortedStats); 
+        }
+
+        function renderPerfStudentStats(stats) {
+            const container = document.getElementById('perf-results-container'); 
+            document.getElementById('perf-results-title').innerHTML = '<span>查詢結果</span>';
+            if (stats.length === 0) { container.innerHTML = '<p>找不到可統計的紀錄。</p>'; return; } 
+            
+            const getArrow = (key) => { 
+                if (perfStatsSortState.key !== key) return '&#x25B4;&#x25BE;'; 
+                return perfStatsSortState.direction === 'asc' ? '&#x25B2;' : '&#x25BC;'; 
+            }; 
+            
+            let table = `<table><thead><tr>
+                <th class="sortable-header" data-sort-stats="className">班級 <span class="sort-arrow">${getArrow('className')}</span></th>
+                <th class="sortable-header" data-sort-stats="studentId">座號 <span class="sort-arrow">${getArrow('studentId')}</span></th>
+                <th>姓名</th>
+                <th class="sortable-header" data-sort-stats="total">總分 <span class="sort-arrow">${getArrow('total')}</span></th>
+                <th class="sortable-header" data-sort-stats="positive">總加分 <span class="sort-arrow">${getArrow('positive')}</span></th>
+                <th class="sortable-header" data-sort-stats="negative">總扣分 <span class="sort-arrow">${getArrow('negative')}</span></th>
+                <th class="sortable-header" data-sort-stats="count">事件總數 <span class="sort-arrow">${getArrow('count')}</span></th>
+                <th class="sortable-header" data-sort-stats="avg">單次均分 <span class="sort-arrow">${getArrow('avg')}</span></th>
+                </tr></thead><tbody>`; 
+            
+            stats.forEach(s => { 
+                const avg = s.count > 0 ? (s.total / s.count).toFixed(2) : 'N/A'; 
+                const seatNum = s.studentId.substring(3);
+
+                // 使用學生ID進行鑽取
+                table += `<tr class="drill-down-row" data-type="perf-student" data-value="${s.studentId}">
+                    <td>${s.className}</td>
+                    <td>${seatNum}</td>
+                    <td>${s.name}</td>
+                    <td>${s.total.toFixed(1)}</td>
+                    <td>${s.positive.toFixed(1)}</td>
+                    <td>${s.negative.toFixed(1)}</td>
+                    <td>${s.count}</td>
+                    <td>${avg}</td>
+                    </tr>`; 
+            }); 
+            table += '</tbody></table>'; 
+            container.innerHTML = table; 
+            document.getElementById('export-perf-csv-btn').disabled = false; 
+            
+            // 綁定排序事件
+            container.querySelectorAll('.sortable-header[data-sort-stats]').forEach(header => { 
+                header.addEventListener('click', () => { 
+                    const sortKey = header.dataset.sortStats; 
+                    if (perfStatsSortState.key === sortKey) { 
+                        perfStatsSortState.direction = perfStatsSortState.direction === 'asc' ? 'desc' : 'asc'; 
+                    } else { 
+                        perfStatsSortState.key = sortKey; 
+                        perfStatsSortState.direction = sortKey === 'className' || sortKey === 'studentId' ? 'asc' : 'desc'; 
+                    } 
+                    sortAndRenderPerfStudentStats(); 
+                }); 
+            }); 
+            
+            // 綁定鑽取 (Drill-down) 事件
+            container.querySelectorAll('.drill-down-row[data-type="perf-student"]').forEach(row => { 
+                row.addEventListener('click', () => { 
+                    const studentId = row.dataset.value; 
+                    const student = studentMap.get(studentId);
+                    
+                    document.querySelector('input[name="perf-report-type"][value="log"]').checked = true; 
+                    document.querySelector('input[name="perf-report-type"][value="log"]').dispatchEvent(new Event('change')); 
+                    
+                    // 隱藏班級篩選器，因為我們將使用 studentId 過濾
+                    document.getElementById('perf-log-filters').style.display = 'none';
+
+                    // 篩選出該學生的紀錄
+                    currentPerfResults = currentPerfStats.allRecords.filter(r => (r.entityId === studentId || r.studentId === studentId)); 
+                    perfSortState = { key: 'timestamp', direction: 'desc' }; 
+                    renderPerfLog(currentPerfResults, true, `學生: ${student ? student.name : studentId}`); 
+                }); 
+            });
+        }
+        
+        function sortAndRenderPerfLog(fromDrillDown = false, drillDownTitle = '') { 
                 const sortedResults = [...currentPerfResults];
                 sortedResults.sort( (a, b) => {
                     const key = perfSortState.key;
@@ -409,17 +596,17 @@
                     return 0;
                 }
                 );
-                renderPerfLog(sortedResults, fromDrillDown);
+                renderPerfLog(sortedResults, fromDrillDown, drillDownTitle);
         }
 
-        function renderPerfLog(results, fromDrillDown = false) { 
+        function renderPerfLog(results, fromDrillDown = false, drillDownTitle = '') { 
             const container = document.getElementById('perf-results-container');
             const title = document.getElementById('perf-results-title');
             
             const existingBtn = title.querySelector('.back-btn');
             if(existingBtn) existingBtn.remove();
             
-            let titleText = '<span>查詢結果</span>';
+            let titleText = fromDrillDown ? `<span>查詢結果: ${drillDownTitle}</span>` : '<span>查詢結果</span>';
             if (fromDrillDown) {
                 titleText += '<button class="back-btn" id="back-to-perf-stats">返回統計摘要</button>';
             }
@@ -430,7 +617,13 @@
                     const statsRadio = document.querySelector('input[name="perf-report-type"][value="stats"]');
                     statsRadio.checked = true;
                     statsRadio.dispatchEvent(new Event('change'));
-                    sortAndRenderPerfStats();
+                    
+                    // 根據之前的統計對象，決定渲染哪個報表
+                    if (currentPerfStats.target === 'student') {
+                        sortAndRenderPerfStudentStats();
+                    } else {
+                        sortAndRenderPerfStats();
+                    }
                 });
             }
 
@@ -446,7 +639,7 @@
                 if (type === 'class') { 
                     targetName = `班級 (${entityId})`; 
                 } else { 
-                    const student = studentsData.find(s => s.id === entityId); 
+                    const student = studentMap.get(entityId); 
                     targetName = student ? student.name : `學生 (${entityId})`; 
                 } 
                 const className = type === 'class' ? entityId : entityId.substring(0, 3); 
@@ -466,12 +659,32 @@
                         perfSortState.key = sortKey; 
                         perfSortState.direction = 'desc'; 
                     } 
-                    sortAndRenderPerfLog(fromDrillDown); 
+                    sortAndRenderPerfLog(fromDrillDown, drillDownTitle); 
                 }); 
             }); 
         }
         
-        function sortAndRenderPerfStats() { const sortedStats = [...currentPerfStats.stats]; sortedStats.sort((a, b) => { const key = perfStatsSortState.key; const direction = perfStatsSortState.direction === 'asc' ? 1 : -1; let valA, valB; if (key === 'avg') { valA = a.count > 0 ? (a.total / a.count) : -Infinity; valB = b.count > 0 ? (b.total / b.count) : -Infinity; } else { valA = a[key]; valB = b[key]; } if (valA < valB) return -1 * direction; if (valA > valB) return 1 * direction; return a.className.localeCompare(b.className); }); renderPerfStats(sortedStats); }
+        function sortAndRenderPerfStats() { 
+            const sortedStats = [...currentPerfStats.stats]; 
+            sortedStats.sort((a, b) => { 
+                const key = perfStatsSortState.key; 
+                const direction = perfStatsSortState.direction === 'asc' ? 1 : -1; 
+                let valA, valB; 
+                if (key === 'avg') { 
+                    valA = a.count > 0 ? (a.total / a.count) : -Infinity; 
+                    valB = b.count > 0 ? (b.total / b.count) : -Infinity; 
+                } else if (key === 'className') {
+                     valA = a.className;
+                     valB = b.className;
+                } else { 
+                    valA = a[key]; valB = b[key]; 
+                } 
+                if (valA < valB) return -1 * direction; 
+                if (valA > valB) return 1 * direction; 
+                return a.className.localeCompare(b.className); 
+            }); 
+            renderPerfStats(sortedStats); 
+        }
         
         function renderPerfStats(stats) { 
             const container = document.getElementById('perf-results-container'); 
@@ -487,9 +700,45 @@
             table += '</tbody></table>'; 
             container.innerHTML = table; 
             document.getElementById('export-perf-csv-btn').disabled = false; 
-            container.querySelectorAll('.sortable-header[data-sort-stats]').forEach(header => { header.addEventListener('click', () => { const sortKey = header.dataset.sortStats; if (perfStatsSortState.key === sortKey) { perfStatsSortState.direction = perfStatsSortState.direction === 'asc' ? 'desc' : 'asc'; } else { perfStatsSortState.key = sortKey; perfStatsSortState.direction = 'desc'; } sortAndRenderPerfStats(); }); }); 
-            container.querySelectorAll('.drill-down-row[data-type="perf"]').forEach(row => { row.addEventListener('click', () => { const className = row.dataset.value; document.querySelector('input[name="perf-report-type"][value="log"]').checked = true; document.querySelector('input[name="perf-report-type"][value="log"]').dispatchEvent(new Event('change')); document.querySelectorAll('#performance-tab .class-selector').forEach(cb => { cb.checked = cb.value === className; }); document.getElementById('select-all-classes').checked = false; currentPerfResults = currentPerfStats.allRecords.filter(r => ((r.entityType === 'class' ? r.entityId : (r.entityId || r.studentId).substring(0, 3)) === className)); perfSortState = { key: 'timestamp', direction: 'desc' }; sortAndRenderPerfLog(true); }); });
+            container.querySelectorAll('.sortable-header[data-sort-stats]').forEach(header => { 
+                header.addEventListener('click', () => { 
+                    const sortKey = header.dataset.sortStats; 
+                    if (perfStatsSortState.key === sortKey) { 
+                        perfStatsSortState.direction = perfStatsSortState.direction === 'asc' ? 'desc' : 'asc'; 
+                    } else { 
+                        perfStatsSortState.key = sortKey; 
+                        perfStatsSortState.direction = sortKey === 'className' ? 'asc' : 'desc'; 
+                    } 
+                    sortAndRenderPerfStats(); 
+                }); 
+            }); 
+            container.querySelectorAll('.drill-down-row[data-type="perf"]').forEach(row => { 
+                row.addEventListener('click', () => { 
+                    const className = row.dataset.value; 
+                    document.querySelector('input[name="perf-report-type"][value="log"]').checked = true; 
+                    document.querySelector('input[name="perf-report-type"][value="log"]').dispatchEvent(new Event('change')); 
+                    document.querySelectorAll('#performance-tab .class-selector').forEach(cb => { cb.checked = cb.value === className; }); 
+                    document.getElementById('select-all-classes').checked = false; 
+                    currentPerfResults = currentPerfStats.allRecords.filter(r => ((r.entityType === 'class' ? r.entityId : (r.entityId || r.studentId).substring(0, 3)) === className)); 
+                    perfSortState = { key: 'timestamp', direction: 'desc' }; 
+                    renderPerfLog(currentPerfResults, true, `班級: ${className}`); 
+                }); 
+            });
         }
+
+        // 【修改點 9：CSV 匯出 - 區分班級/學生統計】
+        document.getElementById('export-perf-csv-btn').addEventListener('click', () => {
+             const reportType = document.querySelector('input[name="perf-report-type"]:checked').value;
+             if (reportType === 'log') {
+                 exportPerfLogCSV();
+             } else {
+                 if (currentPerfStats.target === 'class') {
+                     exportPerfStatsCSV();
+                 } else if (currentPerfStats.target === 'student') {
+                     exportPerfStudentStatsCSV();
+                 }
+             }
+        });
 
         function exportPerfLogCSV() { 
             if (currentPerfResults.length === 0) return; 
@@ -504,7 +753,7 @@
                 const cName = type === 'class' ? eid : eid.substring(0, 3); 
                 const seatNum = (type === 'student') ? eid.substring(3) : ''; 
                 let target = `班級-${cName}`; 
-                if (type === 'student') { const s = studentsData.find(s => s.id === eid); target = s ? s.name : `學生-${eid}`; } 
+                if (type === 'student') { const s = studentMap.get(eid); target = s ? s.name : `學生-${eid}`; } 
                 const p = r.points || 0; 
                 const t = r.text ? `"${r.text.replace(/"/g, '""')}"` : ''; 
                 // 使用原始班級代碼
@@ -524,7 +773,52 @@
                 // 使用原始班級代碼
                 csv += [s.className, s.total, s.positive, s.negative, s.count, avg].join(',') + "\r\n"; 
             }); 
-            downloadCSV(csv, 'performance_stats_report'); 
+            downloadCSV(csv, 'performance_stats_class_report'); 
+        }
+
+        // 【修改點 10：學生統計 CSV 匯出】
+        function exportPerfStudentStatsCSV() {
+            if (!currentPerfStats.stats || currentPerfStats.stats.length === 0) return; 
+            let csv = "\uFEFF"; 
+            csv += "班級,座號,姓名,總分,總加分,總扣分,事件總數,單次均分\r\n"; 
+            
+            const sortedForExport = [...currentPerfStats.stats]; 
+            sortedForExport.sort((a, b) => { 
+                const key = perfStatsSortState.key;
+                const direction = perfStatsSortState.direction === 'asc' ? 1 : -1;
+                let valA, valB;
+
+                if (key === 'avg') { 
+                    valA = a.count > 0 ? (a.total / a.count) : -Infinity; 
+                    valB = b.count > 0 ? (b.total / b.count) : -Infinity; 
+                } else if (key === 'className') {
+                     valA = a.className;
+                     valB = b.className;
+                } else if (key === 'studentId') {
+                     valA = a.studentId;
+                     valB = b.studentId;
+                } else { 
+                    valA = a[key]; 
+                    valB = b[key]; 
+                } 
+
+                if (typeof valA === 'string' && typeof valB === 'string') {
+                    return valA.localeCompare(valB, 'zh-TW') * direction;
+                } else {
+                    if (valA < valB) return -1 * direction; 
+                    if (valA > valB) return 1 * direction; 
+                }
+                
+                return a.studentId.localeCompare(b.studentId);
+            }); 
+            
+            sortedForExport.forEach(s => { 
+                const avg = s.count > 0 ? (s.total / s.count).toFixed(2) : 'N/A'; 
+                const seatNum = s.studentId.substring(3);
+                const row = [s.className, seatNum, s.name, s.total.toFixed(1), s.positive.toFixed(1), s.negative.toFixed(1), s.count, avg]; 
+                csv += row.join(',') + "\r\n"; 
+            }); 
+            downloadCSV(csv, 'performance_stats_student_report'); 
         }
         
         const gradesClassSelect = document.getElementById('grades-class-select'), assignmentFilterContainer = document.getElementById('assignment-filter-container'), runGradesQueryBtn = document.getElementById('run-grades-query-btn'), exportGradesCsvBtn = document.getElementById('export-grades-csv-btn'), gradesResultsContainer = document.getElementById('grades-results-container'), gradesClassSelectSingle = document.getElementById('grades-class-select-single'), gradesAssignmentSelect = document.getElementById('grades-assignment-select');
@@ -644,5 +938,3 @@
     </script>
 </body>
 </html>
-
-
