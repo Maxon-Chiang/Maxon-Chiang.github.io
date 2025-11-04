@@ -30,8 +30,8 @@
         .filter-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
         .filter-group input, .filter-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; }
         /* 統一風格 */
-        #class-filter-container, #assignment-filter-container, #perf-grade-checkbox-container { 
-            display: flex; flex-wrap: wrap; gap: 15px; padding-top: 5px; max-height: 150px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 4px; border: 1px solid #eee;
+        #class-filter-container, #assignment-filter-container, #perf-grade-checkbox-container,  #perf-grade-radiobtn-container { 
+            display: flex; flex-wrap: wrap; gap: 15px; max-height: 120px; overflow-y: auto; background: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee;
         }
         .class-checkbox { display: flex; align-items: center; gap: 5px; }
         .action-buttons { margin-top: 20px; }
@@ -79,7 +79,7 @@
 			flex: 0 1 20%; /* 關鍵：使用 0 1 20% 強制佔用 20% 寬度 */
 		}
 		#perf-stats-filter-grid .filter-group:nth-child(2) { 
-			flex: 0 1 76%; /* 關鍵：使用 0 1 78% 強制佔用 78% 寬度 */
+			flex: 0 1 72%; /* 關鍵：使用 0 1 78% 強制佔用 78% 寬度 */
 		}
 
 		/* 確保這個容器不會被內部內容撐開 */
@@ -128,7 +128,6 @@
 				min-width: 80px;
 			}
 			#perf-stats-filter-grid .filter-group:nth-child(2) { 
-				flex: 0 1 72%; /* 關鍵：使用 0 1 78% 強制佔用 78% 寬度 */
 				max-width: 300px;
 			}
 
@@ -177,9 +176,9 @@
 					<div id="perf-stats-filter-grid" style="display: flex;" >
 						<div class="filter-group">
 							<label style="font-weight: bold;">加總對象:</label>
-							<div style="display: flex; gap: 10px; padding-top: 5px; height: 40px; align-items: center;">
-								<label><input type="radio" name="sum-target" value="class" checked> 班級</label>
-								<label><input type="radio" name="sum-target" value="student"> 學生</label>
+							<div id="perf-grade-radiobtn-container">
+								<label><input type="radio" name="sum-target" value="class" checked>班級</label>
+								<label><input type="radio" name="sum-target" value="student">學生</label>
 							</div>
 						</div>
 						
@@ -196,7 +195,7 @@
 				</div>
  
                 <div id="perf-log-filters">                    
-                    <div class="filter-group" style="margin-top: 20px;"><label>班級 (可複選):</label><div id="class-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-classes" checked> <label for="select-all-classes">全選</label></div></div></div>
+                    <div class="filter-group" style="margin-top: 20px;"><label>班級 (可複選):</label><div id="class-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-classes" checked><label for="select-all-classes">全選</label></div></div></div>
                 </div>
                 <div class="action-buttons"><button id="run-perf-query-btn" class="run-query-btn">執行查詢</button><button id="export-perf-csv-btn" class="export-csv-btn" disabled>匯出 CSV</button></div>
             </div>
@@ -207,7 +206,7 @@
                 <h2><span>查詢條件</span><div class="sub-nav"><label><input type="radio" name="grades-report-type" value="student" checked> 學生個人成績明細</label><label><input type="radio" name="grades-report-type" value="assignment"> 班級內作業分析</label><label><input type="radio" name="grades-report-type" value="cross-class"> 跨班級作業比較</label></div></h2>
                 <div id="grades-student-filters">
                     <div class="filter-group"><label for="grades-class-select">選擇班級:</label><select id="grades-class-select"><option value="">請先選擇班級</option></select></div>
-                    <div class="filter-group" style="margin-top: 20px;"><label>成績項目 (可複選):</label><div id="assignment-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked> <label for="select-all-assignments">全選</label></div></div></div>
+                    <div class="filter-group" style="margin-top: 20px;"><label>成績項目 (可複選):</label><div id="assignment-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked><label for="select-all-assignments">全選</label></div></div></div>
                 </div>
                  <div id="grades-assignment-filters" style="display:none;">
                     <div class="filter-group"><label for="grades-class-select-single">選擇班級:</label><select id="grades-class-select-single"><option value="">請先選擇班級</option></select></div>
@@ -323,7 +322,7 @@
                 const div = document.createElement('div');
                 div.className = 'class-checkbox';
                 // 使用原始班級代碼
-                div.innerHTML = `<input type="checkbox" id="class-${className}" value="${className}" class="class-selector" checked> <label for="class-${className}">${className}</label>`;
+                div.innerHTML = `<input type="checkbox" id="class-${className}" value="${className}" class="class-selector" checked><label for="class-${className}">${className}</label>`;
                 perfClassFilter.appendChild(div);
                 // 使用原始班級代碼
                 gradesClassSelect.add(new Option(`${className} 班`, className));
@@ -337,7 +336,7 @@
                 const div = document.createElement('div');
                 div.className = 'class-checkbox';
                 // 預設全部勾選
-                div.innerHTML = `<input type="checkbox" id="grade-${grade}" value="${grade}" class="grade-selector grade-checkbox" checked> <label for="grade-${grade}">${gradeName}年級</label>`;
+                div.innerHTML = `<input type="checkbox" id="grade-${grade}" value="${grade}" class="grade-selector grade-checkbox" checked><label for="grade-${grade}">${gradeName}年級</label>`;
                 perfGradeContainer.appendChild(div);
             });
             
@@ -867,7 +866,7 @@
         
         const gradesClassSelect = document.getElementById('grades-class-select'), assignmentFilterContainer = document.getElementById('assignment-filter-container'), runGradesQueryBtn = document.getElementById('run-grades-query-btn'), exportGradesCsvBtn = document.getElementById('export-grades-csv-btn'), gradesResultsContainer = document.getElementById('grades-results-container'), gradesClassSelectSingle = document.getElementById('grades-class-select-single'), gradesAssignmentSelect = document.getElementById('grades-assignment-select');
         
-        gradesClassSelect.addEventListener('change', async (e) => { const selectedClass = e.target.value; assignmentFilterContainer.innerHTML = '<div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked> <label for="select-all-assignments">全選</label></div>'; gradesResultsContainer.innerHTML = '<p>請選擇成績項目後執行查詢。</p>'; exportGradesCsvBtn.disabled = true; if (!selectedClass) return; try { const assignmentsInClass = allAssignments.filter(a => a.className === selectedClass); if (assignmentsInClass.length === 0) { assignmentFilterContainer.innerHTML += '<p>此班級尚無成績項目。</p>'; } assignmentsInClass.forEach(a => { const div = document.createElement('div'); div.className = 'class-checkbox'; div.innerHTML = `<input type="checkbox" id="assign-${a.id}" value="${a.id}" data-name="${a.assignmentName}" class="assignment-selector" checked> <label for="assign-${a.id}">${a.assignmentName}</label>`; assignmentFilterContainer.appendChild(div); }); document.getElementById('select-all-assignments').addEventListener('change', (e) => { document.querySelectorAll('.assignment-selector').forEach(checkbox => { checkbox.checked = e.target.checked; }); }); } catch(error) { console.error("載入成績項目失敗:", error); assignmentFilterContainer.innerHTML += `<p style="color:red;">載入失敗！請檢查 Console。</p>`; } });
+        gradesClassSelect.addEventListener('change', async (e) => { const selectedClass = e.target.value; assignmentFilterContainer.innerHTML = '<div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked><label for="select-all-assignments">全選</label></div>'; gradesResultsContainer.innerHTML = '<p>請選擇成績項目後執行查詢。</p>'; exportGradesCsvBtn.disabled = true; if (!selectedClass) return; try { const assignmentsInClass = allAssignments.filter(a => a.className === selectedClass); if (assignmentsInClass.length === 0) { assignmentFilterContainer.innerHTML += '<p>此班級尚無成績項目。</p>'; } assignmentsInClass.forEach(a => { const div = document.createElement('div'); div.className = 'class-checkbox'; div.innerHTML = `<input type="checkbox" id="assign-${a.id}" value="${a.id}" data-name="${a.assignmentName}" class="assignment-selector" checked><label for="assign-${a.id}">${a.assignmentName}</label>`; assignmentFilterContainer.appendChild(div); }); document.getElementById('select-all-assignments').addEventListener('change', (e) => { document.querySelectorAll('.assignment-selector').forEach(checkbox => { checkbox.checked = e.target.checked; }); }); } catch(error) { console.error("載入成績項目失敗:", error); assignmentFilterContainer.innerHTML += `<p style="color:red;">載入失敗！請檢查 Console。</p>`; } });
         
         runGradesQueryBtn.addEventListener('click', async () => { const reportType = document.querySelector('input[name="grades-report-type"]:checked').value; if (reportType === 'student') await runGradesStudentQuery(); else if (reportType === 'assignment') await runGradesAssignmentQuery(); else if (reportType === 'cross-class') await runGradesCrossClassQuery(); });
         
@@ -982,4 +981,3 @@
     </script>
 </body>
 </html>
-
