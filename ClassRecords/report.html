@@ -24,7 +24,7 @@
         .tab-content.active { display: block; }
         .sub-nav { font-size: 0.9em; font-weight: normal; }
         .sub-nav label { margin-left: 20px; cursor: pointer; }
-        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end; margin-top: 0px;}
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 300px)); gap: 50px; align-items: end; margin-top: 0px;}
         .filter-group { display: flex; flex-direction: column; }
         .filter-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
         .filter-group input, .filter-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; }
@@ -59,7 +59,7 @@
 
         @media (max-width: 768px) {
             main { padding: 10px; }
-            .section { padding: 5px 15px; margin-bottom: 10px;}
+            .section { padding: 2px 15px; margin-bottom: 10px;}
             header h1 { font-size: 1.6em; }
             h2 {
                 flex-direction: column;
@@ -79,6 +79,10 @@
 			.filter-grid {
 				 grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
 			}
+			#class-filter-container, #assignment-filter-container, #perf-grade-checkbox-container { 
+				gap: 10px; padding-top: 2px; max-height: 120px; padding: 5px;
+			}
+
 			/* 【新增或替換此處的樣式】 */
 			#perf-stats-filter-grid {
 				grid-template-columns: 1fr; /* 重設為一欄，準備用 Flex 覆蓋 */
@@ -965,11 +969,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
