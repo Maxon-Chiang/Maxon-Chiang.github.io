@@ -24,7 +24,8 @@
         .tab-content.active { display: block; }
         .sub-nav { font-size: 0.9em; font-weight: normal; }
         .sub-nav label { margin-left: 20px; cursor: pointer; }
-        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end; margin-top: 0px;}
+		.filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end; margin-top: 0px;}
+        /* .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end; margin-top: 0px;} */
         .filter-group { display: flex; flex-direction: column; }
         .filter-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
         .filter-group input, .filter-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; }
@@ -56,16 +57,42 @@
             display: flex;
             align-items: center;
         }
-		#perf-stats-filter-grid .filter-group:nth-child(1) { /* 加總對象 */
-			flex: 1 1 18%; /* 佔比約 20% */
-			min-width: 80px;
+
+		.filter-grid { 
+			display: grid; 
+			grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
+			gap: 20px; 
+			align-items: end; 
+			margin-top: 0px;
 		}
 
-		#perf-stats-filter-grid .filter-group:nth-child(2) { /* 選擇年段 */
-			flex: 1 1 78%; /* 佔比約 80% */
-			min-width: 250px;
+		/* 【新增或修改此區塊，讓它在所有寬度下都使用 Flex 佈局】 */
+		#perf-stats-filter-grid {
+			display: flex !important; /* 強制使用 Flexbox */
+			flex-wrap: wrap; /* 允許換行 */
+			gap: 10px; /* 統一間距 */
+			margin-top: 20px; /* 增加頂部間距 */
 		}
 
+		/* 【新增或修改此區塊，明確定義比例，並調整到 .filter-group 上】 */
+		#perf-stats-filter-grid .filter-group:nth-child(1) { 
+			flex: 0 1 18%; /* 關鍵：使用 0 1 18% 強制佔用 18% 寬度 */
+			min-width: 80px; 
+		}
+		#perf-stats-filter-grid .filter-group:nth-child(2) { 
+			flex: 0 1 78%; /* 關鍵：使用 0 1 78% 強制佔用 78% 寬度 */
+			min-width: 250px; 
+		}
+
+		/* 確保這個容器不會被內部內容撐開 */
+		#perf-grade-checkbox-container {
+			max-height: 150px; 
+			overflow-y: auto;
+			/* 保持原有的樣式 */
+			display: flex; flex-wrap: wrap; gap: 15px; padding-top: 5px; 
+			background: #f9f9f9; padding: 10px; border-radius: 4px; border: 1px solid #eee;
+		}
+		
         @media (max-width: 768px) {
             main { padding: 10px; }
             .section { padding: 2px 15px; margin-bottom: 10px;}
@@ -92,33 +119,6 @@
 				gap: 10px; max-height: 120px; padding: 10px;
 			}
 
-			/* 【新增或替換此處的樣式】 */
-			#perf-stats-filter-grid {
-				grid-template-columns: 1fr; /* 重設為一欄，準備用 Flex 覆蓋 */
-			}
-
-			/* 確保這兩個篩選組件能在手機上並排，並設定寬度比例 */
-			#perf-stats-filter-grid {
-				display: flex; /* 使用 Flexbox 進行並排和換行 */
-				flex-wrap: wrap; /* 允許換行 */
-				gap: 10px; /* 元素間距 */
-			}
-
-			#perf-stats-filter-grid .filter-group:nth-child(1) { /* 加總對象 */
-				flex: 1 1 18%; /* 佔比約 20% */
-				min-width: 80px;
-			}
-
-			#perf-stats-filter-grid .filter-group:nth-child(2) { /* 選擇年段 */
-				flex: 1 1 78%; /* 佔比約 80% */
-				min-width: 250px;
-			}
-			
-			#perf-grade-checkbox-container {
-				/* 保持原有樣式，但確保其能夠填滿父容器分配的 80% 空間 */
-				max-height: 120px; 
-				overflow-y: auto;
-			}
             .action-buttons {
                 display: flex;
                 flex-direction: row;
