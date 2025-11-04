@@ -33,7 +33,7 @@
         #class-filter-container, #assignment-filter-container, #perf-grade-checkbox-container,  #perf-grade-radiobtn-container { 
             display: flex; flex-wrap: wrap; gap: 15px; max-height: 120px; overflow-y: auto; background: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee;
         }
-        .class-checkbox { display: flex; align-items: center; gap: 5px; }
+        .class-checkbox { display: flex; align-items: center; gap: 5px; height: 30px; }
         .action-buttons { margin-top: 20px; }
         .action-buttons button { font-size: 1.1em; padding: 10px 20px; border-radius: 5px; border: none; cursor: pointer; }
         .run-query-btn { background-color: var(--primary-color); color: white; }
@@ -84,18 +84,18 @@
 		
 		/* 【新增或修改此區塊，讓它在所有寬度下都使用 Flex 佈局】 */
 		#grades-stats-filter-grid {
-			display: flex !important; /* 強制使用 Flexbox */
-			flex-wrap: wrap; /* 允許換行 */
-			gap: 30px; /* 統一間距 */
-			margin-top: 20px; /* 增加頂部間距 */
+			display: flex !important; 
+			flex-wrap: wrap;
+			gap: 30px;
+			margin-top: 20px; 
 		}
 		
 		/* 【新增或修改此區塊，明確定義比例，並調整到 .filter-group 上】 */
 		#grades-stats-filter-grid .filter-group:nth-child(1) { 
-			flex: 0 1 12%; /* 關鍵：使用 0 1 20% 強制佔用 20% 寬度 */
+			flex: 0 1 12%; 
 		}
 		#grades-stats-filter-grid .filter-group:nth-child(2) { 
-			flex: 0 1 80%; /* 關鍵：使用 0 1 78% 強制佔用 78% 寬度 */
+			flex: 0 1 80%; 
 		}
 
 
@@ -148,10 +148,12 @@
 				margin-top: 10px; /* 增加頂部間距 */
 			}
 			#grades-stats-filter-grid .filter-group:nth-child(1) { 
-				min-width: 80px;
+				min-width: 120px;
+				font-size: 1.0em;
 			}
 			#grades-stats-filter-grid .filter-group:nth-child(2) { 
-				max-width: 200px;
+				max-width: 250px;
+				font-size: 1.0em;
 			}			
 			.action-buttons { margin-top: 10px; }
 			.action-buttons button { padding: 5px 10px; border-radius: 3px; }			
