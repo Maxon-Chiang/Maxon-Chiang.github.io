@@ -73,7 +73,7 @@
 			gap: 10px; /* 統一間距 */
 			margin-top: 20px; /* 增加頂部間距 */
 		}
-
+		
 		/* 【新增或修改此區塊，明確定義比例，並調整到 .filter-group 上】 */
 		#perf-stats-filter-grid .filter-group:nth-child(1) { 
 			flex: 0 1 20%; /* 關鍵：使用 0 1 20% 強制佔用 20% 寬度 */
@@ -81,6 +81,23 @@
 		#perf-stats-filter-grid .filter-group:nth-child(2) { 
 			flex: 0 1 72%; /* 關鍵：使用 0 1 78% 強制佔用 78% 寬度 */
 		}
+		
+		/* 【新增或修改此區塊，讓它在所有寬度下都使用 Flex 佈局】 */
+		#grades-stats-filter-grid {
+			display: flex !important; /* 強制使用 Flexbox */
+			flex-wrap: wrap; /* 允許換行 */
+			gap: 30px; /* 統一間距 */
+			margin-top: 20px; /* 增加頂部間距 */
+		}
+		
+		/* 【新增或修改此區塊，明確定義比例，並調整到 .filter-group 上】 */
+		#grades-stats-filter-grid .filter-group:nth-child(1) { 
+			flex: 0 1 15%; /* 關鍵：使用 0 1 20% 強制佔用 20% 寬度 */
+		}
+		#grades-stats-filter-grid .filter-group:nth-child(2) { 
+			flex: 0 1 80%; /* 關鍵：使用 0 1 78% 強制佔用 78% 寬度 */
+		}
+
 
 		/* 確保這個容器不會被內部內容撐開 */
 		#perf-grade-checkbox-container {
@@ -135,6 +152,16 @@
 			#perf-stats-filter-grid .filter-group:nth-child(2) { 
 				max-width: 300px;
 			}
+			#grades-stats-filter-grid {
+				gap: 10px;
+				margin-top: 10px; /* 增加頂部間距 */
+			}
+			#grades-stats-filter-grid .filter-group:nth-child(1) { 
+				min-width: 100px;
+			}
+			#grades-stats-filter-grid .filter-group:nth-child(2) { 
+				max-width: 300px;
+			}			
 			.action-buttons { margin-top: 10px; }
 			.action-buttons button { padding: 5px 10px; border-radius: 3px; }			
 
@@ -211,16 +238,29 @@
         <div id="grades-tab" class="tab-content">
             <div class="section">
                 <h2><span>查詢條件</span><div class="sub-nav"><label><input type="radio" name="grades-report-type" value="student" checked> 學生個人成績明細</label><label><input type="radio" name="grades-report-type" value="assignment"> 班級內作業分析</label><label><input type="radio" name="grades-report-type" value="cross-class"> 跨班級作業比較</label></div></h2>
-                <div id="grades-student-filters">
-                    <div class="filter-group"><label for="grades-class-select">選擇班級:</label><select id="grades-class-select"><option value="">請先選擇班級</option></select></div>
-                    <div class="filter-group" style="margin-top: 20px;"><label>成績項目 (可複選):</label><div id="assignment-filter-container"><div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked><label for="select-all-assignments">全選</label></div></div></div>
-                </div>
-                 <div id="grades-assignment-filters" style="display:none;">
-                    <div class="filter-group"><label for="grades-class-select-single">選擇班級:</label><select id="grades-class-select-single"><option value="">請先選擇班級</option></select></div>
-                </div>
-                <div id="grades-cross-class-filters" style="display:none;">
-                    <div class="filter-group"><label for="grades-assignment-select">選擇成績項目:</label><select id="grades-assignment-select"><option value="">請先載入所有成績項目</option></select></div>
-                </div>
+				<div id="grades-student-filters">				
+					<div id="grades-stats-filter-grid" style="display: flex;" >						
+						<div class="filter-group">
+							<label for="grades-class-select">選擇班級：</label>
+							<select id="grades-class-select" style="font-size: 1.0em; " ><option value="">請先選擇班級</option></select>
+						</div>
+						<div class="filter-group">
+							<label>成績項目 (可複選):</label>
+							<div id="assignment-filter-container">
+								<div class="class-checkbox">
+									<input type="checkbox" id="select-all-assignments" checked>
+									<label for="select-all-assignments">全選</label>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div id="grades-assignment-filters" style="display:none;">
+					<div><label for="grades-class-select-single">選擇班級：</label><select id="grades-class-select-single"><option value="">請先選擇班級</option></select></div>
+				</div>
+				<div id="grades-cross-class-filters" style="display:none;">
+					<div><label for="grades-assignment-select">選擇成績項目：</label><select id="grades-assignment-select"><option value="">請先載入所有成績項目</option></select></div>
+				</div>
                 <div class="action-buttons"><button id="run-grades-query-btn" class="run-query-btn">執行查詢</button><button id="export-grades-csv-btn" class="export-csv-btn" disabled>匯出 CSV</button></div>
             </div>
             <div class="section"><h2 id="grades-results-title"><span>查詢結果</span></h2><div id="grades-results-container" class="results-container"><p>請設定條件後執行查詢。</p></div></div>
