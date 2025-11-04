@@ -94,7 +94,7 @@
 			flex: 1 1 15%; 
 		}
 		#grades-stats-filter-grid .filter-group:nth-child(2) { 
-			flex: 1 1 85%; 
+			flex: 1 1 80%; 
 		}
 
 
@@ -398,7 +398,7 @@
                 if (!uniqueAssignments[name]) uniqueAssignments[name] = name;
             });
             const gradesAssignmentSelect = document.getElementById('grades-assignment-select');
-            gradesAssignmentSelect.innerHTML = '<option value="">請選擇成績項目</option>';
+            gradesAssignmentSelect.innerHTML = '<option value="">......</option>';
             Object.keys(uniqueAssignments).sort().forEach(name => {
                 gradesAssignmentSelect.add(new Option(name, name));
             });
