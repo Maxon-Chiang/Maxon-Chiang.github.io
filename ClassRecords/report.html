@@ -31,7 +31,7 @@
         .filter-group input, .filter-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; }
         /* 統一風格 */
         #class-filter-container, #assignment-filter-container, #perf-grade-checkbox-container,  #perf-grade-radiobtn-container { 
-            display: flex; flex-wrap: wrap; gap: 15px; max-height: 120px; overflow-y: auto; background: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee;
+            display: flex; flex-wrap: wrap; gap: 10px; overflow-y: auto; background: #f9f9f9; padding: 5px; border-radius: 4px; border: 1px solid #eee;
         }
         .class-checkbox { display: flex; align-items: center; gap: 5px; height: 30px; }
         .action-buttons { margin-top: 20px; }
@@ -91,10 +91,10 @@
 		
 		/* 【新增或修改此區塊，明確定義比例，並調整到 .filter-group 上】 */
 		#grades-stats-filter-grid .filter-group:nth-child(1) { 
-			flex: 1 1 10%; 
+			flex: 1 1 15%; 
 		}
 		#grades-stats-filter-grid .filter-group:nth-child(2) { 
-			flex: 1 1 90%; 
+			flex: 1 1 85%; 
 		}
 
 
@@ -124,9 +124,6 @@
 				padding: 2px; 
 				font-size: 0.9em; 
 				max-width:110px; 
-			}
-			#class-filter-container, #assignment-filter-container, #perf-grade-checkbox-container { 
-				gap: 10px; max-height: 120px; padding: 10px;
 			}
             .action-buttons {
                 display: flex;
