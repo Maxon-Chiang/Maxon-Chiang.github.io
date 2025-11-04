@@ -117,7 +117,6 @@
             font-size: 1em;
         }
         
-        /* 【新增】重新載入按鈕樣式 */
         #reload-cache-btn {
             background: none;
             border: none;
@@ -128,7 +127,6 @@
             line-height: 1;
             margin-right: 10px;
         }
-        /* 【新增結束】 */
 
         .dropdown {
             position: relative;
@@ -186,9 +184,9 @@
         .class-block {
             border-radius: 8px;
 			box-shadow: 
-				0 4px 6px rgba(0, 0, 0, 0.1),       /* 較淡的底部陰影 */
-				0 1px 3px rgba(0, 0, 0, 0.05),      /* 模擬光線下的邊緣陰影 */
-				0 0 0 1px rgba(0, 0, 0, 0.03);      /* 極淺的邊框感 */
+				0 4px 6px rgba(0, 0, 0, 0.1),       
+				0 1px 3px rgba(0, 0, 0, 0.05),      
+				0 0 0 1px rgba(0, 0, 0, 0.03);      
             display: flex;
             flex-direction: column;
             text-align: center;
@@ -243,14 +241,12 @@
             }
         }
 		
-		/* 3. 綁定到課表容器的過渡 class */
 		.schedule-table.slide-in {
-			animation: slideInRight 0.35s ease-out forwards; /* 應用滑入動畫 */
+			animation: slideInRight 0.35s ease-out forwards; 
 		}
 		.schedule-table.slide-out {
-			animation: slideOutLeft 0.35s ease-in forwards; /* 應用滑出動畫 */
+			animation: slideOutLeft 0.35s ease-in forwards; 
 		}
-		/* --- 課表滑動效果 CSS 結束 --- */
 
         .class-block-actions {
             display: flex;
@@ -419,56 +415,46 @@
             width: 100%;
             max-width: 600px;
             border-radius: 10px;
-            /* 讓 .close-btn 可以相對於此定位 */
             position: relative; 
             box-sizing: border-box;
-            /* 保持這個容器的高度限制 */
             max-height: 90vh; 
-            /* 移除這個容器的捲動條 */
-            overflow-y: hidden; /* 改為 hidden，讓內層容器處理捲動 */
+            overflow-y: hidden; 
         }
-		/* ------------------------------------------- */
-        /* 【新增】info-modal 和 tutorial-modal 的樣式區塊 */
-        /* ------------------------------------------- */
+		
 		#info-modal .modal-content,
 		#tutorial-modal .modal-content {
-			/* 1. 確保內容區塊有最大的高度限制 */
             max-height: 90vh;
-			/* 2. 移除 padding-top, 確保標題緊貼頂部 */
 			padding-top: 50px; 
-			/* 3. 確保 Modal 內容可以隨意伸縮，但不影響按鈕定位 */
 			overflow: hidden; 
-			display: flex; /* 使用 flex 佈局來分隔 fixed header/footer 和 scrollable body */
+			display: flex; 
 			flex-direction: column;
 		}
 		
-		/* 【新增】固定 header 的樣式 */
 		#info-modal .info-modal-header {
-			position: absolute; /* 相對於 .modal-content 定位 */
+			position: absolute; 
 			top: 0;
 			left: 0;
 			right: 0;
-			background-color: white; /* 確保標題區塊在捲動時覆蓋內容 */
-			z-index: 2001; /* 比內容高，比關閉按鈕低 */
+			background-color: white; 
+			z-index: 2001; 
 			padding-top: 20px;
 			padding-left: 25px;
 			padding-right: 50px;
 		}
 
-		/* 【新增】可捲動內容的容器 */
 		#info-modal-body {
-			overflow-y: auto; /* 核心：讓這個內層容器捲動 */
-			flex-grow: 1; /* 佔滿剩餘空間 */
-			padding-top: 10px; /* 增加頂部內距，讓內容和標題區塊分開 */
-			padding-right: 15px; /* 讓內容不要被捲動條擋住 */
+			overflow-y: auto; 
+			flex-grow: 1; 
+			padding-top: 10px; 
+			padding-right: 15px; 
 			padding-bottom: 5px;
 		}
 		
 		#tutorial-modal-body {
-			overflow-y: auto; /* 核心：讓這個內層容器捲動 */
-			flex-grow: 1; /* 佔滿剩餘空間 */
-			padding-top: 0px; /* 增加頂部內距，讓內容和標題區塊分開 */
-			padding-right: 15px; /* 讓內容不要被捲動條擋住 */
+			overflow-y: auto; 
+			flex-grow: 1; 
+			padding-top: 0px; 
+			padding-right: 15px; 
 			padding-bottom: 25px;
 		}
 
@@ -489,14 +475,13 @@
 
         .close-btn {
 			color: #aaa;
-            /* 關鍵：將 position 改為 absolute，使其相對於父容器 (.modal-content) 定位 */
             position: absolute;
             top: 10px;
             right: 20px;
             font-size: 28px;
             font-weight: bold;
             cursor: pointer;
-            z-index: 3000; /* 確保它在最上層，不被捲動內容覆蓋 */
+            z-index: 3000; 
         }
 
         #class-settings-list {
@@ -685,7 +670,7 @@
             color: white; 
             border: none; 
 			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); 
-            transition: background-color 0.2s, box-shadow 0.2s; /* 添加過渡效果 */
+            transition: background-color 0.2s, box-shadow 0.2s; 
         }
         #info-modal ul { list-style-type: disc; padding-left: 25px; }
 
@@ -696,12 +681,10 @@
             flex-direction: column;
             padding: 20px;
         }
-		/* 新增：我的課表 Modal 中的週次導航按鈕容器 */
 		#my-timetable-modal .modal-week-nav {
 			display: flex;
 			align-items: center;
 			gap: 10px;
-			/* 電腦版不需要 width: 100% 或 justify-content 或 margin-top */
 		}
         #my-timetable-body {
             overflow-y: auto;
@@ -750,7 +733,6 @@
         }
         .timetable-clickable-cell {
 			cursor: pointer;
-            // background-color: #e6f7ff;
             transition: background-color 0.2s;
 		}
 		.timetable-clickable-cell:hover {
@@ -794,45 +776,43 @@
 		.week-navigator button.current {
 			color: black;
 			border-color: #007bff;
-			background-color: #e6f7ff; /* 新增：淺藍色背景 */
+			background-color: #e6f7ff; 
         }
-        .schedule-table thead.current-week th:not(:first-child) { /* 修改選擇器，排除第一欄"節次" */
+        .schedule-table thead.current-week th:not(:first-child) { 
             color: blue;
             font-weight: bold;
-            background-color: #e6f7ff; /* 新增：淺藍色背景 */
+            background-color: #e6f7ff; 
         }
 		.schedule-table thead th .date-span {
-             font-weight: bold !important; /* 使用 !important 確保覆蓋 inline style */
-             /* font-size: 0.9em; */ /* 可以在這裡統一設定字體大小 */
-             /* color: #555; */   /* 可以在這裡統一設定顏色，覆蓋 inline style */
+             font-weight: bold !important; 
         }
 		@keyframes pulse-purple {
 			from { background-color: #e6e0f4; }
-			to { background-color: #c9bddd; } /* 改成對比更強的紫色 */
+			to { background-color: #c9bddd; } 
 		}
         @keyframes pulse-orange {
-            from { background-color: #fff3e0; } /* 從背景色開始 */
+            from { background-color: #fff3e0; } 
             to { background-color: ##ffddb3; }
         }
 		@keyframes pulse-gray {
-            from { background-color: #e9ecef; } /* 基礎灰色 ( substituted-cell 的底色 ) */
-            to { background-color: #dcdcdc; } /* 脈衝到的稍深灰色 */
+            from { background-color: #e9ecef; } 
+            to { background-color: #dcdcdc; } 
         }	
 		.swapped-cell-pulse {
-            animation-name: pulse-purple; /* 使用名為 pulse-purple 的動畫 */
-            animation-duration: 0.8s;      /* 動畫持續 1.2 秒 */
-            animation-iteration-count: infinite; /* 無限次重複 */
-            animation-direction: alternate; /* 播放方向來回交替 */
+            animation-name: pulse-purple; 
+            animation-duration: 0.8s;      
+            animation-iteration-count: infinite; 
+            animation-direction: alternate; 
         }
         .exchanged-cell-pulse {
-            animation-name: pulse-orange; /* 使用名為 pulse-orange 的動畫 */
+            animation-name: pulse-orange; 
             animation-duration: 1.2s;
             animation-iteration-count: infinite;
             animation-direction: alternate;
         }
 		.substituted-cell-pulse {
             animation-name: pulse-gray;
-            animation-duration: 1.0s; /* 呼吸速度 (可自行調整) */
+            animation-duration: 1.0s; 
             animation-iteration-count: infinite;
             animation-direction: alternate;
         }		
@@ -840,59 +820,47 @@
             background: none !important;
             border: none !important;
             color: white !important;
-            font-size: 1.5em !important; /* 稍微放大，使其更清晰 */
+            font-size: 1.5em !important; 
             padding: 0 5px;
-            /* 針對 Safari/iOS 等系統，嘗試移除預設按鈕背景 */
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
-            /* 針對圖像/Emoji，強制背景透明 */
             background-color: transparent !important;
         }
 
-        /* 調整 reload 按鈕和 icon 按鈕的間距和對齊 */
         .header-left-panel button {
-            /* 讓按鈕的文字對齊到基線，防止與標題文字錯位 */
             vertical-align: middle;:
             line-height: 1; 
 			gap: 0px;
         }
 		#my-timetable-icon-btn {
-            font-size: 1.5em !important; /* 手機版略小 */
+            font-size: 1.5em !important; 
 			padding-left: 5px;
         }
         #reload-cache-btn {
-			margin-left: 0px; /* 移除額外間距 */
-            margin-right: 0; /* 移除額外間距 */
+			margin-left: 0px; 
+            margin-right: 0; 
 			padding-left: 5px;
         }
 		#save-homepage-settings-btn, #save-class-settings-btn, #save_new_password_btn {
-			/* 基礎樣式 */
 			padding: 10px 15px;
 			font-size: 1.1em;
 			color: white;
-			background-color: #28a745; /* 主要顏色 */
+			background-color: #28a745; 
 			border: none;
 			border-radius: 8px;
 			cursor: pointer;
 			outline: none;
 			margin-top: 15px;
-			box-shadow: 0 3px 0 0 #008020; /* 更深的顏色作為立體感的底部 */
-			/* 平滑過渡 */
+			box-shadow: 0 3px 0 0 #008020; 
 			transition: all 0.1s ease;
 		}
 
-		/* 點擊時的按壓效果 */
 		#save-homepage-settings-btn:active, #save-class-settings-btn:active, #save_new_password_btn:active {
-			/* 向上移動 5px，讓按鈕「陷」下去 */
 			transform: translateY(5px); 
-			
-			/* 移除或減少陰影，模擬底座消失 */
 			box-shadow: 0 0 0 0 #28a745; 
 		}
 		
-		/* --- CSS 動畫新增/調整 --- */
-		/* 1. 定義滑入動畫 (從右側進入) */
 		@keyframes slideInRight {
 			from {
 				transform: translateX(100%); 
@@ -903,10 +871,9 @@
 				opacity: 1;
 			}
 		}
-		/* 【新增】定義滑入動畫 (從左側進入) */
 		@keyframes slideInLeft {
 			from {
-				transform: translateX(-100%); /* 從左側 -100% 的位置開始 */
+				transform: translateX(-100%); 
 				opacity: 0.5;
 			}
 			to {
@@ -915,7 +882,6 @@
 			}
 		}
 
-		/* 2. 定義滑出動畫 (向左側退出) */
 		@keyframes slideOutLeft {
 			from {
 				transform: translateX(0); 
@@ -926,21 +892,19 @@
 				opacity: 0.5;
 			}
 		}
-		/* 【新增】定義滑出動畫 (向右側退出) */
 		@keyframes slideOutRight {
 			from {
 				transform: translateX(0); 
 				opacity: 1;
 			}
 			to {
-				transform: translateX(100%); /* 內容滑出到右側 100% 的位置 */
+				transform: translateX(100%); 
 				opacity: 0.5;
 			}
 		}
-		/* 【新增】定義垂直滑入動畫 (從上方滑入) */
 		@keyframes slideInDown {
 			from {
-				transform: translateY(-100%); /* 從上方 -100% 的位置開始 */
+				transform: translateY(-100%); 
 				opacity: 0.5;
 			}
 			to {
@@ -949,19 +913,17 @@
 			}
 		}
 
-		/* 【新增】定義垂直滑出動畫 (向上方滑出) */
 		@keyframes slideOutUp {
 			from {
 				transform: translateY(0);
 				opacity: 1;
 			}
 			to {
-				transform: translateY(-100%); /* 內容滑出到上方 -100% 的位置 */
+				transform: translateY(-100%); 
 				opacity: 0.5;
 			}
 		}
-		/* --- CSS 動畫新增/調整 結束 --- */
-		/* 3. 綁定到課表容器的過渡 class (這裡保持不變，因為我們會在 JS 中直接應用 Keyframes) */
+		
 		.schedule-table.slide-in-right {
 			animation: slideInRight 0.2s ease-out forwards;
 		}
@@ -974,8 +936,6 @@
 		.schedule-table.slide-out-right {
 			animation: slideOutRight 0.2s ease-in forwards;
 		}
-		/* --- CSS 動畫新增/調整 結束 --- */
-		/* 請確認新增以下兩個垂直滑動的類別，或將它們的持續時間改為 0.2s 以與其他動畫匹配 */
 		.schedule-table.slide-in-down {
 			animation: slideInDown 0.2s ease-out forwards;
 		}
@@ -999,12 +959,12 @@
 				gap: 0px;
 			}
 			#my-timetable-icon-btn {
-                font-size: 1.4em !important; /* 手機版略小 */
+                font-size: 1.4em !important; 
 				padding-left: 5px;
             }
             #reload-cache-btn {
-                margin-left: 0px; /* 移除額外間距 */
-                margin-right: 0; /* 移除額外間距 */
+                margin-left: 0px; 
+                margin-right: 0; 
 				padding-left: 5px;
             }
 			header h1 {
@@ -1181,16 +1141,16 @@
 			#my-timetable-modal .modal-header {
                 padding: 0 35px 0 10px;
                 margin-bottom: 5px;
-                flex-wrap: wrap; /* 確保允許換行 */
+                flex-wrap: wrap; 
             }
             #my-timetable-modal .modal-title-container {
-                width: 100%; /* 強制標題佔滿第一行 */
-                text-align: center; /* 手機版標題居中可能更好看 */
-                margin-bottom: 8px; /* 標題和按鈕間距 */
+                width: 100%; 
+                text-align: center; 
+                margin-bottom: 8px; 
             }
             #my-timetable-modal .modal-week-nav {
-                width: 100%; /* 強制按鈕佔滿第二行 */
-                margin-top: 0; /* 因為標題已有 margin-bottom，這裡設為 0 */
+                width: 100%; 
+                margin-top: 0; 
                 justify-content: space-around;
                 padding: 2px 0;
 				gap: 5px;
@@ -1404,9 +1364,10 @@
 
                 <h3>四、 我的課表 Modal 操作</h3>
                 <ul>
-                    <li><span class="instruction-highlight">週次巡航</span>：使用 Modal 上方的 <span class="instruction-highlight">「‹ 上一週」、「下一週 ›」按鈕</span>切換週次。</li>
+                    <li><span class="instruction-highlight">週次巡航</span>：使用 Modal 上方的 <span class="instruction-highlight">「‹上週」、「‹本週」、「下週›」按鈕</span>切換週次。</li>
+                    <li><span class="instruction-highlight">週次巡航</span>：使用 Modal 上方的 <span class="instruction-highlight">「‹異動週」、「異動週›」按鈕</span>可直接跳至課表異動的週次。</li>
                     <li><span class="instruction-highlight">快速切換（手機）</span>：在 Modal 內<span class="instruction-highlight">左右滑動</span>，可快速切換上一週或下一週。</li>
-                    <li><span class="instruction-highlight">進入學生名單</span>：<span class="instruction-highlight">點擊課表中有課的格子</span>，可直接進入該課程所屬班級的學生名單。</li>
+                    <li><span class="instruction-highlight">進入學生名單</span>：<span class="instruction-highlight">點擊課表中有課的格子</span>，可直接進入該課程所屬班級的學生名單並可操作紀錄功能。</li>
                 </ul>
                 
                 <h3>五、 課表系統 (Timetable.html) 操作</h3>
@@ -1508,11 +1469,9 @@
         let currentWeekStart = getMonday(new Date());
         let timetableIntervalId = null;
         
-        // 【快取關鍵變數】
         const CACHE_KEY = 'teacher_static_cache_v1';
         let CACHE_DATA = {};
-        // 【快取關鍵變數結束】
-
+        
         let rosterSortState = 0;
         let classSortState = 0;
         let currentRosterClassId = null;
@@ -1545,9 +1504,7 @@
         const mainSortBtn = document.getElementById('main-sort-btn');
         const timetableLink = document.getElementById('timetable-link');
         
-        // 【新增 DOM 元素】
         const reloadCacheBtn = document.getElementById('reload-cache-btn');
-        // 【新增 DOM 元素結束】
 
         const saveRecordBtn = document.getElementById('save-record-btn');
         const btnCancelEdit = document.getElementById('btn-cancel-edit');
@@ -1711,14 +1668,12 @@
                     if (userDoc.exists && userDoc.data().role === 'teacher') {
                         currentUserData = userDoc.data();
                         
-                        // 【快取邏輯：優先從快取載入用戶名稱】
                         try {
                             const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
                             if (cached && cached.userData && cached.userData.uid === user.uid) {
                                 currentUserData = cached.userData;
                             }
                         } catch (e) {
-                            // 快取損壞，忽略
                         }
                         
                         document.getElementById('user-email').textContent = currentUserData.displayName || user.email;
@@ -1726,7 +1681,6 @@
                         if (currentUserData.passwordNeedsReset === true) {
                             showPasswordResetUI();
                         } else {
-                            // 呼叫 initialize，並傳遞參數 `forceReload` 決定是否使用快取
                             await initialize(currentUserData, false); 
                         }
                     } else {
@@ -1830,7 +1784,6 @@
             }
         }
 
-        // 【修改 loadPeriodTimes 函數：支援快取讀取】
         async function loadPeriodTimes(schoolId, useCache) {
             if (!schoolId) return;
             
@@ -1863,10 +1816,9 @@
                         { period: 8, start: '16:10', duration: 50 }
                     ];
                 }
-                CACHE_DATA.PERIOD_TIMES = PERIOD_TIMES; // 寫入快取
+                CACHE_DATA.PERIOD_TIMES = PERIOD_TIMES; 
             } catch (error) {
                 console.error("載入課程時間表時發生錯誤:", error);
-                // 使用預設值
                 PERIOD_TIMES = [
                         { period: 1, start: '08:10', duration: 50 },
                         { period: 2, start: '09:10', duration: 50 },
@@ -1879,9 +1831,7 @@
                     ];
             }
         }
-        // 【修改 loadPeriodTimes 函數結束】
 
-        // 【修改 fetchScheduleData 函數：支援快取讀取】
         async function fetchScheduleData(teacherName, schoolId, useCache) {
             scheduleDataLoaded = false;
             teacherTimetableData = { periods: {} };
@@ -1903,24 +1853,21 @@
                     teacherTimetableData = { periods: {} };
                 }
                 
-                CACHE_DATA.teacherTimetableData = teacherTimetableData; // 寫入快取
+                CACHE_DATA.teacherTimetableData = teacherTimetableData; 
 
             } catch (error) {
                 console.error("載入課表資料失敗:", error);
                 teacherTimetableData = { periods: {} };
             }
         }
-        // 【修改 fetchScheduleData 函數結束】
 
 
-		// 【修改 initialize 函數：核心快取讀寫邏輯】
 		async function initialize(userData, forceReload = false) {
             
             const schoolId = userData.schoolId;
             const teacherName = userData.displayName;
             appContainer.innerHTML = '<h2>載入中...</h2>';
             
-            // --- 步驟 1: 嘗試從 Local Storage 讀取靜態快取 ---
             let useCache = false;
             if (!forceReload) {
                 try {
@@ -1929,12 +1876,11 @@
                         CACHE_DATA = cached;
                         useCache = true;
                         
-                        // 從快取還原主要靜態資料
                         studentsData = CACHE_DATA.rosterData;
                         allClassList = CACHE_DATA.allClassList;
                         teacherTimetableData = CACHE_DATA.teacherTimetableData || { periods: {} };
                         PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES || [];
-                        scheduleDataLoaded = true; // 假設快取載入是成功的
+                        scheduleDataLoaded = true; 
                         console.log('快取命中，加速載入基本資料...');
                     }
                 } catch (e) {
@@ -1947,7 +1893,6 @@
 
 
             try {
-                // --- 步驟 2: 處理使用者基本資料 (僅在第一次或快取失效時讀取 Firestore) ---
                 if (!useCache) {
                     const userDoc = await db.collection('users').doc(currentUser.uid).get();
                     if (!userDoc.exists || userDoc.data().role !== 'teacher' || !userDoc.data().schoolId) {
@@ -1957,10 +1902,8 @@
                 }
                 visibleClassList = currentUserData.visibleClasses || [];
                 
-                // --- 步驟 3: 載入課程時間表 (優先快取) ---
                 await loadPeriodTimes(schoolId, useCache);
                 
-                // --- 步驟 4: 載入學生名冊 (優先快取) ---
                 if (!useCache) {
                     const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
                     if (!rosterDoc.exists) {
@@ -1973,10 +1916,8 @@
                     CACHE_DATA.allClassList = allClassList;
                 }
 
-                // --- 步驟 5: 載入教師課表 (優先快取) ---
                 await fetchScheduleData(teacherName, schoolId, useCache); 
                 
-                // --- 步驟 6: 處理首次登入的班級顯示偏好 ---
                 if (visibleClassList.length === 0 && allClassList.length > 0) {
                     const taughtClasses = new Set();
                     if (teacherTimetableData && teacherTimetableData.periods) {
@@ -1997,13 +1938,11 @@
                     visibleClassList = taughtClassesArray.length > 0 ? taughtClassesArray.sort() : allClassList; 
                 } 
 
-                // --- 步驟 7: 將所有基本資料寫入 Local Storage (如果讀取了新資料) ---
                 if (!useCache || forceReload) {
-                    CACHE_DATA.userData = currentUserData; // 儲存用戶資料
+                    CACHE_DATA.userData = currentUserData; 
                     localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE_DATA));
                 }
 
-                // --- 步驟 8: 啟動動態資料載入與 UI 渲染 ---
                 await fetchAllScores(); 
                 setInterval(highlightCurrentClass, 30000);
 
@@ -2018,7 +1957,7 @@
 
                 rosterSortBtn.addEventListener('click', toggleRosterSort);
                 mainSortBtn.addEventListener('click', toggleClassSort);
-                reloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); // 綁定重新載入
+                reloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); 
 
                 updateSortButtonDisplay(0, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
                 updateSortButtonDisplay(0, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
@@ -2040,7 +1979,6 @@
                 document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
             }
         }
-        // 【修改 initialize 函數結束】
 
 
         async function fetchAllScores() {
@@ -2683,7 +2621,6 @@
 
             if (!scheduleDataLoaded) {
                  timetableMessage.textContent = '課表數據正在載入中...';
-                 // 這裡不需要重新載入，因為 initialize 已經處理了靜態資料的載入。
             }
 
             myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
@@ -2718,7 +2655,6 @@
                 renderDerivedMyTimetable(0);
             };
             
-            // 【新增：異動週次巡航按鈕事件綁定】
             document.getElementById('prev-change-week-btn').onclick = () => {
                 const targetWeek = findNextChangeWeek(-1);
                 if (targetWeek) {
@@ -2738,10 +2674,8 @@
                     alert('沒有找到更晚的異動週次了。');
                 }
             };
-            // 【新增結束】
 
             if (timetableIntervalId) clearInterval(timetableIntervalId);
-            // 每 30 秒執行一次高光檢查刷新。傳入 'noslide' 參數來告知函數：這次只是靜態刷新，不要執行滑動動畫。
             timetableIntervalId = setInterval(() => renderDerivedMyTimetable(10), 30000);
         });
 
@@ -2770,10 +2704,9 @@
             }
         });
 
-		// 注意：此處加入了 parentElement = null 參數，以適應並排滑動的邏輯
 		function renderMyTimetableTable(derivedSchedule, parentElement = null) {
 			const myTimetableBody = document.getElementById('my-timetable-body');
-			const targetElement = parentElement || myTimetableBody; // 輸出目標元素
+			const targetElement = parentElement || myTimetableBody; 
 
 			if (!derivedSchedule || !derivedSchedule.periods || PERIOD_TIMES.length === 0) {
 				 targetElement.innerHTML = '<p style="text-align: center;">課表資料錯誤或未載入。</p>';
@@ -2871,7 +2804,6 @@
 
 			tableHtml += '</tbody></table>';
 			
-			// 【修改點】將結果輸出到指定的父元素
 			targetElement.innerHTML = tableHtml;
 
 			const scheduleTable = targetElement.querySelector('.schedule-table');
@@ -2898,7 +2830,6 @@
 						if (derivedData && derivedData.class) {
 							const classCode = derivedData.class;
 							document.getElementById('my-timetable-modal').style.display = 'none';
-							// 確保這裡使用 'timetable' 作為 origin
 							openStudentRosterModal(classCode, 'timetable');
 						}
 					}
@@ -2906,7 +2837,6 @@
 			});
 		}
 
-		// direction: 1=Next (下一週, 內容向左), -1=Prev (上一週, 內容向右), 0=None/Today (由上往下滑入)
 		async function renderDerivedMyTimetable(direction = 0) {
 			await loadActiveChanges();
 			const derivedSchedule = getDerivedCurrentUserSchedule();
@@ -2916,32 +2846,25 @@
 			const todayWeekStart = getMonday(new Date());
 			const isReturningToCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
 
-			// 1. 如果沒有舊表格 (第一次載入)，或是在本週但方向是 0 (避免重複動畫)
 			if (!oldTable || direction === 10) { 
-				// 創建一個臨時容器來渲染新表格
 				const tempContainer = document.createElement('div');
 				renderMyTimetableTable(derivedSchedule, tempContainer);
 				const newTable = tempContainer.querySelector('.schedule-table');
 				
 				if (newTable && oldTable) {
-				    // 如果舊表格存在，則用新的 DOM 節點替換舊的 DOM 節點
 				    oldTable.replaceWith(newTable);
 				} else if (newTable) {
-				    // 如果舊表格不存在，則直接添加新表格
 				    myTimetableBody.appendChild(newTable);
 				}
 				
-				// 清理所有可能的動畫 class
 				myTimetableBody.querySelectorAll('.schedule-table').forEach(table => {
 					table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
 				});
 				return;
 			}
-			// 2. 準備父容器的環境 (關鍵點：必須設定 position: relative 和 overflow: hidden)
 			myTimetableBody.style.position = 'relative';
 			myTimetableBody.style.overflow = 'hidden';
 
-			// 3. 準備一個新容器來容納新表格
 			const newTableContainer = document.createElement('div');
 			newTableContainer.style.position = 'absolute';
 			newTableContainer.style.top = '0';
@@ -2950,74 +2873,52 @@
 			newTableContainer.style.height = '100%';
 			newTableContainer.style.overflow = 'hidden';
 
-			// 4. 渲染新表格到新容器
 			myTimetableBody.appendChild(newTableContainer);
 			renderMyTimetableTable(derivedSchedule, newTableContainer);
 
 			const newTable = newTableContainer.querySelector('.schedule-table');
 
-			// 5. 調整舊表格的 z-index 和 position (確保動畫中兩者疊加)
 			oldTable.style.zIndex = 10;
 			oldTable.style.position = 'relative';
 
-			// 6. 根據方向決定動畫 class
 			let slideOutClass, slideInClass;
 
 		
-			if (direction === 1) { // 下一週 (左滑)
+			if (direction === 1) { 
 				slideOutClass = 'slide-out-left';
 				slideInClass = 'slide-in-right';
-			} else if (direction === -1) { // 上一週 (右滑)
+			} else if (direction === -1) { 
 				slideOutClass = 'slide-out-right';
 				slideInClass = 'slide-in-left';
-			} else if (direction === 0) { // 回到本週 (上往下滑)
-				// 確保舊表格從上方滑出，新表格從上方滑入
+			} else if (direction === 0) { 
 				slideOutClass = 'slide-out-up';
 				slideInClass = 'slide-in-down';
 			} else {
-				// 如果方向未知，不執行動畫，直接替換
 				myTimetableBody.innerHTML = newTableContainer.innerHTML;
-				myTimetableBody.style.overflow = ''; // 恢復
+				myTimetableBody.style.overflow = ''; 
 				return;
 			}
 
-			// 7. 同時應用滑出和滑入動畫
-			// **重點：這裡必須應用 CSS Class**
 			oldTable.classList.add(slideOutClass);
 			newTable.classList.add(slideInClass);
 
-			// 8. 在動畫結束後清理 DOM 結構和動畫 class
 			setTimeout(() => {
-				// 1. 確保 newTableContainer 仍然存在並包含一個表格
 				const finalTable = newTableContainer.querySelector('.schedule-table');
 				
-				// 2. 移除舊的表格
 				oldTable.remove();
 
-				// 3. 將新的表格元素 (它帶有正確的事件監聽器) 移動到父容器中
 				if (finalTable) {
-					// 先將 newTableContainer 裡的所有內容移動到 myTimetableBody
-					// 由於 newTableContainer 只有 finalTable，最簡單的方式是
-					// 將 newTableContainer 替換為 finalTable 本身
 					newTableContainer.replaceWith(finalTable);
 					
-					// 4. 清理動畫 class
 					finalTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
 				} else {
-					// 以防萬一，如果找不到新表格，則清空容器
 					myTimetableBody.innerHTML = '';
 				}
 
-				// 5. 恢復 myTimetableBody 的 overflow 屬性
 				myTimetableBody.style.overflow = '';
-			}, 200); // 確保與 CSS 動畫時間 (0.2s) 匹配
+			}, 200); 
 		}
 		
-		/**
-         * 尋找下一個/上一個包含課程異動的週次。
-         * @param {number} direction - 尋找方向 (+1: 下異動週, -1: 上異動週)。
-         * @returns {Date | null} 找到的週一日期，或 null。
-         */
         function findNextChangeWeek(direction) {
             if (activeChanges.length === 0) {
                 return null;
@@ -3026,18 +2927,15 @@
             const currentWeekStartTS = currentWeekStart.getTime();
             const changeWeeksTS = new Set();
             
-            // 1. 找出所有異動紀錄所屬的週一日期 (毫秒)
             activeChanges.forEach(change => {
                 let dateStr;
                 if (change.type === 'swap') {
-                    // 調課同時影響兩個週次
                     dateStr = change.originalClassInfo.date;
                     const dateBStr = change.targetClassInfo.date;
                     changeWeeksTS.add(getMonday(new Date(dateBStr)).getTime());
                 } else if (change.type === 'substitution') {
                     dateStr = change.date;
                 } else if (change.type === 'exchange') {
-                    // 換課同時影響兩個週次
                     dateStr = change.originalLessonInfo.date;
                     const dateBStr = change.exchangeLessonInfo.date;
                     changeWeeksTS.add(getMonday(new Date(dateBStr)).getTime());
@@ -3051,18 +2949,16 @@
             
             let targetWeekTS = null;
 
-            if (direction === 1) { // 尋找下一異動週 (時間戳 > currentWeekStartTS)
+            if (direction === 1) { 
                 for (const ts of sortedChangeWeeks) {
-                    // 確保是「嚴格大於」當前週次
                     if (ts > currentWeekStartTS) {
                         targetWeekTS = ts;
                         break;
                     }
                 }
-            } else if (direction === -1) { // 尋找上一異動週 (時間戳 < currentWeekStartTS)
+            } else if (direction === -1) { 
                 for (let i = sortedChangeWeeks.length - 1; i >= 0; i--) {
                     const ts = sortedChangeWeeks[i];
-                    // 確保是「嚴格小於」當前週次
                     if (ts < currentWeekStartTS) {
                         targetWeekTS = ts;
                         break;
@@ -3122,54 +3018,42 @@
 			closeHomepageSettingsModal();
 		});
 		
-		// 【【【新增】】】: 為 "我的課表" Modal 加入滑動換週功能
         const timetableBody = document.getElementById('my-timetable-body');
         let touchStartX = 0;
         let touchEndX = 0;
-        const swipeThreshold = 50; // 判定為滑動的最短像素距離
+        const swipeThreshold = 50; 
 
         timetableBody.addEventListener('touchstart', (event) => {
-            // 只記錄單指觸控的起始點
             if (event.touches.length === 1) {
                 touchStartX = event.touches[0].clientX;
-                touchEndX = 0; // 重置結束點
+                touchEndX = 0; 
             }
-        }, { passive: true }); // 使用 passive: true 提升滾動性能
+        }, { passive: true }); 
 
         timetableBody.addEventListener('touchmove', (event) => {
-            // 如果有多於一指觸控，則不處理 (可能是縮放)
             if (event.touches.length > 1) {
-                touchStartX = 0; // 重置起始點，取消滑動判定
+                touchStartX = 0; 
                 return;
             }
-            // 記錄最後移動到的 X 座標 (雖然 touchend 裡也會記錄，這裡先存著)
-            // touchEndX = event.touches[0].clientX;
-        }, { passive: true }); // 使用 passive: true 提升滾動性能
+        }, { passive: true }); 
 
         timetableBody.addEventListener('touchend', (event) => {
-            // 只處理單指觸控結束事件
             if (event.changedTouches.length === 1 && touchStartX !== 0) {
                 touchEndX = event.changedTouches[0].clientX;
                 const deltaX = touchEndX - touchStartX;
 
-                // 判斷滑動距離是否足夠，以及 Modal 是否可見
                 if (Math.abs(deltaX) > swipeThreshold && myTimetableModal.style.display === 'flex') {
                     if (deltaX < 0) {
-                        // 向左滑動 (手指向左移動，內容向左滾動) -> 下一週
                         document.getElementById('next-week-btn').click();
                     } else {
-                        // 向右滑動 (手指向右移動，內容向右滾動) -> 上一週
                         document.getElementById('prev-week-btn').click();
                     }
                 }
             }
-            // 重置起始點，為下一次滑動做準備
             touchStartX = 0;
         });
-        // 【【【新增結束】】】
     });
 	
     </script>
 </body>
 </html>
-
