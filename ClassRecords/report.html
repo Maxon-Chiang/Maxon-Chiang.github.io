@@ -56,6 +56,15 @@
             display: flex;
             align-items: center;
         }
+		#perf-stats-filter-grid .filter-group:nth-child(1) { /* 加總對象 */
+			flex: 1 1 18%; /* 佔比約 20% */
+			min-width: 80px;
+		}
+
+		#perf-stats-filter-grid .filter-group:nth-child(2) { /* 選擇年段 */
+			flex: 1 1 78%; /* 佔比約 80% */
+			min-width: 250px;
+		}
 
         @media (max-width: 768px) {
             main { padding: 10px; }
@@ -161,10 +170,10 @@
                 </div>
                 
 				<div id="perf-stats-options" style="margin-top: 20px; display: none;">
-					<div class="filter-grid" id="perf-stats-filter-grid">
+					<div id="perf-stats-filter-grid" style="display: flex;" >
 						<div class="filter-group">
 							<label style="font-weight: bold;">加總對象:</label>
-							<div style="display: flex; gap: 20px; padding-top: 5px; height: 40px; align-items: center;">
+							<div style="display: flex; gap: 10px; padding-top: 5px; height: 40px; align-items: center;">
 								<label><input type="radio" name="sum-target" value="class" checked> 班級</label>
 								<label><input type="radio" name="sum-target" value="student"> 學生</label>
 							</div>
@@ -969,5 +978,3 @@
     </script>
 </body>
 </html>
-
-
