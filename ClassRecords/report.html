@@ -85,17 +85,16 @@
 		/* 【新增或修改此區塊，讓它在所有寬度下都使用 Flex 佈局】 */
 		#grades-stats-filter-grid {
 			display: flex !important; 
-			flex-wrap: wrap;
 			gap: 30px;
 			margin-top: 20px; 
 		}
 		
 		/* 【新增或修改此區塊，明確定義比例，並調整到 .filter-group 上】 */
 		#grades-stats-filter-grid .filter-group:nth-child(1) { 
-			flex: 0 1 12%; 
+			flex: 1 1 12%; 
 		}
 		#grades-stats-filter-grid .filter-group:nth-child(2) { 
-			flex: 0 1 80%; 
+			flex: 1 1 80%; 
 		}
 
 
@@ -148,11 +147,9 @@
 				margin-top: 10px; /* 增加頂部間距 */
 			}
 			#grades-stats-filter-grid .filter-group:nth-child(1) { 
-				max-width: 100px;
 				font-size: 1.0em;
 			}
 			#grades-stats-filter-grid .filter-group:nth-child(2) { 
-				max-width: 250px;
 				font-size: 1.0em;
 			}			
 			.action-buttons { margin-top: 10px; }
@@ -248,10 +245,10 @@
 						</div>
 					</div>
 				</div>
-				<div id="grades-assignment-filters" style="display:none;">
+				<div id="grades-assignment-filters" style="display:none; font-size: 1em;">
 					<div><label for="grades-class-select-single">選擇班級：</label><select id="grades-class-select-single"><option value="">請先選擇班級</option></select></div>
 				</div>
-				<div id="grades-cross-class-filters" style="display:none;">
+				<div id="grades-cross-class-filters" style="display:none; font-size: 1em;">
 					<div><label for="grades-assignment-select">選擇成績項目：</label><select id="grades-assignment-select"><option value="">請先載入所有成績項目</option></select></div>
 				</div>
                 <div class="action-buttons"><button id="run-grades-query-btn" class="run-query-btn">執行查詢</button><button id="export-grades-csv-btn" class="export-csv-btn" disabled>匯出 CSV</button></div>
@@ -1021,7 +1018,6 @@
     </script>
 </body>
 </html>
-
 
 
 
