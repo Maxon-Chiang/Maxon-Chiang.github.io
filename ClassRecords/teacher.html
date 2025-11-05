@@ -1469,7 +1469,7 @@
         </div>
     </div>
 
-    <script>
+<script>
     document.addEventListener('DOMContentLoaded', function() {
 	  const firebaseConfig = {
 		apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
@@ -1497,7 +1497,8 @@
         let currentWeekStart = getMonday(new Date());
         let timetableIntervalId = null;
         
-        const CACHE_KEY = 'teacher_static_cache_v1';
+        // 【快取版本號：確保舊的資料結構被淘汰】
+        const CACHE_KEY = 'teacher_static_cache_v6'; 
         let CACHE_DATA = {};
         
         let rosterSortState = 0;
@@ -1510,7 +1511,8 @@
         let PERIOD_TIMES = [];
 		
 		let allPerformanceRecords = []; 
-        let studentLatestRecords = {}; // 儲存學生最新的文字紀錄及標註狀態
+        let studentLatestRecords = {}; 
+        let allScoresSnapshotUnsubscribe = null; 
 		
         const appContainer = document.getElementById('app-container');
         const welcomeModal = document.getElementById('welcome-modal');
@@ -1815,6 +1817,7 @@
             }
         }
 
+        // 【快取函數 1: 載入課程時間表】
         async function loadPeriodTimes(schoolId, useCache) {
             if (!schoolId) return;
             
@@ -1863,6 +1866,7 @@
             }
         }
 
+        // 【快取函數 2: 載入教師課表】
         async function fetchScheduleData(teacherName, schoolId, useCache) {
             scheduleDataLoaded = false;
             teacherTimetableData = { periods: {} };
@@ -1892,129 +1896,34 @@
             }
         }
 
-
-		async function initialize(userData, forceReload = false) {
-            
-            const schoolId = userData.schoolId;
-            const teacherName = userData.displayName;
-            appContainer.innerHTML = '<h2>載入中...</h2>';
-            
-            let useCache = false;
-            if (!forceReload) {
-                try {
-                    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
-                    if (cached && cached.userData && cached.userData.uid === currentUser.uid && cached.rosterData && cached.rosterData.length > 0) {
-                        CACHE_DATA = cached;
-                        useCache = true;
-                        
-                        studentsData = CACHE_DATA.rosterData;
-                        allClassList = CACHE_DATA.allClassList;
-                        teacherTimetableData = CACHE_DATA.teacherTimetableData || { periods: {} };
-                        PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES || [];
-                        scheduleDataLoaded = true; 
-                        console.log('快取命中，加速載入基本資料...');
-                    }
-                } catch (e) {
-                    console.error('快取讀取錯誤或損壞:', e);
-                    localStorage.removeItem(CACHE_KEY); 
-                    forceReload = true; 
-                    useCache = false;
-                }
+        // 【快取函數 3: 載入學生名冊】
+        async function fetchRosterData(schoolId, useCache) {
+            if (useCache && CACHE_DATA.rosterData) {
+                studentsData = CACHE_DATA.rosterData;
+                allClassList = CACHE_DATA.allClassList;
+                return;
             }
 
-
-            try {
-                if (!useCache) {
-                    const userDoc = await db.collection('users').doc(currentUser.uid).get();
-                    if (!userDoc.exists || userDoc.data().role !== 'teacher' || !userDoc.data().schoolId) {
-                        throw new Error('帳號設定錯誤或無權限。');
-                    }
-                    currentUserData = userDoc.data();
-                }
-                visibleClassList = currentUserData.visibleClasses || [];
-                
-                await loadPeriodTimes(schoolId, useCache);
-                
-                if (!useCache) {
-                    const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
-                    if (!rosterDoc.exists) {
-                        document.getElementById('app-container').innerHTML = `<h2>找不到學校名冊，請聯繫學校管理者上傳。</h2>`;
-                        return;
-                    }
-                    studentsData = rosterDoc.data().students;
-                    allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort(); 
-                    CACHE_DATA.rosterData = studentsData;
-                    CACHE_DATA.allClassList = allClassList;
-                }
-
-                await fetchScheduleData(teacherName, schoolId, useCache); 
-                
-                if (visibleClassList.length === 0 && allClassList.length > 0) {
-                    const taughtClasses = new Set();
-                    if (teacherTimetableData && teacherTimetableData.periods) {
-                        Object.values(teacherTimetableData.periods).forEach(dayArray => {
-                            dayArray.forEach(cellContent => {
-                                if (typeof cellContent === 'string' && cellContent.trim() !== '') {
-                                    const classCode = cellContent.split(/\s+/)[0]; 
-                                    if (classCode && allClassList.includes(classCode)) {
-                                        taughtClasses.add(classCode);
-                                    }
-                                }
-                            });
-                        });
-                    }
-
-                    const taughtClassesArray = Array.from(taughtClasses);
-                    
-                    visibleClassList = taughtClassesArray.length > 0 ? taughtClassesArray.sort() : allClassList; 
-                } 
-
-                if (!useCache || forceReload) {
-                    CACHE_DATA.userData = currentUserData; 
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE_DATA));
-                }
-
-                await fetchAllScores(); 
-                setInterval(highlightCurrentClass, 30000);
-
-                highlightCurrentClass();
-
-				const preference = localStorage.getItem('homepagePreference');
-				if (preference === 'timetable') {
-					setTimeout(() => {
-						myTimetableIconBtn.click();
-					}, 100);
-				}
-
-                rosterSortBtn.addEventListener('click', toggleRosterSort);
-                mainSortBtn.addEventListener('click', toggleClassSort);
-                reloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); 
-
-                updateSortButtonDisplay(0, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
-                updateSortButtonDisplay(0, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
-
-                saveRecordBtn.addEventListener('click', handleAddRecord);
-                recordsList.addEventListener('click', handleDeleteRecord);
-
-                btnCancelEdit.addEventListener('click', resetPerformanceForm);
-
-                document.addEventListener('visibilitychange', () => {
-                    if (document.visibilityState === 'visible') {
-                        highlightCurrentClass();
-                    }
-                });
-
-
-            } catch (error) {
-                console.error("初始化失敗:", error);
-                document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
+            const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
+            if (!rosterDoc.exists) {
+                 throw new Error('找不到學校名冊');
             }
+            studentsData = rosterDoc.data().students;
+            allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort(); 
+            CACHE_DATA.rosterData = studentsData;
+            CACHE_DATA.allClassList = allClassList;
         }
 
-
+        // 【優化：分數 onSnapshot 監聽】
         async function fetchAllScores() {
-            db.collection('performanceRecords').doc(currentUser.uid).collection('records')
+            // 如果監聽器已經啟動，則不執行任何動作，讓它自己更新
+            if (allScoresSnapshotUnsubscribe) {
+                 return;
+            }
+            
+            allScoresSnapshotUnsubscribe = db.collection('performanceRecords').doc(currentUser.uid).collection('records')
               .onSnapshot(snapshot => {
+                
                 allPerformanceScores = {};
                 classTotalScores = {};
                 allPerformanceRecords = [];
@@ -2053,22 +1962,20 @@
 				studentsData.forEach(student => {
                     const studentRecords = allPerformanceRecords.filter(r => 
                          (r.entityId === student.id || r.studentId === student.id) && (r.entityType === 'student' || !r.entityType)
-                    ).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); // 依時間戳記降序排列 (最新在前)
+                    ).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); 
                     
-                    studentLatestRecords[student.id] = null; // 重置，準備查找最新的文字紀錄
+                    studentLatestRecords[student.id] = null; 
 
                     for (const record of studentRecords) {
                         const hasText = record.text && record.text.trim() !== '';
-                        // 分數為 undefined, null, 或 0 則視為「沒有給分」
                         const hasNoPoints = (record.points === undefined || record.points === null || record.points === 0);
                         
                         if (hasText) {
-                            // 找到最新的文字紀錄，儲存並檢查是否符合標註條件
                             studentLatestRecords[student.id] = {
                                 latestComment: record.text,
-                                needsHighlight: hasNoPoints // 如果最新文字紀錄是「沒有給分」的狀態，則標註
+                                needsHighlight: hasNoPoints 
                             };
-                            break; // 找到最新的文字紀錄後即停止查找
+                            break; 
                         }
                     }
                 });
@@ -2081,10 +1988,122 @@
                 } else if (studentRosterModal.style.display === 'flex' && currentRosterClassId) {
                     renderStudentRoster(currentRosterClassId);
                 }
+                
+                
             }, error => {
                 console.error("監聽紀錄失敗:", error);
             });
         }
+
+		async function initialize(userData, forceReload = false) {
+            
+            const schoolId = userData.schoolId;
+            const teacherName = userData.displayName;
+            appContainer.innerHTML = '<h2>載入中...</h2>';
+            
+            let useCache = false;
+            
+            // --- 1. 嘗試使用快取加速載入 ---
+            if (!forceReload) {
+                try {
+                    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+                    if (cached && cached.userData && cached.userData.uid === currentUser.uid && cached.rosterData && cached.rosterData.length > 0) {
+                        CACHE_DATA = cached;
+                        useCache = true;
+                        
+                        studentsData = CACHE_DATA.rosterData;
+                        allClassList = CACHE_DATA.allClassList;
+                        teacherTimetableData = CACHE_DATA.teacherTimetableData || { periods: {} };
+                        PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES || [];
+                        scheduleDataLoaded = true; 
+                        currentUserData = CACHE_DATA.userData; 
+                        console.log('快取命中，加速載入基本資料...');
+                    }
+                } catch (e) {
+                    console.error('快取讀取錯誤或損壞:', e);
+                    localStorage.removeItem(CACHE_KEY); 
+                    forceReload = true; 
+                    useCache = false;
+                }
+            }
+
+
+            try {
+                
+                if (!useCache) {
+                    currentUserData = userData; 
+                }
+                visibleClassList = currentUserData.visibleClasses || [];
+                
+                // --- 【優化核心：並行載入快取/網路數據】 ---
+                const periodsPromise = loadPeriodTimes(schoolId, useCache);
+                const rosterPromise = fetchRosterData(schoolId, useCache);
+                const schedulePromise = fetchScheduleData(teacherName, schoolId, useCache);
+
+                await Promise.all([periodsPromise, rosterPromise, schedulePromise]);
+                // --- 【並行載入結束】 ---
+
+                // --- 數據整合與快取寫入 ---
+                if (visibleClassList.length === 0 && allClassList.length > 0) {
+                    const taughtClasses = new Set();
+                    if (teacherTimetableData && teacherTimetableData.periods) {
+                        Object.values(teacherTimetableData.periods).forEach(dayArray => {
+                            dayArray.forEach(cellContent => {
+                                if (typeof cellContent === 'string' && cellContent.trim() !== '') {
+                                    const classCode = cellContent.split(/\s+/)[0]; 
+                                    if (classCode && allClassList.includes(classCode)) {
+                                        taughtClasses.add(classCode);
+                                    }
+                                }
+                            });
+                        });
+                    }
+                    visibleClassList = Array.from(taughtClasses).sort();
+                } 
+
+                if (!useCache || forceReload) {
+                    CACHE_DATA.userData = currentUserData; 
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE_DATA));
+                }
+
+                // --- 啟動分數 onSnapshot 監聽 ---
+                await fetchAllScores(); 
+                setInterval(highlightCurrentClass, 30000);
+
+                highlightCurrentClass();
+
+				const preference = localStorage.getItem('homepagePreference');
+				if (preference === 'timetable') {
+					setTimeout(() => {
+						myTimetableIconBtn.click();
+					}, 100);
+				}
+
+                rosterSortBtn.addEventListener('click', toggleRosterSort);
+                mainSortBtn.addEventListener('click', toggleClassSort);
+                reloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); 
+
+                updateSortButtonDisplay(0, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
+                updateSortButtonDisplay(0, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
+
+                saveRecordBtn.addEventListener('click', handleAddRecord);
+                recordsList.addEventListener('click', handleDeleteRecord);
+
+                btnCancelEdit.addEventListener('click', resetPerformanceForm);
+
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible') {
+                        highlightCurrentClass();
+                    }
+                });
+
+
+            } catch (error) {
+                console.error("初始化失敗:", error);
+                document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
+            }
+        }
+
 
         function renderLayout() {
             appContainer.innerHTML = '';
@@ -2558,7 +2577,10 @@
 			}
 		}
 
-        document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
+        document.getElementById('logout-btn').addEventListener('click', () => { 
+            if (allScoresSnapshotUnsubscribe) allScoresSnapshotUnsubscribe();
+            auth.signOut().then(() => { window.location.href = 'login.html'; }); 
+        });
         document.querySelectorAll('.close-btn').forEach(btn => {
              btn.onclick = (e) => {
                 const modalId = e.target.dataset.modal;
@@ -3124,5 +3146,5 @@
     });
 	
     </script>
-</body>
+ </body>
 </html>
