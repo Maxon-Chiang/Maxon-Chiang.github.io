@@ -391,7 +391,22 @@
 		.score-negative { background-color: #ffebee; }
 		.score-positive-low { background-color: #e8f5e9; }
 		.score-positive-high { background-color: #fff8e1; }
+		/* 【新增樣式】無分數文字紀錄標註 - 紅框 */
+        .student-block.highlight-no-score {
+            border: 2px solid var(--danger-color); /* 紅框 */
+            box-shadow: 0 0 5px rgba(208, 2, 27, 0.5);
+        }
 
+        /* 【新增樣式】最小字體顯示最新紀錄 */
+        .student-record-summary {
+            font-size: 0.7em; /* 最小的字體 */
+            color: var(--danger-color);
+            margin-top: 5px;
+            white-space: normal; /* 允許換行 */
+            word-break: break-all; /* 允許單詞內換行 */
+            line-height: 1.2;
+        }
+        /* -------------------------------------------------- */
         .modal, .modal2, .modal-notes {
 			display: none;
             position: fixed;
@@ -1480,7 +1495,10 @@
         let editingRecordId = null;
 
         let PERIOD_TIMES = [];
-
+		
+		let allPerformanceRecords = []; 
+        let studentLatestRecords = {}; // 儲存學生最新的文字紀錄及標註狀態
+		
         const appContainer = document.getElementById('app-container');
         const welcomeModal = document.getElementById('welcome-modal');
         const modal = document.getElementById('modal');
@@ -1987,7 +2005,8 @@
                 allPerformanceScores = {};
                 classTotalScores = {};
                 allPerformanceRecords = [];
-
+				studentLatestRecords = {}; 
+				  
                 snapshot.forEach(doc => {
                     const r = doc.data();
                     r.id = doc.id;
@@ -2017,7 +2036,30 @@
 
                     classTotalScores[className] = (classTotalScores[className] || 0) + score;
                 });
+				  
+				studentsData.forEach(student => {
+                    const studentRecords = allPerformanceRecords.filter(r => 
+                         (r.entityId === student.id || r.studentId === student.id) && (r.entityType === 'student' || !r.entityType)
+                    ).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); // 依時間戳記降序排列 (最新在前)
+                    
+                    studentLatestRecords[student.id] = null; // 重置，準備查找最新的文字紀錄
 
+                    for (const record of studentRecords) {
+                        const hasText = record.text && record.text.trim() !== '';
+                        // 分數為 undefined, null, 或 0 則視為「沒有給分」
+                        const hasNoPoints = (record.points === undefined || record.points === null || record.points === 0);
+                        
+                        if (hasText) {
+                            // 找到最新的文字紀錄，儲存並檢查是否符合標註條件
+                            studentLatestRecords[student.id] = {
+                                latestComment: record.text,
+                                needsHighlight: hasNoPoints // 如果最新文字紀錄是「沒有給分」的狀態，則標註
+                            };
+                            break; // 找到最新的文字紀錄後即停止查找
+                        }
+                    }
+                });
+				  
                 renderLayout();
                 highlightCurrentClass();
 
@@ -2195,6 +2237,20 @@
 					}
 					studentBlock.className = 'student-block ' + scoreClass;
 
+					const latestRecordInfo = studentLatestRecords[student.id];
+                    let latestCommentHtml = '';
+
+                    if (latestRecordInfo) {
+                        // 1. 應用紅框標註
+                        if (latestRecordInfo.needsHighlight) {
+                            studentBlock.classList.add('highlight-no-score');
+                        }
+                        // 2. 準備最小字體顯示文字
+                        if (latestRecordInfo.latestComment && latestRecordInfo.latestComment.trim() !== '') {
+                            latestCommentHtml = `<div class="student-record-summary">(${latestRecordInfo.latestComment})</div>`;
+                        }
+                    }
+					
 					studentBlock.innerHTML = `
 						<div class="student-block-info">
 							${student.id.substring(3)} <span class="score">(${score.toFixed(1)}分)</span>
@@ -3057,3 +3113,4 @@
     </script>
 </body>
 </html>
+
