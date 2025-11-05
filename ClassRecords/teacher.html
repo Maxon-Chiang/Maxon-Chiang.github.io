@@ -379,7 +379,7 @@
         .student-block-info {
             font-size: 1.2em;
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
         .student-block-info .score {
             font-size: 0.8em;
@@ -407,6 +407,17 @@
             word-break: break-all; /* 允許單詞內換行 */
             line-height: 1.2;
         }
+		.student-record-text {
+            font-size: 0.7em; /* 最小的字體 */
+            color: var(--danger-color);
+			flex-wrap: nowrap;
+            margin-top: 5px;
+            line-height: 1.2;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+			overflow:hidden;
+        }
+
         /* -------------------------------------------------- */
         .modal, .modal2, .modal-notes {
 			display: none;
@@ -2248,7 +2259,7 @@
                         }
                         // 2. 準備最小字體顯示文字
                         if (latestRecordInfo.needsHighlight && latestRecordInfo.latestComment.trim() !== '') {
-                            latestCommentHtml = `<div class="student-record-summary">(${latestRecordInfo.latestComment})</div>`;
+                            latestCommentHtml = `<div class="student-record-text">(${latestRecordInfo.latestComment})</div>`;
                         }
                     }
 					
