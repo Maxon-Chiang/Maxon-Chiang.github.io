@@ -364,7 +364,8 @@
             background-color: #f9f9f9;
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 10px;
+            padding: 2x;
+			height: 80px;
             text-align: center;
             cursor: pointer;
             display: flex;
@@ -1063,7 +1064,7 @@
 			}
 
 			.student-block {
-				padding: 6px;
+				height: 60px;				
 			}
 
 			.student-block-info {
@@ -2241,12 +2242,12 @@
                     let latestCommentHtml = '';
 
                     if (latestRecordInfo) {
-                        // 1. 應用紅框標註
+                        // 1. 應用藍框標註
                         if (latestRecordInfo.needsHighlight) {
                             studentBlock.classList.add('highlight-no-score');
                         }
                         // 2. 準備最小字體顯示文字
-                        if (latestRecordInfo.latestComment && latestRecordInfo.latestComment.trim() !== '') {
+                        if (latestRecordInfo.needsHighlight && latestRecordInfo.latestComment.trim() !== '') {
                             latestCommentHtml = `<div class="student-record-summary">(${latestRecordInfo.latestComment})</div>`;
                         }
                     }
@@ -2256,7 +2257,7 @@
 							${student.id.substring(3)} <span class="score">(${score.toFixed(1)}分)</span>
 						</div>
 						<div class="student-block-name">${student.name}</div>
-					`;
+						${latestCommentHtml}`;
 
 					studentBlock.addEventListener('click', () => {
 						document.getElementById('student-roster-modal').style.display = 'none';
@@ -3113,7 +3114,3 @@
     </script>
 </body>
 </html>
-
-
-
-
