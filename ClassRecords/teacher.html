@@ -369,7 +369,10 @@
             cursor: pointer;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            /* 【修改點 1】 改為頂部對齊，允許內容從上往下排列，文字紀錄會自然位於底部 */
+            justify-content: flex-start; 
+             /* 【修改點 2】 新增最小高度，確保卡片不會因為內容少而縮小，但允許內容多時自動撐開 */
+             min-height: 80px;
         }
         .student-block:hover {
             background-color: #eef3f8;
@@ -3113,4 +3116,5 @@
     </script>
 </body>
 </html>
+
 
