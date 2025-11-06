@@ -805,10 +805,10 @@
 			border-color: #007bff;
 			background-color: #e6f7ff; 
         }
-        .schedule-table thead.current-week th:not(:first-child) { 
+        .schedule-table thead.current-week th { 
             color: blue;
             font-weight: bold;
-            background-color: #e6f7ff; 
+            background-color: #F7EED6; 
         }
 		.schedule-table thead th .date-span {
              font-weight: bold !important; 
@@ -842,7 +842,7 @@
             animation-duration: 1.0s; 
             animation-iteration-count: infinite;
             animation-direction: alternate;
-        }		
+        }				
 		#my-timetable-icon-btn {
             background: none !important;
             border: none !important;
@@ -1497,10 +1497,11 @@
         let currentWeekStart = getMonday(new Date());
         let timetableIntervalId = null;
         
-        // 【快取版本號：確保舊的資料結構被淘汰】
-        const CACHE_KEY = 'teacher_static_cache_v6'; 
+		const CACHE_KEY = 'teacher_static_cache_v6'; 
         let CACHE_DATA = {};
         
+        const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
+		
         let rosterSortState = 0;
         let classSortState = 0;
         let currentRosterClassId = null;
@@ -1565,7 +1566,28 @@
         const saveClassSettingsBtn = document.getElementById('save-class-settings-btn');
         const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
         const homepageModalCloseBtn = homepageSettingsModal.querySelector('.close-btn');
+		const TRANSFER_KEY = 'initialActiveChanges';
 
+		function navigateToTimetable() {
+			// 1. 將當前載入的 activeChanges 數據存入 sessionStorage
+			try {
+				if (activeChanges && activeChanges.length > 0) {
+					sessionStorage.setItem(TRANSFER_KEY, JSON.stringify(activeChanges));
+				}
+				const selectorData = {
+					classes: allClassList     
+				};
+				sessionStorage.setItem('initialScheduleSelectors', JSON.stringify(selectorData)); 
+
+			} catch(e) {
+				console.error("無法傳遞 activeChanges 數據:", e);
+			}
+			// 2. 導航至目標頁面
+			window.location.href = 'timetable.html';
+		}
+		
+
+		
         function getClassBlockColor(totalScore) {
             if (totalScore < 0) {
                 return '#D9E2E9';
@@ -1598,8 +1620,18 @@
 
         async function loadActiveChanges() {
             if (!currentUser || !currentUser.uid) return;
-
-            try {
+			const cachedChanges = sessionStorage.getItem(TRANSFER_KEY);
+			if (cachedChanges) {
+				try {
+					activeChanges = JSON.parse(cachedChanges);
+					console.log('課表異動快取命中，無需重新讀取 Firestore！');
+					return; // 成功從快取載入，退出函數
+				} catch (e) {
+					console.error('解析 Session 快取失敗，將強制從 Firestore 讀取。', e);
+					// 繼續執行，讓程式碼進入下面的 Firestore 讀取作為備援
+				}
+			}
+			try {
                 const involvedQuery = db.collection('classChanges')
                                         .where('involvedTeacherIds', 'array-contains', currentUser.uid)
                                         .where('status', '==', 'active');
@@ -1613,7 +1645,7 @@
                 console.error("載入課程異動時發生錯誤:", error);
                 timetableMessage.textContent = '載入課程異動失敗。';
             }
-        }
+         }
 
         function getDerivedCurrentUserSchedule() {
             if (!teacherTimetableData || !teacherTimetableData.periods) {
@@ -2066,6 +2098,14 @@
                     localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE_DATA));
                 }
 
+				const needsRefresh = localStorage.getItem(REFRESH_FLAG_KEY) === 'true';
+
+                // 載入異動的條件：強制刷新 (點擊 reload) / 異動發生 (從 login 或子頁面返回)
+                if (needsRefresh || forceReload) {
+                    await loadActiveChanges(); // 執行 Firestore 讀取
+                    localStorage.removeItem(REFRESH_FLAG_KEY); // 清除旗標
+                }
+				
                 // --- 啟動分數 onSnapshot 監聽 ---
                 await fetchAllScores(); 
                 setInterval(highlightCurrentClass, 30000);
@@ -2929,7 +2969,7 @@
 		}
 
 		async function renderDerivedMyTimetable(direction = 0) {
-			await loadActiveChanges();
+
 			const derivedSchedule = getDerivedCurrentUserSchedule();
 
 			const myTimetableBody = document.getElementById('my-timetable-body');
@@ -3143,6 +3183,15 @@
             }
             touchStartX = 0;
         });
+		if (timetableLink) {
+			// 1. 移除或阻止 HTML 上的原始 href 導航
+			timetableLink.addEventListener('click', (e) => {
+				e.preventDefault(); // 阻止原始的 <a href> 導航行為
+				navigateToTimetable(); // 呼叫新的數據傳遞導航函數
+			});
+		} else {
+			console.warn("找不到 ID 為 'timetable-link' 的導航元素，請手動綁定 navigateToTimetable()。");
+		}
     });
 	
     </script>
