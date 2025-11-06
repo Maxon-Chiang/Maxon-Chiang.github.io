@@ -465,8 +465,9 @@
                 let score = null;
                 if (scoreValue !== '') {
                     score = parseFloat(scoreValue);
-                    if (isNaN(score) || score < 0 || score > 100) {
-                        alert(`學生 ${student.name} 的分數 [${scoreValue}] 無效 (必須介於 0 到 100 之間)。`);
+                    //if (isNaN(score) || score < 0 || score > 100) {
+                    if (isNaN(score)) {
+                        alert(`學生 ${student.name} 的分數 [${scoreValue}] 無效`);
                         scoreInput.focus();
                         invalidScoreError = true;
                         return;
@@ -529,3 +530,4 @@
     </script>
 </body>
 </html>
+
