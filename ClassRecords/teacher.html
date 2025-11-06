@@ -1497,10 +1497,11 @@
         let currentWeekStart = getMonday(new Date());
         let timetableIntervalId = null;
         
-        // 【快取版本號：確保舊的資料結構被淘汰】
-        const CACHE_KEY = 'teacher_static_cache_v6'; 
+		const CACHE_KEY = 'teacher_static_cache_v6'; 
         let CACHE_DATA = {};
         
+        const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
+		
         let rosterSortState = 0;
         let classSortState = 0;
         let currentRosterClassId = null;
@@ -1566,6 +1567,21 @@
         const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
         const homepageModalCloseBtn = homepageSettingsModal.querySelector('.close-btn');
 
+		function navigateToTimetable() {
+			// 1. 將當前載入的 activeChanges 數據存入 sessionStorage
+			try {
+				if (activeChanges && activeChanges.length > 0) {
+					sessionStorage.setItem('initialActiveChanges', JSON.stringify(activeChanges));
+				}
+			} catch(e) {
+				console.error("無法傳遞 activeChanges 數據:", e);
+			}
+			// 2. 導航至目標頁面
+			window.location.href = 'timetable.html';
+		}
+		
+
+		
         function getClassBlockColor(totalScore) {
             if (totalScore < 0) {
                 return '#D9E2E9';
@@ -2066,6 +2082,14 @@
                     localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE_DATA));
                 }
 
+				const needsRefresh = localStorage.getItem(REFRESH_FLAG_KEY) === 'true';
+
+                // 載入異動的條件：強制刷新 (點擊 reload) / 異動發生 (從 login 或子頁面返回)
+                if (needsRefresh || forceReload) {
+                    await loadActiveChanges(); // 執行 Firestore 讀取
+                    localStorage.removeItem(REFRESH_FLAG_KEY); // 清除旗標
+                }
+				
                 // --- 啟動分數 onSnapshot 監聽 ---
                 await fetchAllScores(); 
                 setInterval(highlightCurrentClass, 30000);
@@ -3143,6 +3167,15 @@
             }
             touchStartX = 0;
         });
+		if (timetableLink) {
+			// 1. 移除或阻止 HTML 上的原始 href 導航
+			timetableLink.addEventListener('click', (e) => {
+				e.preventDefault(); // 阻止原始的 <a href> 導航行為
+				navigateToTimetable(); // 呼叫新的數據傳遞導航函數
+			});
+		} else {
+			console.warn("找不到 ID 為 'timetable-link' 的導航元素，請手動綁定 navigateToTimetable()。");
+		}
     });
 	
     </script>
