@@ -398,44 +398,67 @@
             setupKeyboardNavigation();
         }
         
-        function setupKeyboardNavigation() {
-            const inputs = Array.from(document.querySelectorAll('.student-score-input, .student-comment-input'));
-            inputs.forEach((input, index) => {
+		function setupKeyboardNavigation() {
+            // 選擇所有分數和備註輸入框
+            const scoreInputs = Array.from(document.querySelectorAll('.student-score-input'));
+            const commentInputs = Array.from(document.querySelectorAll('.student-comment-input'));
+            
+            // 建立輸入框映射表，以便根據 data-id 快速查找對應的輸入框
+            const inputMap = {};
+            studentsInClass.forEach(student => {
+                inputMap[student.id] = {
+                    score: document.querySelector(`.student-score-input[data-id="${student.id}"]`),
+                    comment: document.querySelector(`.student-comment-input[data-id="${student.id}"]`)
+                };
+            });
+            
+            // 綜合所有輸入框，並為它們添加事件監聽器
+            const allInputs = [...scoreInputs, ...commentInputs];
+
+            allInputs.forEach((input) => {
                 input.addEventListener('keydown', (e) => {
+                    // 獲取當前學生 ID 和輸入框類型
+                    const studentId = input.dataset.id;
                     const isScoreInput = input.classList.contains('student-score-input');
-                    let nextIndex = -1;
                     
+                    // 找出當前學生在 studentsInClass 陣列中的索引
+                    const currentIndexInStudents = studentsInClass.findIndex(s => s.id === studentId);
+                    
+                    let nextIndexInStudents = -1; // 準備跳轉的目標學生索引
+                    const targetInputType = isScoreInput ? 'score' : 'comment'; // 準備跳轉的目標輸入框類型
+
                     if (e.key === 'Enter' || e.key === 'ArrowDown') {
+                        // 上下鍵邏輯 (同一欄位上下跳動)
                         e.preventDefault();
-                        if (isScoreInput) { 
-                            nextIndex = index + 2; 
-                        } else { 
-                            nextIndex = index + 1; 
-                        }
+                        nextIndexInStudents = currentIndexInStudents + 1;
+                        
                     } else if (e.key === 'ArrowUp') {
+                        // 上下鍵邏輯 (同一欄位上下跳動)
                         e.preventDefault();
-                        if (isScoreInput) { 
-                            nextIndex = index - 2; 
-                        } else { 
-                            nextIndex = index - 1; 
-                        }
-                    } else if (e.key === 'ArrowRight' && isScoreInput) {
-                        e.preventDefault();
-                        nextIndex = index + 1;
-                    } else if (e.key === 'ArrowLeft' && !isScoreInput) {
-                        e.preventDefault();
-                        nextIndex = index - 1;
-                    }
+                        nextIndexInStudents = currentIndexInStudents - 1;
                     
-                    if (nextIndex >= 0 && nextIndex < inputs.length) {
-                        inputs[nextIndex].focus();
-                    } else if (e.key === 'Enter' && nextIndex >= inputs.length) {
+                    } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                        // *** 修正點：移除左右鍵的特殊處理，讓游標在欄位內移動 ***
+                        return; // 直接返回，執行預設行為 (移動游標)
+                    }
+
+                    if (nextIndexInStudents >= 0 && nextIndexInStudents < studentsInClass.length) {
+                        // 成功找到目標學生，將焦點移動到同一欄位的輸入框
+                        const nextStudentId = studentsInClass[nextIndexInStudents].id;
+                        // 確保目標輸入框存在再 focus
+                        if (inputMap[nextStudentId] && inputMap[nextStudentId][targetInputType]) {
+                            inputMap[nextStudentId][targetInputType].focus();
+                        }
+                        
+                    } else if ((e.key === 'Enter' || e.key === 'ArrowDown') && nextIndexInStudents >= studentsInClass.length) {
+                        // 如果按 Enter 或 ArrowDown 且已是最後一個學生，將焦點移動到「更新儲存」按鈕
+                        e.preventDefault(); // 阻止頁面滾動
                         saveGradesBtn.focus();
                     }
                 });
             });
         }
-        
+		
         saveGradesBtn.addEventListener('click', saveGrades);
 
         async function saveGrades() {
