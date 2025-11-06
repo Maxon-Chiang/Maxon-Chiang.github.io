@@ -9,11 +9,8 @@
 			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; 
 			background-color: #f5f5f5; 
 			display: flex; 
-			/* 保持水平居中 */
 			justify-content: center; 
-			/* 垂直從頂部開始對齊，解決視覺偏下問題 */
 			align-items: flex-start; 
-			/* 增加頂部內距，讓容器下移 */
 			padding-top: 10vh; 
 			margin: 0; 
 			width: 100%;
@@ -32,14 +29,12 @@
 			max-width: 450px; 
 			overflow-y: auto;
 			max-height: 95vh;
-			/* 修正水平居中問題 */
 			margin: 10px auto; 
 		}
         h1 { 
 			color: #333; 
 			margin-top: 0; 
 			margin-bottom: 25px; 
-			/* 允許長標題在容器內換行 */
 			word-break: break-word; 
 		}
         input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
@@ -63,17 +58,14 @@
             gap: 10px; 
             font-size: 1.1em; 
             padding: 15px; 
-            /* 防止文字擠壓圖片 */
             min-width: 100%; 
             white-space: nowrap;
         }
         #google-signin-btn:hover { background-color: #f8f8f8; }
         #google-signin-btn img { 
-            /* 修正 Logo 變形：使用 auto 確保寬度依比例調整，同時設定一個固定的高度 */
             width: auto; 
             height: 22px; 
             flex-shrink: 0; 
-            /* 確保圖片不會因為 flex 佈局而被拉伸或壓縮 */
             object-fit: contain; 
         }
 
@@ -83,7 +75,6 @@
         .options-container { display: flex; justify-content: center; align-items: center; margin: 15px 0; font-size: 0.9em; color: #555; }
         #remember-me { margin-right: 8px; width: 16px; height: 16px; }
         
-        /* Onboarding Modal Styles */
         .onboarding-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
         .onboarding-modal .container { text-align: left; }
         .onboarding-modal h2 { text-align: center; margin-bottom: 20px; }
@@ -94,13 +85,11 @@
         .selection-list strong { display: block; font-size: 1.1em; color: #333; }
         .selection-list span { font-size: 0.9em; color: #666; }
         
-        /* 手機版優化 */
         @media (max-width: 600px) {
             h1 {
-                font-size: 1.5em; /* 縮小 h1 標題字體 */
+                font-size: 1.5em; 
             }
             body {
-                /* 確保 body 能夠使用整個視窗高度，但內容仍然從頂部開始排 */
                 height: auto; 
                 min-height: 100vh;
             }
@@ -177,13 +166,11 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
-        // --- DOM 元素 ---
         const splashScreen = document.getElementById('splash-screen');
         const loginView = document.getElementById('login-view');
         const errorMessage = document.getElementById('error-message');
         const schoolSelectionView = document.getElementById('school-selection-view');
         const teacherSelectionView = document.getElementById('teacher-selection-view');
-        // ... 其他 DOM 元素 ...
         const teacherLoginView = document.getElementById('teacher-login-view');
         const adminLoginView = document.getElementById('admin-login-view');
         const showAdminLoginLink = document.getElementById('show-admin-login');
@@ -198,7 +185,6 @@
             loginEmailInput.value = savedEmail;
         }
         
-        // --- 核心認證邏輯 ---
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 if (user.email) {
@@ -209,10 +195,8 @@
                 const userDoc = await db.collection('users').doc(user.uid).get();
 
                 if (userDoc.exists) {
-                    // 如果使用者設定檔已存在，直接導向對應頁面
                     routeUser(userDoc.data().role);
                 } else {
-                    // 如果是新用戶，啟動首次登入的引導流程
                     await startOnboarding(user);
                 }
             } else {
@@ -223,9 +207,6 @@
             }
         });
         
-        // 【【【 major change: 全新的 Onboarding 流程 】】】
-
-        // 步驟 1: 根據 Email 網域尋找可能的學校
         async function startOnboarding(user) {
             try {
                 const emailDomain = user.email.split('@')[1];
@@ -240,10 +221,8 @@
                 const potentialSchools = schoolsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 if (potentialSchools.length === 1) {
-                    // 如果只有一所學校符合，直接進入下一步，優化體驗
                     await handleSchoolSelection(user, potentialSchools[0].id);
                 } else {
-                    // 如果有多所學校，讓使用者選擇
                     displaySchoolSelection(user, potentialSchools);
                 }
 
@@ -252,7 +231,6 @@
             }
         }
 
-        // 步驟 2: 顯示學校選擇畫面
         function displaySchoolSelection(user, schools) {
             const schoolList = document.getElementById('school-selection-list');
             schoolList.innerHTML = '';
@@ -268,7 +246,6 @@
             schoolSelectionView.style.display = 'flex';
         }
 
-        // 步驟 3: 當使用者選擇學校後，在該校內尋找符合姓名的教師
         async function handleSchoolSelection(user, schoolId) {
             try {
                 splashScreen.style.display = 'flex';
@@ -286,10 +263,8 @@
                 const matchingTeachers = teachersSnapshot.docs.map(doc => doc.data());
 
                 if (matchingTeachers.length === 1) {
-                    // 如果只有一位符合，直接綁定
                     await createUserProfile(user, schoolId, matchingTeachers[0]);
                 } else {
-                    // 如果同校有多位同名教師，讓使用者做最終選擇
                     const schoolDoc = await db.collection('schools').doc(schoolId).get();
                     const schoolName = schoolDoc.exists ? schoolDoc.data().name : '';
                     displayTeacherSelection(user, schoolId, schoolName, matchingTeachers);
@@ -300,14 +275,12 @@
             }
         }
 
-        // 步驟 4: 顯示同校同名教師的最終選擇畫面
         function displayTeacherSelection(user, schoolId, schoolName, teachers) {
             const teacherList = document.getElementById('teacher-selection-list');
             document.getElementById('teacher-selection-title').textContent = `在「${schoolName}」中，請選擇您的身份`;
             teacherList.innerHTML = '';
             teachers.forEach(teacher => {
                 const li = document.createElement('li');
-                // 顯示職稱和科目以供區分
                 li.innerHTML = `<strong>${teacher.name}</strong><span>${teacher.title || '教師'} - ${teacher.subject || '綜合'}</span>`;
                 li.onclick = () => createUserProfile(user, schoolId, teacher);
                 teacherList.appendChild(li);
@@ -319,7 +292,6 @@
             teacherSelectionView.style.display = 'flex';
         }
 
-        // 步驟 5: 最終綁定，建立使用者設定檔 (此函數邏輯不變，是正確的)
 		async function createUserProfile(user, schoolId, teacherProfile) {
 			try {
 				splashScreen.style.display = 'flex';
@@ -328,14 +300,13 @@
 				if (!schoolDoc.exists) throw new Error("找不到學校資料");
 				const schoolData = schoolDoc.data();
 
-				// 組合所有資訊，建立一份完整的 user profile
 				const newUserProfile = {
 					role: 'teacher',
 					email: user.email,
-					displayName: teacherProfile.name, // 使用名冊上的名字作為官方名字
+					displayName: teacherProfile.name, 
 					schoolId: schoolId,
 					schoolCode: schoolData.schoolCode,
-					...teacherProfile // 複製所有行政資料 (title, subject, department...)
+					...teacherProfile 
 				};
 
 				await db.collection('users').doc(user.uid).set(newUserProfile);
@@ -345,8 +316,6 @@
 				showLoginError("建立使用者設定時發生錯誤：" + error.message);
 			}
 		}
-
-        // --- 事件監聽器與輔助函數 (大部分維持不變) ---
 
         googleSignInBtn.addEventListener('click', async () => {
             errorMessage.textContent = '';
@@ -411,6 +380,7 @@
             } else if (role === 'school_admin') {
                 window.location.href = 'school_admin.html';
             } else if (role === 'teacher') {
+				localStorage.setItem('teacherTimetableNeedsRefresh', 'true');
                 window.location.href = 'teacher.html';
             } else {
                 showLoginError(`未知的用戶角色 (${role})，無法登入。`);
@@ -423,7 +393,6 @@
             schoolSelectionView.style.display = 'none';
             teacherSelectionView.style.display = 'none';
             errorMessage.textContent = msg;
-            // 發生錯誤時，務必登出，避免使用者卡在驗證流程中
             auth.signOut();
         }
     });
