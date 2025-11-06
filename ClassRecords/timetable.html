@@ -199,46 +199,57 @@ header .header-actions {
 }
 @keyframes pulse-purple {
     from { background-color: var(--modal-bg); }
-    to { background-color: #dcd3ef; }
+    to { background-color: #c9bddd; } 
 }
 @keyframes pulse-orange {
     from { background-color: var(--modal-bg); }
-    to { background-color: #ffe8d1; }
+    to { background-color: ##ffddb3; }
+}
+@keyframes pulse-gray-light {
+    from { background-color: var(--modal-bg); }
+    to { background-color: #dcdcdc; } 
 }
 .swapped-cell {
     border: 1px dashed #b19cd9;
     cursor: help;
-	background-color: #e6e0f4 !important; 
+	background-color: #e6e0f4 
 }
 .swapped-class-cell {
-    background-color: #e6f7ff !important; 
+    background-color: #e6f7ff
     border: 1px dashed #7ec6ff;
     cursor: help;
 }
 .substituted-class-cell {
-    background-color: #fff8e6 !important; 
+    background-color: #fff8e6  
     border: 1px dashed #ffb74d;
     cursor: help;
 }
 .exchanged-class-cell {
-    background-color: #e9f5e9 !important; 
+    background-color: #e9f5e9 
     border: 1px dashed #66bb6a;
     cursor: help;
 }
 .swapped-cell-pulse {
     animation-name: pulse-purple;
-    animation-duration: 1.2s;
+    animation-duration: 1.2s; /* 💨 速度加快：1.2s -> 0.6s */
     animation-iteration-count: infinite;
     animation-direction: alternate;
 }
 .exchanged-cell {
     border: 1px dashed #ffc994;
     cursor: help;
-	background-color: #fff3e0 !important; 
+	background-color: #fff3e0 
 }
 .exchanged-cell-pulse {
     animation-name: pulse-orange;
-    animation-duration: 1.2s;
+    animation-duration: 1.2s; /* 💨 速度加快：1.2s -> 0.6s */
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+/* 針對 substituted-cell (代課) 增加呼吸效果定義 */
+.substituted-cell-pulse {
+    animation-name: pulse-gray-light;
+    animation-duration: 1.2s; /* 💨 速度加快 */
     animation-iteration-count: infinite;
     animation-direction: alternate;
 }
