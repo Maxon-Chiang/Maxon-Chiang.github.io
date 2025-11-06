@@ -732,6 +732,8 @@ let currentUserDisplayName = '';
 const recentSchedulesBtn = document.getElementById('recent-schedules-btn');
 const recentSchedulesList = document.getElementById('recent-schedules-list');
 const MAX_RECENT_ITEMS = 10;
+const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
+const TRANSFER_KEY = 'initialActiveChanges'; // 用於接收 teacher.html 傳來的數據
 
 // 【優化點 1：快取鍵定義】
 const TIMETABLE_CACHE_KEY = 'timetable_static_cache_v1'; 
@@ -775,6 +777,28 @@ auth.onAuthStateChanged(async (user) => {
 document.getElementById('logout-btn').addEventListener('click', () => {
     auth.signOut();
 });
+
+async function initializeTimetableData() {
+    const transferredChanges = sessionStorage.getItem(TRANSFER_KEY);
+    sessionStorage.removeItem(TRANSFER_KEY); // 無論成功與否都清除，避免污染
+
+    if (transferredChanges) {
+        try {
+            // 使用傳遞過來的數據初始化 activeChanges
+            activeChanges = JSON.parse(transferredChanges);
+            console.log(`成功載入 ${activeChanges.length} 筆傳遞的異動數據（來自 teacher.html）。`);
+        } catch (e) {
+            console.error("解析傳遞的異動數據失敗，改為從 Firestore 讀取:", e);
+            await loadActiveChanges(); // 數據傳輸失敗，強制讀取雲端
+        }
+    } else {
+        // 沒有數據傳遞，可能是直接打開 timetable.html 或刷新頁面，必須強制讀取雲端
+        console.warn("未檢測到 Session Storage 數據，強制從 Firestore 讀取異動。");
+        await loadActiveChanges();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initializeTimetableData);
 
 function getPeriodTimeInfo(periodNum) {
     const info = PERIOD_TIMES.find(p => p.period === periodNum);
@@ -1127,7 +1151,7 @@ function parseSchedulesFromFirestore(allTeachers) {
 function deriveSchedules(isBaseLoad = false) {
     // 只有在非基礎載入時才需要重新載入異動
     if (!isBaseLoad) {
-        loadActiveChanges();
+        //loadActiveChanges();
     }
     
     teacherSchedules.clear();
@@ -2204,15 +2228,23 @@ function showSwapConfirmationModal(swapInfo) {
         
         try {
             await db.collection('classChanges').add(changeData);
-            
+			
+            localStorage.setItem(REFRESH_FLAG_KEY, 'true');
+			
             currentWeekStart = getMonday(new Date(originalDateInput.value));
+			await loadActiveChanges(); // 1. 重新從雲端載入最新的異動資料
+            // 2. 重新渲染當前的課表 (假設 activeSchedule 包含目前的檢視對象)
             if (activeSchedule.type && activeSchedule.name) {
-                showSchedule(activeSchedule.name, activeSchedule.type, 0); 
+                await showSchedule(activeSchedule.name, activeSchedule.type, 0); 
             }
+			
+            //if (activeSchedule.type && activeSchedule.name) {
+            //    showSchedule(activeSchedule.name, activeSchedule.type, 0); 
+            //}
             
             modal.style.display = 'none';
-            const exportConfirmed = confirm("調課成功！課表已自動跳轉至調課週次。\n\n是否將相關異動事件加入行事曆？");
-            
+
+			const exportConfirmed = confirm("調課成功！課表已自動跳轉至調課週次。\n\n是否將相關異動事件加入行事曆？");
             if (exportConfirmed) {
                 promptForIcsExport('swap', changeData); 
             }
@@ -2238,6 +2270,12 @@ function showSwapConfirmationModal(swapInfo) {
 async function cancelChange(changeId) {
     try {
         await db.collection('classChanges').doc(changeId).update({ status: 'cancelled' });
+		localStorage.setItem(REFRESH_FLAG_KEY, 'true');
+		await loadActiveChanges(); // 1. 重新從雲端載入最新的異動資料
+        // 2. 重新渲染當前的課表 (不用更改週次)
+        if (activeSchedule.type && activeSchedule.name) {
+            await showSchedule(activeSchedule.name, activeSchedule.type, 0); 
+        }
         console.log('課程異動已成功取消！');
         if (activeSchedule.type && activeSchedule.name) {
             showSchedule(activeSchedule.name, activeSchedule.type, 0); 
@@ -2580,6 +2618,8 @@ async function confirmAndSaveChange(type, callingBtn) {
             
 
             await db.collection('classChanges').add(changeData);
+			
+			localStorage.setItem(REFRESH_FLAG_KEY, 'true');
             
             document.getElementById('substitution-modal').style.display = 'none';
             document.getElementById('exchange-modal').style.display = 'none';
@@ -2609,10 +2649,17 @@ async function confirmAndSaveChange(type, callingBtn) {
             
             const jumpDate = substitutionInfo.newDate;
             currentWeekStart = getMonday(new Date(jumpDate));
-            if (activeSchedule && activeSchedule.name) {
-                showSchedule(activeSchedule.name, activeSchedule.type, 0); 
-            } else {
+			
+			await loadActiveChanges(); // 1. 重新從雲端載入最新的異動資料
+            // 2. 重新渲染當前的課表
+            if (activeSchedule.type && activeSchedule.name) {
+                await showSchedule(activeSchedule.name, activeSchedule.type, 0);
             }
+			
+            //if (activeSchedule && activeSchedule.name) {
+            //    showSchedule(activeSchedule.name, activeSchedule.type, 0); 
+            //} else {
+            //}
 
         } catch (error) {
             console.error("儲存異動紀錄失敗:", error);
