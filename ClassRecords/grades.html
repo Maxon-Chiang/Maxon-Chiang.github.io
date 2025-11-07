@@ -279,6 +279,8 @@
         
         const appContainer = document.getElementById('app-container');
         const createSection = document.getElementById('create-section');
+		const COMMON_ROSTER_DATA = 'COMMON_ROSTER_DATA';
+        const GRADEBOOK_ASSIGNMENTS = 'GRADEBOOK_ASSIGNMENTS';
         const goToCreateBtn = document.getElementById('go-to-create-btn'); 
         const newAssignmentNameInput = document.getElementById('new-assignment-name');
         const newGeneralCommentInput = document.getElementById('new-general-comment');
@@ -326,39 +328,68 @@
 				return;
 			}
 			
+			
 			const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
 			if (!rosterDoc.exists) {
 				alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
 				return;
 			}
+			
+			let allAssignments = [];
+            let allStudents = [];
+            let gradeAssignmentNames = new Set();
+            let useCache = false;
 
-			try {
-				const allStudents = rosterDoc.data().students || [];
-				const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
-				const queryPromises = teacherClasses.map(cId => 
-					db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
-					  .where('className', '==', cId)
-					  .get()
-				);
-				const snapshots = await Promise.all(queryPromises);
-				const gradeAssignmentNames = new Set();
-				snapshots.forEach(snapshot => {
-					snapshot.forEach(doc => {
-						gradeAssignmentNames.add(doc.data().assignmentName);
-					});
-				});
-				const datalist = document.getElementById('assignment-suggestions');
-				datalist.innerHTML = '';
-				gradeAssignmentNames.forEach(name => {
-					const option = document.createElement('option');
-					option.value = name;
-					datalist.appendChild(option);
-				});
-			} catch (error) {
-				console.error("讀取成績項目建議清單失敗:", error);
-			}
+            try {
+                const cachedRoster = sessionStorage.getItem(COMMON_ROSTER_DATA);
+                const cachedAssignments = sessionStorage.getItem(GRADEBOOK_ASSIGNMENTS);
 
-			loadHistory();
+                if (cachedRoster && cachedAssignments) {
+                    allStudents = JSON.parse(cachedRoster).students || [];
+                    allAssignments = JSON.parse(cachedAssignments);
+                    useCache = true;
+                    console.log('快取命中：讀取 Session 快取的名冊和成績項目。');
+                }
+            } catch (e) {
+                console.warn('Session 快取解析失敗，將從 Firestore 重新讀取。', e);
+                sessionStorage.removeItem(COMMON_ROSTER_DATA);
+                sessionStorage.removeItem(GRADEBOOK_ASSIGNMENTS);
+                useCache = false;
+            }
+
+            if (!useCache) {
+                const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
+                if (!rosterDoc.exists) {
+                    alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
+                    return;
+                }
+                allStudents = rosterDoc.data().students || [];
+                
+                // 讀取所有成績項目
+                const querySnapshots = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
+                                            .orderBy('date', 'desc') 
+                                            .get();
+
+                querySnapshots.forEach(doc => allAssignments.push({ id: doc.id, ...doc.data() }));
+
+                // 寫入 Session 快取
+                sessionStorage.setItem(COMMON_ROSTER_DATA, JSON.stringify({ students: allStudents }));
+                sessionStorage.setItem(GRADEBOOK_ASSIGNMENTS, JSON.stringify(allAssignments));
+            }
+
+            // 處理成績項目建議清單 (從所有成績項目中提取名稱)
+            allAssignments.forEach(a => gradeAssignmentNames.add(a.assignmentName));
+            
+            const datalist = document.getElementById('assignment-suggestions');
+            datalist.innerHTML = '';
+            
+            [...gradeAssignmentNames].forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                datalist.appendChild(option);
+            });
+			
+			loadHistory(allAssignments);
 			appContainer.style.display = 'block';
 		}
 		
@@ -409,64 +440,97 @@
             }
         });
         
-        
-        function loadHistory() {
-            db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
-              .where('className', '==', classId)
-              .orderBy('date', 'desc')
-              .onSnapshot(snapshot => {
-                historyList.innerHTML = '';
-                if (snapshot.empty) {
-                    historyList.innerHTML = '<li>尚無成績項目。</li>';
-                    return;
-                }
-                snapshot.forEach(doc => {
-                    const a = doc.data();
-                    const li = document.createElement('li');
-                    li.className = 'history-item';
-                    li.dataset.id = doc.id;
-                    li.dataset.assignmentName = a.assignmentName;
-                    li.dataset.generalComment = a.generalComment || ''; 
 
-                    let studentCount = 0;
-                    let totalScore = 0;
-                    if (a.scores) {
-                        for (const studentId in a.scores) {
-                            if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null && a.scores[studentId].score !== '') {
-                                studentCount++;
-                                totalScore += parseFloat(a.scores[studentId].score);
-                            }
+        function loadHistory(allAssignments) {
+            historyList.innerHTML = '';
+            
+            // 🚨 修正點：確保 allAssignments 即使被傳入 undefined 或 null 也是一個空陣列
+            const validAssignments = Array.isArray(allAssignments) ? allAssignments : [];
+
+            // 從傳入的 allAssignments 中篩選出當前班級的成績
+            const assignmentsInClass = validAssignments
+                .filter(a => a.className === classId)
+                .sort((a, b) => {
+                    // 處理日期結構 (Firestore Timestamp, JS Date, 或 JSON 日期字串) 進行排序
+                    const getDateSeconds = (assignment) => {
+                        if (!assignment.date) return -Infinity;
+                        // 1. 檢查 Firestore Timestamp (seconds 屬性)
+                        if (assignment.date.seconds !== undefined) return assignment.date.seconds; 
+                        // 2. 檢查 JS Date (getTime 方法)
+                        if (assignment.date.getTime) return assignment.date.getTime() / 1000;
+                        // 3. 檢查 JSON 序列化後的 Date 物件結構 (string)
+                        if (typeof assignment.date === 'string') {
+                            const dateObj = new Date(assignment.date);
+                            return isNaN(dateObj.getTime()) ? -Infinity : dateObj.getTime() / 1000;
+                        }
+                        return -Infinity;
+                    };
+                    return getDateSeconds(b) - getDateSeconds(a); // 依照日期降序排序
+                }); 
+
+            if (assignmentsInClass.length === 0) {
+                historyList.innerHTML = '<li>尚無成績項目。</li>';
+                return;
+            }
+            
+            assignmentsInClass.forEach(a => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.dataset.id = a.id;
+                li.dataset.assignmentName = a.assignmentName;
+                li.dataset.generalComment = a.generalComment || ''; 
+
+                let studentCount = 0;
+                let totalScore = 0;
+                if (a.scores) {
+                    for (const studentId in a.scores) {
+                        if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null && a.scores[studentId].score !== '') {
+                            studentCount++;
+                            totalScore += parseFloat(a.scores[studentId].score);
                         }
                     }
-                    const averageScore = studentCount > 0 ? (totalScore / studentCount).toFixed(1) : 'N/A';
-                    const dateString = a.date ? a.date.toDate().toLocaleDateString() : '日期未知';
-                    const commentText = a.generalComment || '';
-                    
-                    li.innerHTML = `
-                        <div class="history-item-content" data-id="${doc.id}">
-                            <span class="history-item-title">${a.assignmentName} (${dateString})</span>
-                            <span class="history-item-comment">${commentText}</span>
-                        </div>
-                        <div class="history-item-meta">
-                            <span class="history-item-stats">人數: <strong>${studentCount}</strong> | 平均: <strong>${averageScore}</strong></span>
-                        </div>
-                        <div class="history-item-actions">
-                            <button class="delete-btn" data-id="${doc.id}">刪除</button>
-                        </div>
-                    `;
-                    
-                    li.querySelector('.history-item-content').addEventListener('click', (e) => {
-                        const targetId = e.currentTarget.dataset.id;
-                        const assignmentName = e.currentTarget.closest('.history-item').dataset.assignmentName;
-                        const generalComment = e.currentTarget.closest('.history-item').dataset.generalComment;
-                        navigateToEditPage(targetId, assignmentName, generalComment);
-                    });
-                    
-                    historyList.appendChild(li);
+                }
+                const averageScore = studentCount > 0 ? (totalScore / studentCount).toFixed(1) : 'N/A';
+                
+                // 處理日期物件
+                let dateString = '日期未知';
+                if (a.date) {
+                    let dateObj;
+                    if (a.date.toDate) { // Firestore Timestamp
+                        dateObj = a.date.toDate();
+                    } else if (a.date instanceof Date) { // JS Date (從 Session 快取讀取 - 尚未 JSON 化)
+                        dateObj = a.date;
+                    } else if (a.date.seconds) { // 純粹的快取物件結構 {seconds: ...}
+                        dateObj = new Date(a.date.seconds * 1000);
+                    } else if (typeof a.date === 'string') { // JSON 序列化後的 Date string
+                         dateObj = new Date(a.date);
+                    }
+                    if (dateObj && !isNaN(dateObj.getTime())) dateString = dateObj.toLocaleDateString();
+                }
+
+                const commentText = a.generalComment || '';
+                
+                li.innerHTML = `
+                    <div class="history-item-content" data-id="${a.id}">
+                        <span class="history-item-title">${a.assignmentName} (${dateString})</span>
+                        <span class="history-item-comment">${commentText}</span>
+                    </div>
+                    <div class="history-item-meta">
+                        <span class="history-item-stats">人數: <strong>${studentCount}</strong> | 平均: <strong>${averageScore}</strong></span>
+                    </div>
+                    <div class="history-item-actions">
+                        <button class="delete-btn" data-id="${a.id}">刪除</button>
+                    </div>
+                `;
+                
+                li.querySelector('.history-item-content').addEventListener('click', (e) => {
+                    const targetId = e.currentTarget.dataset.id;
+                    const assignmentName = e.currentTarget.closest('.history-item').dataset.assignmentName;
+                    const generalComment = e.currentTarget.closest('.history-item').dataset.generalComment;
+                    navigateToEditPage(targetId, assignmentName, generalComment);
                 });
-            }, error => {
-                console.error("讀取成績失敗:", error);
-                historyList.innerHTML = '<li>讀取項目清單時發生錯誤。</li>';
+                
+                historyList.appendChild(li);
             });
         }
 
@@ -488,7 +552,27 @@
                     if (secondConfirm) {
                         try {
                             await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete();
+                            
+// 🌟 開始修改 - 更新 Session 快取並刷新 🌟
+                            let allAssignments = [];
+                            try {
+                                // 1. 獲取當前快取
+                                allAssignments = JSON.parse(sessionStorage.getItem(GRADEBOOK_ASSIGNMENTS) || '[]');
+                            } catch (e) {
+                                console.error("解析成績項目快取失敗，將跳過快取更新。", e);
+                            }
+
+                            // 2. 過濾掉已刪除的項目
+                            allAssignments = allAssignments.filter(a => a.id !== docId);
+                            
+                            // 3. 寫回 Session 快取
+                            sessionStorage.setItem(GRADEBOOK_ASSIGNMENTS, JSON.stringify(allAssignments));
+
                             alert(`已成功刪除「${assignmentName}」`);
+                            // 刪除成功後，刷新頁面以從新的快取中讀取 (最簡單的重繪方式)
+                            window.location.reload(); 
+// 🌟 結束修改 - 更新 Session 快取並刷新 🌟
+                            
                         } catch (error) {
                             alert("刪除失敗！");
                         }
