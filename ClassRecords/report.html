@@ -271,6 +271,9 @@
         const db = firebase.firestore(); const auth = firebase.auth();
         let currentUser = null, studentsData = [], studentMap = new Map(), classList = [], currentPerfResults = [], currentPerfStats = {}, allAssignments = [];
         let perfSortState = { key: 'class', direction: 'asc' };
+		const COMMON_ROSTER_DATA = 'COMMON_ROSTER_DATA';
+        const GRADEBOOK_ASSIGNMENTS = 'GRADEBOOK_ASSIGNMENTS';
+        const PERFORMANCE_TOTAL_SCORES = 'PERFORMANCE_TOTAL_SCORES';
         let perfStatsSortState = { key: 'total', direction: 'desc', target: 'class' }; // 【修改點 2：增加 target 屬性】
         let gradeAssignmentSortState = { key: 'date', direction: 'desc' };
         let gradeCrossClassSortState = { key: 'className', direction: 'asc' };
@@ -313,7 +316,7 @@
         });
 		
 		// 【修改 initializeReportPage 函數】: 新增填充年段篩選器的邏輯
-        async function initializeReportPage(userData) {
+		async function initializeReportPage(userData) {
             const today = new Date().toLocaleDateString('en-CA');
             document.getElementById('start-date').value = today;
             document.getElementById('end-date').value = today;
@@ -323,16 +326,96 @@
                 alert('錯誤：您的帳號未綁定學校ID，無法繼續操作。');
                 return;
             }
-            const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-            if (!rosterDoc.exists) {
-                alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
-                return;
+            
+// 🌟 開始修改 - Session 快取讀取與 Firestore 邏輯 🌟
+            let allAssignmentsList = [];
+            let schoolRosterData = null;
+            let useCache = false;
+
+            // 1. 讀取 Session 快取
+            try {
+                const cachedRoster = sessionStorage.getItem(COMMON_ROSTER_DATA);
+                const cachedAssignments = sessionStorage.getItem(GRADEBOOK_ASSIGNMENTS);
+                const cachedScores = sessionStorage.getItem(PERFORMANCE_TOTAL_SCORES);
+                
+                if (cachedRoster) schoolRosterData = JSON.parse(cachedRoster);
+                if (cachedAssignments) allAssignmentsList = JSON.parse(cachedAssignments);
+                if (cachedScores) currentPerfStats.allPerformanceScores = JSON.parse(cachedScores); // 儲存表現分數
+                
+                if (schoolRosterData && schoolRosterData.students && schoolRosterData.students.length > 0) {
+                    studentsData = schoolRosterData.students;
+                    useCache = true;
+                    console.log('【快取命中】報表：讀取 Session 快取的基本數據。');
+                } else if (schoolRosterData && schoolRosterData.students && schoolRosterData.students.length === 0) {
+                    console.warn('【快取命中】報表：名冊數據為空，強制重新從 Firestore 讀取。');
+                    useCache = false;
+                }
+            } catch (e) {
+                console.warn('Session 快取解析失敗，將從 Firestore 重新讀取。', e);
             }
 
-            studentsData = rosterDoc.data().students;
+            // 2. 處理遺失的數據：強制從 Firestore 讀取
+            const dataToFetch = {};
+            if (!useCache) {
+                 dataToFetch.roster = db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
+                 dataToFetch.assignments = db.collection('gradebooks').doc(currentUser.uid).collection('assignments').orderBy('date', 'desc').get();
+                 dataToFetch.performanceScores = db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+            }
+
+            const fetchedData = await Promise.all(Object.values(dataToFetch));
+            let fetchIndex = 0;
+            
+            // --- A. 處理名冊 ---
+            if (dataToFetch.roster) {
+                const rosterDoc = fetchedData[fetchIndex++];
+                if (!rosterDoc.exists) {
+                    alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
+                    return;
+                }
+                studentsData = rosterDoc.data().students;
+                sessionStorage.setItem(COMMON_ROSTER_DATA, JSON.stringify(rosterDoc.data()));
+                console.log('報表：已將名冊寫入 Session 快取。');
+            }
+            
+            // --- B. 處理成績項目 ---
+            if (dataToFetch.assignments) {
+                const assignmentsSnapshot = fetchedData[fetchIndex++];
+                assignmentsSnapshot.forEach(doc => allAssignmentsList.push({ id: doc.id, ...doc.data() }));
+                sessionStorage.setItem(GRADEBOOK_ASSIGNMENTS, JSON.stringify(allAssignmentsList));
+                console.log('報表：已將成績項目寫入 Session 快取。');
+            }
+            allAssignments = allAssignmentsList;
+            
+            // --- C. 處理表現總分（並寫入快取） ---
+            if (dataToFetch.performanceScores) {
+                const perfSnapshot = fetchedData[fetchIndex++];
+                currentPerfStats.allPerformanceScores = {};
+                studentsData.forEach(s => currentPerfStats.allPerformanceScores[s.id] = 0);
+                perfSnapshot.forEach(doc => {
+                    const r = doc.data();
+                    const studentId = r.entityId || r.studentId;
+                    if ((r.entityType === 'student' || !r.entityType) && studentId && currentPerfStats.allPerformanceScores.hasOwnProperty(studentId)) {
+                        currentPerfStats.allPerformanceScores[studentId] += (r.points || 0);
+                    }
+                });
+                sessionStorage.setItem(PERFORMANCE_TOTAL_SCORES, JSON.stringify(currentPerfStats.allPerformanceScores));
+                console.log('報表：已將表現總分寫入 Session 快取。');
+            }
+            
+// 🌟 結束修改 - Session 快取讀取與 Firestore 邏輯 🌟
+            
             // 【修改點 3：建立學生ID到學生物件的映射】
             studentMap.clear();
-            studentsData.forEach(s => studentMap.set(s.id, s));
+            studentsData.forEach(s => {
+                // 確保學生對象中有 name 和 id 屬性
+                const studentObject = { 
+                    id: s.id, 
+                    name: s.name, 
+                    // 在此處計算座號，避免多次 substring
+                    seatNum: s.id ? s.id.substring(3) : 'N/A'
+                };
+                studentMap.set(s.id, studentObject);
+            });
             
             classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
             
@@ -389,21 +472,19 @@
             });
             // ------------------------------------
 
-            const assignmentsSnapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').orderBy('date', 'desc').get();
-            allAssignments = [];
-            const uniqueAssignments = {};
-            assignmentsSnapshot.forEach(doc => {
-                allAssignments.push({ id: doc.id, ...doc.data() });
-                const name = doc.data().assignmentName;
-                if (!uniqueAssignments[name]) uniqueAssignments[name] = name;
-            });
             const gradesAssignmentSelect = document.getElementById('grades-assignment-select');
             gradesAssignmentSelect.innerHTML = '<option value="">......</option>';
+            const uniqueAssignments = {};
+            allAssignments.forEach(doc => {
+                const name = doc.assignmentName;
+                if (!uniqueAssignments[name]) uniqueAssignments[name] = name;
+            });
+            
             Object.keys(uniqueAssignments).sort().forEach(name => {
                 gradesAssignmentSelect.add(new Option(name, name));
             });
         }
-        
+		
         document.querySelectorAll('.tab-btn').forEach(button => { button.addEventListener('click', () => { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); button.classList.add('active'); document.getElementById(button.dataset.tab + '-tab').classList.add('active'); }); });
         
         // 【修改點 5：切換事件明細/統計摘要的邏輯 - 顯示統計選項】
@@ -461,7 +542,7 @@
                     sortAndRenderPerfLog();
                 } 
                 // 【B. 統計摘要 (Stats) 查詢邏輯】
-                else {
+				else {
                     const sumTarget = document.querySelector('input[name="sum-target"]:checked').value;
                     perfStatsSortState.target = sumTarget;
 
@@ -471,7 +552,23 @@
                         container.innerHTML = '<p style="color:red;">請至少選擇一個年段進行統計！</p>'; 
                         return;
                     }
-
+                    
+                    // 檢查並計算所有學生的表現總分 (如果快取遺失)
+                    if (Object.keys(currentPerfStats.allPerformanceScores).length === 0) {
+                         const perfSnapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+                         currentPerfStats.allPerformanceScores = {};
+                         studentsData.forEach(s => currentPerfStats.allPerformanceScores[s.id] = 0);
+                         perfSnapshot.forEach(doc => {
+                            const r = doc.data();
+                            const studentId = r.entityId || r.studentId;
+                            if ((r.entityType === 'student' || !r.entityType) && studentId && currentPerfStats.allPerformanceScores.hasOwnProperty(studentId)) {
+                                currentPerfStats.allPerformanceScores[studentId] += (r.points || 0);
+                            }
+                        });
+                        // 寫回 Session 快取
+                        sessionStorage.setItem(PERFORMANCE_TOTAL_SCORES, JSON.stringify(currentPerfStats.allPerformanceScores));
+                    }
+                    
                     // 根據選定的年級篩選出要計算的班級列表
                     const classesToProcess = classList.filter(c => {
                         const grade = getGradeLevelFromClassId(c);
@@ -514,7 +611,10 @@
 
                         studentsToProcess.forEach(sId => {
                             const student = studentMap.get(sId);
-                            stats[sId] = { studentId: sId, className: student.id.substring(0, 3), name: student.name, total: 0, positive: 0, negative: 0, count: 0 };
+                            // 修正：確保 studentMap 有數據
+                            if (student) {
+                                stats[sId] = { studentId: sId, className: student.id.substring(0, 3), name: student.name, total: 0, positive: 0, negative: 0, count: 0 };
+                            }
                         });
                         
                         allRecordsInRange.forEach(record => {
@@ -1015,6 +1115,7 @@
     </script>
 </body>
 </html>
+
 
 
 
