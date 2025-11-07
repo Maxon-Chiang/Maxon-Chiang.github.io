@@ -135,10 +135,6 @@
                 align-items: flex-start;
                 gap: 10px;
             }
-			.section h2 {
-				padding-top: 0;
-				margin: 0;
-			}
             .section-header h2 {
                 font-size: 1.5em;
             }
@@ -207,7 +203,7 @@
         <div id="calculator-tab" class="tab-content active">
             <div class="section">
                 <div class="section-header">	
-					<h2>選擇計算對象與規則</h2><button id="btn-calculate" disabled>計算成績</button>
+                <h2>選擇計算對象與規則</h2><button id="btn-calculate" disabled>計算成績</button>
 				</div>
                 <div class="control-grid">
                     <div class="control-group" style="margin-top: 15px;">
@@ -220,7 +216,7 @@
                     </div>
                 </div>
             </div>
-            <div class="section">
+            <div class="section-header">
                 <h2>計算結果</h2>
                 <div id="results-container"><p>請選擇計算對象和規則後，點擊按鈕開始計算。</p></div>
             </div>
@@ -326,7 +322,10 @@
             
         const appContainer = document.getElementById('app-container');
         const GRADE_MAP = { '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '七', '8': '八', '9': '九' };
-
+		const COMMON_ROSTER_DATA = 'COMMON_ROSTER_DATA';
+        const GRADEBOOK_ASSIGNMENTS = 'GRADEBOOK_ASSIGNMENTS';
+        const PERFORMANCE_TOTAL_SCORES = 'PERFORMANCE_TOTAL_SCORES';
+        const CALC_RULES = 'CALC_RULES';
         
 		auth.onAuthStateChanged(async (user) => {
             if (user) {
@@ -360,6 +359,8 @@
         });
 		
 		
+		// calculator.html - 完整的 initializePage 函數 (約 306 行左右)
+// 🚨 直接覆蓋此函數 🚨
         async function initializePage() {
             const userDoc = await db.collection('users').doc(currentUser.uid).get();
             const userData = userDoc.data();
@@ -369,34 +370,115 @@
                 appContainer.innerHTML = '<h2>帳號設定錯誤或未綁定學校ID</h2><p>無法讀取學生名冊，請確認您的帳號設定是否正確。</p>';
                 return;
             }
+
+// 🌟 開始修改 - Session 快取讀取與 Firestore 邏輯 🌟
+            let allAssignmentsList = [];
+            let schoolRosterData = null;
+            let useCache = false;
             
+            // 1. 讀取 Session 快取
+            try {
+                const cachedRoster = sessionStorage.getItem(COMMON_ROSTER_DATA);
+                const cachedAssignments = sessionStorage.getItem(GRADEBOOK_ASSIGNMENTS);
+                const cachedScores = sessionStorage.getItem(PERFORMANCE_TOTAL_SCORES);
+                const cachedRules = sessionStorage.getItem(CALC_RULES);
+
+                if (cachedRoster && cachedAssignments && cachedScores && cachedRules) {
+                    schoolRosterData = JSON.parse(cachedRoster);
+                    allAssignmentsList = JSON.parse(cachedAssignments);
+                    allPerformanceScores = JSON.parse(cachedScores);
+                    allRules = JSON.parse(cachedRules);
+                    
+                    if (schoolRosterData.students.length > 0) {
+                        studentsData = schoolRosterData.students;
+                        useCache = true;
+                        console.log('【快取命中】計算器：讀取 Session 快取的基本數據。');
+                    }
+                }
+            } catch (e) {
+                console.warn('Session 快取解析失敗，將從 Firestore 重新讀取部分數據。', e);
+            }
+
+            // 2. 處理遺失的數據：強制從 Firestore 讀取
+            const dataToFetch = {};
+            if (!useCache) {
+                 console.log('快取未命中或無效，從 Firestore 進行硬讀取。');
+                 // 硬讀取所有必要的 Firestore 數據
+                 dataToFetch.roster = db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
+                 dataToFetch.assignments = db.collectionGroup('assignments').where('teacherId', '==', currentUser.uid).get();
+                 dataToFetch.performance = db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+                 dataToFetch.rules = db.collection('calculationRules').where('teacherId', '==', currentUser.uid).get();
+            } else {
+                 // 如果快取命中，則不需要額外的 Firestore 查詢
+                 dataToFetch.assignments = Promise.resolve(null);
+                 dataToFetch.performance = Promise.resolve(null);
+                 dataToFetch.rules = Promise.resolve(null);
+            }
+
+
+            const fetchedData = await Promise.all(Object.values(dataToFetch));
+            let fetchIndex = 0;
+
+            // --- A. 處理名冊 ---
+            if (!useCache) {
+                const rosterDoc = fetchedData[fetchIndex++];
+                if (!rosterDoc.exists) {
+                    appContainer.innerHTML = '<h2>找不到學校名冊</h2><p>請聯繫學校管理者上傳最新學期的學生名冊資料。</p>';
+                    return;
+                }
+                studentsData = rosterDoc.data().students;
+                sessionStorage.setItem(COMMON_ROSTER_DATA, JSON.stringify(rosterDoc.data()));
+            }
+
+            // --- B. 處理成績項目 ---
+            if (!useCache) {
+                const assignmentsSnapshot = fetchedData[fetchIndex++];
+                assignmentsSnapshot.forEach(doc => allAssignmentsList.push({ id: doc.id, ...doc.data() }));
+                sessionStorage.setItem(GRADEBOOK_ASSIGNMENTS, JSON.stringify(allAssignmentsList));
+            }
+            // 處理成績項目為原有 allAssignments 結構 (無論是否快取命中，都需要這個結構)
+            allAssignments = {};
+            allAssignmentsList.forEach(data => {
+                if (!allAssignments[data.className]) allAssignments[data.className] = [];
+                // 修正：Session 快取中的日期可能是字串，需要轉換
+                const dateData = data.date && data.date.seconds ? data.date.toDate() : (data.date || new Date());
+                allAssignments[data.className].push({ ...data, date: dateData });
+            });
             
-            const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-            if (!rosterDoc.exists) {
-                appContainer.innerHTML = '<h2>找不到學校名冊</h2><p>請聯繫學校管理者上傳最新學期的學生名冊資料。</p>';
-                return;
+            // --- C. 處理表現總分 ---
+            if (!useCache) {
+                const perfSnapshot = fetchedData[fetchIndex++];
+                allPerformanceScores = {};
+                studentsData.forEach(s => allPerformanceScores[s.id] = 0);
+                perfSnapshot.forEach(doc => {
+                    const r = doc.data();
+                    const studentId = r.entityId || r.studentId;
+                    if ((r.entityType === 'student' || !r.entityType) && studentId && allPerformanceScores.hasOwnProperty(studentId)) {
+                        allPerformanceScores[studentId] += (r.points || 0);
+                    }
+                });
+                sessionStorage.setItem(PERFORMANCE_TOTAL_SCORES, JSON.stringify(allPerformanceScores));
             }
             
-            studentsData = rosterDoc.exists ? rosterDoc.data().students : [];
+            // --- D. 處理計算規則 ---
+            if (!useCache) {
+                const rulesSnapshot = fetchedData[fetchIndex++];
+                allRules = [];
+                rulesSnapshot.forEach(doc => allRules.push({ id: doc.id, ...doc.data() }));
+                sessionStorage.setItem(CALC_RULES, JSON.stringify(allRules));
+            }
+            
+            // --- E. 如果是快取命中，但規則為空，則重新讀取規則 (後備讀取)
+            if (useCache && allRules.length === 0) {
+                 const rulesSnapshot = await db.collection('calculationRules').where('teacherId', '==', currentUser.uid).get();
+                 allRules = [];
+                 rulesSnapshot.forEach(doc => allRules.push({ id: doc.id, ...doc.data() }));
+                 sessionStorage.setItem(CALC_RULES, JSON.stringify(allRules));
+                 console.log('計算器：規則快取為空，已執行後備讀取。');
+            }
 
-            const assignmentsSnapshot = await db.collectionGroup('assignments').where('teacherId', '==', currentUser.uid).get();
-            assignmentsSnapshot.forEach(doc => {
-                const data = doc.data();
-                if (!allAssignments[data.className]) allAssignments[data.className] = [];
-                allAssignments[data.className].push({ id: doc.id, ...data });
-            });
 
-            const perfSnapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
-            studentsData.forEach(s => allPerformanceScores[s.id] = 0);
-            perfSnapshot.forEach(doc => {
-                const r = doc.data();
-                const studentId = r.entityId || r.studentId;
-                if ((r.entityType === 'student' || !r.entityType) && studentId && allPerformanceScores.hasOwnProperty(studentId)) {
-                    allPerformanceScores[studentId] += (r.points || 0);
-                }
-            });
-
-            await loadAllRules();
+// 🌟 結束修改 - Session 快取讀取與 Firestore 邏輯 🌟
             
             const classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
             
@@ -673,6 +755,8 @@
             }
         }
 
+		// calculator.html - 完整的 saveRule 函數 (約 501 行左右)
+// 🚨 直接覆蓋此函數 🚨
         async function saveRule() {
             const ruleId = document.getElementById('rule-select').value;
             const ruleName = document.getElementById('rule-name').value.trim();
@@ -686,25 +770,42 @@
             ruleData.teacherId = currentUser.uid;
             
             try {
+                let docRef;
                 if (ruleId === 'new') {
-                    const docRef = await db.collection('calculationRules').add(ruleData);
+                    docRef = await db.collection('calculationRules').add(ruleData);
+                    ruleData.id = docRef.id;
                     alert('規則已儲存！');
-                    await loadAllRules();
-                    populateRulesForGrade(gradeLevel);
-                    document.getElementById('rule-select').value = docRef.id;
                 } else {
                     await db.collection('calculationRules').doc(ruleId).set(ruleData);
+                    ruleData.id = ruleId;
                     alert('規則已更新！');
-                    const selectedValue = ruleId;
-                    await loadAllRules();
-                    populateRulesForGrade(gradeLevel);
-                    document.getElementById('rule-select').value = selectedValue;
                 }
+                
+// 🌟 開始修改 - 更新 Session 快取 🌟
+                // 1. 更新本地 allRules 陣列
+                const existingIndex = allRules.findIndex(r => r.id === ruleData.id);
+                if (existingIndex > -1) {
+                    allRules[existingIndex] = ruleData; // 更新
+                } else {
+                    allRules.push(ruleData); // 新增
+                }
+                
+                // 2. 寫回 Session 快取
+                sessionStorage.setItem(CALC_RULES, JSON.stringify(allRules));
+// 🌟 結束修改 - 更新 Session 快取 🌟
+
+                // 刷新 UI
+                const selectedValue = ruleId === 'new' ? docRef.id : ruleId;
+                populateRulesForGrade(gradeLevel);
+                document.getElementById('rule-select').value = selectedValue;
+                
             } catch(e) {
                 alert('儲存失敗: ' + e.message);
             }
         }
 
+		// calculator.html - 完整的 deleteRule 函數 (約 519 行左右)
+// 🚨 直接覆蓋此函數 🚨
         async function deleteRule() {
             const ruleId = document.getElementById('rule-select').value;
             const gradeLevel = document.getElementById('rule-grade-select').value;
@@ -712,13 +813,21 @@
             try {
                 await db.collection('calculationRules').doc(ruleId).delete();
                 alert('規則已刪除！');
-                await loadAllRules();
+                
+// 🌟 開始修改 - 更新 Session 快取 🌟
+                // 1. 更新本地 allRules 陣列
+                allRules = allRules.filter(r => r.id !== ruleId);
+                
+                // 2. 寫回 Session 快取
+                sessionStorage.setItem(CALC_RULES, JSON.stringify(allRules));
+// 🌟 結束修改 - 更新 Session 快取 🌟
+
+                // 刷新 UI
                 populateRulesForGrade(gradeLevel);
             } catch(e) {
                 alert('刪除失敗: ' + e.message);
             }
         }
-
         
         function calculateScores() {
             const target = document.getElementById('calc-target-select').value;
