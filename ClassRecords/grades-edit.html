@@ -16,227 +16,152 @@
             justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; 
         }
         header h1 { font-size: 1.6em; margin: 0; }
-        header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em; }
-        main { padding: 20px; max-width: 1000px; margin: auto; padding-bottom: 80px; }
-        .section { background-color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-top: 0;}
-        input, textarea { padding: 10px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid var(--border-color); box-sizing: border-box; width: 100%; }
-        button { background-color: var(--primary-color); color: white; cursor: pointer; border: none; }
-        
-        .form-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 20px; 
-            margin-bottom: 20px;
-        }
-        .form-grid label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
+        header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px;}
+        header button:hover { background-color: rgba(255, 255, 255, 0.2); }
 
-        /* --- 學生分數輸入區塊樣式 (統一佈局) --- */
-        #student-scores-container {
-            display: block; 
+        main { padding: 1rem; max-width: 1000px; margin: auto; }
+        
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.3rem; font-weight: bold; }
+        .form-group input[type="text"], .form-group textarea {
+            width: 100%;
+            padding: 0.5rem;
             border: 1px solid var(--border-color);
             border-radius: 4px;
-        }
-        
-        /* 設置四欄寬度比例 */
-        .score-columns {
-            display: grid;
-            grid-template-columns: 15% 30% 20% 35%; 
-            gap: 0px;
-            padding: 0; 
-        }
-        
-        .score-entry-header {
-            font-weight: bold;
-            background-color: #f7f7f7;
-            padding: 10px 0;
-            text-align: center;
-            border-bottom: 2px solid var(--border-color);
-            border-top-left-radius: 4px;
-            border-top-right-radius: 4px;
-        }
-        .score-entry-header > div { 
-			text-align: center !important; /* 確保標題置中 */
-			padding: 0 !important; /* 清除所有內邊距 */
+            box-sizing: border-box;
+            font-size: 1em;
         }
 
-        .score-entry-grid {
-            /* 學生數據行繼承 Grid 佈局 */
-            padding: 5px 0; 
-            border-bottom: 1px solid #eee;
-			height: 30px;
-        }
-        .score-entry-grid:last-child { 
-            border-bottom: none; 
-        }
-        
-        .score-entry-grid input {
-            margin: 0;
-            padding: 8px;
-            width: 100%;
-            text-align: center;
-			height: 30px;
-        }
-        
-        .student-id-cell { text-align: center; font-size: 0.9em; color: #555; }
-        .student-name-cell { 
-			text-align: center !important; /* 確保姓名內容置中 */
-			font-weight: 500;		
-		}
-        
-        /* 浮動按鈕樣式 */
-        .float-actions {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0; 
-            width: 100%;
+        #grades-table-container {
+            overflow-x: auto;
+            margin-top: 1.5rem;
             background-color: white;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            padding: 10px 20px;
-            box-sizing: border-box; 
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        #grades-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 500px;
+        }
+        #grades-table th, #grades-table td {
+            padding: 0.6rem 0.8rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #grades-table th {
+            background-color: #e9ecef;
+            color: var(--font-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        #grades-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .score-input {
+            width: 60px;
+            padding: 5px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+        }
+
+        .actions {
             display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
             justify-content: flex-end;
-            gap: 10px;
-            z-index: 1000;
         }
-        .float-actions button {
-            padding: 12px 25px;
-            font-size: 1.1em;
-            border-radius: 6px;
-            min-width: 100px; 
-            white-space: nowrap; 
+        .actions button {
+            padding: 0.7rem 1.5rem;
+            border-radius: 4px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.2s;
         }
-        #save-grades-btn { background-color: var(--success-color); }
-        #cancel-edit-btn { background-color: var(--cancel-color); }
-
-        /* --- RWD 調整 (手機專用佈局修正) --- */
-        @media (max-width: 768px) {
-            
-            header {
-                /* 移除登出按鈕並縮小標題 */
-                padding: 0.6rem 10px;
-            }
-            
-            .header-actions {
-                /* 隱藏用戶名和登出按鈕，只顯示返回清單 */
-                justify-content: flex-end;
-            }
-            
-            #user-email, #logout-btn {
-                display: none !important;
-            }
-            
-            main { padding: 10px; padding-bottom: 70px; }
-            .section { padding: 10px; margin-bottom: 15px; }
-            
-			.form-grid { 
-				grid-template-columns: 1fr 1fr; /* 強制兩欄平行 */
-				gap: 5px; /* 縮小間距 */
-				margin-bottom: 15px; 
-			} 
-			.form-grid label {
-				font-size: 0.8em; /* 縮小標籤字體 */
-				margin-bottom: 2px;
-			}
-			.form-grid input {
-				padding: 8px; /* 縮小輸入框內邊距 */
-			}
-
-            /* 修正：學生分數登錄區 (標題) - 縮小文字 */
-            #grade-entry-section h3 {
-                font-size: 1.2em;
-                padding-bottom: 5px;
-            }
-            
-            /* 修正：學生分數登錄區 (內容) - 移除重複標籤 */
-            
-            .score-entry-header {
-                 /* 確保標題列在手機上可以正常顯示四欄 */
-                 padding: 8px 10px;
-            }
-            
-            .score-columns {
-                padding: 0; /* 移除額外 padding */
-                /* 繼承寬度 */
-            }
-
-            .score-entry-grid {
-                /* 修正：確保內容區的 input/text 欄位能對齊 */
-                padding: 5px 0;
-                height: 25px;
-            }
-
-            .score-entry-grid input {
-                padding: 6px;
-                height: 25px;
-                font-size: 0.9em;
-            }
-            
-            .student-id-cell { font-size: 0.9em; }
-            .student-name-cell { font-size: 0.9em; }
-            
-            .float-actions {
-                padding: 8px 15px; 
-            }
-            .float-actions button {
-                padding: 10px 15px;
-                font-size: 1.0em;
-                min-width: 80px; 
-            }
+        #save-grades-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        #save-grades-btn:hover:not(:disabled) {
+            background-color: #3a82d0;
+        }
+        #back-btn {
+            background-color: var(--cancel-color);
+            color: white;
+            border: none;
+        }
+        #back-btn:hover:not(:disabled) {
+            background-color: #666;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
         }
     </style>
 </head>
 <body>
-	<header>
-        <h1 id="header-title">成績登錄/編輯</h1>
-        <div class="header-actions">
-            <span id="user-email"></span>
-            <button id="back-to-list-btn">返回清單</button>
+    <header>
+        <h1 id="assignment-edit-header">成績登錄或編輯</h1>
+        <div>
+            <button id="back-btn">返回列表</button>
             <button id="logout-btn">登出</button>
         </div>
     </header>
-    <main id="app-container" style="display: none;">
-        
-        <div class="section">
-            <h2 id="assignment-edit-header"></h2>
-            
-            <div class="form-grid">
-				<div>
-					<label for="edit-assignment-name">成績項目名稱：</label>
-					<input type="text" id="edit-assignment-name" required>
-				</div>
-				<div>
-					<label for="edit-general-comment">成績說明 (選填)：</label>
-					<input type="text" id="edit-general-comment" placeholder="例如: 遲交">
-				</div>
-			</div>
-        </div>
-        
-		<div id="grade-entry-section" class="section">
-            <h3>學生分數登錄</h3>
-            <div id="student-scores-container">
-                <div class="score-entry-header score-columns">
-                    <div>座號</div>
-                    <div>姓名</div>
-                    <div>分數</div>
-                    <div>備註</div>
-                </div>
-                
-</div>
-		</div>
-    </main>
 
-    <div class="float-actions" id="float-actions-bar">
-        <button id="cancel-edit-btn">取消</button>
-        <button id="save-grades-btn">更新儲存</button>
+    <div id="loading-screen" style="display: none;">
+        載入中...
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <main id="app-container" style="display: none;">
+        <form id="grades-form">
+            <div class="form-group">
+                <label for="assignment-name">成績項目名稱</label>
+                <input type="text" id="assignment-name" required placeholder="例如：期中測驗">
+            </div>
+            
+            <div class="form-group">
+                <label for="general-comment">項目備註 (選填)</label>
+                <textarea id="general-comment" rows="2" placeholder="例如：本次測驗範圍包含..."></textarea>
+            </div>
+            
+            <div id="grades-table-container">
+                <table id="grades-table">
+                    <thead>
+                        <tr>
+                            <th>座號/班級</th>
+                            <th>學號後三碼</th>
+                            <th>學生姓名</th>
+                            <th>分數</th>
+                        </tr>
+                    </thead>
+                    <tbody id="grades-table-body">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div class="actions">
+                <button type="submit" id="save-grades-btn">更新儲存</button>
+            </div>
+        </form>
+    </main>
+
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script>
@@ -250,273 +175,208 @@
 		measurementId: "G-JWTQGM9XMP"
 	  };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(); 
+        // 初始化 Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
         const auth = firebase.auth();
-        let currentUser = null; 
-        let classId = null;
-        let assignmentId = null; 
-        let studentsInClass = []; 
-        let currentGradesData = {}; 
+
+        // 全域變數
+        let currentUser = null, classId = null, assignmentId = null;
+
+        // 🌟 修正點 1: 全域變數定義及快取鍵 🌟
+        const COMMON_ROSTER_DATA = 'COMMON_ROSTER_DATA';
+        const GRADEBOOK_ASSIGNMENTS = 'GRADEBOOK_ASSIGNMENTS';
+        // 🌟 結束修正 🌟
 
         const appContainer = document.getElementById('app-container');
-        const assignmentEditHeader = document.getElementById('assignment-edit-header');
-        const editAssignmentNameInput = document.getElementById('edit-assignment-name');
-        const editGeneralCommentInput = document.getElementById('edit-general-comment');
-        const studentScoresContainer = document.getElementById('student-scores-container');
+        const loadingScreen = document.getElementById('loading-screen');
+        const gradesTableBody = document.getElementById('grades-table-body');
+        const gradesForm = document.getElementById('grades-form');
         const saveGradesBtn = document.getElementById('save-grades-btn');
-        const cancelEditBtn = document.getElementById('cancel-edit-btn');
-        const backToListBtn = document.getElementById('back-to-list-btn');
-
-        // 修正：設置返回清單按鈕的導航邏輯
-        function navigateBackToList() {
-            if (classId) {
-                window.location.href = `grades.html?class=${classId}`;
-            } else {
-                window.location.href = `grades.html`;
-            }
-        }
-
-        backToListBtn.addEventListener('click', navigateBackToList);
-        cancelEditBtn.addEventListener('click', () => {
-            if (confirm('確定要取消編輯並返回清單嗎？所有未儲存的變更將會遺失。')) {
-                navigateBackToList();
-            }
-        });
+        const assignmentEditHeader = document.getElementById('assignment-edit-header');
         
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                if (userDoc.exists && userDoc.data().role === 'teacher') {
-                    const displayElement = document.getElementById('user-email');
-                    const userData = userDoc.data();
-                    if (userData.displayName) {
-                        displayElement.textContent = userData.displayName;
-                    } else {
-                        displayElement.textContent = user.email;
-                    }
-                    await initializeEditPage(userData);
-                } else {
-                    alert('權限不足或帳號設定錯誤。');
-                    window.location.href = 'login.html';
-                }
-            } else {
-                window.location.href = 'login.html';
-            }
-        });
+        // ----------------------------------------------------
+        // 輔助函數
+        // ----------------------------------------------------
 
-		async function initializeEditPage(userData) {
+        function navigateBackToList() {
+            window.location.href = `grades.html?class=${classId}`;
+        }
+        
+        function renderGradesTable(students, existingScores) {
+            gradesTableBody.innerHTML = '';
+            // 修正：使用學生 ID 的後三碼進行排序
+            students.sort((a, b) => parseInt(a.id.substring(3)) - parseInt(b.id.substring(3))); 
+
+            students.forEach(student => {
+                const tr = document.createElement('tr');
+                const studentSeatNum = student.id ? student.id.substring(3) : 'N/A';
+                const studentIdLastThree = student.id ? student.id.substring(student.id.length - 3) : 'N/A';
+                const score = existingScores[student.id] ? (existingScores[student.id].score || '') : '';
+                
+                tr.innerHTML = `
+                    <td>${studentSeatNum}</td>
+                    <td>${studentIdLastThree}</td>
+                    <td>${student.name}</td>
+                    <td>
+                        <input type="number" step="0.1" min="0" max="100" class="score-input" data-student-id="${student.id}" value="${score}" placeholder="分數">
+                    </td>
+                `;
+                gradesTableBody.appendChild(tr);
+            });
+        }
+        
+		async function initializeGradesEditPage(userData) {
 			const urlParams = new URLSearchParams(window.location.search);
 			classId = urlParams.get('class');
-            assignmentId = urlParams.get('assignmentId');
-            const assignmentName = decodeURIComponent(urlParams.get('assignmentName') || '');
-            const assignmentComment = decodeURIComponent(urlParams.get('assignmentComment') || '');
+			assignmentId = urlParams.get('id');
+			const assignmentNameFromURL = urlParams.get('name');
+			const generalCommentFromURL = urlParams.get('comment');
 
 			if (!classId) {
-                appContainer.innerHTML = '<h2>錯誤：未指定班級，請從主頁重新進入。</h2>';
-				appContainer.style.display = 'block';
-				backToListBtn.textContent = '返回主頁';
-                backToListBtn.onclick = () => window.location.href = 'teacher.html';
+				alert('錯誤：未指定班級。');
 				return;
 			}
-            
-            assignmentEditHeader.textContent = assignmentId ? `${classId} 班 成績編輯：${assignmentName}` : `${classId} 班 建立新成績項目`;
-            editAssignmentNameInput.value = assignmentName;
-            editGeneralCommentInput.value = assignmentComment;
-            document.title = assignmentId ? `編輯 ${assignmentName}` : `建立新項目`;
-
+			
+			const assignmentEditHeader = document.getElementById('assignment-edit-header');
+			if (assignmentId) {
+				assignmentEditHeader.textContent = `${classId} 班 成績編輯：${assignmentNameFromURL || '讀取中...'}`;
+			} else {
+				assignmentEditHeader.textContent = `${classId} 班 建立新成績項目`;
+			}
 
 			if (!userData.schoolId) {
 				alert('錯誤：您的帳號未綁定學校ID，無法讀取名冊。');
 				return;
 			}
+
+            let allStudents = [];
+            let studentsInClass = [];
+            let useRosterCache = false;
+
+            // 🌟 開始修正：更詳細地記錄名冊快取狀態 🌟
+            try {
+                const cachedRoster = sessionStorage.getItem(COMMON_ROSTER_DATA);
+                if (cachedRoster) {
+                    allStudents = JSON.parse(cachedRoster).students || [];
+                    
+                    if (allStudents) { 
+                        useRosterCache = true;
+                        if (allStudents.length > 0) {
+                            console.log('【快取命中】名冊：讀取 Session 快取的名冊，共找到 ' + allStudents.length + ' 筆學生資料。');
+                        } else {
+                            console.warn('【快取命中】名冊：Session 快取被讀取，但學生資料為空。將從 Firestore 再次嘗試。');
+                            useRosterCache = false; 
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('【快取錯誤】Session 快取解析失敗，將從 Firestore 重新讀取名冊。', e);
+                sessionStorage.removeItem(COMMON_ROSTER_DATA);
+                useRosterCache = false;
+            }
+            // 🌟 結束修正 🌟
+            
+            // 如果快取無效，則從 Firestore 讀取
+            if (!useRosterCache) {
+                console.log('名冊：從 Firestore 進行硬讀取。'); // Log 紀錄硬讀取
+                const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
+                if (!rosterDoc.exists) {
+                    alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
+                    return;
+                }
+                allStudents = rosterDoc.data().students || [];
+                
+                // 寫入 Session 快取
+                sessionStorage.setItem(COMMON_ROSTER_DATA, JSON.stringify({ students: allStudents }));
+                console.log('名冊：已將 ' + allStudents.length + ' 筆資料寫入 Session 快取。'); // Log 紀錄寫入
+            }
 			
-			const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-			if (!rosterDoc.exists) {
-				alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
+            // 這裡假設名冊中的 student.id 格式為 {班級代碼}{座號}，例如 "70101"
+			studentsInClass = allStudents.filter(s => s.id.startsWith(classId));
+			if (studentsInClass.length === 0) {
+				alert(`找不到 ${classId} 班的學生名冊，請確認班級代碼或聯繫管理員。`);
 				return;
 			}
-            
-            studentsInClass = (rosterDoc.data().students || [])
-                                .filter(s => s.id.startsWith(classId))
-                                .sort((a, b) => parseInt(a.id.substring(3)) - parseInt(b.id.substring(3)));
-
-            if (assignmentId) {
-                const assignmentDoc = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(assignmentId).get();
-                if (assignmentDoc.exists) {
-                    currentGradesData = assignmentDoc.data().scores || {};
-                } else {
-                    alert('找不到此成績項目，將以新增模式載入。');
-                    assignmentId = null;
-                }
-            }
-            
-            renderStudentScores();
-			appContainer.style.display = 'block';
 			
-			// 修正：隱藏 Header 中的用戶名和登出按鈕
-			document.getElementById('user-email').style.display = 'none';
-			document.getElementById('logout-btn').style.display = 'none';
+			// Fetch existing assignment data if editing
+			let existingScores = {};
+			if (assignmentId) {
+				const assignmentDoc = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(assignmentId).get();
+				if (assignmentDoc.exists) {
+					const data = assignmentDoc.data();
+					existingScores = data.scores || {};
+					
+					// Populate form fields
+					document.getElementById('assignment-name').value = data.assignmentName || '';
+					document.getElementById('general-comment').value = data.generalComment || '';
+					
+					// Set header content if not set by URL param
+					if (!assignmentNameFromURL) {
+						 assignmentEditHeader.textContent = `${classId} 班 成績編輯：${data.assignmentName || '未命名項目'}`;
+					}
+					
+				} else {
+					alert('找不到要編輯的成績項目。');
+					return;
+				}
+			} else {
+				// Populate assignment name and comment from URL if creating new assignment
+				document.getElementById('assignment-name').value = assignmentNameFromURL || '';
+				document.getElementById('general-comment').value = generalCommentFromURL || '';
+			}
+
+			renderGradesTable(studentsInClass, existingScores);
+			appContainer.style.display = 'block';
 		}
-        
-        function renderStudentScores() {
-            const existingHeader = studentScoresContainer.querySelector('.score-entry-header');
-            studentScoresContainer.innerHTML = '';
-            if (existingHeader) {
-                studentScoresContainer.appendChild(existingHeader);
-            } else {
-                const headerDiv = document.createElement('div');
-                headerDiv.className = 'score-entry-header score-columns';
-                headerDiv.innerHTML = `<div>座號</div><div>姓名</div><div>分數</div><div>備註</div>`;
-                studentScoresContainer.appendChild(headerDiv);
-            }
 
-            studentsInClass.forEach(student => {
-                const studentId = student.id;
-                const studentSeat = studentId.substring(3);
-                const existingScore = currentGradesData[studentId] ? currentGradesData[studentId].score : '';
-                const existingComment = currentGradesData[studentId] ? currentGradesData[studentId].comment : '';
-
-                const studentDiv = document.createElement('div');
-                studentDiv.className = 'score-entry-grid score-columns'; // 使用 score-columns 類別
-                studentDiv.dataset.id = studentId;
-
-                studentDiv.innerHTML = `
-                    <div class="student-id-cell">${studentSeat}</div>
-                    <div class="student-name-cell">${student.name}</div>
-                    <div class="score-input-cell">
-                        <input type="number" step="0.5" min="0" max="100" class="student-score-input" data-id="${studentId}" value="${existingScore}" placeholder="分數">
-                    </div>
-                    <div class="comment-input-cell">
-                        <input type="text" class="student-comment-input" data-id="${studentId}" value="${existingComment}" placeholder="備註 (選填)">
-                    </div>
-                `;
-                studentScoresContainer.appendChild(studentDiv);
-            });
+        // 🌟 修正點 3: 儲存函數 saveGrades (同步更新快取) 🌟
+        async function saveGrades(e) {
+            e.preventDefault();
             
-            setupKeyboardNavigation();
-        }
-        
-		function setupKeyboardNavigation() {
-            // 選擇所有分數和備註輸入框
-            const scoreInputs = Array.from(document.querySelectorAll('.student-score-input'));
-            const commentInputs = Array.from(document.querySelectorAll('.student-comment-input'));
-            
-            // 建立輸入框映射表，以便根據 data-id 快速查找對應的輸入框
-            const inputMap = {};
-            studentsInClass.forEach(student => {
-                inputMap[student.id] = {
-                    score: document.querySelector(`.student-score-input[data-id="${student.id}"]`),
-                    comment: document.querySelector(`.student-comment-input[data-id="${student.id}"]`)
-                };
-            });
-            
-            // 綜合所有輸入框，並為它們添加事件監聽器
-            const allInputs = [...scoreInputs, ...commentInputs];
-
-            allInputs.forEach((input) => {
-                input.addEventListener('keydown', (e) => {
-                    // 獲取當前學生 ID 和輸入框類型
-                    const studentId = input.dataset.id;
-                    const isScoreInput = input.classList.contains('student-score-input');
-                    
-                    // 找出當前學生在 studentsInClass 陣列中的索引
-                    const currentIndexInStudents = studentsInClass.findIndex(s => s.id === studentId);
-                    
-                    let nextIndexInStudents = -1; // 準備跳轉的目標學生索引
-                    const targetInputType = isScoreInput ? 'score' : 'comment'; // 準備跳轉的目標輸入框類型
-
-                    if (e.key === 'Enter' || e.key === 'ArrowDown') {
-                        // 上下鍵邏輯 (同一欄位上下跳動)
-                        e.preventDefault();
-                        nextIndexInStudents = currentIndexInStudents + 1;
-                        
-                    } else if (e.key === 'ArrowUp') {
-                        // 上下鍵邏輯 (同一欄位上下跳動)
-                        e.preventDefault();
-                        nextIndexInStudents = currentIndexInStudents - 1;
-                    
-                    } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-                        // *** 修正點：移除左右鍵的特殊處理，讓游標在欄位內移動 ***
-                        return; // 直接返回，執行預設行為 (移動游標)
-                    }
-
-                    if (nextIndexInStudents >= 0 && nextIndexInStudents < studentsInClass.length) {
-                        // 成功找到目標學生，將焦點移動到同一欄位的輸入框
-                        const nextStudentId = studentsInClass[nextIndexInStudents].id;
-                        // 確保目標輸入框存在再 focus
-                        if (inputMap[nextStudentId] && inputMap[nextStudentId][targetInputType]) {
-                            inputMap[nextStudentId][targetInputType].focus();
-                        }
-                        
-                    } else if ((e.key === 'Enter' || e.key === 'ArrowDown') && nextIndexInStudents >= studentsInClass.length) {
-                        // 如果按 Enter 或 ArrowDown 且已是最後一個學生，將焦點移動到「更新儲存」按鈕
-                        e.preventDefault(); // 阻止頁面滾動
-                        saveGradesBtn.focus();
-                    }
-                });
-            });
-        }
-		
-        saveGradesBtn.addEventListener('click', saveGrades);
-
-        async function saveGrades() {
-            const assignmentName = editAssignmentNameInput.value.trim();
-            const generalComment = editGeneralCommentInput.value.trim();
-
-            if (!assignmentName) {
-                alert('成績項目名稱不能為空！');
-                editAssignmentNameInput.focus();
-                return;
-            }
-
             saveGradesBtn.disabled = true;
             saveGradesBtn.textContent = '儲存中...';
 
-            const scoresToSave = {};
-            let isAnyScoreEntered = false;
-            let invalidScoreError = false;
+            const assignmentName = document.getElementById('assignment-name').value.trim();
+            const generalComment = document.getElementById('general-comment').value.trim();
 
-            studentsInClass.forEach(student => {
-                const scoreInput = document.querySelector(`.student-score-input[data-id="${student.id}"]`);
-                const commentInput = document.querySelector(`.student-comment-input[data-id="${student.id}"]`);
-                
-                const scoreValue = scoreInput.value.trim();
-                const commentValue = commentInput.value.trim();
-                
-                let score = null;
-                if (scoreValue !== '') {
-                    score = parseFloat(scoreValue);
-                    //if (isNaN(score) || score < 0 || score > 100) {
-                    if (isNaN(score)) {
-                        alert(`學生 ${student.name} 的分數 [${scoreValue}] 無效`);
-                        scoreInput.focus();
-                        invalidScoreError = true;
-                        return;
-                    }
-                    isAnyScoreEntered = true;
-                }
-                
-                if (score !== null || commentValue !== '') {
-                    scoresToSave[student.id] = {
-                        score: score,
-                        comment: commentValue
-                    };
-                }
-            });
-            
-            if (invalidScoreError) {
+            if (!assignmentName) {
+                alert('請輸入成績項目名稱。');
                 saveGradesBtn.disabled = false;
                 saveGradesBtn.textContent = '更新儲存';
                 return;
             }
 
-            if (!isAnyScoreEntered && studentsInClass.length > 0) {
-                alert('請至少為一位學生輸入分數。');
-                saveGradesBtn.disabled = false;
-                saveGradesBtn.textContent = '更新儲存';
-                return;
+            const scoreInputs = gradesTableBody.querySelectorAll('.score-input');
+            const scoresToSave = {};
+
+            let hasValidScore = false;
+            scoreInputs.forEach(input => {
+                const studentId = input.dataset.studentId;
+                const scoreValue = input.value.trim();
+                
+                if (scoreValue !== '') {
+                    const score = parseFloat(scoreValue);
+                    if (!isNaN(score) && score >= 0 && score <= 100) {
+                        scoresToSave[studentId] = { score: score };
+                        hasValidScore = true;
+                    } else {
+                        scoresToSave[studentId] = { score: null }; // 儲存無效/不合理的分數為 null
+                    }
+                } else {
+                    scoresToSave[studentId] = { score: null }; // 儲存空欄位為 null
+                }
+            });
+            
+            if (!hasValidScore) {
+                const confirmEmpty = confirm('您尚未輸入任何有效成績。確定要儲存這個空的成績項目嗎？');
+                if (!confirmEmpty) {
+                    saveGradesBtn.disabled = false;
+                    saveGradesBtn.textContent = '更新儲存';
+                    return;
+                }
             }
 
             const dataToSave = {
@@ -524,20 +384,63 @@
                 assignmentName: assignmentName,
                 generalComment: generalComment,
                 scores: scoresToSave,
-                date: firebase.firestore.FieldValue.serverTimestamp()
+                // 使用 Firestore 伺服器時間戳，確保時間一致性
+                date: firebase.firestore.FieldValue.serverTimestamp() 
             };
 
             try {
+                let isUpdate = !!assignmentId;
+                let finalDocId = assignmentId;
+                
                 if (assignmentId) {
+                    // UPDATE
                     await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(assignmentId).update(dataToSave);
                     alert('成績已成功更新！');
                 } else {
+                    // CREATE
                     const newDocRef = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').add(dataToSave);
-                    assignmentId = newDocRef.id;
+                    finalDocId = newDocRef.id; // 取得新的文件 ID
+                    assignmentId = finalDocId; // 更新全域變數以便後續編輯
                     assignmentEditHeader.textContent = `${classId} 班 成績編輯：${assignmentName}`;
                     alert('新成績項目已成功建立！');
                 }
                 
+                // 🌟 開始修改：更新 Session 快取 (GRADEBOOK_ASSIGNMENTS) 🌟
+                let allAssignments = [];
+                try {
+                    // 1. 讀取現有快取
+                    allAssignments = JSON.parse(sessionStorage.getItem(GRADEBOOK_ASSIGNMENTS) || '[]');
+                } catch (e) {
+                    console.error("解析成績項目快取失敗，將跳過快取更新。", e);
+                }
+
+                // 2. 建立用於快取的新數據物件。注意：使用本地時間字串代替 serverTimestamp()
+                const newAssignmentData = {
+                    id: finalDocId, 
+                    ...dataToSave,
+                    // 將 Date 物件序列化為 ISO string，grades.html 中的 loadHistory 已處理此格式
+                    date: new Date().toISOString() 
+                };
+
+                if (isUpdate) {
+                    // 3a. 更新：替換舊項目
+                    const index = allAssignments.findIndex(a => a.id === finalDocId);
+                    if (index !== -1) {
+                        allAssignments[index] = newAssignmentData;
+                    } else {
+                        allAssignments.unshift(newAssignmentData); // 後備
+                    }
+                } else {
+                    // 3b. 新增：項目到列表頂部 (因為 grades.html 是降序排序)
+                    allAssignments.unshift(newAssignmentData);
+                }
+                
+                // 4. 寫回 Session 快取
+                sessionStorage.setItem(GRADEBOOK_ASSIGNMENTS, JSON.stringify(allAssignments));
+                
+                console.log(`成績項目快取已更新。項目 ID: ${finalDocId}`);
+                // 🌟 結束修改：更新 Session 快取 🌟
+
                 navigateBackToList();
 
             } catch (error) {
@@ -548,9 +451,44 @@
                 saveGradesBtn.textContent = '更新儲存';
             }
         }
+        // 🌟 結束修正 🌟
+
+
+        // ----------------------------------------------------
+        // 事件監聽與初始化
+        // ----------------------------------------------------
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                loadingScreen.style.display = 'flex';
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    const userData = doc.data() || {};
+                    if (userData.role === 'teacher') {
+                        // 這裡可以加入一個 console.log 來確認初始化開始執行
+                        console.log('grades-edit.html: 認證成功，開始初始化頁面。');
+                        initializeGradesEditPage(userData);
+                    } else {
+                        alert('您沒有權限訪問此頁面。');
+                        window.location.href = 'login.html';
+                    }
+                }).catch(e => {
+                    console.error("Error fetching user data:", e);
+                    alert("載入用戶數據失敗。");
+                    window.location.href = 'login.html';
+                }).finally(() => {
+                    loadingScreen.style.display = 'none';
+                });
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        gradesForm.addEventListener('submit', saveGrades);
+        
+        document.getElementById('back-btn').addEventListener('click', () => { navigateBackToList(); });
         
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
     </script>
 </body>
 </html>
-
