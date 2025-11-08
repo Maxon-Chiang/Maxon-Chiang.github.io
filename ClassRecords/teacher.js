@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const schoolId = userData.schoolId;
         const teacherName = userData.displayName;
-        appContainer.innerHTML = '<h2>載入中...</h2>';
+        appContainer.innerHTML = '<h2>正在載入您的資料...</h2>';
         
         let useCache = false;
         
