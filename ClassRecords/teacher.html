@@ -2677,59 +2677,98 @@
             document.getElementById('modal').style.display = 'flex';
         }
 
-        function renderModalRecords(id, type) {
+		function renderModalRecords(id, type) {
+            const recordsList = document.getElementById('records-list');
+            
+            if (!recordsList) {
+                console.error("錯誤: 找不到 id='records-list' 的 HTML 元素。");
+                return;
+            }
+            
             recordsList.innerHTML = '載入中...';
-            document.getElementById('record-count-display').textContent = '事件數: 0';
-            document.getElementById('record-total-score-display').textContent = '總分: 0.0';
 
+            const countDisplay = document.getElementById('record-count-display');
+            const scoreDisplay = document.getElementById('record-total-score-display');
+            
+            // 1. 篩選出所有相關紀錄
             const allRecords = allPerformanceRecords.filter(r => {
-                if (type === 'class' && r.entityType === 'class') {
-                    return r.entityId === id;
-                } else if (type === 'student' && (r.entityType === 'student' || !r.entityType)) {
+                if (r.entityType === 'class' && type === 'student') return false; 
+                
+                if (type === 'student' && (r.entityType === 'student' || !r.entityType)) {
                     return r.entityId === id || r.studentId === id;
                 }
+                
+                if (type === 'class' && r.entityType === 'class') {
+                    return r.entityId === id; 
+                }
+                
                 return false;
             }).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-            let totalScore = 0;
-            let recordCount = 0;
-            allRecords.forEach(record => {
-                totalScore += record.points || 0;
-                recordCount++;
-            });
 
-            document.getElementById('record-count-display').textContent = `事件數: ${recordCount}`;
-            document.getElementById('record-total-score-display').textContent = `總分: ${totalScore.toFixed(1)}`;
+            // 🚩【修正開始：直接從篩選後的紀錄列表計算總分】
+            // 這樣可以保證模態框顯示的分數與列表內容一致，避免依賴 allPerformanceScores 內部的結構
+            let totalCalculatedScore = 0;
+            allRecords.forEach(record => {
+                totalCalculatedScore += record.points || 0;
+            });
+            const recordScore = totalCalculatedScore; 
+            const recordCount = allRecords.length; 
+            // 🚩【修正結束】
+
+            if (countDisplay) {
+                countDisplay.textContent = `事件數: ${recordCount}`; 
+            } else {
+                console.warn("警告: 找不到 HTML 元素: record-count-display，無法顯示事件數。");
+            }
+
+            if (scoreDisplay) {
+                scoreDisplay.textContent = `總分: ${recordScore.toFixed(1)}`;
+            } else {
+                 console.warn("警告: 找不到 HTML 元素: record-total-score-display，無法顯示總分。");
+            }
+
+            console.log(`DEBUG: 總紀錄數: ${allPerformanceRecords.length}，篩選後紀錄數: ${recordCount}`);
 
             recordsList.innerHTML = '';
-            if (allRecords.length === 0) { recordsList.innerHTML = '尚無紀錄。'; return; }
+            if (allRecords.length === 0) { 
+                recordsList.innerHTML = '尚無紀錄。'; 
+                return; 
+            }
 
             allRecords.forEach(record => {
-                const recordItem = document.createElement('div');
-                recordItem.className = 'record-item';
-                const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
+                try {
+                    const recordItem = document.createElement('div');
+                    recordItem.className = 'record-item';
+                    
+                    const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
+    
+                    let timestamp = '日期不明';
+                    if (record.timestamp) {
+                         const dateObj = record.timestamp.seconds ? new Date(record.timestamp.seconds * 1000) : new Date(record.timestamp);
+                         timestamp = dateObj.toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' });
+                    }
+                    
+                    recordItem.innerHTML = `
+                        <div class="record-content edit-trigger" data-id="${record.id}">
+                            <span class="record-points ${pClass}">${record.points || 0}分</span>
+                            <span class="record-text">${record.text || '無文字註記'}</span>
+                        </div>
+                        <div class="record-timestamp">${timestamp}</div>
+                        <button class="delete-btn" data-id="${record.id}">🗑️</button>
+                    `;
 
-                const timestamp = record.timestamp ? new Date(record.timestamp.seconds * 1000).toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' }) : '日期不明';
+                    recordsList.appendChild(recordItem); 
 
-                recordItem.innerHTML = `
-                    <div class="record-content edit-trigger" data-id="${record.id}">
-                        <span class="record-points ${pClass}">${record.points||0}分</span>
-                        <span class="record-text">${record.text || ''}</span>
-                    </div>
-                    <div class="record-timestamp">${timestamp}</div>
-                    <button class="delete-btn" data-id="${record.id}">🗑️</button>
-                `;
-                recordsList.appendChild(recordItem);
+                } catch (e) {
+                    console.error("❌ 渲染單筆紀錄時發生錯誤:", e, "紀錄 ID:", record.id);
+                }
             });
-
-            recordsList.querySelectorAll('.record-content').forEach(element => {
-                element.addEventListener('click', (e) => {
-                    const recordId = e.currentTarget.dataset.id;
-                    editRecord(recordId);
-                });
-            });
+            
+            if (recordsList.children.length === 0 && allRecords.length > 0) {
+                 console.error("❌ 嚴重錯誤：已篩選到紀錄但 recordsList 仍為空。請檢查父容器或 CSS。");
+            }
         }
-
 
 		// 🎯【快取優化】--- 6. 從快取載入最近文字紀錄 ---
 		async function loadRecentTexts() {
