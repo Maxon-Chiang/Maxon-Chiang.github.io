@@ -414,7 +414,7 @@
             } else if (role === 'school_admin') {
                 window.location.href = 'school_admin.html';
             } else if (role === 'teacher') {
-				localStorage.setItem('teacherTimetableNeedsRefresh', 'true');
+				//localStorage.setItem('teacherTimetableNeedsRefresh', 'true');
                 window.location.href = 'teacher.html';
             } else {
                 showLoginError(`未知的用戶角色 (${role})，無法登入。`);
