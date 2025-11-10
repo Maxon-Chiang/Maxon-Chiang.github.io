@@ -1510,10 +1510,10 @@
         let editingRecordId = null;
 
         let PERIOD_TIMES = [];
-		
 		let allPerformanceRecords = []; 
-        let studentLatestRecords = {}; 
-        let allScoresSnapshotUnsubscribe = null; 
+        let studentLatestRecords = {};
+		let lastScheduleFetch = 0;
+		let cloudDataUpdated = false;
 		
         const appContainer = document.getElementById('app-container');
         const welcomeModal = document.getElementById('welcome-modal');
@@ -1618,36 +1618,64 @@
             return `${month}/${day}`;
         }
 
-        async function loadActiveChanges() {
+		// 🎯【快取函數 5: 載入課表異動】		
+		async function loadActiveChanges(force = false) {
             if (!currentUser || !currentUser.uid) return;
-			const cachedChanges = sessionStorage.getItem(TRANSFER_KEY);
-			if (cachedChanges) {
-				try {
-					activeChanges = JSON.parse(cachedChanges);
-					console.log('課表異動快取命中，無需重新讀取 Firestore！');
-					return; // 成功從快取載入，退出函數
-				} catch (e) {
-					console.error('解析 Session 快取失敗，將強制從 Firestore 讀取。', e);
-					// 繼續執行，讓程式碼進入下面的 Firestore 讀取作為備援
-				}
-			}
-			try {
+            
+            // 1. 如果強制讀取，直接跳過所有快取檢查
+            if (force) {
+                // 進入 Firestore 讀取區塊 (下方 try-catch)
+            } else {
+                // 2. 嘗試檢查 Session Storage (用於跨頁面傳遞異動狀態)
+                const cachedChanges = sessionStorage.getItem(TRANSFER_KEY);
+                if (cachedChanges) {
+                    try {
+                        activeChanges = JSON.parse(cachedChanges);
+                        allScheduleChanges = activeChanges; 
+                        console.log('✅ 課表異動 Session 快取命中，無需重新讀取 Firestore！');
+                        return; 
+                    } catch (e) {
+                        console.error('❌ 解析 Session 快取失敗，將檢查本地快取。', e);
+                        // 失敗後繼續執行，檢查本地快取
+                    }
+                }
+
+                // 💥【新增】3. 檢查本地快取變數 (來自 localStorage)
+                // 如果 allScheduleChanges 在 initialize 階段已從 localStorage 載入，則使用它
+                if (allScheduleChanges && allScheduleChanges.length > 0) {
+                    activeChanges = allScheduleChanges;
+                    console.log('✅ 課表異動 LocalStorage 快取命中，無需重新讀取 Firestore！');
+                    return; // 成功命中本地快取，退出
+                }
+            }
+            
+            // 4. 強制讀取 (force=true) 或所有快取檢查失敗時，執行 Firestore 讀取
+            try {
                 const involvedQuery = db.collection('classChanges')
                                         .where('involvedTeacherIds', 'array-contains', currentUser.uid)
                                         .where('status', '==', 'active');
 
                 const snapshot = await involvedQuery.get();
 				console.log('載入課表異動資料...');
-                activeChanges = [];
+
+                const newActiveChanges = [];
                 snapshot.forEach(doc => {
-                    activeChanges.push({ id: doc.id, ...doc.data() });
+                    newActiveChanges.push({ id: doc.id, ...doc.data() });
                 });
+                
+                // 將最新數據賦值給兩個變數：
+                activeChanges = newActiveChanges;       // 用於本階段計算
+                allScheduleChanges = newActiveChanges;  // 用於寫入 localStorage 快取
+                
+                // 🚩 成功從 Firestore 載入後，清空 SessionStorage 避免重複使用舊的傳輸資料
+                sessionStorage.removeItem(TRANSFER_KEY); 
+				cloudDataUpdated = true;
+                
             } catch (error) {
                 console.error("載入課程異動時發生錯誤:", error);
-                timetableMessage.textContent = '載入課程異動失敗。';
             }
          }
-
+		
         function getDerivedCurrentUserSchedule() {
             if (!teacherTimetableData || !teacherTimetableData.periods) {
                 return { periods: {} };
@@ -1745,8 +1773,9 @@
                     
                     // 🎯【快取優化】如果快取不存在，才從 Firestore 讀取
                     if (!userDocData) {
-                        console.log('載入user資料...'); // 保留原 console.log
                         const userDoc = await db.collection('users').doc(user.uid).get();
+                        console.log('載入user資料...'); // 保留原 console.log
+						cloudDataUpdated = true;
                         if (userDoc.exists) {
                             userDocData = userDoc.data();
                         }
@@ -1869,7 +1898,7 @@
             if (!schoolId) return;
             
             // 🎯【快取優化】從 CACHE_DATA 讀取
-            if (useCache && CACHE_DATA.PERIOD_TIMES && CACHE_DATA.PERIOD_TIMES.length > 0) {
+            if (useCache && PERIOD_TIMES.length > 0) {
                 PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES;
                 return;
             }
@@ -1878,7 +1907,7 @@
                 const periodsDoc = await db.collection('schools').doc(schoolId)
                                            .collection('periods').doc('current').get();
 				console.log('載入節次資料...');
-				dataLoaded = true;
+				cloudDataUpdated = true;
                 if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
                     PERIOD_TIMES = periodsDoc.data().times.map(item => ({
                         period: item.period,
@@ -1917,14 +1946,17 @@
         }
 
         // 🎯【快取函數 2: 載入教師課表】
-        async function fetchScheduleData(teacherName, schoolId, useCache) {
+		async function fetchScheduleData(teacherName, schoolId, useCache) {
             scheduleDataLoaded = false;
             teacherTimetableData = { periods: {} };
             
             // 🎯【快取優化】從 CACHE_DATA 讀取
-            if (useCache && CACHE_DATA.teacherTimetableData) {
+            if (useCache && allClassList.length > 0) {
                 teacherTimetableData = CACHE_DATA.teacherTimetableData;
                 scheduleDataLoaded = true;
+                // 🚨【修改開始：從快取載入時，設定 lastScheduleFetch】
+                lastScheduleFetch = CACHE_DATA.lastScheduleFetch || 0; 
+                // 🚨【修改結束】
                 return;
             }
             
@@ -1932,16 +1964,16 @@
                 const schoolRef = db.collection('schools').doc(schoolId);
                 const scheduleDoc = await schoolRef.collection('timetables').doc(teacherName).get();
 				console.log('載入課表資料...');
-				dataLoaded = true;
+				cloudDataUpdated = true;
                 if (scheduleDoc.exists) {
                     teacherTimetableData = scheduleDoc.data();
                     scheduleDataLoaded = true;
+                    // 🚨【修改開始：從 Firestore 載入時，設定 lastScheduleFetch】
+                    lastScheduleFetch = new Date().getTime(); 
+                    // 🚨【修改結束】
                 } else {
                     teacherTimetableData = { periods: {} };
                 }
-                
-                // CACHE_DATA.teacherTimetableData = teacherTimetableData; // 不在此處寫入，統一在 initialize 寫入
-
             } catch (error) {
                 console.error("載入課表資料失敗:", error);
                 teacherTimetableData = { periods: {} };
@@ -1952,15 +1984,15 @@
         async function fetchRosterData(schoolId, useCache) {
             
             // 🎯【快取優化】從 CACHE_DATA 讀取
-            if (useCache && CACHE_DATA.rosterData && CACHE_DATA.rosterData.length > 0) {
+            if (useCache && studentsData.length > 0) {
                 studentsData = CACHE_DATA.rosterData;
                 allClassList = CACHE_DATA.allClassList;
                 return;
             }
 
             const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
-			console.log('載入學生資料...');
-			dataLoaded = true;
+			console.log('載入學生名單資料...');
+			cloudDataUpdated = true;
             if (!rosterDoc.exists) {
                  throw new Error('找不到學校名冊');
             }
@@ -1970,104 +2002,120 @@
             // CACHE_DATA.allClassList = allClassList;
         }
 
-
-        // 【優化：分數 onSnapshot 監聽】
-        async function fetchAllScores() {
-            // 如果監聽器已經啟動，則不執行任何動作，讓它自己更新
-            if (allScoresSnapshotUnsubscribe) {
-                 return;
-            }
+		async function fetchAllScores() { 
             
-            allScoresSnapshotUnsubscribe = db.collection('performanceRecords').doc(currentUser.uid).collection('records')
-              .onSnapshot(snapshot => {
-                
-                allPerformanceScores = {};
-                classTotalScores = {};
-                allPerformanceRecords = [];
-				studentLatestRecords = {}; 
-				  
-                snapshot.forEach(doc => {
-                    const r = doc.data();
-                    r.id = doc.id;
-                    allPerformanceRecords.push(r);
+            let records = allPerformanceRecords; // 預設使用快取載入的資料
+            let loadedFromCache = records.length > 0;
 
-                    const p = r.points || 0;
-                    const type = r.entityType || 'student';
-                    const id = r.entityId || r.studentId;
-                    if (!id) return;
-
-                    if (type === 'student') {
-                        const studentId = id;
-                        if (!allPerformanceScores[studentId]) allPerformanceScores[studentId] = 0;
-                        allPerformanceScores[studentId] += p;
-                    }
-                    else if (type === 'class') {
-                        const classId = id;
-                        if (!classTotalScores[classId]) classTotalScores[classId] = 0;
-                        classTotalScores[classId] += p;
-                    }
-                });
-
-                studentsData.forEach(student => {
-                    const studentId = student.id;
-                    const className = studentId.substring(0, 3);
-                    const score = allPerformanceScores[studentId] || 0;
-
-                    classTotalScores[className] = (classTotalScores[className] || 0) + score;
-                });
-				  
-				studentsData.forEach(student => {
-                    const studentRecords = allPerformanceRecords.filter(r => 
-                         (r.entityId === student.id || r.studentId === student.id) && (r.entityType === 'student' || !r.entityType)
-                    ).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); 
+            if (loadedFromCache) {
+                 console.log('✅ 學生紀錄快取命中，跳過 Firestore 載入。');
+            } else {
+            // 🚩【Firestore 載入】
+                try {
+                    const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+					console.log('載入學生紀錄資料...');
+					cloudDataUpdated = true;
+                    records = []; // 清空以確保只包含 Firestore 資料
+                    snapshot.forEach(doc => {
+                        const r = doc.data();
+                        r.id = doc.id;
+                        records.push(r);
+                    });
                     
-                    studentLatestRecords[student.id] = null; 
-
-                    for (const record of studentRecords) {
-                        const hasText = record.text && record.text.trim() !== '';
-                        const hasNoPoints = (record.points === undefined || record.points === null || record.points === 0);
-                        
-                        if (hasText) {
-                            studentLatestRecords[student.id] = {
-                                latestComment: record.text,
-                                needsHighlight: hasNoPoints 
-                            };
-                            break; 
-                        }
-                    }
-                });
-				  
-                renderLayout();
-                highlightCurrentClass();
-
-                if (modal.style.display === 'flex' && currentEntity) {
-                    renderModalRecords(currentEntity.id, currentEntity.type);
-                } else if (studentRosterModal.style.display === 'flex' && currentRosterClassId) {
-                    renderStudentRoster(currentRosterClassId);
+                    allPerformanceRecords = records; // 🎯 確保全域變數被設定
+                } catch (error) {
+                    console.error("載入紀錄失敗:", error);
+                    return; // 載入失敗則停止後續處理
                 }
-                
-                
-            }, error => {
-                console.error("監聽紀錄失敗:", error);
+            }
+            // 🚨【修改結束：快取/載入邏輯調整】
+            
+            // --- 核心計算 (無論從快取或 Firestore 載入，都需要重新計算分數) ---
+            allPerformanceScores = {};
+            classTotalScores = {};
+            studentLatestRecords = {}; 
+            
+            records.forEach(r => { // 使用 records 變數
+                const p = r.points || 0;
+                const type = r.entityType || 'student';
+                const id = r.entityId || r.studentId;
+                if (!id) return;
+
+                if (type === 'student') {
+                    const studentId = id;
+                    if (!allPerformanceScores[studentId]) allPerformanceScores[studentId] = 0;
+                    allPerformanceScores[studentId] += p;
+                }
+                else if (type === 'class') {
+                    const classId = id;
+                    if (!classTotalScores[classId]) classTotalScores[classId] = 0;
+                    classTotalScores[classId] += p;
+                }
             });
+
+            studentsData.forEach(student => {
+                const studentId = student.id;
+                const className = studentId.substring(0, 3);
+                const score = allPerformanceScores[studentId] || 0;
+
+                classTotalScores[className] = (classTotalScores[className] || 0) + score;
+            });
+              
+            studentsData.forEach(student => {
+                const studentRecords = records.filter(r => // 使用 records 變數
+                     (r.entityId === student.id || r.studentId === student.id) && (r.entityType === 'student' || !r.entityType)
+                ).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); 
+                
+                studentLatestRecords[student.id] = null; 
+
+                for (const record of studentRecords) {
+                    const hasText = record.text && record.text.trim() !== '';
+                    const hasNoPoints = (record.points === undefined || record.points === null || record.points === 0);
+                    
+                    if (hasText) {
+                        studentLatestRecords[student.id] = {
+                            latestComment: record.text,
+                            needsHighlight: hasNoPoints 
+                        };
+                        break; 
+                    }
+                }
+            });
+              
+            renderLayout();
+            highlightCurrentClass();
+
+            if (modal.style.display === 'flex' && currentEntity) {
+                renderModalRecords(currentEntity.id, currentEntity.type);
+            } else if (studentRosterModal.style.display === 'flex' && currentRosterClassId) {
+                renderStudentRoster(currentRosterClassId);
+            }
         }
 		
 		function saveCache(forceSave=true) {
-			if (forceSave || dataLoaded) {
-					CACHE_DATA = {
-                        userData: currentUserData, 
-                        rosterData: studentsData,
-                        allClassList: allClassList,
-                        teacherTimetableData: teacherTimetableData,
-                        PERIOD_TIMES: PERIOD_TIMES,
-                        lastUpdated: new Date().toISOString()
-                    };
-                    localStorage.setItem(CACHE_KEY, JSON.stringify(CACHE_DATA));
-					dataLoaded = false;
+			try {
+				const cacheData = {
+					userData: currentUserData,
+					rosterData: studentsData,
+					allClassList: allClassList,
+					teacherTimetableData: teacherTimetableData,
+					PERIOD_TIMES: PERIOD_TIMES,
+					scheduleChanges: allScheduleChanges, 
+					// 🚩【新增欄位】學生紀錄資料
+					performanceRecords: allPerformanceRecords, 
+					lastUpdated: new Date().getTime(),
+					lastScheduleFetch: lastScheduleFetch,
+					// 🚩【新增欄位】紀錄載入時間戳
+					lastPerformanceFetch: new Date().getTime() 
+				};
+				localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+			} catch (e) {
+				console.error('❌ 快取寫入錯誤:', e);
 			}
 		}
+		
 		async function initialize(userData, forceReload = false) {
-            
+            cloudDataUpdated = false;
             const schoolId = userData.schoolId;
             const teacherName = userData.displayName;
             appContainer.innerHTML = '<h2>載入中...</h2>';
@@ -2089,6 +2137,8 @@
                         teacherTimetableData = CACHE_DATA.teacherTimetableData || { periods: {} };
                         PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES || [];
                         scheduleDataLoaded = CACHE_DATA.teacherTimetableData ? true : false;
+                        allScheduleChanges = CACHE_DATA.scheduleChanges || []; 
+                        allPerformanceRecords = CACHE_DATA.performanceRecords || []; 
 
                         console.log('✅ 快取命中，加速載入基本資料...');
                     }
@@ -2120,8 +2170,6 @@
                 await Promise.all([periodsPromise, rosterPromise, schedulePromise]);
                 // --- 【並行載入結束】 ---
 				
-				saveCache();
-
                 // --- 數據整合與快取寫入（只有在需要時才計算並寫入） ---
                 if (visibleClassList.length === 0 && allClassList.length > 0) {
                     const taughtClasses = new Set();
@@ -2139,20 +2187,23 @@
                     }
                     visibleClassList = Array.from(taughtClasses).sort();
                 } 
-
-                // 🎯【快取優化】寫入本地快取：將所有靜態數據打包寫入
-                if (!useCache || forceReload) saveCache();
+				
 				const needsRefresh = localStorage.getItem(REFRESH_FLAG_KEY) === 'true';
 
                 // 載入異動的條件：強制刷新 (點擊 reload) / 異動發生 (從 login 或子頁面返回)
-                if (needsRefresh || forceReload) {
-                    await loadActiveChanges(); // 執行 Firestore 讀取
-                    localStorage.removeItem(REFRESH_FLAG_KEY); // 清除旗標
+				if (needsRefresh || forceReload) {
+				    localStorage.removeItem(REFRESH_FLAG_KEY); 
+                    await loadActiveChanges(true); // 傳遞 true: 強制讀取 Firestore
+                } else {
+                    // 2. 處理正常登入流程 (必須檢查 sessionStorage 是否有跨頁面傳輸的異動)
+                    // 傳遞 false: 允許使用 sessionStorage 快取
+                    await loadActiveChanges(false);
                 }
 				
-                // --- 啟動分數 onSnapshot 監聽 ---
+                // --- 啟動分數載入 (單次) ---
                 await fetchAllScores(); 
-                setInterval(highlightCurrentClass, 30000);
+                
+                setInterval(highlightCurrentClass, 30000); // 課表高亮維持即時
 
                 highlightCurrentClass();
 
@@ -2167,9 +2218,6 @@
                 mainSortBtn.addEventListener('click', toggleClassSort);
                 reloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); 
 
-                updateSortButtonDisplay(0, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
-                updateSortButtonDisplay(0, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
-
                 saveRecordBtn.addEventListener('click', handleAddRecord);
                 recordsList.addEventListener('click', handleDeleteRecord);
 
@@ -2180,14 +2228,16 @@
                         highlightCurrentClass();
                     }
                 });
-
+                
+                // 🚩【確保在非快取載入時，將所有資料寫入快取，包括 roster, timetable, performanceRecords】
+                if (!useCache || cloudDataUpdated) saveCache();
 
             } catch (error) {
                 console.error("❌ 初始化失敗:", error);
                 document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
             }
         }
-
+		
         function renderLayout() {
             appContainer.innerHTML = '';
             let classesToRender = allClassList.filter(className => visibleClassList.includes(className));
@@ -2428,7 +2478,7 @@
 			rosterModalOrigin = null;
 		}
 
-        async function handleAddRecord(e) {
+		async function handleAddRecord(e) {
             e.preventDefault();
 
             const t = recordTextInput.value.trim();
@@ -2474,14 +2524,22 @@
                     alert('紀錄已新增！');
 				}
 
-				closeModal();
+                // 🚨【修改開始：手動清除快取狀態並觸發分數資料重載及畫面更新】
+                // 💥 步驟 1: 清空全域變數，強制 fetchAllScores 讀取雲端
+                allPerformanceRecords = []; 
+                await fetchAllScores(); 
+                // 💥 步驟 2: 將新的 Firestore 資料寫入 localStorage
+                saveCache(); 
+                // 🚨【修改結束】
+                
+				closeModal(); 
             } catch (err) {
                 console.error(err);
                 alert((editingRecordId ? '更新' : '新增') + '紀錄失敗: ' + err.message);
             }
         }
-
-        async function handleDeleteRecord(e) {
+		
+		async function handleDeleteRecord(e) {
 			if (e.target.classList.contains('delete-btn')) {
 				const rid = e.target.dataset.id;
 				if (confirm('確定刪除？')) {
@@ -2492,7 +2550,15 @@
                             resetPerformanceForm();
                         }
 
-						closeModal();
+                        // 🚨【修改開始：手動清除快取狀態並觸發分數資料重載及畫面更新】
+                        // 💥 步驟 1: 清空全域變數，強制 fetchAllScores 讀取雲端
+                        allPerformanceRecords = []; 
+                        await fetchAllScores();
+                        // 💥 步驟 2: 將新的 Firestore 資料寫入 localStorage
+                        saveCache(); 
+                        // 🚨【修改結束】
+                        
+						closeModal(); 
 					} catch (err) {
 						console.error(err);
 					}
@@ -2618,50 +2684,51 @@
         }
 
 
+		// 🎯【快取優化】--- 6. 從快取載入最近文字紀錄 ---
 		async function loadRecentTexts() {
+            // 🚨【修改開始：改為從快取全域變數 allPerformanceRecords 讀取】
 			const datalist = document.getElementById('recent-texts-list');
         	const recordTextInput = document.getElementById('record-text'); 
 			
             datalist.innerHTML = ''; 
         	recordTextInput.value = ''; 
 
-			try {
-				const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records')
-					.orderBy('timestamp', 'desc') 
-					.limit(50) 
-					.get();
-				console.log('載入學生紀錄資料...');
-				if (snapshot.docs.length > 0) {
-					const mostRecentDoc = snapshot.docs[0];
-					const mostRecentText = mostRecentDoc.data().text;
+            // 1. 排序所有紀錄，找出最近的文字紀錄
+            const sortedRecords = allPerformanceRecords.slice().sort((a, b) => 
+                (b.timestamp?.seconds || b.timestamp?.toMillis() / 1000 || 0) - (a.timestamp?.seconds || a.timestamp?.toMillis() / 1000 || 0)
+            );
 
-					if (mostRecentText !== null && mostRecentText !== undefined) {
-						recordTextInput.value = mostRecentText; 
-					}
-				}
-                
-				const recentTexts = new Set();
-				snapshot.forEach(doc => { 
-					const text = doc.data().text;
-					if (text && text.trim() !== '') { 
-                        const trimmedText = text.trim();
-						recentTexts.add(trimmedText);
-					}
-				});
-                
-				Array.from(recentTexts).slice(0, 10).forEach(text => { 
-					const option = document.createElement('option');
-					option.value = text;
-					datalist.appendChild(option);
-				});
-
-			} catch (error) {
-				console.error("讀取最近的文字紀錄失敗:", error);
-			}
+            // 2. 尋找最近一筆有文字的紀錄作為預設值
+            for (const doc of sortedRecords) {
+                const text = doc.text;
+                if (text && text.trim() !== '') {
+                    recordTextInput.value = text; 
+                    break;
+                }
+            }
+            
+            // 3. 收集所有不重複的文字紀錄供 datalist 使用
+            const recentTexts = new Set();
+            sortedRecords.forEach(doc => { 
+                const text = doc.text;
+                if (text && text.trim() !== '') { 
+                    const trimmedText = text.trim();
+                    recentTexts.add(trimmedText);
+                }
+            });
+            
+            // 4. 填充 datalist
+            Array.from(recentTexts).slice(0, 10).forEach(text => { 
+                const option = document.createElement('option');
+                option.value = text;
+                datalist.appendChild(option);
+            });
+            
+            // 🚩 備註：allPerformanceRecords 在 initialize 或 handleAddRecord/handleDeleteRecord 後已經被更新。
+            // 🚨【修改結束：改為從快取全域變數 allPerformanceRecords 讀取】
 		}
 
 		document.getElementById('logout-btn').addEventListener('click', () => { 
-            if (allScoresSnapshotUnsubscribe) allScoresSnapshotUnsubscribe();
             localStorage.removeItem(CACHE_KEY); // 🎯【快取優化】清除本地快取
             auth.signOut().then(() => { window.location.href = 'login.html'; }); 
         });
