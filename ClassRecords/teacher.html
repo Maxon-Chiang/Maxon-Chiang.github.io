@@ -1514,6 +1514,7 @@
         let studentLatestRecords = {};
 		let lastScheduleFetch = 0;
 		let cloudDataUpdated = false;
+		let isInitializing = false;
 		
         const appContainer = document.getElementById('app-container');
         const welcomeModal = document.getElementById('welcome-modal');
@@ -1623,9 +1624,7 @@
             if (!currentUser || !currentUser.uid) return;
             
             // 1. 如果強制讀取，直接跳過所有快取檢查
-            if (force) {
-                // 進入 Firestore 讀取區塊 (下方 try-catch)
-            } else {
+            if (!force){
                 // 2. 嘗試檢查 Session Storage (用於跨頁面傳遞異動狀態)
                 const cachedChanges = sessionStorage.getItem(TRANSFER_KEY);
                 if (cachedChanges) {
@@ -2002,12 +2001,12 @@
             // CACHE_DATA.allClassList = allClassList;
         }
 
-		async function fetchAllScores() { 
+		async function fetchAllScores(force=false) { 
             
             let records = allPerformanceRecords; // 預設使用快取載入的資料
             let loadedFromCache = records.length > 0;
 
-            if (loadedFromCache) {
+            if (loadedFromCache && !force) {
                  console.log('✅ 學生紀錄快取命中，跳過 Firestore 載入。');
             } else {
             // 🚩【Firestore 載入】
@@ -2115,6 +2114,11 @@
 		}
 		
 		async function initialize(userData, forceReload = false) {
+			if (isInitializing) {
+                console.warn("初始化程序已在運行中，忽略重複調用。");
+                return;
+            }
+            isInitializing = true;
             cloudDataUpdated = false;
             const schoolId = userData.schoolId;
             const teacherName = userData.displayName;
@@ -2194,14 +2198,15 @@
 				if (needsRefresh || forceReload) {
 				    localStorage.removeItem(REFRESH_FLAG_KEY); 
                     await loadActiveChanges(true); // 傳遞 true: 強制讀取 Firestore
+					await fetchAllScores(true);
                 } else {
                     // 2. 處理正常登入流程 (必須檢查 sessionStorage 是否有跨頁面傳輸的異動)
                     // 傳遞 false: 允許使用 sessionStorage 快取
                     await loadActiveChanges(false);
+					await fetchAllScores(false);
                 }
 				
-                // --- 啟動分數載入 (單次) ---
-                await fetchAllScores(); 
+                 
                 
                 setInterval(highlightCurrentClass, 30000); // 課表高亮維持即時
 
@@ -2214,27 +2219,49 @@
 					}, 100);
 				}
 
-                rosterSortBtn.addEventListener('click', toggleRosterSort);
-                mainSortBtn.addEventListener('click', toggleClassSort);
-                reloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); 
+                const listenersToReplace = [rosterSortBtn, mainSortBtn, reloadCacheBtn, saveRecordBtn, recordsList, btnCancelEdit];
 
-                saveRecordBtn.addEventListener('click', handleAddRecord);
-                recordsList.addEventListener('click', handleDeleteRecord);
+                listenersToReplace.forEach(originalEl => {
+                    if (originalEl && originalEl.parentNode) {
+                        const newEl = originalEl.cloneNode(true);
+                        originalEl.parentNode.replaceChild(newEl, originalEl);
+                    } else {
+                        // console.warn(`警告: 無法移除監聽器，元素或其父節點為 null: ${originalEl.id || '未知ID'}`);
+                    }
+                });
 
-                btnCancelEdit.addEventListener('click', resetPerformanceForm);
+                // 重新獲取新的按鈕元素 (避免變數指向舊的元素)
+                const finalRosterSortBtn = document.getElementById('roster-sort-btn');
+                const finalMainSortBtn = document.getElementById('main-sort-btn');
+                const finalReloadCacheBtn = document.getElementById('reload-cache-btn');
+                const finalSaveRecordBtn = document.getElementById('save-record-btn');
+                const finalRecordsList = document.getElementById('records-list');
+                const finalBtnCancelEdit = document.getElementById('btn-cancel-edit');
+
+                finalRosterSortBtn.addEventListener('click', toggleRosterSort);
+                finalMainSortBtn.addEventListener('click', toggleClassSort);
+                finalReloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); 
+
+                finalSaveRecordBtn.addEventListener('click', handleAddRecord);
+                finalRecordsList.addEventListener('click', handleDeleteRecord);
+                finalBtnCancelEdit.addEventListener('click', resetPerformanceForm);
+
 
                 document.addEventListener('visibilitychange', () => {
                     if (document.visibilityState === 'visible') {
                         highlightCurrentClass();
                     }
-                });
-                
+                });               
                 // 🚩【確保在非快取載入時，將所有資料寫入快取，包括 roster, timetable, performanceRecords】
                 if (!useCache || cloudDataUpdated) saveCache();
 
             } catch (error) {
                 console.error("❌ 初始化失敗:", error);
                 document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
+            } finally {
+                // 🚨【修改開始：在結束時重設守衛】
+                isInitializing = false;
+                // 🚨【修改結束】
             }
         }
 		
@@ -2527,7 +2554,7 @@
                 // 🚨【修改開始：手動清除快取狀態並觸發分數資料重載及畫面更新】
                 // 💥 步驟 1: 清空全域變數，強制 fetchAllScores 讀取雲端
                 allPerformanceRecords = []; 
-                await fetchAllScores(); 
+                await fetchAllScores(true); 
                 // 💥 步驟 2: 將新的 Firestore 資料寫入 localStorage
                 saveCache(); 
                 // 🚨【修改結束】
@@ -2553,7 +2580,7 @@
                         // 🚨【修改開始：手動清除快取狀態並觸發分數資料重載及畫面更新】
                         // 💥 步驟 1: 清空全域變數，強制 fetchAllScores 讀取雲端
                         allPerformanceRecords = []; 
-                        await fetchAllScores();
+                        await fetchAllScores(true);
                         // 💥 步驟 2: 將新的 Firestore 資料寫入 localStorage
                         saveCache(); 
                         // 🚨【修改結束】
