@@ -1490,14 +1490,15 @@
             allClassList = [], visibleClassList = [], modalOrigin = null, rosterModalOrigin = null;
 
         let scheduleDataLoaded = false;
-        let teacherTimetableData = null;
+        let teacherTimetableData = { periods: {} };
         let currentUserData = null;
         let classTotalScores = {};
         let activeChanges = [];
         let currentWeekStart = getMonday(new Date());
         let timetableIntervalId = null;
         
-		const CACHE_KEY = 'teacher_static_cache_v6'; 
+		const USER_AUTH_KEY = 'user_auth_profile_v1';
+		const STATIC_CACHE_KEY = 'teacher_static_cache_v6'; // 快取鍵名稱不變，但用途變更
         let CACHE_DATA = {};
         
         const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
@@ -1515,6 +1516,7 @@
 		let lastScheduleFetch = 0;
 		let cloudDataUpdated = false;
 		let isInitializing = false;
+		let allScheduleChanges = []; // 用於儲存調代課異動資料	
 		
         const appContainer = document.getElementById('app-container');
         const welcomeModal = document.getElementById('welcome-modal');
@@ -1753,52 +1755,64 @@
         }
 
 		function runMainApp() {
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    if (currentUser && currentUser.uid === user.uid) return;
-                    currentUser = user;
-                    
-                    // 🎯【快取優化】嘗試從快取讀取用戶資料
-                    let userDocData = null;
-                    try {
-                        const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
-                        if (cached && cached.userData && cached.userData.uid === user.uid) {
-                            userDocData = cached.userData;
-                            console.log('✅ 快取命中：讀取到用戶資料。');
-                        }
-                    } catch (e) {
-                         console.error('解析快取失敗:', e);
-                    }
-                    
-                    // 🎯【快取優化】如果快取不存在，才從 Firestore 讀取
-                    if (!userDocData) {
-                        const userDoc = await db.collection('users').doc(user.uid).get();
-                        console.log('載入user資料...'); // 保留原 console.log
-						cloudDataUpdated = true;
-                        if (userDoc.exists) {
-                            userDocData = userDoc.data();
-                        }
-                    }
+			auth.onAuthStateChanged(async (user) => {
+				if (user) {
+					if (currentUser && currentUser.uid === user.uid) return;
+					currentUser = user;
+					
+					// 🎯【快取優化：嘗試從 AUTH 快取讀取用戶資料】
+					let userDocData = null;
+					try {
+						const cachedAuth = localStorage.getItem(USER_AUTH_KEY);
+						if (cachedAuth) {
+							const parsedCache = JSON.parse(cachedAuth);
+							// 檢查 UID 是否匹配且快取未過期 (1小時)
+							if (parsedCache.uid === user.uid && (new Date().getTime() - parsedCache.lastUpdated < 3600000)) {
+								userDocData = parsedCache.userData;
+								console.log('✅ AUTH 快取命中：讀取到用戶角色資料。');
+							} else {
+								localStorage.removeItem(USER_AUTH_KEY);
+							}
+						}
+					} catch (e) {
+						 console.error('❌ 解析 AUTH 快取失敗:', e);
+						 localStorage.removeItem(USER_AUTH_KEY);
+					}
+					
+					// 🎯【快取優化：如果 AUTH 快取不存在，才從 Firestore 讀取】
+					if (!userDocData) {
+						const userDoc = await db.collection('users').doc(user.uid).get();
+						console.log('載入user資料...'); 
+						if (userDoc.exists) {
+							userDocData = userDoc.data();
+							// 重新寫入 AUTH 快取
+							localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
+								uid: user.uid,
+								userData: userDocData,
+								lastUpdated: new Date().getTime()
+							}));
+						}
+					}
 
-                    if (userDocData && (userDocData.role === 'teacher' || userDocData.role === 'school_admin' || userDocData.role === 'admin')) {
-                        currentUserData = userDocData; 
-                        
-                        document.getElementById('user-email').textContent = currentUserData.displayName || user.email;
-                        
-                        if (currentUserData.passwordNeedsReset === true) {
-                            showPasswordResetUI();
-                        } else {
-                            // 將讀取到的 currentUserData 傳給 initialize
-                            await initialize(currentUserData, false); 
-                        }
-                    } else {
-                        window.location.href = `login.html?from=teacher`;
-                    }
-                } else {
-                    window.location.href = `login.html`;
-                }
-            });
-        }
+					if (userDocData && (userDocData.role === 'teacher' || userDocData.role === 'school_admin' || userDocData.role === 'admin')) {
+						currentUserData = userDocData; 
+						
+						document.getElementById('user-email').textContent = currentUserData.displayName || user.email;
+						
+						if (currentUserData.passwordNeedsReset === true) {
+							showPasswordResetUI();
+						} else {
+							// 將讀取到的 currentUserData 傳給 initialize
+							await initialize(currentUserData, false); 
+						}
+					} else {
+						window.location.href = `login.html?from=teacher`;
+					}
+				} else {
+					window.location.href = `login.html`;
+				}
+			});
+		}
 
         const shouldShowWelcome = document.getElementById('welcome-modal') &&
                                   localStorage.getItem('hideLoginWelcome') !== 'true' &&
@@ -2093,23 +2107,24 @@
 		
 		function saveCache(forceSave=true) {
 			try {
+                // 不再儲存 currentUserData，僅儲存靜態資料
 				const cacheData = {
-					userData: currentUserData,
+					// userData: currentUserData, // 移除：由 USER_AUTH_KEY 儲存
 					rosterData: studentsData,
 					allClassList: allClassList,
 					teacherTimetableData: teacherTimetableData,
 					PERIOD_TIMES: PERIOD_TIMES,
 					scheduleChanges: allScheduleChanges, 
-					// 🚩【新增欄位】學生紀錄資料
 					performanceRecords: allPerformanceRecords, 
 					lastUpdated: new Date().getTime(),
 					lastScheduleFetch: lastScheduleFetch,
-					// 🚩【新增欄位】紀錄載入時間戳
-					lastPerformanceFetch: new Date().getTime() 
+					lastPerformanceFetch: new Date().getTime(),
+                    uid: currentUser.uid // 新增 UID，用於快取檢查
 				};
-				localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+				// 寫入 STATIC_CACHE_KEY
+				localStorage.setItem(STATIC_CACHE_KEY, JSON.stringify(cacheData));
 			} catch (e) {
-				console.error('❌ 快取寫入錯誤:', e);
+				console.error('❌ STATIC 快取寫入錯誤:', e);
 			}
 		}
 		
@@ -2126,16 +2141,17 @@
             
             let useCache = false;
             
-            // 🎯【快取優化】--- 1. 嘗試使用快取加速載入 ---
+            // 🎯【快取優化】--- 1. 嘗試使用 STATIC 快取加速載入 ---
             if (!forceReload) {
                 try {
-                    const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
-                    if (cached && cached.userData && cached.userData.uid === currentUser.uid) { // 檢查 uid 是否匹配
+                    const cached = JSON.parse(localStorage.getItem(STATIC_CACHE_KEY));
+                    // 新增：檢查 UID 是否匹配
+                    if (cached && cached.uid === currentUser.uid) { 
                         CACHE_DATA = cached;
                         useCache = true;
                         
                         // 確保從快取載入所有靜態數據
-                        currentUserData = CACHE_DATA.userData;
+                        // currentUserData = CACHE_DATA.userData; // 移除：已在 runMainApp 取得
                         studentsData = CACHE_DATA.rosterData || [];
                         allClassList = CACHE_DATA.allClassList || [];
                         teacherTimetableData = CACHE_DATA.teacherTimetableData || { periods: {} };
@@ -2144,11 +2160,14 @@
                         allScheduleChanges = CACHE_DATA.scheduleChanges || []; 
                         allPerformanceRecords = CACHE_DATA.performanceRecords || []; 
 
-                        console.log('✅ 快取命中，加速載入基本資料...');
+                        console.log('✅ STATIC 快取命中，加速載入基本資料...');
+                    } else if (cached) {
+                         // 舊快取 UID 不匹配，強制清理
+                         localStorage.removeItem(STATIC_CACHE_KEY);
                     }
                 } catch (e) {
-                    console.error('❌ 快取讀取錯誤或損壞:', e);
-                    localStorage.removeItem(CACHE_KEY); 
+                    console.error('❌ STATIC 快取讀取錯誤或損壞:', e);
+                    localStorage.removeItem(STATIC_CACHE_KEY); 
                     forceReload = true; 
                     useCache = false;
                 }
@@ -2252,7 +2271,7 @@
                         highlightCurrentClass();
                     }
                 });               
-                // 🚩【確保在非快取載入時，將所有資料寫入快取，包括 roster, timetable, performanceRecords】
+                // 🚩【確保在非快取載入時，將所有資料寫入 STATIC 快取】
                 if (!useCache || cloudDataUpdated) saveCache();
 
             } catch (error) {
@@ -2264,6 +2283,7 @@
                 // 🚨【修改結束】
             }
         }
+
 		
         function renderLayout() {
             appContainer.innerHTML = '';
@@ -2756,7 +2776,7 @@
 		}
 
 		document.getElementById('logout-btn').addEventListener('click', () => { 
-            localStorage.removeItem(CACHE_KEY); // 🎯【快取優化】清除本地快取
+            localStorage.removeItem(USER_AUTH_KEY); // 🎯【快取優化】僅清除個人 AUTH 快取
             auth.signOut().then(() => { window.location.href = 'login.html'; }); 
         });
 
