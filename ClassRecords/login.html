@@ -179,6 +179,8 @@
         const loginForm = document.getElementById('login-form');
         const loginEmailInput = document.getElementById('login-email');
 
+        // 🎯【快取優化】定義快取鍵
+        const USER_CACHE_KEY = 'teacher_static_cache_v6';
 
         const savedEmail = localStorage.getItem('lastLoginEmail');
         if (savedEmail) {
@@ -192,10 +194,40 @@
                 }
                 
                 splashScreen.style.display = 'flex';
-                const userDoc = await db.collection('users').doc(user.uid).get();
 
-                if (userDoc.exists) {
-                    routeUser(userDoc.data().role);
+                // 🎯【快取優化】嘗試從快取讀取用戶資料
+                const cachedData = localStorage.getItem(USER_CACHE_KEY);
+                let userDocData = null;
+                if (cachedData) {
+                    try {
+                        const parsedCache = JSON.parse(cachedData);
+                        if (parsedCache.userData && parsedCache.userData.uid === user.uid) {
+                            userDocData = parsedCache.userData;
+                            console.log('快取命中：讀取到用戶資料。');
+                        }
+                    } catch (e) {
+                         console.error('解析快取失敗:', e);
+                         localStorage.removeItem(USER_CACHE_KEY);
+                    }
+                }
+                
+                // 🎯【快取優化】如果快取不存在，才從 Firestore 讀取
+                if (!userDocData) {
+                    console.log('載入user資料...'); // 保留原 console.log
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    if (userDoc.exists) {
+                         userDocData = userDoc.data();
+                    }
+                }
+
+                if (userDocData) {
+                    // 🎯【快取優化】確保最新讀取的資料也寫入快取 (如果不是從快取讀取的話)
+                    if (!cachedData || !JSON.parse(cachedData).userData) {
+                         // 創建一個只包含用戶資料的快取物件並儲存
+                         localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ userData: { uid: user.uid, ...userDocData } }));
+                    }
+                    
+                    routeUser(userDocData.role);
                 } else {
                     await startOnboarding(user);
                 }
@@ -275,23 +307,6 @@
             }
         }
 
-        function displayTeacherSelection(user, schoolId, schoolName, teachers) {
-            const teacherList = document.getElementById('teacher-selection-list');
-            document.getElementById('teacher-selection-title').textContent = `在「${schoolName}」中，請選擇您的身份`;
-            teacherList.innerHTML = '';
-            teachers.forEach(teacher => {
-                const li = document.createElement('li');
-                li.innerHTML = `<strong>${teacher.name}</strong><span>${teacher.title || '教師'} - ${teacher.subject || '綜合'}</span>`;
-                li.onclick = () => createUserProfile(user, schoolId, teacher);
-                teacherList.appendChild(li);
-            });
-
-            splashScreen.style.display = 'none';
-            loginView.style.display = 'none';
-            schoolSelectionView.style.display = 'none';
-            teacherSelectionView.style.display = 'flex';
-        }
-
 		async function createUserProfile(user, schoolId, teacherProfile) {
 			try {
 				splashScreen.style.display = 'flex';
@@ -306,10 +321,16 @@
 					displayName: teacherProfile.name, 
 					schoolId: schoolId,
 					schoolCode: schoolData.schoolCode,
+					// 🎯【快取優化】新增 uid 屬性到 profile
+					uid: user.uid, 
 					...teacherProfile 
 				};
 
 				await db.collection('users').doc(user.uid).set(newUserProfile);
+				
+				// 🎯【快取優化】在創建用戶資料後，寫入本地快取
+				localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ userData: newUserProfile }));
+
 				routeUser('teacher');
 
 			} catch (error) {
@@ -339,7 +360,20 @@
             try {
                 const persistence = document.getElementById('remember-me').checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
                 await auth.setPersistence(persistence);
-                await auth.signInWithEmailAndPassword(email, password);
+                
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+                
+                // 🎯【快取優化】管理員登入時也將用戶資料寫入快取
+                const userDoc = await db.collection('users').doc(user.uid).get();
+                if (userDoc.exists) {
+                    const userDocData = userDoc.data();
+                    localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ userData: { uid: user.uid, ...userDocData } }));
+                    routeUser(userDocData.role);
+                } else {
+                     showLoginError("找不到用戶資料，請聯繫管理員。");
+                }
+
             } catch (error) {
                 splashScreen.style.display = 'none';
                 errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。';
