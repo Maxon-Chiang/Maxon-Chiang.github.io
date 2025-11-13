@@ -287,33 +287,139 @@
         const ASSIGNMENT_DATA_KEY = 'assignmentId';
         const ASSIGNMENT_NAME_KEY = 'assignmentName';
         const ASSIGNMENT_COMMENT_KEY = 'assignmentComment';
-        
+        const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
+		const GRADES_CACHE_KEY = 'grades_cache_v1'
+        const CACHE_LIFETIME = 45 * 60 * 1000; // 45 分鐘
+        const USER_AUTH_KEY = 'user_auth_profile_v1';
+        let CACHE_DATA_STATIC = {};
+        let CACHE_DATA_GRADES = {};
+		
 		auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                if (userDoc.exists && userDoc.data().role === 'teacher') {
-                    const displayElement = document.getElementById('user-email');
-                    const userData = userDoc.data();
-                    if (userData.displayName) {
-                        displayElement.textContent = userData.displayName;
-                    } else {
-                        displayElement.textContent = user.email;
+                const displayElement = document.getElementById('user-email');
+                
+                // 🌟【修改開始：繼承 USER_AUTH_KEY】
+                let userData = null;
+                try {
+                    const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
+                    if (cachedAuthData) {
+                         userData = JSON.parse(cachedAuthData).userData;
+                         if (userData.displayName) {
+                             displayElement.textContent = userData.displayName;
+                         } else {
+                             displayElement.textContent = user.email;
+                         }
                     }
+                } catch (e) {
+                     console.error('❌ 解析 AUTH 快取失敗:', e);
+                }
+
+                if (!userData) {
+                     // 如果快取失敗，備用讀取 Firestore
+                     const userDoc = await db.collection('users').doc(user.uid).get();
+                     console.log('載入user資料...');
+                     if (userDoc.exists) {
+                          userData = userDoc.data();
+                          if (userData.displayName) {
+                              displayElement.textContent = userData.displayName;
+                          } else {
+                              displayElement.textContent = user.email;
+                          }
+                     }
+                }
+                
+                if (userData && userData.role === 'teacher') {
                     await initializeGradesPage(userData);
                 } else {
                     alert('權限不足或帳號設定錯誤。');
                     window.location.href = 'login.html';
                 }
+                // 🌟【修改結束】
             } else {
                 window.location.href = 'login.html';
             }
-        });
+		});
 
 		async function initializeGradesPage(userData) {
 			const urlParams = new URLSearchParams(window.location.search);
 			classId = urlParams.get('class');
             
+            let useStaticCache = false;
+			let useGradesCache = false;
+            let rosterDataLoaded = false;
+            let assignmentsDataLoaded = false;
+            
+            // 🎯 嘗試載入 STATIC 快取
+            try {
+                const cachedStatic = localStorage.getItem(STATIC_CACHE_KEY);
+                if (cachedStatic) {
+                    CACHE_DATA_STATIC = JSON.parse(cachedStatic);
+                    // 檢查快取是否包含有效 UID
+                    if (CACHE_DATA_STATIC.uid === currentUser.uid) {
+                        useStaticCache = true;
+                    } else {
+                         // UID 不匹配，清理舊快取 (防止污染)
+                        localStorage.removeItem(STATIC_CACHE_KEY);
+                    }
+                }
+            } catch (e) {
+                console.error('❌ 解析 STATIC 快取失敗:', e);
+                localStorage.removeItem(STATIC_CACHE_KEY);
+            }
+			try {
+                const cachedGrades = localStorage.getItem(GRADES_CACHE_KEY);
+                if (cachedGrades) {
+                    CACHE_DATA_GRADES = JSON.parse(cachedGrades);
+                    // 檢查快取是否包含有效 UID
+                    if (CACHE_DATA_GRADES.uid === currentUser.uid) {
+                        useGradesCache = true;
+                    } else {
+                         // UID 不匹配，清理舊快取 (防止污染)
+                        localStorage.removeItem(STATIC_CACHE_KEY);
+                    }
+                }
+            } catch (e) {
+                console.error('❌ 解析 STATIC 快取失敗:', e);
+                localStorage.removeItem(STATIC_CACHE_KEY);
+            }
+
+            // --- 1. 載入學生名冊 (靜態資料，不檢查時效) ---
+            if (useStaticCache && CACHE_DATA_STATIC.rosterData) {
+                // 🌟【靜態資料直接讀取快取】
+                studentsData = CACHE_DATA_STATIC.rosterData;
+                rosterDataLoaded = true;
+                console.log('✅ 學生名冊：STATIC 快取命中！');
+            }
+
+            if (!rosterDataLoaded) {
+                if (!userData.schoolId) {
+                    alert('錯誤：您的帳號未綁定學校ID，無法讀取名冊。');
+                    return;
+                }
+                const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
+                console.log('載入學生名冊資料...');
+                if (!rosterDoc.exists) {
+                    alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
+                    return;
+                }
+                studentsData = rosterDoc.data().students || [];
+                // 🚩 更新快取中的名冊數據 (不需要檢查時效)
+                CACHE_DATA_STATIC.rosterData = studentsData;
+                CACHE_DATA_STATIC.uid = currentUser.uid; 
+                //localStorage.setItem(STATIC_CACHE_KEY, JSON.stringify(CACHE_DATA));
+            }
+            
+            
+            // --- 2. 載入成績項目名稱建議 (動態資料，檢查 45 分鐘時效) ---
+            const now = new Date().getTime();
+            if (useGradesCache && CACHE_DATA_GRADES.assignmentNames && CACHE_DATA_GRADES.lastAssignmentUpdate && (now - CACHE_DATA_GRADES.lastAssignmentUpdate < CACHE_LIFETIME)) {
+                // 🌟【動態資料讀取快取】
+                var gradeAssignmentNames = new Set(CACHE_DATA_GRADES.assignmentNames);
+                assignmentsDataLoaded = true;
+                console.log('✅ 成績項目名稱：STATIC 快取命中！');
+            }
+
 			if (!classId) {
 				appContainer.innerHTML = '<h2>錯誤：未指定班級。請返回主頁選擇班級後重新進入。</h2>';
 				appContainer.style.display = 'block';
@@ -321,32 +427,40 @@
 			}
 			document.getElementById('class-header').textContent = `${classId} 班 成績項目清單`;
 
-			if (!userData.schoolId) {
-				alert('錯誤：您的帳號未綁定學校ID，無法讀取名冊。');
-				return;
-			}
-			
-			const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-			if (!rosterDoc.exists) {
-				alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
-				return;
-			}
 
-			try {
-				const allStudents = rosterDoc.data().students || [];
-				const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
-				const queryPromises = teacherClasses.map(cId => 
-					db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
-					  .where('className', '==', cId)
-					  .get()
-				);
-				const snapshots = await Promise.all(queryPromises);
-				const gradeAssignmentNames = new Set();
-				snapshots.forEach(snapshot => {
-					snapshot.forEach(doc => {
-						gradeAssignmentNames.add(doc.data().assignmentName);
+            if (!assignmentsDataLoaded) {
+                 // 🌟【動態資料重新載入 Firestore】
+				try {
+                    // 由於成績項目名稱是跨班級的，需要查詢所有自己任教班級的成績
+					const allStudents = studentsData || [];
+					const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
+					const queryPromises = teacherClasses.map(cId => 
+						db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
+						  .where('className', '==', cId)
+						  .get()
+					);
+					console.log('載入作業成績資料...');
+					const snapshots = await Promise.all(queryPromises);
+					gradeAssignmentNames = new Set();
+					snapshots.forEach(snapshot => {
+						snapshot.forEach(doc => {
+							gradeAssignmentNames.add(doc.data().assignmentName);
+						});
 					});
-				});
+                    
+                    // 🚩 更新快取中的成績項目名稱，並更新時間戳記
+                    CACHE_DATA_GRADES.assignmentNames = Array.from(gradeAssignmentNames);
+                    CACHE_DATA_GRADES.lastAssignmentUpdate = now;
+                    CACHE_DATA_GRADES.uid = currentUser.uid; 
+                    localStorage.setItem(GRADES_CACHE_KEY, JSON.stringify(CACHE_DATA_GRADES));
+                    
+				} catch (error) {
+					console.error("讀取成績項目建議清單失敗:", error);
+				}
+			}
+            
+            // --- 3. 渲染建議清單 ---
+            if (gradeAssignmentNames) {
 				const datalist = document.getElementById('assignment-suggestions');
 				datalist.innerHTML = '';
 				gradeAssignmentNames.forEach(name => {
@@ -354,9 +468,7 @@
 					option.value = name;
 					datalist.appendChild(option);
 				});
-			} catch (error) {
-				console.error("讀取成績項目建議清單失敗:", error);
-			}
+            }
 
 			loadHistory();
 			appContainer.style.display = 'block';
