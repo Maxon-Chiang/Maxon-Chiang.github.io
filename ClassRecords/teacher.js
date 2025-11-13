@@ -196,13 +196,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
      }
 	
-    function getDerivedCurrentUserSchedule() {
+    function getDerivedCurrentUserSchedule(weekStart = null) {
         if (!teacherTimetableData || !teacherTimetableData.periods) {
             return { periods: {} };
         }
 
         const derivedSchedule = JSON.parse(JSON.stringify(teacherTimetableData));
         const teacherName = currentUserData.displayName;
+		const targetWeekStart = weekStart || currentWeekStart;
 
         activeChanges.forEach(change => {
 
@@ -213,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const weekA = getMonday(new Date(infoA.date));
                 const weekB = getMonday(new Date(infoB.date));
 
-                if (weekA.getTime() === currentWeekStart.getTime() && weekB.getTime() === currentWeekStart.getTime()) {
+				if (weekA.getTime() === targetWeekStart.getTime() && weekB.getTime() === targetWeekStart.getTime()) {
                     if (infoA.teacher === teacherName) {
                         derivedSchedule.periods[infoA.period][infoA.day] = { ...infoB, class: infoA.class, isSwappedIn: true, changeId: change.id };
                         derivedSchedule.periods[infoB.period][infoB.day] = { ...infoA, isSwappedOut: true, changeId: change.id };
@@ -227,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const changeDate = new Date(change.date);
                 const changeWeekStart = getMonday(changeDate);
 
-                if (changeWeekStart.getTime() !== currentWeekStart.getTime()) return;
+                if (changeWeekStart.getTime() !== targetWeekStart.getTime()) return;
 
                 const lessonInfo = change.lessonInfo;
                 const dayIndex = changeDate.getDay() - 1;
@@ -245,25 +246,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 const infoB = change.exchangeLessonInfo;
 
                 const weekA = getMonday(new Date(infoA.date));
-                if (weekA.getTime() === currentWeekStart.getTime()) {
+				if (weekA.getTime() === targetWeekStart.getTime()) {
                     const dayA = new Date(infoA.date).getDay() - 1;
                     if (dayA >= 0 && dayA < 5) {
                         if (infoA.teacher === teacherName) {
-                            derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
+                            derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: infoB.teacher, originalTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
                         } else if (infoB.teacher === teacherName) {
-                            derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedIn: true, originalTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
+                            derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedIn: true, targetTeacher: infoA.teacher, originalTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
                         }
                     }
                 }
 
                 const weekB = getMonday(new Date(infoB.date));
-                if (weekB.getTime() === currentWeekStart.getTime()) {
+                if (weekB.getTime() === targetWeekStart.getTime()) {
                     const dayB = new Date(infoB.date).getDay() - 1;
                     if (dayB >= 0 && dayB < 5) {
                          if (infoB.teacher === teacherName) {
-                            derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
+                            derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: infoB.teacher, originalTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
                         } else if (infoA.teacher === teacherName) {
-                            derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedIn: true, originalTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
+                            derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedIn: true, targetTeacher: infoA.teacher, originalTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
                         }
                     }
                 }
@@ -397,8 +398,8 @@ document.addEventListener('DOMContentLoaded', function() {
         return -1;
     }
 
-    function highlightCurrentClass() {
-        if (PERIOD_TIMES.length === 0 || !teacherTimetableData || !scheduleDataLoaded) return;
+	function highlightCurrentClass() {
+        if (PERIOD_TIMES.length === 0 || !scheduleDataLoaded) return;
 
         document.querySelectorAll('.class-block').forEach(el => {
             el.classList.remove('current-class-highlight');
@@ -415,12 +416,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (currentPeriodIndex === -1) return;
 
-        const periods = teacherTimetableData.periods;
-
+        const highlightWeekStart = getMonday(new Date()); 
+        
+        const derivedSchedule = getDerivedCurrentUserSchedule(highlightWeekStart);
+        const periods = derivedSchedule.periods;
         const periodData = periods[currentPeriodIndex];
+		
         if (periodData && periodData[dayIndex]) {
-            const cellContent = periodData[dayIndex];
-            const [classCode, ...rest] = cellContent.split(/\s+/);
+
+            let cellContent = periodData[dayIndex];
+            let classCode = null;
+            
+            if (typeof cellContent === 'string') {
+                 // 原始課表內容: "班級代碼 課程名稱"
+                 const parts = cellContent.split(/\s+/);
+                 classCode = parts[0];
+            } else if (cellContent.class) {
+                // 異動後課表內容: { class: "班級代碼", ... }
+                // 檢查是否是「調出/換出/代出」的情況，如果是則不應高亮
+                if (cellContent.isSwappedIn || cellContent.isExchangedOut || cellContent.isSubstitutedOut) {
+                    return; 
+                }
+                classCode = cellContent.class; 
+            } else {
+                 return; // 無效的課表內容
+            }
 
             if (classCode) {
                 const targetCard = document.querySelector(`.class-block[data-class-id="${classCode}"]`);
@@ -1599,14 +1619,9 @@ document.addEventListener('DOMContentLoaded', function() {
 						} else if (cellContent.isSubstitutedIn) {
 							content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
 							content += `<span style="font-size: 0.8em; color: #007bff; display: block;">(${cellContent.originalTeacherName || '不明'}(代)</span>`;
-						} else if (cellContent.isExchangedOut) {
-							const teacherName = cellContent.targetTeacher;
+						} else if (cellContent.isExchangedOut || cellContent.isExchangedIn) {
 							content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
-							content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">${teacherName || '不明'}(換)</span>`;
-						} else if (cellContent.isExchangedIn) {
-							const teacherName = cellContent.originalTeacher;
-							content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
-							content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">(${teacherName || '不明'}(換)</span>`;
+							content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.targetTeacher || '不明'}(換)</span>`;
 						} else {
 							content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class}</span>`;
 							content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.teacher}(調)</span>`;
@@ -1889,4 +1904,5 @@ document.addEventListener('DOMContentLoaded', function() {
             editRecord(editTrigger.dataset.id);
         }
     });
+
 });
