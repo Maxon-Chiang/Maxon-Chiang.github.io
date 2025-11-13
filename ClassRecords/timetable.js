@@ -463,11 +463,12 @@ function deriveSchedules() {
             if (weekB.getTime() === currentWeekStart.getTime()) {
                 const dayB = new Date(infoB.date).getDay() - 1;
                 if (scheduleB && dayB >= 0 && dayB < 5) {
-                    scheduleB[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: teacherA, changeId: change.id, reason: change.reason };
+                    scheduleB[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: teacherB, originalTeacher: teacherA, changeId: change.id, reason: change.reason };
                 }
-                if (scheduleA && dayB >= 0 && dayB < 5) {
-                    scheduleA[infoB.period][dayB] = { ...infoB, isExchangedIn: true, originalTeacher: teacherB, changeId: change.id, reason: change.reason };
+                if (scheduleA && dayB >= 0 && dayB < 5) { 
+                    scheduleA[infoB.period][dayB] = { ...infoB, isExchangedIn: true, targetTeacher: teacherA, originalTeacher: teacherB, changeId: change.id, reason: change.reason };
                 }
+                
                 const classB_schedule = classSchedules.get(infoB.class);
                 if (classB_schedule && dayB >= 0 && dayB < 5) {
                     classB_schedule[infoB.period][dayB] = { 
@@ -483,11 +484,12 @@ function deriveSchedules() {
             if (weekA.getTime() === currentWeekStart.getTime()) {
                 const dayA = new Date(infoA.date).getDay() - 1;
                 if (scheduleA && dayA >= 0 && dayA < 5) {
-                    scheduleA[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: teacherB, changeId: change.id, reason: change.reason };
+                    scheduleA[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: teacherB, originalTeacher: teacherA, changeId: change.id, reason: change.reason };
                 }
                 if (scheduleB && dayA >= 0 && dayA < 5) {
-                    scheduleB[infoA.period][dayA] = { ...infoA, isExchangedIn: true, originalTeacher: teacherA, changeId: change.id, reason: change.reason };
+                    scheduleB[infoA.period][dayA] = { ...infoA, isExchangedIn: true, targetTeacher: teacherA, originalTeacher: teacherB, changeId: change.id, reason: change.reason };
                 }
+                
                 const classA_schedule = classSchedules.get(infoA.class);
                 if (classA_schedule && dayA >= 0 && dayA < 5) {
                     classA_schedule[infoA.period][dayA] = { 
@@ -732,7 +734,7 @@ async function showSchedule(name, type, direction = 10) {
                              content += `<span style="font-size: 0.8em; color: #007bff; display: block;">(${cellData.originalTeacherName || '不明'}(代)</span>`;
                           }
                          else if (cellData.isExchangedOut || cellData.isExchangedIn) {
-                             const teacherName = cellData.isExchangedOut ? cellData.targetTeacher : cellData.originalTeacher;                                 
+                             const teacherName = cellData.isExchangedOut ? cellData.targetTeacher : cellData.targetTeacher;                                 
                              content = `<span class="subject">${cellData.subject}</span><span class="details">${cellData.class || ''}</span>`;
                              content += `<span style="font-size: 0.8em; color: #000000; font-weight: bold;">${teacherName || '不明'}(換)</span>`;
                          }
