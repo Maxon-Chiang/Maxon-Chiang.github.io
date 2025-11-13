@@ -267,6 +267,9 @@
         const saveGradesBtn = document.getElementById('save-grades-btn');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
         const backToListBtn = document.getElementById('back-to-list-btn');
+		const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
+        const USER_AUTH_KEY = 'user_auth_profile_v1';
+        let CACHE_DATA = {};
 
         // 修正：設置返回清單按鈕的導航邏輯
         function navigateBackToList() {
@@ -285,22 +288,48 @@
         });
         
         auth.onAuthStateChanged(async (user) => {
-            if (user) {
+			if (user) {
                 currentUser = user;
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                if (userDoc.exists && userDoc.data().role === 'teacher') {
-                    const displayElement = document.getElementById('user-email');
-                    const userData = userDoc.data();
-                    if (userData.displayName) {
-                        displayElement.textContent = userData.displayName;
-                    } else {
-                        displayElement.textContent = user.email;
+                const displayElement = document.getElementById('user-email');
+                
+                // 🌟【修改開始：繼承 USER_AUTH_KEY】
+                let userData = null;
+                try {
+                    const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
+                    if (cachedAuthData) {
+                         userData = JSON.parse(cachedAuthData).userData;
+                         if (userData.displayName) {
+                             displayElement.textContent = userData.displayName;
+                         } else {
+                             displayElement.textContent = user.email;
+                         }
                     }
+                } catch (e) {
+                     console.error('❌ 解析 AUTH 快取失敗:', e);
+                }
+
+                if (!userData) {
+                     // 如果快取失敗，備用讀取 Firestore
+                     const userDoc = await db.collection('users').doc(user.uid).get();
+                     console.log('載入user資料...');
+                     if (userDoc.exists) {
+                          userData = userDoc.data();
+                          if (userData.displayName) {
+                              displayElement.textContent = userData.displayName;
+                          } else {
+                              displayElement.textContent = user.email;
+                          }
+                     }
+                }
+                
+                if (userData && userData.role === 'teacher') {
                     await initializeEditPage(userData);
                 } else {
                     alert('權限不足或帳號設定錯誤。');
                     window.location.href = 'login.html';
                 }
+                // 🌟【修改結束】
+
             } else {
                 window.location.href = 'login.html';
             }
@@ -312,6 +341,35 @@
             assignmentId = urlParams.get('assignmentId');
             const assignmentName = decodeURIComponent(urlParams.get('assignmentName') || '');
             const assignmentComment = decodeURIComponent(urlParams.get('assignmentComment') || '');
+            
+            let useStaticCache = false;
+            let rosterDataLoaded = false;
+            
+            // 🎯 嘗試載入 STATIC 快取
+            try {
+                const cached = localStorage.getItem(STATIC_CACHE_KEY);
+                if (cached) {
+                    CACHE_DATA = JSON.parse(cached);
+                    // 檢查快取是否包含有效 UID
+                    if (CACHE_DATA.uid === currentUser.uid) {
+                        useStaticCache = true;
+                    } else {
+                         // UID 不匹配，清理舊快取 (防止污染)
+                        localStorage.removeItem(STATIC_CACHE_KEY);
+                    }
+                }
+            } catch (e) {
+                console.error('❌ 解析 STATIC 快取失敗:', e);
+                localStorage.removeItem(STATIC_CACHE_KEY);
+            }
+
+            // --- 1. 載入學生名冊 (靜態資料，不檢查時效) ---
+            if (useStaticCache && CACHE_DATA.rosterData) {
+                // 🌟【靜態資料直接讀取快取】
+                var allStudents = CACHE_DATA.rosterData;
+                rosterDataLoaded = true;
+                console.log('✅ 學生名冊：STATIC 快取命中！');
+            }
 
 			if (!classId) {
                 appContainer.innerHTML = '<h2>錯誤：未指定班級，請從主頁重新進入。</h2>';
@@ -327,23 +385,33 @@
             document.title = assignmentId ? `編輯 ${assignmentName}` : `建立新項目`;
 
 
-			if (!userData.schoolId) {
-				alert('錯誤：您的帳號未綁定學校ID，無法讀取名冊。');
-				return;
-			}
-			
-			const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-			if (!rosterDoc.exists) {
-				alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
-				return;
+			if (!rosterDataLoaded) {
+                if (!userData.schoolId) {
+                    alert('錯誤：您的帳號未綁定學校ID，無法讀取名冊。');
+                    return;
+                }
+				const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
+				console.log('載入學生名冊資料...');
+				if (!rosterDoc.exists) {
+					alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
+					return;
+				}
+                allStudents = rosterDoc.data().students || [];
+                
+                // 🚩 更新快取中的名冊數據 (不需要檢查時效)
+                CACHE_DATA.rosterData = allStudents;
+                CACHE_DATA.uid = currentUser.uid; 
+                //localStorage.setItem(STATIC_CACHE_KEY, JSON.stringify(CACHE_DATA));
 			}
             
-            studentsInClass = (rosterDoc.data().students || [])
+            studentsInClass = (allStudents || [])
                                 .filter(s => s.id.startsWith(classId))
                                 .sort((a, b) => parseInt(a.id.substring(3)) - parseInt(b.id.substring(3)));
 
             if (assignmentId) {
+                // 🚨 單一成績項目維持從雲端讀取最新資料
                 const assignmentDoc = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(assignmentId).get();
+				console.log('載入作業成績資料...');
                 if (assignmentDoc.exists) {
                     currentGradesData = assignmentDoc.data().scores || {};
                 } else {
