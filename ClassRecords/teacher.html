@@ -1499,7 +1499,10 @@
         
 		const USER_AUTH_KEY = 'user_auth_profile_v1';
 		const STATIC_CACHE_KEY = 'teacher_static_cache_v6'; // 快取鍵名稱不變，但用途變更
-        let CACHE_DATA = {};
+ 		const DYNAMIC_CACHE_KEY = 'teacher_dynamic_cache_v6';
+		let CACHE_DATA_STATIC = {};
+		let CACHE_DATA_DYNAMIC = {};
+	   
         
         const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
 		
@@ -1513,8 +1516,10 @@
         let PERIOD_TIMES = [];
 		let allPerformanceRecords = []; 
         let studentLatestRecords = {};
-		let lastScheduleFetch = 0;
-		let cloudDataUpdated = false;
+		let lastSchUpdFetch = 0;
+		let lastPerformanceFetch = 0;
+		let cloudDataUpdatedStatic = false;
+		let cloudDataUpdatedDynamic = false;
 		let isInitializing = false;
 		let allScheduleChanges = []; // 用於儲存調代課異動資料	
 		
@@ -1570,6 +1575,7 @@
         const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
         const homepageModalCloseBtn = homepageSettingsModal.querySelector('.close-btn');
 		const TRANSFER_KEY = 'initialActiveChanges';
+		const CACHE_LIFETIME = 45 * 60 * 1000; // 45 分鐘 (毫秒)
 
 		function navigateToTimetable() {
 			// 1. 將當前載入的 activeChanges 數據存入 sessionStorage
@@ -1633,7 +1639,7 @@
                     try {
                         activeChanges = JSON.parse(cachedChanges);
                         allScheduleChanges = activeChanges; 
-                        console.log('✅ 課表異動 Session 快取命中，無需重新讀取 Firestore！');
+                        console.log('✅ 快取命中：課表異動 Session，無需重新讀取 Firestore！');
                         return; 
                     } catch (e) {
                         console.error('❌ 解析 Session 快取失敗，將檢查本地快取。', e);
@@ -1645,7 +1651,7 @@
                 // 如果 allScheduleChanges 在 initialize 階段已從 localStorage 載入，則使用它
                 if (allScheduleChanges && allScheduleChanges.length > 0) {
                     activeChanges = allScheduleChanges;
-                    console.log('✅ 課表異動 LocalStorage 快取命中，無需重新讀取 Firestore！');
+                    console.log('✅ 快取命中：課表異動 LocalStorage，無需重新讀取 Firestore！');
                     return; // 成功命中本地快取，退出
                 }
             }
@@ -1670,7 +1676,8 @@
                 
                 // 🚩 成功從 Firestore 載入後，清空 SessionStorage 避免重複使用舊的傳輸資料
                 sessionStorage.removeItem(TRANSFER_KEY); 
-				cloudDataUpdated = true;
+				cloudDataUpdatedDynamic = true;
+				lastSchUpdFetch = new Date().getTime(); 
                 
             } catch (error) {
                 console.error("載入課程異動時發生錯誤:", error);
@@ -1769,7 +1776,7 @@
 							// 檢查 UID 是否匹配且快取未過期 (1小時)
 							if (parsedCache.uid === user.uid && (new Date().getTime() - parsedCache.lastUpdated < 3600000)) {
 								userDocData = parsedCache.userData;
-								console.log('✅ AUTH 快取命中：讀取到用戶角色資料。');
+								console.log('✅ 快取命中：讀取到用戶角色資料。');
 							} else {
 								localStorage.removeItem(USER_AUTH_KEY);
 							}
@@ -1932,7 +1939,7 @@
             
             // 🎯【快取優化】從 CACHE_DATA 讀取
             if (useCache && PERIOD_TIMES.length > 0) {
-                PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES;
+                PERIOD_TIMES = CACHE_DATA_STATIC.PERIOD_TIMES;
                 return;
             }
 
@@ -1940,7 +1947,7 @@
                 const periodsDoc = await db.collection('schools').doc(schoolId)
                                            .collection('periods').doc('current').get();
 				console.log('載入節次資料...');
-				cloudDataUpdated = true;
+				cloudDataUpdatedStatic = true;
                 if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
                     PERIOD_TIMES = periodsDoc.data().times.map(item => ({
                         period: item.period,
@@ -1961,7 +1968,6 @@
                         { period: 8, start: '16:10', duration: 50 }
                     ];
                 }
-                // CACHE_DATA.PERIOD_TIMES = PERIOD_TIMES; // 不在此處寫入，統一在 initialize 寫入
             } catch (error) {
                 console.error("載入課程時間表時發生錯誤:", error);
                 // 讀取失敗時，使用預設值
@@ -1985,11 +1991,8 @@
             
             // 🎯【快取優化】從 CACHE_DATA 讀取
             if (useCache && allClassList.length > 0) {
-                teacherTimetableData = CACHE_DATA.teacherTimetableData;
+                teacherTimetableData = CACHE_DATA_STATIC.teacherTimetableData;
                 scheduleDataLoaded = true;
-                // 🚨【修改開始：從快取載入時，設定 lastScheduleFetch】
-                lastScheduleFetch = CACHE_DATA.lastScheduleFetch || 0; 
-                // 🚨【修改結束】
                 return;
             }
             
@@ -1997,13 +2000,10 @@
                 const schoolRef = db.collection('schools').doc(schoolId);
                 const scheduleDoc = await schoolRef.collection('timetables').doc(teacherName).get();
 				console.log('載入課表資料...');
-				cloudDataUpdated = true;
+				cloudDataUpdatedStatic = true;
                 if (scheduleDoc.exists) {
                     teacherTimetableData = scheduleDoc.data();
                     scheduleDataLoaded = true;
-                    // 🚨【修改開始：從 Firestore 載入時，設定 lastScheduleFetch】
-                    lastScheduleFetch = new Date().getTime(); 
-                    // 🚨【修改結束】
                 } else {
                     teacherTimetableData = { periods: {} };
                 }
@@ -2018,21 +2018,19 @@
             
             // 🎯【快取優化】從 CACHE_DATA 讀取
             if (useCache && studentsData.length > 0) {
-                studentsData = CACHE_DATA.rosterData;
-                allClassList = CACHE_DATA.allClassList;
+                studentsData = CACHE_DATA_STATIC.rosterData;
+                allClassList = CACHE_DATA_STATIC.allClassList;
                 return;
             }
 
             const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
 			console.log('載入學生名單資料...');
-			cloudDataUpdated = true;
+			cloudDataUpdatedStatic = true;
             if (!rosterDoc.exists) {
                  throw new Error('找不到學校名冊');
             }
             studentsData = rosterDoc.data().students;
             allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort(); 
-            // CACHE_DATA.rosterData = studentsData; // 不在此處寫入，統一在 initialize 寫入
-            // CACHE_DATA.allClassList = allClassList;
         }
 
 		async function fetchAllScores(force=false) { 
@@ -2041,13 +2039,14 @@
             let loadedFromCache = records.length > 0;
 
             if (loadedFromCache && !force) {
-                 console.log('✅ 學生紀錄快取命中，跳過 Firestore 載入。');
+                 console.log('✅ 快取命中：學生紀錄，跳過 Firestore 載入。');
             } else {
             // 🚩【Firestore 載入】
                 try {
                     const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
 					console.log('載入學生紀錄資料...');
-					cloudDataUpdated = true;
+					lastPerformanceFetch = new Date().getTime()
+					cloudDataUpdatedDynamic = true;
                     records = []; // 清空以確保只包含 Firestore 資料
                     snapshot.forEach(doc => {
                         const r = doc.data();
@@ -2125,20 +2124,14 @@
             }
         }
 		
-		function saveCache(forceSave=true) {
+		function saveCacheStatic() {
 			try {
-                // 不再儲存 currentUserData，僅儲存靜態資料
 				const cacheData = {
-					// userData: currentUserData, // 移除：由 USER_AUTH_KEY 儲存
 					rosterData: studentsData,
 					allClassList: allClassList,
 					teacherTimetableData: teacherTimetableData,
 					PERIOD_TIMES: PERIOD_TIMES,
-					scheduleChanges: allScheduleChanges, 
-					performanceRecords: allPerformanceRecords, 
 					lastUpdated: new Date().getTime(),
-					lastScheduleFetch: lastScheduleFetch,
-					lastPerformanceFetch: new Date().getTime(),
                     uid: currentUser.uid // 新增 UID，用於快取檢查
 				};
 				// 寫入 STATIC_CACHE_KEY
@@ -2148,40 +2141,52 @@
 			}
 		}
 		
+		function saveCacheDynamic() {
+			try {
+				const cacheData = {
+					scheduleChanges: allScheduleChanges, 
+					performanceRecords: allPerformanceRecords, 
+					lastSchUpdFetch: lastSchUpdFetch,
+					lastPerformanceFetch: lastPerformanceFetch,
+                    uid: currentUser.uid
+				};
+				localStorage.setItem(DYNAMIC_CACHE_KEY, JSON.stringify(cacheData));
+			} catch (e) {
+				console.error('❌ DYNAMIC 快取寫入錯誤:', e);
+			}
+		}
+
+		
 		async function initialize(userData, forceReload = false, forceItem = 0) {
 			if (isInitializing) {
                 console.warn("初始化程序已在運行中，忽略重複調用。");
                 return;
             }
             isInitializing = true;
-            cloudDataUpdated = false;
+            cloudDataUpdatedStatic = false;
+            cloudDataUpdatedDynamic = false;
             const schoolId = userData.schoolId;
             const teacherName = userData.displayName;
             appContainer.innerHTML = '<h2>載入中...</h2>';
             
-            let useCache = false;
-            
+            let useCacheStatic = false;
+            let useCacheDynamic = false;
+           
             // 🎯【快取優化】--- 1. 嘗試使用 STATIC 快取加速載入 ---
             if (!forceReload) {
                 try {
-                    const cached = JSON.parse(localStorage.getItem(STATIC_CACHE_KEY));
+                    const cachedStatic = JSON.parse(localStorage.getItem(STATIC_CACHE_KEY));
                     // 新增：檢查 UID 是否匹配
-                    if (cached && cached.uid === currentUser.uid) { 
-                        CACHE_DATA = cached;
-                        useCache = true;
-                        
-                        // 確保從快取載入所有靜態數據
-                        // currentUserData = CACHE_DATA.userData; // 移除：已在 runMainApp 取得
-                        studentsData = CACHE_DATA.rosterData || [];
-                        allClassList = CACHE_DATA.allClassList || [];
-                        teacherTimetableData = CACHE_DATA.teacherTimetableData || { periods: {} };
-                        PERIOD_TIMES = CACHE_DATA.PERIOD_TIMES || [];
-                        scheduleDataLoaded = CACHE_DATA.teacherTimetableData ? true : false;
-                        allScheduleChanges = CACHE_DATA.scheduleChanges || []; 
-                        allPerformanceRecords = CACHE_DATA.performanceRecords || []; 
-
-                        console.log('✅ STATIC 快取命中，加速載入基本資料...');
-                    } else if (cached) {
+                    if (cachedStatic && cachedStatic.uid === currentUser.uid) { 
+                        CACHE_DATA_STATIC = cachedStatic;
+                        useCacheStatic = true;
+                        studentsData = CACHE_DATA_STATIC.rosterData || [];
+                        allClassList = CACHE_DATA_STATIC.allClassList || [];
+                        teacherTimetableData = CACHE_DATA_STATIC.teacherTimetableData || { periods: {} };
+                        PERIOD_TIMES = CACHE_DATA_STATIC.PERIOD_TIMES || [];
+                        scheduleDataLoaded = CACHE_DATA_STATIC.teacherTimetableData ? true : false;
+                        console.log('✅ 快取命中：靜態資料(學生名單、班級、教師課表、節次時間)，加速載入資料...');
+                    } else if (cachedStatic) {
                          // 舊快取 UID 不匹配，強制清理
                          localStorage.removeItem(STATIC_CACHE_KEY);
                     }
@@ -2189,14 +2194,35 @@
                     console.error('❌ STATIC 快取讀取錯誤或損壞:', e);
                     localStorage.removeItem(STATIC_CACHE_KEY); 
                     forceReload = true; 
-                    useCache = false;
+                    useCacheStatic = false;
                 }
-            }
+                try {
+                    const cachedDynamic = JSON.parse(localStorage.getItem(DYNAMIC_CACHE_KEY));
+                    // 新增：檢查 UID 是否匹配
+                    if (cachedDynamic && cachedDynamic.uid === currentUser.uid) { 
+                        CACHE_DATA_DYNAMIC = cachedDynamic;
+                        useCacheDynamic = true;
+                        allScheduleChanges = CACHE_DATA_DYNAMIC.scheduleChanges || []; 
+                        allPerformanceRecords = CACHE_DATA_DYNAMIC.performanceRecords || []; 
+						lastSchUpdFetch = CACHE_DATA_DYNAMIC.lastSchUpdFetch;
+						lastPerformanceFetch = CACHE_DATA_DYNAMIC.lastPerformanceFetch;
+                        console.log('✅ 快取命中：動態資料(課務異動、學生紀錄)，加速載入資料...');
+                    } else if (cachedDynamic) {
+                         // 舊快取 UID 不匹配，強制清理
+                         localStorage.removeItem(DYNAMIC_CACHE_KEY);
+                    }
+                } catch (e) {
+                    console.error('❌ DYNAMIC 快取讀取錯誤或損壞:', e);
+                    localStorage.removeItem(DYNAMIC_CACHE_KEY); 
+                    forceReload = true; 
+                    useCacheDynamic = false;
+                }
+           }
 
 
             try {
                 
-                if (!useCache) {
+                if (!useCacheStatic && !useCacheDynamic) {
                     currentUserData = userData; 
                 }
                 
@@ -2206,9 +2232,9 @@
                 // --- 【優化核心：並行載入快取/網路數據】 ---
                 // 只有在非快取模式下才真正執行 Firestore 讀取
 				
-                const periodsPromise = loadPeriodTimes(schoolId, useCache);
-                const rosterPromise = fetchRosterData(schoolId, useCache);
-                const schedulePromise = fetchScheduleData(teacherName, schoolId, useCache);
+                const periodsPromise = loadPeriodTimes(schoolId, useCacheStatic);
+                const rosterPromise = fetchRosterData(schoolId, useCacheStatic);
+                const schedulePromise = fetchScheduleData(teacherName, schoolId, useCacheStatic);
 
                 await Promise.all([periodsPromise, rosterPromise, schedulePromise]);
                 // --- 【並行載入結束】 ---
@@ -2232,23 +2258,19 @@
                 } 
 				
 				const needsRefresh = localStorage.getItem(REFRESH_FLAG_KEY) === 'true';
-
-                // 載入異動的條件：強制刷新 (點擊 reload) / 異動發生 (從 login 或子頁面返回)
-				if (needsRefresh || forceReload || (forceItem==1)) {
-					await loadActiveChanges(true); // 傳遞 true: 強制讀取 Firestore
-				    localStorage.removeItem(REFRESH_FLAG_KEY); 
-                    if (forceReload) 
-						await fetchAllScores(true);
-					else
-						await fetchAllScores(false);
-                } else {
-                    // 2. 處理正常登入流程 (必須檢查 sessionStorage 是否有跨頁面傳輸的異動)
-                    // 傳遞 false: 允許使用 sessionStorage 快取
-                    await loadActiveChanges(false);
-					await fetchAllScores(false);
-                }
+				const needsRefreshSchUpd = ((new Date().getTime() - lastSchUpdFetch) >= CACHE_LIFETIME)
+				const needsRefreshPerformance = ((new Date().getTime() - lastPerformanceFetch) >= CACHE_LIFETIME)
 				
-                 
+				if (forceReload || needsRefresh || (forceItem==1) || needsRefreshSchUpd) {
+					await loadActiveChanges(true); // 傳遞 true: 強制讀取 Firestore
+				    localStorage.removeItem(REFRESH_FLAG_KEY); 					
+				} else 
+					await loadActiveChanges(false);
+
+				if (forceReload || needsRefreshPerformance)
+					await fetchAllScores(true);
+                else 
+					await fetchAllScores(false);            
                 
                 setInterval(highlightCurrentClass, 30000); // 課表高亮維持即時
 
@@ -2295,7 +2317,9 @@
                     }
                 });               
                 // 🚩【確保在非快取載入時，將所有資料寫入 STATIC 快取】
-                if (!useCache || cloudDataUpdated) saveCache();
+                if (!useCacheStatic || cloudDataUpdatedStatic) saveCacheStatic();
+				if (!useCacheDynamic || cloudDataUpdatedDynamic) saveCacheDynamic();
+
 
             } catch (error) {
                 console.error("❌ 初始化失敗:", error);
@@ -2599,7 +2623,7 @@
                 allPerformanceRecords = []; 
                 await fetchAllScores(true); 
                 // 💥 步驟 2: 將新的 Firestore 資料寫入 localStorage
-                saveCache(); 
+                saveCacheDynamic(); 
                 // 🚨【修改結束】
                 
 				closeModal(); 
@@ -2625,7 +2649,7 @@
                         allPerformanceRecords = []; 
                         await fetchAllScores(true);
                         // 💥 步驟 2: 將新的 Firestore 資料寫入 localStorage
-                        saveCache(); 
+                        saveCacheDynamic(); 
                         // 🚨【修改結束】
                         
 						closeModal(); 
