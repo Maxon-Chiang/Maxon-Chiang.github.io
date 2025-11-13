@@ -68,10 +68,8 @@
             flex-shrink: 0; 
             object-fit: contain; 
         }
-
         .admin-toggle-link { display: block; margin-top: 25px; font-size: 0.9em; color: #6c757d; text-decoration: none; cursor: pointer; }
         .admin-toggle-link:hover { text-decoration: underline; }
-
         .options-container { display: flex; justify-content: center; align-items: center; margin: 15px 0; font-size: 0.9em; color: #555; }
         #remember-me { margin-right: 8px; width: 16px; height: 16px; }
         
@@ -110,7 +108,6 @@
                 </button>
                 <a href="#" id="show-admin-login" class="admin-toggle-link">管理員登入請點此</a>
             </div>
-
             <div id="admin-login-view" style="display: none;">
                 <form id="login-form">
                     <input type="email" id="login-email" placeholder="管理員 Email" required autocomplete="email">
@@ -123,11 +120,9 @@
                 </form>
                 <a href="#" id="back-to-teacher-login" class="admin-toggle-link">返回教師登入</a>
             </div>
-            
             <p id="error-message"></p>
         </div>
     </div>
-
     <div id="school-selection-view" class="onboarding-modal">
         <div class="container">
             <h2>身分驗證</h2>
@@ -136,7 +131,6 @@
                 </ul>
         </div>
     </div>
-
     <div id="teacher-selection-view" class="onboarding-modal">
         <div class="container">
             <h2 id="teacher-selection-title">身分確認</h2>
@@ -145,8 +139,6 @@
                 </ul>
         </div>
     </div>
-
-
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -161,11 +153,9 @@
 		appId: "1:431747377367:web:b157a8f5c59ce38091e892",
 		measurementId: "G-JWTQGM9XMP"
 	  };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
-
         const splashScreen = document.getElementById('splash-screen');
         const loginView = document.getElementById('login-view');
         const errorMessage = document.getElementById('error-message');
@@ -178,13 +168,8 @@
         const googleSignInBtn = document.getElementById('google-signin-btn');
         const loginForm = document.getElementById('login-form');
         const loginEmailInput = document.getElementById('login-email');
-
-        // 🎯【快取優化 1：定義新的雙快取鍵】
         const USER_AUTH_KEY = 'user_auth_profile_v1';
-        // const USER_CACHE_KEY = 'teacher_static_cache_v6'; // 舊的靜態/個人混合快取鍵
         const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
-        // 🎯【快取優化 1：結束】
-
         const savedEmail = localStorage.getItem('lastLoginEmail');
         if (savedEmail) {
             loginEmailInput.value = savedEmail;
@@ -195,21 +180,16 @@
                 if (user.email) {
                     localStorage.setItem('lastLoginEmail', user.email);
                 }
-                
                 splashScreen.style.display = 'flex';
-
-                // 🎯【快取優化 2：嘗試從 AUTH 快取讀取用戶資料】
                 const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
                 let userDocData = null;
                 if (cachedAuthData) {
                     try {
                         const parsedCache = JSON.parse(cachedAuthData);
-                        // 檢查 UID 是否匹配且快取未過期
                         if (parsedCache.uid === user.uid && (new Date().getTime() - parsedCache.lastUpdated < 3600000)) {
                              userDocData = parsedCache.userData;
                              console.log('✅ AUTH 快取命中：讀取到用戶角色資料。');
                         } else {
-                            // 快取過期或不匹配，清理舊的 AUTH 快取
                             localStorage.removeItem(USER_AUTH_KEY);
                         }
                     } catch (e) {
@@ -217,15 +197,11 @@
                          localStorage.removeItem(USER_AUTH_KEY);
                     }
                 }
-                // 🎯【快取優化 2：結束】
-
-                // 🎯【快取優化 3：如果 AUTH 快取失敗，才從 Firestore 讀取】
                 if (!userDocData) {
                     console.log('載入user資料...');
                     const userDoc = await db.collection('users').doc(user.uid).get();
                     if (userDoc.exists) {
                          userDocData = userDoc.data();
-                         // 寫入 AUTH 快取
                          localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
                              uid: user.uid,
                              userData: userDocData,
@@ -233,9 +209,7 @@
                          }));
                     }
                 }
-                // 🎯【快取優化 3：結束】
                 
-
                 if (userDocData) {
                     routeUser(userDocData.role);
                 } else {
@@ -252,22 +226,18 @@
         async function startOnboarding(user) {
             try {
                 const emailDomain = user.email.split('@')[1];
-
                 const schoolsSnapshot = await db.collection('schools').where('domain', '==', emailDomain).get();
                 
                 if (schoolsSnapshot.empty) {
                     showLoginError(`您的 Email 網域 (${emailDomain}) 未在本系統註冊任何學校。請聯繫超級管理員。`);
                     return;
                 }
-
                 const potentialSchools = schoolsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
                 if (potentialSchools.length === 1) {
                     await handleSchoolSelection(user, potentialSchools[0].id);
                 } else {
                     displaySchoolSelection(user, potentialSchools);
                 }
-
             } catch (error) {
                 showLoginError("驗證學校身分時發生錯誤：" + error.message);
             }
@@ -282,7 +252,6 @@
                 li.onclick = () => handleSchoolSelection(user, school.id);
                 schoolList.appendChild(li);
             });
-            
             splashScreen.style.display = 'none';
             loginView.style.display = 'none';
             schoolSelectionView.style.display = 'flex';
@@ -291,19 +260,15 @@
         async function handleSchoolSelection(user, schoolId) {
             try {
                 splashScreen.style.display = 'flex';
-                
                 const googleName = user.displayName;
                 const teachersSnapshot = await db.collection('schools').doc(schoolId).collection('teachers').where('name', '==', googleName).get();
-
                 if (teachersSnapshot.empty) {
                     const schoolDoc = await db.collection('schools').doc(schoolId).get();
                     const schoolName = schoolDoc.exists ? schoolDoc.data().name : '該學校';
                     showLoginError(`在「${schoolName}」的教師名冊中找不到您的姓名「${googleName}」。請聯繫您的學校管理者，確認名冊上的姓名是否與您的 Google 帳戶名稱完全一致。`);
                     return;
                 }
-
                 const matchingTeachers = teachersSnapshot.docs.map(doc => doc.data());
-
                 if (matchingTeachers.length === 1) {
                     await createUserProfile(user, schoolId, matchingTeachers[0]);
                 } else {
@@ -311,7 +276,6 @@
                     const schoolName = schoolDoc.exists ? schoolDoc.data().name : '';
                     displayTeacherSelection(user, schoolId, schoolName, matchingTeachers);
                 }
-
             } catch (error) {
                  showLoginError("查找教師資料時發生錯誤：" + error.message);
             }
@@ -320,33 +284,25 @@
 		async function createUserProfile(user, schoolId, teacherProfile) {
 			try {
 				splashScreen.style.display = 'flex';
-
 				const schoolDoc = await db.collection('schools').doc(schoolId).get();
 				if (!schoolDoc.exists) throw new Error("找不到學校資料");
 				const schoolData = schoolDoc.data();
-
 				const newUserProfile = {
 					role: 'teacher',
 					email: user.email,
 					displayName: teacherProfile.name, 
 					schoolId: schoolId,
 					schoolCode: schoolData.schoolCode,
-					// 🎯【快取優化：只在 profile 存入 uid，方便後續讀取】
 					uid: user.uid, 
 					...teacherProfile 
 				};
-
 				await db.collection('users').doc(user.uid).set(newUserProfile);
-				
-				// 🎯【快取優化 4：只寫入 AUTH 快取，不寫入 STATIC 快取】
 				localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
                     uid: user.uid,
                     userData: newUserProfile,
                     lastUpdated: new Date().getTime()
                 }));
-
 				routeUser('teacher');
-
 			} catch (error) {
 				showLoginError("建立使用者設定時發生錯誤：" + error.message);
 			}
@@ -374,11 +330,8 @@
             try {
                 const persistence = document.getElementById('remember-me').checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
                 await auth.setPersistence(persistence);
-                
                 const userCredential = await auth.signInWithEmailAndPassword(email, password);
                 const user = userCredential.user;
-                
-                // 🎯【快取優化 5：管理員登入時也只寫入 AUTH 快取】
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 if (userDoc.exists) {
                     const userDocData = userDoc.data();
@@ -391,7 +344,6 @@
                 } else {
                      showLoginError("找不到用戶資料，請聯繫管理員。");
                 }
-
             } catch (error) {
                 splashScreen.style.display = 'none';
                 errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。';
@@ -432,7 +384,6 @@
             } else if (role === 'school_admin') {
                 window.location.href = 'school_admin.html';
             } else if (role === 'teacher') {
-				//localStorage.setItem('teacherTimetableNeedsRefresh', 'true');
                 window.location.href = 'teacher.html';
             } else {
                 showLoginError(`未知的用戶角色 (${role})，無法登入。`);
