@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+in<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
@@ -271,13 +271,15 @@
         const db = firebase.firestore(); const auth = firebase.auth();
         let currentUser = null, studentsData = [], studentMap = new Map(), classList = [], currentPerfResults = [], currentPerfStats = {}, allAssignments = [];
         let perfSortState = { key: 'class', direction: 'asc' };
-		const COMMON_ROSTER_DATA = 'COMMON_ROSTER_DATA';
-        const GRADEBOOK_ASSIGNMENTS = 'GRADEBOOK_ASSIGNMENTS';
-        const PERFORMANCE_TOTAL_SCORES = 'PERFORMANCE_TOTAL_SCORES';
         let perfStatsSortState = { key: 'total', direction: 'desc', target: 'class' }; // 【修改點 2：增加 target 屬性】
         let gradeAssignmentSortState = { key: 'date', direction: 'desc' };
         let gradeCrossClassSortState = { key: 'className', direction: 'asc' };
-
+		const USER_AUTH_PROFILE_KEY = 'user_auth_profile_v1'; 
+		const REPORT_STATIC_CACHE_KEY = 'report_cache_v1';
+		const STATIC_CACHE_KEY = 'teacher_static_cache_v6'; // 快取鍵名稱不變，但用途變更
+        const CACHE_LIFETIME = 45 * 60 * 1000; // 45 分鐘 (毫秒)
+        let CACHE_DATA = {};
+		
         // --- 【新增輔助函數】 ---
         const GRADE_MAP = { '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '七', '8': '八', '9': '九' };
 
@@ -293,20 +295,54 @@
         }
         // ------------------------
         
+		// ... (略)
+        // ------------------------
+        
 		auth.onAuthStateChanged(async (user) => { 
             if (user) { 
                 currentUser = user;
-                
-                // 新增：讀取並顯示用戶名稱
                 const displayElement = document.getElementById('user-email');
-                const userDoc = await db.collection('users').doc(user.uid).get(); 
-                if (userDoc.exists && (userDoc.data().role === 'teacher' || userDoc.data().role === 'admin')) {
-                    if (userDoc.data().displayName) {
-                        displayElement.textContent = userDoc.data().displayName;
-                    } else {
-                        displayElement.textContent = user.email;
+                
+                let cacheUser = null;
+                
+                // ✨【快取優化：讀取上層繼承的用戶資料 - 開始】
+                try {
+                    const cachedAuthData = localStorage.getItem(USER_AUTH_PROFILE_KEY);
+                    if (cachedAuthData) {
+                        const parsedData = JSON.parse(cachedAuthData);
+                        // 檢查 UID 是否匹配且資料結構完整
+                        if (parsedData.uid === currentUser.uid) {
+                            cacheUser = parsedData;
+                            console.log('✨ 繼承用戶資料：快取命中！');
+                        } else {
+                             // 如果不匹配或損壞，清理快取
+							 console.log('✨ 快取不匹配或損壞，清理快取！');
+                             localStorage.removeItem(USER_AUTH_PROFILE_KEY);
+                        }
                     }
-                    await initializeReportPage(userDoc.data()); 
+                } catch (e) {
+                    console.error('❌ 解析用戶快取失敗，將從 Firestore 載入。', e);
+                }
+                // ✨【快取優化：讀取上層繼承的用戶資料 - 結束】
+
+
+                // 如果快取未命中，從 Firestore 讀取
+                if (!cacheUser) {
+                    const cacheUser = await db.collection('users').doc(currentUser.uid).get(); 
+				    console.log('載入user資料...');
+                    if (cacheUser.exists) {
+                        cacheUser = cacheUser.data();
+                        cacheUser.uid = user.uid;
+                    }
+                }
+                
+                if (cacheUser && (cacheUser.userData.role === 'teacher' || cacheUser.userData.role === 'admin')) {
+                    if (cacheUser.userData.displayName) {
+                        displayElement.textContent = cacheUser.userData.displayName;
+                    } else {
+                        displayElement.textContent = cacheUser.userData.email;
+                    }
+                    await initializeReportPage(cacheUser); 
                 } else { 
                     window.location.href = 'login.html'; 
                 } 
@@ -314,110 +350,75 @@
                 window.location.href = 'login.html'; 
             } 
         });
-		
+			
+
 		// 【修改 initializeReportPage 函數】: 新增填充年段篩選器的邏輯
-		async function initializeReportPage(userData) {
+        async function initializeReportPage(cacheUser) {
             const today = new Date().toLocaleDateString('en-CA');
             document.getElementById('start-date').value = today;
             document.getElementById('end-date').value = today;
+            
+            // ✨【快取優化：載入與檢查】
+            let useCache = false;
+            let rosterDataLoaded = false;
+            let assignmentsDataLoaded = false;
+            
+            try {
+				const teacherCache = localStorage.getItem(STATIC_CACHE_KEY);
+				if (teacherCache) {
+					const staticData = JSON.parse(teacherCache)
+					if (staticData.rosterData && staticData.allClassList) {
+						studentsData = staticData.rosterData;
+						classList = staticData.allClassList;
+						console.log('✨ 名冊/班級列表：快取命中！');
+						rosterDataLoaded = true;
+					}
+				}
+                const storedCache = localStorage.getItem(REPORT_STATIC_CACHE_KEY);
+                if (storedCache) {
+                    const parsedCache = JSON.parse(storedCache);
+                    const now = new Date().getTime();
+                    CACHE_DATA = parsedCache;
+                    // 檢查快取是否在時效內 (45分鐘)
+                    if (parsedCache.lastUpdated && (now - parsedCache.lastUpdated) < CACHE_LIFETIME) {
+                        useCache = true;                                                
+                        // 載入成績項目數據
+                        if (CACHE_DATA.allAssignments) {
+                            allAssignments = CACHE_DATA.allAssignments;
+                            console.log('✨ 成績項目：快取命中！');
+                            assignmentsDataLoaded = true;
+                        }
+                    } else if(parsedCache.lastUpdated) {
+                        console.log('❌ 成績資料快取已過期 ('+(CACHE_LIFETIME/60000)+'分鐘)，重新載入 Firestore。');
+                    }
+                }
+            } catch (e) {
+                console.error('❌ 解析本地快取失敗，將從 Firestore 載入。', e);
+            }
+            // ✨【快取優化：載入與檢查結束】
 
-            if (!userData.schoolId) {
+
+            if (!cacheUser.userData.schoolId) {
                 console.warn("帳號未綁定學校ID，無法讀取名冊。");
                 alert('錯誤：您的帳號未綁定學校ID，無法繼續操作。');
                 return;
             }
             
-// 🌟 開始修改 - Session 快取讀取與 Firestore 邏輯 🌟
-            let allAssignmentsList = [];
-            let schoolRosterData = null;
-            let useCache = false;
-
-            // 1. 讀取 Session 快取
-            try {
-                const cachedRoster = sessionStorage.getItem(COMMON_ROSTER_DATA);
-                const cachedAssignments = sessionStorage.getItem(GRADEBOOK_ASSIGNMENTS);
-                const cachedScores = sessionStorage.getItem(PERFORMANCE_TOTAL_SCORES);
-                
-                if (cachedRoster) schoolRosterData = JSON.parse(cachedRoster);
-                if (cachedAssignments) allAssignmentsList = JSON.parse(cachedAssignments);
-                if (cachedScores) currentPerfStats.allPerformanceScores = JSON.parse(cachedScores); // 儲存表現分數
-                
-                if (schoolRosterData && schoolRosterData.students && schoolRosterData.students.length > 0) {
-                    studentsData = schoolRosterData.students;
-                    useCache = true;
-                    console.log('【快取命中】報表：讀取 Session 快取的基本數據。');
-                } else if (schoolRosterData && schoolRosterData.students && schoolRosterData.students.length === 0) {
-                    console.warn('【快取命中】報表：名冊數據為空，強制重新從 Firestore 讀取。');
-                    useCache = false;
-                }
-            } catch (e) {
-                console.warn('Session 快取解析失敗，將從 Firestore 重新讀取。', e);
-            }
-
-            // 2. 處理遺失的數據：強制從 Firestore 讀取
-            const dataToFetch = {};
-            if (!useCache) {
-                 dataToFetch.roster = db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-                 dataToFetch.assignments = db.collection('gradebooks').doc(currentUser.uid).collection('assignments').orderBy('date', 'desc').get();
-                 dataToFetch.performanceScores = db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
-            }
-
-            const fetchedData = await Promise.all(Object.values(dataToFetch));
-            let fetchIndex = 0;
-            
-            // --- A. 處理名冊 ---
-            if (dataToFetch.roster) {
-                const rosterDoc = fetchedData[fetchIndex++];
+            // --- 1. 載入學生名冊 (若快取失敗) ---
+            if (!rosterDataLoaded) {
+                const rosterDoc = await db.collection('schools').doc(cacheUser.userData.schoolId).collection('rosters').doc('current').get();
+                console.log('載入學生名冊資料...');
                 if (!rosterDoc.exists) {
                     alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
                     return;
                 }
                 studentsData = rosterDoc.data().students;
-                sessionStorage.setItem(COMMON_ROSTER_DATA, JSON.stringify(rosterDoc.data()));
-                console.log('報表：已將名冊寫入 Session 快取。');
+                classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
             }
-            
-            // --- B. 處理成績項目 ---
-            if (dataToFetch.assignments) {
-                const assignmentsSnapshot = fetchedData[fetchIndex++];
-                assignmentsSnapshot.forEach(doc => allAssignmentsList.push({ id: doc.id, ...doc.data() }));
-                sessionStorage.setItem(GRADEBOOK_ASSIGNMENTS, JSON.stringify(allAssignmentsList));
-                console.log('報表：已將成績項目寫入 Session 快取。');
-            }
-            allAssignments = allAssignmentsList;
-            
-            // --- C. 處理表現總分（並寫入快取） ---
-            if (dataToFetch.performanceScores) {
-                const perfSnapshot = fetchedData[fetchIndex++];
-                currentPerfStats.allPerformanceScores = {};
-                studentsData.forEach(s => currentPerfStats.allPerformanceScores[s.id] = 0);
-                perfSnapshot.forEach(doc => {
-                    const r = doc.data();
-                    const studentId = r.entityId || r.studentId;
-                    if ((r.entityType === 'student' || !r.entityType) && studentId && currentPerfStats.allPerformanceScores.hasOwnProperty(studentId)) {
-                        currentPerfStats.allPerformanceScores[studentId] += (r.points || 0);
-                    }
-                });
-                sessionStorage.setItem(PERFORMANCE_TOTAL_SCORES, JSON.stringify(currentPerfStats.allPerformanceScores));
-                console.log('報表：已將表現總分寫入 Session 快取。');
-            }
-            
-// 🌟 結束修改 - Session 快取讀取與 Firestore 邏輯 🌟
-            
+
             // 【修改點 3：建立學生ID到學生物件的映射】
             studentMap.clear();
-            studentsData.forEach(s => {
-                // 確保學生對象中有 name 和 id 屬性
-                const studentObject = { 
-                    id: s.id, 
-                    name: s.name, 
-                    // 在此處計算座號，避免多次 substring
-                    seatNum: s.id ? s.id.substring(3) : 'N/A'
-                };
-                studentMap.set(s.id, studentObject);
-            });
-            
-            classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
+            studentsData.forEach(s => studentMap.set(s.id, s));
             
             const perfClassFilter = document.getElementById('class-filter-container');
             const gradesClassSelect = document.getElementById('grades-class-select');
@@ -471,20 +472,43 @@
                 });
             });
             // ------------------------------------
+            
+            // --- 2. 載入教師成績項目 (若快取失敗) ---
+            if (!assignmentsDataLoaded) {
+                const assignmentsSnapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').orderBy('date', 'desc').get();
+                console.log('載入成績資料...');
+                allAssignments = [];
+                assignmentsSnapshot.forEach(doc => {
+                    allAssignments.push({ id: doc.id, ...doc.data() });
+                });
+            }
+            
+            // --- 3. 處理成績項目選單 (無論是否快取都需要) ---
+            const uniqueAssignments = {};
+            allAssignments.forEach(a => {
+                const name = a.assignmentName;
+                if (!uniqueAssignments[name]) uniqueAssignments[name] = name;
+            });
 
             const gradesAssignmentSelect = document.getElementById('grades-assignment-select');
             gradesAssignmentSelect.innerHTML = '<option value="">......</option>';
-            const uniqueAssignments = {};
-            allAssignments.forEach(doc => {
-                const name = doc.assignmentName;
-                if (!uniqueAssignments[name]) uniqueAssignments[name] = name;
-            });
-            
             Object.keys(uniqueAssignments).sort().forEach(name => {
                 gradesAssignmentSelect.add(new Option(name, name));
             });
+            
+            // ✨【快取優化：寫入快取】
+            // 如果是從 Firestore 載入 (即 useCache 為 false，或其中一項為 false)，則寫入快取
+            if (!useCache || !assignmentsDataLoaded) {
+                CACHE_DATA = {
+                    allAssignments: allAssignments,
+                    lastUpdated: new Date().getTime() 
+                };
+                localStorage.setItem(REPORT_STATIC_CACHE_KEY, JSON.stringify(CACHE_DATA));
+                console.log('✨ 靜態資料已寫入本地快取。');
+            }
+            // ✨【快取優化：寫入快取結束】
         }
-		
+        
         document.querySelectorAll('.tab-btn').forEach(button => { button.addEventListener('click', () => { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); button.classList.add('active'); document.getElementById(button.dataset.tab + '-tab').classList.add('active'); }); });
         
         // 【修改點 5：切換事件明細/統計摘要的邏輯 - 顯示統計選項】
@@ -530,6 +554,7 @@
             try {
                 const query = db.collection('performanceRecords').doc(currentUser.uid).collection('records').where('timestamp', '>=', startTS).where('timestamp', '<=', endTS);
                 const snapshot = await query.get();
+				console.log('載入學生紀錄...');
                 let allRecordsInRange = [];
                 snapshot.forEach(doc => allRecordsInRange.push(doc.data()));
                 
@@ -542,7 +567,7 @@
                     sortAndRenderPerfLog();
                 } 
                 // 【B. 統計摘要 (Stats) 查詢邏輯】
-				else {
+                else {
                     const sumTarget = document.querySelector('input[name="sum-target"]:checked').value;
                     perfStatsSortState.target = sumTarget;
 
@@ -552,23 +577,7 @@
                         container.innerHTML = '<p style="color:red;">請至少選擇一個年段進行統計！</p>'; 
                         return;
                     }
-                    
-                    // 檢查並計算所有學生的表現總分 (如果快取遺失)
-                    if (Object.keys(currentPerfStats.allPerformanceScores).length === 0) {
-                         const perfSnapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
-                         currentPerfStats.allPerformanceScores = {};
-                         studentsData.forEach(s => currentPerfStats.allPerformanceScores[s.id] = 0);
-                         perfSnapshot.forEach(doc => {
-                            const r = doc.data();
-                            const studentId = r.entityId || r.studentId;
-                            if ((r.entityType === 'student' || !r.entityType) && studentId && currentPerfStats.allPerformanceScores.hasOwnProperty(studentId)) {
-                                currentPerfStats.allPerformanceScores[studentId] += (r.points || 0);
-                            }
-                        });
-                        // 寫回 Session 快取
-                        sessionStorage.setItem(PERFORMANCE_TOTAL_SCORES, JSON.stringify(currentPerfStats.allPerformanceScores));
-                    }
-                    
+
                     // 根據選定的年級篩選出要計算的班級列表
                     const classesToProcess = classList.filter(c => {
                         const grade = getGradeLevelFromClassId(c);
@@ -611,10 +620,7 @@
 
                         studentsToProcess.forEach(sId => {
                             const student = studentMap.get(sId);
-                            // 修正：確保 studentMap 有數據
-                            if (student) {
-                                stats[sId] = { studentId: sId, className: student.id.substring(0, 3), name: student.name, total: 0, positive: 0, negative: 0, count: 0 };
-                            }
+                            stats[sId] = { studentId: sId, className: student.id.substring(0, 3), name: student.name, total: 0, positive: 0, negative: 0, count: 0 };
                         });
                         
                         allRecordsInRange.forEach(record => {
@@ -1000,11 +1006,62 @@
         
         const gradesClassSelect = document.getElementById('grades-class-select'), assignmentFilterContainer = document.getElementById('assignment-filter-container'), runGradesQueryBtn = document.getElementById('run-grades-query-btn'), exportGradesCsvBtn = document.getElementById('export-grades-csv-btn'), gradesResultsContainer = document.getElementById('grades-results-container'), gradesClassSelectSingle = document.getElementById('grades-class-select-single'), gradesAssignmentSelect = document.getElementById('grades-assignment-select');
         
-        gradesClassSelect.addEventListener('change', async (e) => { const selectedClass = e.target.value; assignmentFilterContainer.innerHTML = '<div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked><label for="select-all-assignments">全選</label></div>'; gradesResultsContainer.innerHTML = '<p>請選擇成績項目後執行查詢。</p>'; exportGradesCsvBtn.disabled = true; if (!selectedClass) return; try { const assignmentsInClass = allAssignments.filter(a => a.className === selectedClass); if (assignmentsInClass.length === 0) { assignmentFilterContainer.innerHTML += '<p>此班級尚無成績項目。</p>'; } assignmentsInClass.forEach(a => { const div = document.createElement('div'); div.className = 'class-checkbox'; div.innerHTML = `<input type="checkbox" id="assign-${a.id}" value="${a.id}" data-name="${a.assignmentName}" class="assignment-selector" checked><label for="assign-${a.id}">${a.assignmentName}</label>`; assignmentFilterContainer.appendChild(div); }); document.getElementById('select-all-assignments').addEventListener('change', (e) => { document.querySelectorAll('.assignment-selector').forEach(checkbox => { checkbox.checked = e.target.checked; }); }); } catch(error) { console.error("載入成績項目失敗:", error); assignmentFilterContainer.innerHTML += `<p style="color:red;">載入失敗！請檢查 Console。</p>`; } });
+        gradesClassSelect.addEventListener('change', async (e) => { 
+            const selectedClass = e.target.value; 
+            assignmentFilterContainer.innerHTML = '<div class="class-checkbox"><input type="checkbox" id="select-all-assignments" checked><label for="select-all-assignments">全選</label></div>'; 
+            gradesResultsContainer.innerHTML = '<p>請選擇成績項目後執行查詢。</p>'; 
+            exportGradesCsvBtn.disabled = true; 
+            if (!selectedClass) return; 
+            try { 
+                const assignmentsInClass = allAssignments.filter(a => a.className === selectedClass);              
+                if (assignmentsInClass.length === 0) { assignmentFilterContainer.innerHTML += '<p>此班級尚無成績項目。</p>'; }
+
+                assignmentsInClass.forEach(a => { 
+                    const div = document.createElement('div'); 
+                    div.className = 'class-checkbox'; 
+                    div.innerHTML = `<input type="checkbox" id="assign-${a.id}" value="${a.id}" data-name="${a.assignmentName}" class="assignment-selector" checked><label for="assign-${a.id}">${a.assignmentName}</label>`; 
+                    assignmentFilterContainer.appendChild(div); 
+                }); 
+                document.getElementById('select-all-assignments').addEventListener('change', (e) => { 
+                    document.querySelectorAll('.assignment-selector').forEach(checkbox => { 
+                        checkbox.checked = e.target.checked; 
+                    }); 
+                }); 
+            } catch(error) { 
+                console.error("載入成績項目失敗:", error); 
+                assignmentFilterContainer.innerHTML += `<p style="color:red;">載入失敗！請檢查 Console。</p>`; 
+            } 
+        });
         
         runGradesQueryBtn.addEventListener('click', async () => { const reportType = document.querySelector('input[name="grades-report-type"]:checked').value; if (reportType === 'student') await runGradesStudentQuery(); else if (reportType === 'assignment') await runGradesAssignmentQuery(); else if (reportType === 'cross-class') await runGradesCrossClassQuery(); });
         
-        async function runGradesStudentQuery() { const container = document.getElementById('grades-results-container'); container.innerHTML = '查詢中...'; document.getElementById('export-grades-csv-btn').disabled = true; const selectedClass = gradesClassSelect.value; const selectedAssignments = [...document.querySelectorAll('.assignment-selector:checked')]; if (!selectedClass || selectedAssignments.length === 0) { container.innerHTML = '<p style="color:red;">請先選擇班級和成績項目！</p>'; return; } const studentsInClass = studentsData.filter(s => s.id.startsWith(selectedClass)).sort((a,b) => parseInt(a.id) - parseInt(b.id)); const assignmentIds = selectedAssignments.map(cb => cb.value); try { const assignmentsData = {}; const promises = assignmentIds.map(id => db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(id).get()); const assignmentSnapshots = await Promise.all(promises); assignmentSnapshots.forEach(doc => { if (doc.exists) { assignmentsData[doc.id] = { id: doc.id, ...doc.data() }; } }); currentGradesResults = { type: 'student', students: studentsInClass, assignments: Object.values(assignmentsData), data: assignmentsData }; renderGradesStudentResults(currentGradesResults); } catch (error) { console.error("查詢成績失敗:", error); container.innerHTML = `<p style="color:red;">查詢失敗！</p>`; } }
+        async function runGradesStudentQuery() { 
+			const container = document.getElementById('grades-results-container'); 
+			container.innerHTML = '查詢中...'; 
+			document.getElementById('export-grades-csv-btn').disabled = true; 
+			const selectedClass = gradesClassSelect.value; 
+			const selectedAssignments = [...document.querySelectorAll('.assignment-selector:checked')]; 
+			if (!selectedClass || selectedAssignments.length === 0) { 
+				container.innerHTML = '<p style="color:red;">請先選擇班級和成績項目！</p>'; 
+				return; 
+			} 
+			const studentsInClass = studentsData.filter(s => s.id.startsWith(selectedClass)).sort((a,b) => parseInt(a.id) - parseInt(b.id)); 
+			const assignmentIds = selectedAssignments.map(cb => cb.value); 
+			try { 
+				const assignmentsData = {}; 
+				const promises = assignmentIds.map(id => db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(id).get()); 
+				console.log('載入成績資料...');
+				const assignmentSnapshots = await Promise.all(promises); 
+				assignmentSnapshots.forEach(doc => { 
+					if (doc.exists) { assignmentsData[doc.id] = { id: doc.id, ...doc.data() }; } 
+				}); 
+				currentGradesResults = { type: 'student', students: studentsInClass, assignments: Object.values(assignmentsData), data: assignmentsData }; 
+				renderGradesStudentResults(currentGradesResults); 
+			} catch (error) { 
+				console.error("查詢成績失敗:", error); 
+				container.innerHTML = `<p style="color:red;">查詢失敗！</p>`; 
+			} 
+		}
         
         function renderGradesStudentResults(results) { const container = document.getElementById('grades-results-container'); document.getElementById('grades-results-title').innerHTML = `<span>查詢結果</span>`; const { students, assignments, data } = results; if (students.length === 0) { container.innerHTML = '<p>找不到學生資料。</p>'; return; } let tableHTML = '<table><thead><tr><th>座號</th><th>姓名</th>'; assignments.forEach(assign => { tableHTML += `<th>${assign.assignmentName}</th>`; }); tableHTML += '<th>個人平均</th></tr></thead><tbody>'; students.forEach(student => { tableHTML += `<tr><td>${student.id.substring(3)}</td><td>${student.name}</td>`; let total = 0; const count = assignments.length; assignments.forEach(assign => { const assignmentData = data[assign.id]; const scoreInfo = assignmentData && assignmentData.scores[student.id]; let cellContent = ''; let score = 0; if (scoreInfo && scoreInfo.score !== undefined && scoreInfo.score !== null) { cellContent = scoreInfo.score; score = scoreInfo.score; if (scoreInfo.comment) { cellContent += ` (${scoreInfo.comment})`; } } else { cellContent = '<span style="color:#aaa;">-</span>'; } total += score; tableHTML += `<td>${cellContent}</td>`; }); const avg = count > 0 ? (total/count).toFixed(1) : ''; tableHTML += `<td><strong>${avg}</strong></td></tr>`; }); tableHTML += '</tbody></table>'; container.innerHTML = tableHTML; document.getElementById('export-grades-csv-btn').disabled = false; }
         
