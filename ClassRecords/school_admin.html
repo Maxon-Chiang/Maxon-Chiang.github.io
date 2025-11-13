@@ -16,13 +16,11 @@
         .danger-zone { border: 2px solid #dc3545; }
         .danger-zone h2 { color: #dc3545; }
         #reset-semester-btn { background-color: #dc3545; padding: 10px 20px; font-size: 1.1em; }
-
         #announcement-section { background-color: #e7f3ff; border-color: #b3d7ff; }
         #announcement-section h2 { color: #004085; }
         #announcement-content { white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
         #announcement-meta { font-size: 0.9em; color: #555; text-align: right; }
         
-        /* 每個資料區塊的樣式 */
         .data-block {
             border-bottom: 1px dashed #ccc;
             padding-bottom: 20px;
@@ -33,8 +31,6 @@
             margin-bottom: 0;
             padding-bottom: 0;
         }
-
-        /* 時間設定表格樣式 */
         #periods-table {
             width: 100%;
             border-collapse: collapse;
@@ -48,22 +44,19 @@
         #periods-table th {
             background-color: #f2f2f2;
         }
-        /* 【修改點 1】: 增加時間選擇器的寬度，讓它能完整顯示 */
         #periods-table input[type="time"] {
-            width: 150px; /* 從 100px 增加到 120px 或更多 */
+            width: 150px;
             text-align: center;
             font-size: 1em;
         }
-        /* 【修改點 2】: 縮小持續時間輸入框的寬度 */
         #periods-table input[type="number"] {
-            width: 60px; /* 縮小寬度，僅夠容納兩位數 */
+            width: 60px;
             text-align: center;
         }
         #periods-table .duration-unit {
-             white-space: nowrap; /* 確保 "(分鐘)" 不會換行 */
+             white-space: nowrap;
              padding-left: 5px;
         }
-
         #periods-table button {
             background-color: #6c757d;
             padding: 5px 10px;
@@ -85,19 +78,14 @@
             <button id="logout-btn" style="margin-left: 15px; background-color: #6c757d;">登出</button>
         </div>
     </div>
-
     <div id="announcement-section" class="section">
         <h2>最新系統公告</h2>
         <div id="announcement-content">載入中...</div>
         <div id="announcement-meta"></div>
     </div>
-
     <div class="section">
         <h2>學期資料設定與上傳</h2>
-        <!-- 移除了教師基本資料，修正順序與說明 -->
         <p class="info-box">請將每項資料貼上/設定完成後，點擊該區塊的「上傳」按鈕獨立更新。必要資料：課程時間 → 學生名冊 → 教師課表。</p>
-        
-        <!-- 【重新編號 1】: 課程時間表 -->
         <div class="data-block">
             <h3>1. 課程時間表 (每節課起訖時間)</h3>
             <p class="info-box">請設定每節課的開始時間和持續分鐘數。</p>
@@ -116,28 +104,22 @@
             <button id="add-period-btn" style="margin-top: 10px;">+ 新增一節課</button>
             <button id="upload-periods-btn" class="upload-btn" data-type="periods">上傳課程時間表</button>
         </div>
-
-        <!-- 【重新編號 2】: 學生名冊 -->
         <div class="data-block">
             <label for="roster-data"><h3>2. 學生名冊</h3></label>
             <textarea id="roster-data" placeholder="格式: 班級座號,姓名 (一行一筆)&#10;70101,陳宥炘&#10;70102,廖翊暟"></textarea>
             <button id="upload-roster-btn" class="upload-btn" data-type="roster">上傳學生名冊</button>
         </div>
-
-        <!-- 【重新編號 3】: 全校教師課表 -->
         <div class="data-block">
             <label for="timetable-data"><h3>3. 全校教師課表</h3></label>
             <textarea id="timetable-data" placeholder="請貼上已轉AI換過的 CSV 格式課表..."></textarea>
             <button id="upload-timetable-btn" class="upload-btn" data-type="timetable">上傳教師課表</button>
         </div>
     </div>
-
     <div class="section danger-zone">
         <h2>學期重設 (危險操作)</h2>
         <p class="info-box"><strong>警告：</strong>此功能將會**刪除**目前學校所有老師的**成績紀錄**和**表現紀錄**。此操作無法復原，請謹慎使用！</p>
         <button id="reset-semester-btn">執行學期重設</button>
     </div>
-
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -151,14 +133,12 @@
 		appId: "1:431747377367:web:b157a8f5c59ce38091e892",
 		measurementId: "G-JWTQGM9XMP"
 	  };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
         let currentUser = null;
         let schoolId = null; 
         
-        // 用於儲存節次時間表的暫存數據
         let periodData = [
             { period: 1, start: '08:10', duration: 50 },
             { period: 2, start: '09:10', duration: 50 },
@@ -169,7 +149,6 @@
             { period: 7, start: '15:10', duration: 50 },
             { period: 8, start: '16:10', duration: 50 }
         ];
-
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 currentUser = user;
@@ -184,8 +163,8 @@
                     document.getElementById('admin-email').textContent = userData.displayName || user.email;
                     document.getElementById('admin-panel').style.display = 'block';
                     loadLatestAnnouncement();
-                    await loadPeriodsData(); // 新增：載入既有的時間表
-                    renderPeriodsTable(); // 渲染時間表介面
+                    await loadPeriodsData();
+                    renderPeriodsTable();
                 } else {
                     alert('權限不足！');
                     window.location.href = 'login.html';
@@ -195,7 +174,6 @@
             }
         });
 
-        // 輔助函數：計算結束時間
         function calculateEndTime(startTime, duration) {
             const [startH, startM] = startTime.split(':').map(Number);
             const totalMinutes = startH * 60 + startM + duration;
@@ -205,7 +183,6 @@
             return `${pad(endH)}:${pad(endM)}`;
         }
         
-        // 載入既有的 Periods Data
         async function loadPeriodsData() {
             try {
                 const periodsDoc = await db.collection('schools').doc(schoolId).collection('periods').doc('current').get();
@@ -213,7 +190,7 @@
                     periodData = periodsDoc.data().times.map(item => ({
                         period: item.period,
                         start: item.start,
-                        duration: item.duration || 50 // 假設舊資料沒有 duration，給予預設值
+                        duration: item.duration || 50
                     }));
                 }
             } catch (error) {
@@ -224,35 +201,23 @@
 		function renderPeriodsTable() {
             const tbody = document.getElementById('periods-tbody');
             tbody.innerHTML = '';
-            
             periodData.sort((a, b) => a.period - b.period);
-
             periodData.forEach((item, index) => {
                 const endTime = calculateEndTime(item.start, item.duration);
                 const row = tbody.insertRow();
                 row.dataset.index = index;
-                
                 row.insertCell().textContent = item.period;
-                
-                // 開始時間選擇器
                 const startCell = row.insertCell();
                 startCell.innerHTML = `<input type="time" class="period-start" value="${item.start}">`;
-                
-                // 持續時間輸入
                 const durationCell = row.insertCell();
-                // 【修改點 3】: 讓數字輸入框和單位文字在同一個 div 內，方便排版
                 durationCell.innerHTML = `
                     <div style="display:flex; align-items:center; justify-content:center;">
                         <input type="number" class="period-duration" value="${item.duration}" min="10" step="5">
                         <span class="duration-unit">(分鐘)</span>
                     </div>`;
-                
-                // 結束時間顯示 + 刪除按鈕
                 const actionCell = row.insertCell();
                 actionCell.innerHTML = `<span class="period-end" style="margin-right: 10px; font-weight: bold;">~ ${endTime}</span> <button class="delete-period-btn" data-index="${index}">刪除</button>`;
             });
-            
-            // 綁定事件監聽器 (必須在渲染後綁定)
             tbody.querySelectorAll('.period-start, .period-duration').forEach(input => {
                 input.addEventListener('change', updatePeriodData);
             });
@@ -276,8 +241,6 @@
                 }
                 dataItem.duration = duration;
             }
-            
-            // 重新計算結束時間並更新顯示
             const endTime = calculateEndTime(dataItem.start, dataItem.duration);
             row.querySelector('.period-end').textContent = `~ ${endTime}`;
         }
@@ -285,30 +248,22 @@
         function deletePeriod(e) {
             const index = parseInt(e.target.dataset.index);
             periodData.splice(index, 1);
-            
-            // 重新編號
             periodData.forEach((item, i) => item.period = i + 1);
-
             renderPeriodsTable();
         }
 
         document.getElementById('add-period-btn').addEventListener('click', () => {
             const newPeriodNum = periodData.length > 0 ? periodData[periodData.length - 1].period + 1 : 1;
             const lastEndTime = periodData.length > 0 ? calculateEndTime(periodData[periodData.length - 1].start, periodData[periodData.length - 1].duration) : '08:00';
-            
-            // 處理休息時間：假設每節課間休息 10 分鐘
             const [lastH, lastM] = lastEndTime.split(':').map(Number);
             const nextStartMinutes = lastH * 60 + lastM + 10; 
             const nextStartH = Math.floor(nextStartMinutes / 60) % 24;
             const nextStartM = nextStartMinutes % 60;
             const pad = (n) => String(n).padStart(2, '0');
             const nextStartTime = `${pad(nextStartH)}:${pad(nextStartM)}`;
-            
             periodData.push({ period: newPeriodNum, start: nextStartTime, duration: 50 });
             renderPeriodsTable();
         });
-
-
         async function loadLatestAnnouncement() {
             const contentEl = document.getElementById('announcement-content');
             const metaEl = document.getElementById('announcement-meta');
@@ -328,16 +283,12 @@
             }
         }
         
-        // --- 資料解析函數 (移除了 parseTeachers) ---
-        
-        // 移除了 parseTeachers 函數
-        
         function parseRoster(text) {
             const students = [];
             const lines = text.trim().split('\n');
             lines.forEach((line, index) => {
                 const parts = line.split(',').map(p => p.trim());
-                if (parts.length < 2 || !parts[0] || !parts[1]) return; // 忽略格式不符的空行
+                if (parts.length < 2 || !parts[0] || !parts[1]) return;
                 const [id, name] = parts;
                 if (!/^\d{5}$/.test(id)) throw new Error(`學生名冊第 ${index + 1} 行的班級座號 (${id}) 格式不正確`);
                 students.push({ id, name });
@@ -347,41 +298,29 @@
         }
 
 		function parseTimetable(text) {
-            // 定義常用科目，用於從課表內容中提取領域
             const OFFICIAL_SUBJECTS = ['國文', '英文', '英語', '數學', '社會', '自然', '綜合', '藝術', '健體', '科技', '公民', '歷史', '地理', '理化', '生物', '地科', '表演', '視覺', '音樂', '體育', '家政', '童軍', '輔導', '本土語', '資訊科技', '生活科技'];
             const PERIOD_NAMES = ['第一節', '第二節', '第三節', '第四節', '第五節', '第六節', '第七節', '第八節'];
             const lines = text.trim().split('\n');
-            
-            // 檢查 CSV 標頭行，確定格式是老師名稱,職稱,節次名稱,週一,週二...
             if (lines.length > 0 && lines[0].includes('老師名稱')) {
-                lines.shift(); // 移除標頭行
+                lines.shift();
             }
-            
             const schedules = {};
             const teacherTitles = {};
             const teacherSubjects = {};
-
             for (let i = 0; i < lines.length; i++) {
                 const parts = lines[i].split(',').map(p => p.trim());
-                if (parts.length < 8) continue; // 至少需要 老師,職稱,節次,5天
-
-                // 假設 CSV 格式為：老師名稱, 職稱, 節次名稱, 週一課, 週二課, ...
+                if (parts.length < 8) continue;
                 const [name, title, periodStr, mon, tue, wed, thu, fri] = parts;
-                
                 if (!name) continue;
-
                 if (!schedules[name]) {
                     schedules[name] = Array.from({ length: 8 }, () => Array(5).fill('')); 
                     teacherSubjects[name] = new Set();
                     teacherTitles[name] = title;
                 }
-
                 const periodIndex = PERIOD_NAMES.indexOf(periodStr);
                 if (periodIndex !== -1 && periodIndex < 8) {
                     const dailyLessons = [mon, tue, wed, thu, fri];
                     schedules[name][periodIndex] = dailyLessons;
-
-                    // 從每天的課程中提取科目資訊
                     dailyLessons.forEach(lesson => {
                         if (lesson) {
                             for (const officialSub of OFFICIAL_SUBJECTS) {
@@ -394,45 +333,29 @@
                     });
                 }
             }
-
-            // 將 Set 轉為逗號分隔的字串
             for (const teacher in teacherSubjects) {
                 teacherSubjects[teacher] = Array.from(teacherSubjects[teacher]).join(', ') || '其他';
             }
-            
-            // 由於移除了教師基本資料上傳，這裡的 teacherTitles/teacherSubjects 將用於直接儲存到 timetables 文件
             if (Object.keys(schedules).length === 0) throw new Error('未解析到任何有效的課表資料。');
             return { schedules, teacherTitles, teacherSubjects };
         }
         
-        // 移除了 mergeTeacherData 函數 (不再需要更新 teachers 集合)
-
-        // --- 單獨上傳函數 ---
-
-        // 移除了 uploadTeachers 函數
-        
         async function uploadPeriods() {
             try {
                 if (periodData.length === 0) return alert('請至少設定一節課的時間！');
-                
-                // 重新編號並計算 end time，確保數據結構正確
                 const periodsToUpload = periodData.map((item, index) => ({
-                    period: index + 1, // 重新確保節次編號
+                    period: index + 1,
                     start: item.start,
                     duration: item.duration,
                     end: calculateEndTime(item.start, item.duration)
                 }));
-                
                 const confirmationMessage = `確認上傳 ${periodsToUpload.length} 節課程時間表？`;
                 if (!confirm(confirmationMessage)) return alert('操作已取消。');
-                
                 const schoolRef = db.collection('schools').doc(schoolId);
                 const periodsRef = schoolRef.collection('periods').doc('current');
-                
                 await periodsRef.set({ times: periodsToUpload, uploadedAt: new Date() });
-                
                 alert('課程時間表已成功上傳/更新！');
-                renderPeriodsTable(); // 確保介面刷新
+                renderPeriodsTable();
             } catch (error) {
                 alert('上傳課程時間表時發生錯誤：\n' + error.message);
                 console.error(error);
@@ -446,12 +369,9 @@
                 const students = parseRoster(text);
                 const confirmationMessage = `確認上傳 ${students.length} 筆學生名冊資料？這將覆蓋現有資料。`;
                 if (!confirm(confirmationMessage)) return alert('操作已取消。');
-
                 const schoolRef = db.collection('schools').doc(schoolId);
                 const rosterRef = schoolRef.collection('rosters').doc('current');
-                
                 await rosterRef.set({ students: students, uploadedAt: new Date() });
-
                 alert('學生名冊已成功上傳/更新！');
             } catch (error) {
                 alert('上傳學生名冊時發生錯誤：\n' + error.message);
@@ -459,31 +379,22 @@
             }
         }
         
-        // 【修改 uploadTimetable 函數】: 直接儲存課表並附帶職稱與科目
         async function uploadTimetable() {
             const text = document.getElementById('timetable-data').value;
             if (!text) return alert('請貼上全校課表資料！');
             try {
                 const { schedules, teacherTitles, teacherSubjects } = parseTimetable(text);
-                
-                // 移除了所有對 teachers 集合的讀寫
-                
                 const confirmationMessage = `確認上傳 ${Object.keys(schedules).length} 筆課表資料？這將覆蓋現有課表。`;
                 if (!confirm(confirmationMessage)) return alert('操作已取消。');
-
                 const schoolRef = db.collection('schools').doc(schoolId);
                 const batch = db.batch();
-                
                 const oldTimetables = await schoolRef.collection('timetables').get();
-                oldTimetables.forEach(doc => batch.delete(doc.ref)); // 刪除舊課表
-
+                oldTimetables.forEach(doc => batch.delete(doc.ref));
                 for (const name in schedules) {
                     const scheduleObject = {};
                     schedules[name].forEach((dayData, periodIndex) => {
                         scheduleObject[periodIndex] = dayData;
                     });
-                    
-                    // 【關鍵修改】：將職稱和科目資訊直接儲存在 timetables 文件中
                     const scheduleData = { 
                          periods: scheduleObject,
                          title: teacherTitles[name] || '專任教師', 
@@ -492,7 +403,6 @@
                     const docRef = schoolRef.collection('timetables').doc(name);
                     batch.set(docRef, scheduleData);
                 }
-
                 await batch.commit();
                 alert('全校課表已成功上傳/更新！');
             } catch (error) {
@@ -500,25 +410,17 @@
                 console.error(error);
             }
         }
-
-        // --- 事件監聽器 (綁定到各自的按鈕) ---
-        // 移除了 document.getElementById('upload-teachers-btn').addEventListener('click', uploadTeachers);
         document.getElementById('upload-periods-btn').addEventListener('click', uploadPeriods);
         document.getElementById('upload-roster-btn').addEventListener('click', uploadRoster);
         document.getElementById('upload-timetable-btn').addEventListener('click', uploadTimetable);
-
         document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
         
         document.getElementById('reset-semester-btn').addEventListener('click', async () => { 
              const firstConfirm = confirm('警告：此操作將會刪除此學校所有老師的「成績紀錄」和「日常表現紀錄」！此操作無法復原。確定要繼續嗎？');
              if (!firstConfirm) return;
-             
              const secondConfirm = confirm('【最後確認】再次警告：您確定要永久刪除所有老師的成績和表現紀錄嗎？');
              if (!secondConfirm) return;
-             
              try {
-                // 這裡的刪除邏輯是針對所有老師的資料，不需要 schoolId 過濾（依賴 Firestore Rules）
-                
                 const deleteCollectionGroup = async (collectionName) => {
                     const docs = await db.collectionGroup(collectionName).get();
                     const batch = db.batch();
@@ -526,19 +428,14 @@
                     if (docs.size > 0) await batch.commit();
                     return docs.size;
                 };
-
                 const deletedGrades = await deleteCollectionGroup('assignments');
                 const deletedPerf = await deleteCollectionGroup('records');
-
-                // 刪除所有計算規則 (calculationRules) - 非 Collection Group
                 const ruleDocs = await db.collection('calculationRules').where('teacherId', '!=', '0').get();
                 const ruleBatch = db.batch();
                 ruleDocs.forEach(doc => ruleBatch.delete(doc.ref));
                 const deletedRules = ruleDocs.size;
                 if (deletedRules > 0) await ruleBatch.commit();
-
                 alert(`學期重設完成！已刪除 ${deletedGrades} 筆成績、${deletedPerf} 筆表現紀錄、${deletedRules} 筆計算規則。`);
-
              } catch(error) {
                 console.error("執行學期重設失敗:", error);
                 alert("重設失敗：請檢查控制台錯誤訊息或 Firestore 權限。");
