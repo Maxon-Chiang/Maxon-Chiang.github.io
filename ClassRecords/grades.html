@@ -335,7 +335,8 @@
 			let useGradesCache = false;
             let rosterDataLoaded = false;
             let assignmentsDataLoaded = false;
-            
+            let allStudents = [];
+			
             try {
                 const cachedStatic = localStorage.getItem(STATIC_CACHE_KEY);
                 if (cachedStatic) {
@@ -366,7 +367,7 @@
             }
 
             if (useStaticCache && CACHE_DATA_STATIC.rosterData) {
-                var allStudents = CACHE_DATA_STATIC.rosterData;
+                allStudents = CACHE_DATA_STATIC.rosterData;
                 rosterDataLoaded = true;
                 console.log('✅ 學生名冊：STATIC 快取命中！');
             }
@@ -405,7 +406,10 @@
 
             if (!assignmentsDataLoaded) {
 				try {
-					const allStudents = allStudents || [];
+					if (!allStudents || allStudents.length === 0) {
+					    console.warn("未載入學生名冊，無法確定任教班級，跳過成績建議載入。");
+                        return;
+					}
 					const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
 					const queryPromises = teacherClasses.map(cId => 
 						db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
