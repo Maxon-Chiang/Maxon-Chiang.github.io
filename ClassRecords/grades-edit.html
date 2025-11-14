@@ -41,10 +41,10 @@
         }
         
         .score-columns {
-            display: grid;
-            grid-template-columns: 15% 30% 20% 35%; 
+			display: grid;
+            grid-template-columns: 10% 25% 20% 35% 10%; 
             gap: 0px;
-            padding: 0; 
+            padding: 0;
         }
         
         .score-entry-header {
@@ -195,18 +195,22 @@
 				</div>
 			</div>
         </div>
-        
+
 		<div id="grade-entry-section" class="section">
-            <h3>學生分數登錄</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3>學生分數登錄</h3>
+                <span id="assignment-date-display" style="font-size: 0.9em; color: #666;"></span>
+            </div>
             <div id="student-scores-container">
                 <div class="score-entry-header score-columns">
                     <div>座號</div>
                     <div>姓名</div>
                     <div>分數</div>
                     <div>備註</div>
+					<div>登錄時間</div>
                 </div>
                 
-</div>
+			</div>
 		</div>
     </main>
     <div class="float-actions" id="float-actions-bar">
@@ -245,6 +249,18 @@
 		const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
         const USER_AUTH_KEY = 'user_auth_profile_v1';
         let CACHE_DATA = {};
+        const ASSIGNMENT_COMMENT_KEY = 'assignmentComment';
+        let currentAssignmentData = null; // 📌 Gemini 新增：儲存當前作業簿資料
+        
+        function formatDate(date) {
+            if (!date) return 'N/A';
+            if (date instanceof firebase.firestore.Timestamp) {
+                date = date.toDate();
+            }
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        }
+
         function navigateBackToList() {
             if (classId) {
                 window.location.href = `grades.html?class=${classId}`;
@@ -258,7 +274,7 @@
                 navigateBackToList();
             }
         });
-        
+		
         auth.onAuthStateChanged(async (user) => {
 			if (user) {
                 currentUser = user;
@@ -309,7 +325,8 @@
             
             let useStaticCache = false;
             let rosterDataLoaded = false;
-            
+            const assignmentDateDisplay = document.getElementById('assignment-date-display');
+		
             try {
                 const cached = localStorage.getItem(STATIC_CACHE_KEY);
                 if (cached) {
@@ -367,10 +384,16 @@
 				console.log('載入作業成績資料...');
                 if (assignmentDoc.exists) {
                     currentGradesData = assignmentDoc.data().scores || {};
+					const docData = assignmentDoc.data();
+                    const docDate = docData.date ? formatDate(docData.date) : '日期未知';
+                    assignmentDateDisplay.textContent = `作業簿建立/更新日期: ${docDate}`;
                 } else {
                     alert('找不到此成績項目，將以新增模式載入。');
                     assignmentId = null;
                 }
+            }
+			if (!assignmentId) {
+                assignmentDateDisplay.textContent = `今日登錄日期: ${formatDate(new Date())}`;
             }
             renderStudentScores();
 			appContainer.style.display = 'block';
@@ -386,14 +409,16 @@
             } else {
                 const headerDiv = document.createElement('div');
                 headerDiv.className = 'score-entry-header score-columns';
-                headerDiv.innerHTML = `<div>座號</div><div>姓名</div><div>分數</div><div>備註</div>`;
+				headerDiv.innerHTML = `<div>座號</div><div>姓名</div><div>分數</div><div>備註</div><div>登錄時間</div>`;
                 studentScoresContainer.appendChild(headerDiv);
             }
             studentsInClass.forEach(student => {
                 const studentId = student.id;
                 const studentSeat = studentId.substring(3);
-                const existingScore = currentGradesData[studentId] ? currentGradesData[studentId].score : '';
-                const existingComment = currentGradesData[studentId] ? currentGradesData[studentId].comment : '';
+				const existingScoreEntry = currentGradesData[studentId] || {}; 
+                const existingScore = existingScoreEntry.score !== undefined && existingScoreEntry.score !== null ? existingScoreEntry.score : '';
+                const existingComment = existingScoreEntry.comment || '';
+                const existingDate = existingScoreEntry.scoreEntryDate || '未登錄';
                 const studentDiv = document.createElement('div');
                 studentDiv.className = 'score-entry-grid score-columns'; 
                 studentDiv.dataset.id = studentId;
@@ -454,7 +479,7 @@
 		
         saveGradesBtn.addEventListener('click', saveGrades);
 
-        async function saveGrades() {
+		async function saveGrades() {
             const assignmentName = editAssignmentNameInput.value.trim();
             const generalComment = editGeneralCommentInput.value.trim();
             if (!assignmentName) {
@@ -467,11 +492,24 @@
             const scoresToSave = {};
             let isAnyScoreEntered = false;
             let invalidScoreError = false;
+            
+            // 📌 Gemini 修改開始：取得今天的日期字串和現有成績資料 (使用 scoreEntryDate)
+            const today = new Date();
+            const pad = (n) => String(n).padStart(2, '0');
+            const dateString = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+            const existingScores = currentGradesData || {}; // 獲取現有的 scores 資料
+            // 📌 Gemini 修改結束
+
             studentsInClass.forEach(student => {
                 const scoreInput = document.querySelector(`.student-score-input[data-id="${student.id}"]`);
                 const commentInput = document.querySelector(`.student-comment-input[data-id="${student.id}"]`);
                 const scoreValue = scoreInput.value.trim();
                 const commentValue = commentInput.value.trim();
+                
+                // 📌 Gemini 修改開始：獲取現有的單筆成績紀錄
+                const existingScoreEntry = existingScores[student.id] || {};
+                // 📌 Gemini 修改結束
+                
                 let score = null;
                 if (scoreValue !== '') {
                     score = parseFloat(scoreValue);
@@ -483,11 +521,29 @@
                     }
                     isAnyScoreEntered = true;
                 }
+                
                 if (score !== null || commentValue !== '') {
-                    scoresToSave[student.id] = {
+                    
+                    // 📌 Gemini 修改開始：成績登錄時間戳記邏輯 (不可覆蓋原則)
+                    let entryDate = existingScoreEntry.scoreEntryDate || null; // 獲取現有的時間戳記
+
+                    // 如果沒有時間戳記，且有輸入分數，則寫入今天的日期
+                    if (!entryDate && score !== null) {
+                        entryDate = dateString;
+                    }
+                    
+                    const scoreObject = {
                         score: score,
                         comment: commentValue
                     };
+                    
+                    // 只有當 entryDate 存在時，才將其寫入物件
+                    if (entryDate) {
+                        scoreObject.scoreEntryDate = entryDate; 
+                    }
+                    
+                    scoresToSave[student.id] = scoreObject;
+                    // 📌 Gemini 修改結束
                 }
             });
             if (invalidScoreError) {
@@ -495,11 +551,11 @@
                 saveGradesBtn.textContent = '更新儲存';
                 return;
             }
-            if (!isAnyScoreEntered && studentsInClass.length > 0) {
-                alert('請至少為一位學生輸入分數。');
-                saveGradesBtn.disabled = false;
-                saveGradesBtn.textContent = '更新儲存';
-                return;
+            if (Object.keys(scoresToSave).length === 0 && studentsInClass.length > 0) {
+                 alert('請至少為一位學生輸入分數或備註。');
+                 saveGradesBtn.disabled = false;
+                 saveGradesBtn.textContent = '更新儲存';
+                 return;
             }
             const dataToSave = {
                 className: classId,
