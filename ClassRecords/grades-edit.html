@@ -65,11 +65,19 @@
             border-bottom: 1px solid #eee;
 			height: 30px;
         }
+		#student-scores-container .score-entry-grid:nth-child(odd) {
+            background-color: #fcfcfc; /* 淺色 */
+        }
+
+        #student-scores-container .score-entry-grid:nth-child(even) {
+            background-color: #f4f4f4; /* 稍深一點的顏色 */
+        }
         .score-entry-grid:last-child { 
             border-bottom: none; 
         }
         
         .score-entry-grid input {
+            background-color: transparent; 
             margin: 0;
             padding: 8px;
             width: 100%;
