@@ -386,7 +386,7 @@
                     currentGradesData = assignmentDoc.data().scores || {};
 					const docData = assignmentDoc.data();
                     const docDate = docData.date ? formatDate(docData.date) : '日期未知';
-                    assignmentDateDisplay.textContent = `作業簿建立/更新日期: ${docDate}`;
+                    assignmentDateDisplay.textContent = `建立/更新日期: ${docDate}`;
                 } else {
                     alert('找不到此成績項目，將以新增模式載入。');
                     assignmentId = null;
@@ -587,3 +587,4 @@
     </script>
 </body>
 </html>
+
