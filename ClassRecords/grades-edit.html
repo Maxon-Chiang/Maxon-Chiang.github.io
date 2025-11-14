@@ -260,6 +260,25 @@
             const pad = (n) => String(n).padStart(2, '0');
             return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
         }
+		
+		function formatMinguoDate(dateString) {
+			if (!dateString || typeof dateString !== 'string' || dateString.length < 10) {
+				return '未登錄';
+			}
+			// 假設格式為 YYYY-MM-DD
+			const parts = dateString.split('-');
+			const year = parseInt(parts[0], 10);
+			const month = parts[1];
+			const day = parts[2];
+			
+			if (isNaN(year) || year < 1912) { // 1912 是民國元年
+				return dateString;
+			}
+			
+			const minguoYear = year - 1911;
+			// 輸出格式：民國年/月/日
+			return `${minguoYear}/${month}/${day}`;
+		}
 
         function navigateBackToList() {
             if (classId) {
@@ -418,14 +437,15 @@
 				const existingScoreEntry = currentGradesData[studentId] || {}; 
                 const existingScore = existingScoreEntry.score !== undefined && existingScoreEntry.score !== null ? existingScoreEntry.score : '';
                 const existingComment = existingScoreEntry.comment || '';
-				const existingDate = (typeof existingScoreEntry.scoreEntryDate === 'string' && existingScoreEntry.scoreEntryDate.trim()) 
-                                     ? existingScoreEntry.scoreEntryDate 
+				const rawDate = existingScoreEntry.scoreEntryDate;
+                const existingDate = (typeof rawDate === 'string' && rawDate.trim()) 
+                                     ? formatMinguoDate(rawDate) // 轉換為民國年
                                      : '';
                 const studentDiv = document.createElement('div');
                 studentDiv.className = 'score-entry-grid score-columns'; 
                 studentDiv.dataset.id = studentId;
-                studentDiv.innerHTML = `
-					<div class="student-id-cell">${studentSeat}</div>
+				studentDiv.innerHTML = `
+                    <div class="student-id-cell">${studentSeat}</div>
                     <div class="student-name-cell">${student.name}</div>
                     <div class="score-input-cell">
                         <input type="number" step="0.5" min="0" max="100" class="student-score-input" data-id="${studentId}" value="${existingScore}" placeholder="分數">
@@ -433,8 +453,8 @@
                     <div class="comment-input-cell">
                         <input type="text" class="student-comment-input" data-id="${studentId}" value="${existingComment}" placeholder="備註 (選填)">
                     </div>
-                    <div class="score-date-display" style="text-align: center; font-size: 0.85em; color: #555;">${existingDate}</div>
-                    `;
+                    <div class="score-date-display" style="text-align: center; font-size: 0.7em; color: #555; white-space: nowrap;">${existingDate}</div>
+                `;
               studentScoresContainer.appendChild(studentDiv);
             });
             setupKeyboardNavigation();
