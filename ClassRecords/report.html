@@ -144,6 +144,7 @@
         <h1>數據報告</h1>
         <div class="header-actions">
             <span id="user-email"></span>
+			<button id="manual-reload-btn" style="background: transparent; border: 1px solid #fff; margin-right: 5px;">🔄 手動更新</button>
             <button onclick="history.back()">返回主頁</button>
             <button id="logout-btn">登出</button>
         </div>
@@ -342,11 +343,11 @@
                     const parsedCache = JSON.parse(storedCache);
                     const now = new Date().getTime();
                     CACHE_DATA = parsedCache;
-                    if (parsedCache.lastUpdated && (now - parsedCache.lastUpdated) < CACHE_LIFETIME) {
+                    if (parsedCache.lastUpdated) { 
                         useCache = true;                                                
                         if (CACHE_DATA.allAssignments) {
                             allAssignments = CACHE_DATA.allAssignments;
-                            console.log('✨ 成績項目：快取命中！');
+                            console.log('✨ 成績項目：快取命中！(手動模式)');
                             assignmentsDataLoaded = true;
                         }
                     } else if(parsedCache.lastUpdated) {
@@ -446,6 +447,13 @@
             }
         }
         
+		document.getElementById('manual-reload-btn').addEventListener('click', () => {
+            if(confirm('確定要從雲端重新下載資料嗎？')) {
+                localStorage.removeItem(REPORT_STATIC_CACHE_KEY);
+                window.location.reload();
+            }
+        });
+		
         document.querySelectorAll('.tab-btn').forEach(button => { button.addEventListener('click', () => { document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active')); button.classList.add('active'); document.getElementById(button.dataset.tab + '-tab').classList.add('active'); }); });
         
         document.querySelectorAll('input[name="perf-report-type"]').forEach(radio => { 
