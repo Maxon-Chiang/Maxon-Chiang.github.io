@@ -275,8 +275,27 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 	function runMainApp() {
+        /* 🟢 修改 start: 加入逾時檢查與更詳細的狀態顯示 */
+        // 設定一個計時器，如果 Auth 超過 5 秒沒反應，提示使用者
+        const authTimeout = setTimeout(() => {
+            const container = document.getElementById('app-container');
+            if (container && container.innerHTML.includes('正在載入您的資料')) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:20px;">
+                        <h2>連線回應較慢...</h2>
+                        <p>系統正在嘗試連接身分驗證伺服器。</p>
+                        <p>若持續停留在此畫面，請嘗試 <a href="javascript:window.location.reload()">重新整理</a>。</p>
+                    </div>`;
+            }
+        }, 8000); // 8秒後提示
+
 		auth.onAuthStateChanged(async (user) => {
+            clearTimeout(authTimeout); // Auth 有反應了，清除計時器
+
 			if (user) {
+                // 立即更新 UI，讓使用者知道 JS 有在跑
+                document.getElementById('app-container').innerHTML = '<h2>🔄 身分驗證成功，正在讀取設定...</h2>';
+
 				if (currentUser && currentUser.uid === user.uid) return;
 				currentUser = user;
 				
@@ -285,7 +304,8 @@ document.addEventListener('DOMContentLoaded', function() {
 					const cachedAuth = localStorage.getItem(USER_AUTH_KEY);
 					if (cachedAuth) {
 						const parsedCache = JSON.parse(cachedAuth);
-						if (parsedCache.uid === user.uid && (new Date().getTime() - parsedCache.lastUpdated < 3600000)) {
+                        // 這裡配合您之前的修改，已移除時間判斷
+						if (parsedCache.uid === user.uid) {
 							userDocData = parsedCache.userData;
 							console.log('✅ 快取命中：讀取到用戶角色資料。');
 						} else {
@@ -298,16 +318,35 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 				
 				if (!userDocData) {
-					const userDoc = await db.collection('users').doc(user.uid).get();
-					console.log('載入user資料...'); 
-					if (userDoc.exists) {
-						userDocData = userDoc.data();
-						localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
-							uid: user.uid,
-							userData: userDocData,
-							lastUpdated: new Date().getTime()
-						}));
-					}
+                    // 增加讀取 Firestore 的逾時保護 (防止網路卡住)
+                    try {
+                        document.getElementById('app-container').innerHTML = '<h2>☁️ 正在從雲端下載使用者資料...</h2>';
+                        
+                        const fetchUserPromise = db.collection('users').doc(user.uid).get();
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error("讀取逾時")), 10000)
+                        );
+
+                        const userDoc = await Promise.race([fetchUserPromise, timeoutPromise]);
+                        
+                        console.log('載入user資料...'); 
+                        if (userDoc.exists) {
+                            userDocData = userDoc.data();
+                            localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
+                                uid: user.uid,
+                                userData: userDocData,
+                                lastUpdated: new Date().getTime()
+                            }));
+                        }
+                    } catch (err) {
+                        console.error("讀取使用者資料失敗:", err);
+                        document.getElementById('app-container').innerHTML = `
+                            <h2>⚠️ 讀取資料失敗</h2>
+                            <p>請檢查您的網路連線。</p>
+                            <button onclick="window.location.reload()" style="padding:10px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">重新整理</button>
+                        `;
+                        return;
+                    }
 				}
 
 				if (userDocData && (userDocData.role === 'teacher' || userDocData.role === 'school_admin' || userDocData.role === 'admin')) {
@@ -327,6 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				window.location.href = `login.html`;
 			}
 		});
+        /* 🟢 修改 end */
 	}
 	
 	window.addEventListener('pageshow', async (event) => {
@@ -754,8 +794,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } 
 			
 			const needsRefresh = localStorage.getItem(REFRESH_FLAG_KEY) === 'true';
-			const needsRefreshSchUpd = ((new Date().getTime() - lastSchUpdFetch) >= CACHE_LIFETIME)
-			const needsRefreshPerformance = ((new Date().getTime() - lastPerformanceFetch) >= CACHE_LIFETIME)
+			const needsRefreshSchUpd = false; // ((new Date().getTime() - lastSchUpdFetch) >= CACHE_LIFETIME)
+			const needsRefreshPerformance =  false; // ((new Date().getTime() - lastPerformanceFetch) >= CACHE_LIFETIME)
 			
 			if (forceReload || needsRefresh || (forceItem==1) || needsRefreshSchUpd) {
 				await loadActiveChanges(true); 
