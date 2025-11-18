@@ -152,6 +152,35 @@ async function main(userData) {
     if (activeChanges.length === 0) {
         await loadActiveChanges();
     }
+	const headerActions = document.querySelector('header .header-actions');
+    // 避免重複添加
+    if (headerActions && !document.getElementById('js-timetable-reload-btn')) {
+         const reloadBtn = document.createElement('button');
+         reloadBtn.id = 'js-timetable-reload-btn';
+         reloadBtn.textContent = '🔄 手動更新';
+         // 套用與 header 按鈕相同的樣式基底，並做微調
+         reloadBtn.style.background = 'transparent';
+         reloadBtn.style.border = '1px solid #fff';
+         reloadBtn.style.color = 'white';
+         reloadBtn.style.padding = '5px 10px';
+         reloadBtn.style.borderRadius = '4px';
+         reloadBtn.style.cursor = 'pointer';
+         reloadBtn.style.marginRight = '10px'; // 與登出按鈕保持距離
+         reloadBtn.style.fontSize = '1em';
+
+         // 將按鈕插入到 header-actions 的最前面 (在 user-email 之前或之後皆可，這裡插在最前)
+         headerActions.prepend(reloadBtn);
+
+         reloadBtn.addEventListener('click', () => {
+             if(confirm('確定要從雲端重新下載最新課表資料嗎？')) {
+                 // 清除課表專用快取
+                 localStorage.removeItem(TIMETABLE_CACHE_KEY);
+                 // 建議也清除 Auth 快取以確保角色權限最新
+                 localStorage.removeItem(USER_AUTH_KEY); 
+                 window.location.reload();
+             }
+         });
+    }
     populateRecentList();
     const welcomeModal = document.getElementById('welcome-modal-timetable');
     if (localStorage.getItem('hideTimetableWelcome') !== 'true') {
