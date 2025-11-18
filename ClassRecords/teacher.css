@@ -87,6 +87,10 @@ header h1 {
     font-size: 1.0em;
     flex-shrink: 0;
 }
+#user-email {
+    margin-left: 10px;
+    font-size: 1.0em;
+}
 .main-actions {
     display: flex;
     gap: 5px;
@@ -933,6 +937,9 @@ body.modal-open { overflow: hidden; }
         margin-left: 10px; 
         margin-right: 5px; 
     }
+    #user-email {
+		font-size: 0.6em;
+	}	
 	header h1 {
 		text-align: center;
 		font-size: 1.5em;
