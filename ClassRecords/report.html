@@ -46,7 +46,7 @@
         .sortable-header .sort-arrow { margin-left: 5px; color: #999; display: inline-block; width: 1em; }
         .back-btn { background-color: #6c757d; color: white; font-size: 0.9em; padding: 5px 10px; border: none; border-radius: 4px; }
 		#user-email {
-            margin-right: 15px;
+            margin-left: 10px;
             font-size: 1.0em;
         }
         header .header-actions {
@@ -93,6 +93,9 @@
                 align-items: flex-start;
                 gap: 10px;
             }
+	        #user-email {
+				font-size: 0.6em;
+			}
 			.reload-text {
                 display: block;
             }
@@ -147,10 +150,10 @@
 	<header>
         <h1>數據報告</h1>
         <div class="header-actions">
-            <span id="user-email"></span>
 			<button id="manual-reload-btn">🔄 手動更新</button>
             <button onclick="history.back()">返回主頁</button>
             <button id="logout-btn">登出</button>
+            <span id="user-email"></span>
         </div>
     </header>
     <main>
@@ -1052,5 +1055,3 @@
     </script>
 </body>
 </html>
-
-
