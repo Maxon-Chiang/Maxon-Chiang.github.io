@@ -178,6 +178,7 @@
         <h1>成績計算</h1>
         <div class="header-actions">
             <span id="user-email"></span>
+			<button id="manual-reload-btn" style="background: transparent; border: 1px solid #fff; margin-right: 5px;">🔄 手動更新</button>
 			<button onclick="history.back()">返回主頁</button>
             <button id="logout-btn">登出</button>
         </div>
@@ -405,7 +406,7 @@
                     DYNAMIC_CACHE_CALCULATOR = JSON.parse(cachedDynamicCalculator);
                     if (DYNAMIC_CACHE_CALCULATOR.uid === currentUser.uid) {
                         
-                        const isCacheValid = DYNAMIC_CACHE_CALCULATOR.lastUpdated && (now - DYNAMIC_CACHE_CALCULATOR.lastUpdated < CACHE_LIFETIME);
+                        const isCacheValid = true;
                         
                         if (DYNAMIC_CACHE_CALCULATOR.hasOwnProperty('allRules') && isCacheValid) {
                             allRules = DYNAMIC_CACHE_CALCULATOR.allRules || [];
@@ -858,6 +859,14 @@
             tableHTML += `</tbody></table>`;
             resultsContainer.innerHTML = tableHTML;
         }
+		document.getElementById('manual-reload-btn').addEventListener('click', () => {
+            if(confirm('確定要從雲端重新下載成績與規則資料嗎？')) {
+                localStorage.removeItem(CALCULATOR_DYNAMIC_CACHE_KEY);
+                localStorage.removeItem(STATIC_CACHE_KEY);
+                localStorage.removeItem(DYNAMIC_CACHE_KEY);
+                window.location.reload();
+            }
+        });
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
     </script>
 </body>
