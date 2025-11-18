@@ -483,6 +483,7 @@ header .header-actions {
         font-size: 0.8em;
 		margin-left: 5px;
     }	
+	header a button, header button { padding: 5px 5px; margin-left: 5px; font-size: 0.8em;}
 	#user-email {
 		font-size: 0.6em;
 	}
