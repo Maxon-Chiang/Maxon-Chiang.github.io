@@ -186,9 +186,9 @@
                 if (cachedAuthData) {
                     try {
                         const parsedCache = JSON.parse(cachedAuthData);
-                        if (parsedCache.uid === user.uid && (new Date().getTime() - parsedCache.lastUpdated < 3600000)) {
+                        if (parsedCache.uid === user.uid) {
                              userDocData = parsedCache.userData;
-                             console.log('✅ AUTH 快取命中：讀取到用戶角色資料。');
+                             console.log('✅ AUTH 快取命中：讀取到用戶角色資料 (手動模式)。');
                         } else {
                             localStorage.removeItem(USER_AUTH_KEY);
                         }
@@ -398,6 +398,20 @@
             errorMessage.textContent = msg;
             auth.signOut();
         }
+		/*
+		const manualClearBtn = document.getElementById('manual-clear-auth-btn');
+        if (manualClearBtn) {
+            manualClearBtn.addEventListener('click', () => {
+                 if(confirm('這將清除本地儲存的登入身分資料並重新從雲端讀取，確定嗎？')) {
+                     localStorage.removeItem(USER_AUTH_KEY);
+                     localStorage.removeItem(STATIC_CACHE_KEY); 
+                     window.location.reload();
+                 }
+            });
+        } else {
+            console.warn("找不手動清除按鈕 (manual-clear-auth-btn)，請確認 HTML 是否已正確加入。");
+        }
+		*/
     });
     </script>
 </body>
