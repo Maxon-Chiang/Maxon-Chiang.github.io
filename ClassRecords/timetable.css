@@ -177,7 +177,7 @@ header .header-actions button {
 .swap-suggestion .class-detail + .teacher-detail { margin-left: 0; }
 .cleared-cell { background-color: var(--cleared-bg); }
 #user-email {
-  margin-right: 15px;
+  margin-left: 10px;
   font-size: 1.0em;
 }
 header .header-actions {
@@ -484,8 +484,7 @@ header .header-actions {
 		margin-left: 5px;
     }	
 	#user-email {
-		margin-right: 10px;
-		font-size: 0.8em;
+		font-size: 0.6em;
 	}
     .container { padding: 10px; margin: 10px; }
     .close-button { top: 10px; right: 15px; }
