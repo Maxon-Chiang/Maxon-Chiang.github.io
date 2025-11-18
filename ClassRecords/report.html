@@ -87,7 +87,7 @@
             main { padding: 10px; }
             .section { padding: 5px 15px 10px; margin-bottom: 10px;}
             header h1 { font-size: 1.6em; }
-			header a button, header button { padding: 2px 5px; margin-left: 5px; font-size: 0.8em;}
+			header a button, header button { padding: 2px 8px; margin-left: 5px; font-size: 0.8em;}
             h2 {
                 flex-direction: column;
                 align-items: flex-start;
@@ -148,7 +148,7 @@
         <h1>數據報告</h1>
         <div class="header-actions">
             <span id="user-email"></span>
-			<button id="manual-reload-btn">🔄 手動更新</button>
+			<button id="manual-reload-btn" style="background: transparent; border: 1px solid #fff; margin-right: 5px;">🔄 <span class="reload-text">手動更新</span></button>
             <button onclick="history.back()">返回主頁</button>
             <button id="logout-btn">登出</button>
         </div>
@@ -1052,5 +1052,3 @@
     </script>
 </body>
 </html>
-
-
