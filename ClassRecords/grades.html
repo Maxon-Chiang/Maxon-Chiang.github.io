@@ -197,6 +197,7 @@
         <h1 id="header-title">成績登錄</h1>
         <div class="header-actions">
             <span id="user-email"></span>
+			<button id="manual-reload-btn" style="background: transparent; border: 1px solid #fff; margin-right: 5px;">🔄 手動更新</button>
             <button onclick="window.location.href='teacher.html'">返回主頁</button>
             <button id="logout-btn">登出</button>
         </div>
@@ -390,10 +391,10 @@
             
             
             const now = new Date().getTime();
-            if (useGradesCache && CACHE_DATA_GRADES.assignmentNames && CACHE_DATA_GRADES.lastAssignmentUpdate && (now - CACHE_DATA_GRADES.lastAssignmentUpdate < CACHE_LIFETIME)) {
+            if (useGradesCache && CACHE_DATA_GRADES.assignmentNames) {
                 var gradeAssignmentNames = new Set(CACHE_DATA_GRADES.assignmentNames);
                 assignmentsDataLoaded = true;
-                console.log('✅ 成績項目名稱：STATIC 快取命中！');
+                console.log('✅ 成績項目名稱：STATIC 快取命中！(手動模式)');
             }
 
 			if (!classId) {
@@ -575,6 +576,17 @@
                 }
             }
         });
+		const manualReloadBtn = document.getElementById('manual-reload-btn');
+        if(manualReloadBtn){
+            manualReloadBtn.addEventListener('click', () => {
+                if(confirm('確定要從雲端重新下載成績項目資料嗎？')) {
+                    localStorage.removeItem(GRADES_CACHE_KEY);
+                    // 也要清除 static cache 以確保名冊也是新的
+                    localStorage.removeItem(STATIC_CACHE_KEY);
+                    window.location.reload();
+                }
+            });
+        }
         document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
     </script>
 </body>
