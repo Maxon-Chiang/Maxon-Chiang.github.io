@@ -152,8 +152,8 @@ async function main(userData) {
     if (activeChanges.length === 0) {
         await loadActiveChanges();
     }
+	/*
 	const headerActions = document.querySelector('header .header-actions');
-    // 避免重複添加
     if (headerActions && !document.getElementById('js-timetable-reload-btn')) {
          const reloadBtn = document.createElement('button');
          reloadBtn.id = 'js-timetable-reload-btn';
@@ -181,6 +181,7 @@ async function main(userData) {
              }
          });
     }
+	*/
     populateRecentList();
     const welcomeModal = document.getElementById('welcome-modal-timetable');
     if (localStorage.getItem('hideTimetableWelcome') !== 'true') {
