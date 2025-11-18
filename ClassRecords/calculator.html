@@ -121,7 +121,10 @@
             main {
                 padding: 10px;
             }
-            .tab-nav button {
+            .reload-text {
+                display: none;
+            }
+			.tab-nav button {
                 padding: 10px 12px;
                 font-size: 1em;
             }
@@ -178,7 +181,7 @@
         <h1>成績計算</h1>
         <div class="header-actions">
             <span id="user-email"></span>
-			<button id="manual-reload-btn" style="background: transparent; border: 1px solid #fff; margin-right: 5px;">🔄 手動更新</button>
+			<button id="manual-reload-btn" style="background: transparent; border: 1px solid #fff; margin-right: 5px;">🔄 <span class="reload-text">手動更新</span></button>
 			<button onclick="history.back()">返回主頁</button>
             <button id="logout-btn">登出</button>
         </div>
