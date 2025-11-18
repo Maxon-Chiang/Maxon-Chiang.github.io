@@ -930,9 +930,8 @@ body.modal-open { overflow: hidden; }
 		padding-left: 5px;
     }
     #reload-cache-btn {
-        margin-left: 0px; 
-        margin-right: 0; 
-		padding-left: 5px;
+        margin-left: 10px; 
+        margin-right: 5px; 
     }
 	header h1 {
 		text-align: center;
