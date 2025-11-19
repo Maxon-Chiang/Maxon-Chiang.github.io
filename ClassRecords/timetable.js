@@ -947,7 +947,19 @@ async function showSchedule(name, type, direction = 10) {
 				}
 			});
 		}
-
+		
+		const userEmailSpan = document.getElementById('user-email');
+		if (userEmailSpan) {
+			userEmailSpan.addEventListener('click', () => {
+				if (currentUserDisplayName) {
+					// 重設為本週
+					currentWeekStart = getMonday(new Date());
+					// 呼叫顯示課表函式 (使用全域變數 currentUserDisplayName)
+					showSchedule(currentUserDisplayName, 'teacher');
+				}
+			});
+		}
+		
 		// 4. 手機滑動手勢 (維持不變)
 		const scheduleModalBody = document.getElementById('modal-body'); 
 		const exchangeModalBody = document.getElementById('exchange-modal-body'); 
@@ -2112,81 +2124,85 @@ function findNextChangeWeek(direction) {
     return targetWeekTS ? new Date(targetWeekTS) : null;
 }
 
-/* 🟢 修改 start: bindEventListeners 函式 (請完整覆蓋舊函式) */
+/* 🟢 修改 start: bindEventListeners 函式 (修正點擊名字無反應的問題) */
 function bindEventListeners() {
-    // 1. 下拉選單按鈕
-    document.getElementById('recent-schedules-btn').addEventListener('click', (event) => {
-        event.stopPropagation();
-        populateRecentList();
-        document.getElementById('recent-schedules-list').classList.toggle('show');
-    });
+    // 防止重複執行的旗標
+    if (window.isTimetableEventsBound) return;
+    window.isTimetableEventsBound = true;
 
-    // 🟢 新增：點擊標題名稱也能觸發下拉選單
-    const mainTitle = document.getElementById('main-title');
-    if (mainTitle) {
-        mainTitle.addEventListener('click', (event) => {
-            event.stopPropagation();
-            // 呼叫下拉按鈕的點擊事件
-            document.getElementById('recent-schedules-btn').click();
-        });
-    }
-    
-    // 🟢 新增：自動開啟 Checkbox 邏輯
+    // 1. 自動開啟 Checkbox 設定
     const autoOpenChk = document.getElementById('auto-open-chk');
     const AUTO_OPEN_KEY = 'timetable_auto_open_preference';
     if (autoOpenChk) {
-        // 初始化狀態：如果 LocalStorage 沒有值或不是 'false'，則預設勾選
         autoOpenChk.checked = localStorage.getItem(AUTO_OPEN_KEY) !== 'false';
-        
-        // 監聽變更
         autoOpenChk.addEventListener('change', (e) => {
             localStorage.setItem(AUTO_OPEN_KEY, e.target.checked);
         });
     }
 
-    // 🟢 修改：點擊視窗其他地方關閉下拉選單 (包含檢查標題點擊)
-    window.addEventListener('click', (event) => {
-        // 這裡增加了 !event.target.matches('#main-title') 的判斷
-        if (!event.target.matches('#recent-schedules-btn') && !event.target.matches('#main-title')) {
-            const recentSchedulesList = document.getElementById('recent-schedules-list');
-            if (recentSchedulesList.classList.contains('show')) {
-                recentSchedulesList.classList.remove('show');
+    // 2. 統一的點擊事件管理員
+    document.addEventListener('click', (event) => {
+        const target = event.target;
+        const dropdownList = document.getElementById('recent-schedules-list');
+        
+        // A. 下拉選單切換
+        if (target.closest('#recent-schedules-btn') || target.closest('#main-title')) {
+            event.stopPropagation();
+            populateRecentList();
+            if (dropdownList) dropdownList.classList.toggle('show');
+            return;
+        }
+
+        // B. 關閉下拉選單
+        if (dropdownList && dropdownList.classList.contains('show') && !target.closest('.dropdown-content')) {
+            dropdownList.classList.remove('show');
+        }
+
+        // C. 關閉 Modal
+        if (target.classList.contains('modal') || target.closest('.close-button')) {
+            const modal = target.classList.contains('modal') ? target : target.closest('.modal').closest('.modal'); 
+            if (modal) modal.style.display = 'none';
+        }
+    });
+
+    // 3. 搜尋框輸入監聽
+    const searchInput = document.getElementById('search-teacher');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            const container = document.getElementById('teacher-list-by-subject-container'); 
+            if (container) {
+                container.querySelectorAll('.department-table').forEach(table => {
+                    let tableHasVisibleRow = false;
+                    table.querySelectorAll('tbody tr').forEach(row => {
+                        const nameCell = row.querySelector('.name-cell');
+                        const isVisible = nameCell && nameCell.textContent.toLowerCase().includes(searchTerm);
+                        row.style.display = isVisible ? '' : 'none';
+                        if (isVisible) tableHasVisibleRow = true;
+                    });
+                    table.style.display = (tableHasVisibleRow || !searchTerm) ? '' : 'none';
+                });
             }
-        }
-    });
-
-    // Modal 關閉按鈕
-    document.querySelectorAll('.modal .close-button').forEach(btn => {
-        btn.onclick = (e) => {
-            const modal = e.target.closest('.modal');
-            modal.style.display = 'none';
-        };
-    });
-
-    // 點擊 Modal 外部關閉
-    window.onclick = (event) => {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = 'none';
-        }
-    };
-
-    // 搜尋框輸入
-    document.getElementById('search-teacher').addEventListener('input', (e) => {
-        const searchTerm = e.target.value.toLowerCase().trim();
-        const container = document.getElementById('teacher-list-by-subject-container'); 
-        container.querySelectorAll('.department-table').forEach(table => {
-            let tableHasVisibleRow = false;
-            table.querySelectorAll('tbody tr').forEach(row => {
-                const nameCell = row.querySelector('.name-cell');
-                const isVisible = nameCell && nameCell.textContent.toLowerCase().includes(searchTerm);
-                row.style.display = isVisible ? '' : 'none';
-                if (isVisible) tableHasVisibleRow = true;
-            });
-            table.style.display = (tableHasVisibleRow || !searchTerm) ? '' : 'none';
         });
-    });
+    }
+    
+    // 🟢 修改重點：點擊使用者名稱顯示課表
+    const userEmailSpan = document.getElementById('user-email');
+    if (userEmailSpan) {
+        userEmailSpan.onclick = () => {
+            if (!currentUserDisplayName) {
+                alert('系統尚未讀取到您的身分名稱，請稍後再試。');
+                return;
+            }
+            // 移除 teacherSchedules.has() 的預先檢查
+            // 直接嘗試開啟，如果課表不存在，showSchedule 內部會顯示「資料錯誤」的提示
+            // 這樣可以避免因資料初始化延遲導致的「點擊無反應」現象
+            currentWeekStart = getMonday(new Date());
+            showSchedule(currentUserDisplayName, 'teacher');
+        };
+    }
 
-    // 手機滑動手勢支援
+    // 4. 手機滑動手勢
     const scheduleModalBody = document.getElementById('modal-body'); 
     const exchangeModalBody = document.getElementById('exchange-modal-body'); 
     let touchStartX = 0;
