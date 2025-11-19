@@ -12,13 +12,13 @@
 <body>
 	<header>
         <div class="title-container">
-            <h1>課表系統</h1>
+            <h1 id="main-title" style="cursor: pointer;" title="點擊顯示最近開啟紀錄">課表系統</h1>
             <div class="dropdown">
                 <button id="recent-schedules-btn" class="icon-btn">▼</button>
                 <div id="recent-schedules-list" class="dropdown-content">
                     </div>
             </div>
-        </div>
+        </div>					
         <div class="header-actions">
 			<button id="manual-reload-btn">🔄 手動更新</button>
 			<button onclick="history.back()">返回主頁</button>
@@ -38,9 +38,15 @@
     <div id="schedule-modal" class="modal main-modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
-            <div class="modal-header">
-                <h2 id="modal-title"></h2>
-				<div class="week-navigator">
+			<div class="modal-header">
+                <div class="title-group" style="display: flex; align-items: center; gap: 15px;">
+                    <h2 id="modal-title" style="margin: 0;"></h2>
+                    <label style="font-size: 0.9em; display: flex; align-items: center; cursor: pointer; color: #555; font-weight: normal; user-select: none;">
+                        <input type="checkbox" id="auto-open-chk" style="margin-right: 5px; width: auto;"> 下次自動開啟
+                    </label>
+                </div>
+
+                <div class="week-navigator">
 					<button id="prev-change-week-btn">‹異動週</button>
 					<button id="prev-week-btn">‹上週</button>
 					<button id="today-btn">本週</button>
