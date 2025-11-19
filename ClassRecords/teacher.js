@@ -66,9 +66,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const myTimetableTitle = document.getElementById('my-timetable-title');
     const myTimetableBody = document.getElementById('my-timetable-body');
     const timetableMessage = document.getElementById('timetable-message');
-    const homepageSettingsModal = document.getElementById('homepage-settings-modal');
-    const homepageSettingsBtn = document.getElementById('homepage-settings-btn');
-    const saveHomepageSettingsBtn = document.getElementById('save-homepage-settings-btn');
     const rosterSortBtn = document.getElementById('roster-sort-btn');
     const mainSortBtn = document.getElementById('main-sort-btn');
     const timetableLink = document.getElementById('timetable-link');
@@ -100,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const classSettingsList = document.getElementById('class-settings-list');
     const saveClassSettingsBtn = document.getElementById('save-class-settings-btn');
     const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
-    const homepageModalCloseBtn = homepageSettingsModal.querySelector('.close-btn');
 	const TRANSFER_KEY = 'initialActiveChanges';
 	const CACHE_LIFETIME = 45 * 60 * 1000; 
 
@@ -1502,14 +1498,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
+	
+	const autoOpenHomepageChk = document.getElementById('auto-open-homepage-chk');
+    if (autoOpenHomepageChk) {
+        autoOpenHomepageChk.addEventListener('change', (e) => {
+            const value = e.target.checked ? 'timetable' : 'classGrid';
+            localStorage.setItem('homepagePreference', value);
+        });
+    }
 
-    myTimetableIconBtn.addEventListener('click', async () => {
+	myTimetableIconBtn.addEventListener('click', async () => {
         document.getElementById('dropdown-menu').classList.remove('show');
+
+        // 初始化 Checkbox 狀態
+        if (autoOpenHomepageChk) {
+            const currentPref = localStorage.getItem('homepagePreference');
+            // 如果設定是 'timetable' 則勾選，否則不勾選
+            autoOpenHomepageChk.checked = (currentPref === 'timetable');
+        }
 
         if (!scheduleDataLoaded) {
              timetableMessage.textContent = '課表數據正在載入中...';
         }
 
+        // (以下邏輯保持不變)
         myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
 
         if (PERIOD_TIMES.length === 0) {
@@ -1529,6 +1541,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		document.body.classList.add('modal-open');
         myTimetableModal.style.display = 'flex';
 
+        // (以下按鈕監聽器保持不變)
         document.getElementById('prev-week-btn').onclick = () => {
             currentWeekStart.setDate(currentWeekStart.getDate() - 7);
             renderDerivedMyTimetable(-1);
@@ -1879,27 +1892,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		});
 	});
-	homepageSettingsBtn.addEventListener('click', () => {
-		document.getElementById('dropdown-menu').classList.remove('show');
-		const currentPref = localStorage.getItem('homepagePreference') || 'classGrid';
-		document.querySelector(`input[name="homepage-pref"][value="${currentPref}"]`).checked = true;
-		document.body.classList.add('modal-open');
-		homepageSettingsModal.style.display = 'flex';
-	});
 
-	function closeHomepageSettingsModal() {
-		document.body.classList.remove('modal-open');
-		homepageSettingsModal.style.display = 'none';
-	}
-	homepageModalCloseBtn.addEventListener('click', closeHomepageSettingsModal);
-
-	saveHomepageSettingsBtn.addEventListener('click', () => {
-		const selectedPref = document.querySelector('input[name="homepage-pref"]:checked').value;
-		localStorage.setItem('homepagePreference', selectedPref);
-		alert('首頁設定已儲存！');
-		closeHomepageSettingsModal();
-	});
-	
     const timetableBody = document.getElementById('my-timetable-body');
     let touchStartX = 0;
     let touchEndX = 0;
