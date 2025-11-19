@@ -136,7 +136,7 @@ header .header-actions button {
 .schedule-table th:first-child, .schedule-table td:first-child { 
     width: 95px; 
 }
-.schedule-table td { padding: 0px; font-size: 16px; height: 70px; cursor: pointer; transition: background-color 0.2s;}
+.schedule-table td { padding: 0px; font-size: 16px; height: 60px; cursor: pointer; transition: background-color 0.2s;}
 .schedule-table td.empty-cell { background-color: var(--cleared-bg); }
 .schedule-table td:hover { background-color: #f0f0f0; }
 .schedule-table td.empty-cell:hover, .schedule-table td.cleared-cell:hover { background-color: transparent; cursor: default; }
@@ -533,9 +533,9 @@ header .header-actions {
 	.department-table .name-cell { width: 40%; }
     #search-teacher { width: 120px; }
     .schedule-table th { font-size: 12px; }
-    .schedule-table td { font-size: 12px; height: 65px; }
+    .schedule-table td { font-size: 12px; height: 50px; }
     .schedule-table .details { font-size: 12px; }
-	.schedule-table th:first-child, .schedule-table td:first-child { width: 65px; padding: 0px;}
+	.schedule-table th:first-child, .schedule-table td:first-child { width: 20%; padding: 0px;}
     .schedule-table th:not(:first-child), .schedule-table td:not(:first-child) { width: 18%; }
     .swap-suggestion .details { display: block; margin-left: 0px; line-height: 1.2; }
 }
