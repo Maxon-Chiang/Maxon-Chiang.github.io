@@ -109,10 +109,10 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (activeChanges && activeChanges.length > 0) {
 				sessionStorage.setItem(TRANSFER_KEY, JSON.stringify(activeChanges));
 			}
-			const selectorData = {
-				classes: allClassList     
+			const staticData = {
+				PERIOD_TIMES: PERIOD_TIMES
 			};
-			sessionStorage.setItem('initialScheduleSelectors', JSON.stringify(selectorData)); 
+			sessionStorage.setItem(STATIC_CACHE_KEY, JSON.stringify(staticData));
 		} catch(e) {
 			console.error("無法傳遞 activeChanges 數據:", e);
 		}
@@ -309,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
 							userDocData = parsedCache.userData;
 							console.log('✅ 快取命中：讀取到用戶角色資料。');
 						} else {
+							console.log('❌ ID 不符，移除快取！');
 							localStorage.removeItem(USER_AUTH_KEY);
 						}
 					}
@@ -732,7 +733,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     scheduleDataLoaded = CACHE_DATA_STATIC.teacherTimetableData ? true : false;
                     console.log('✅ 快取命中：靜態資料(學生名單、班級、教師課表、節次時間)，加速載入資料...');
                 } else if (cachedStatic) {
-                     localStorage.removeItem(STATIC_CACHE_KEY);
+					console.log('❌ 無靜態資料快取！');
+                    localStorage.removeItem(STATIC_CACHE_KEY);
                 }
             } catch (e) {
                 console.error('❌ STATIC 快取讀取錯誤或損壞:', e);
@@ -751,7 +753,8 @@ document.addEventListener('DOMContentLoaded', function() {
 					lastPerformanceFetch = CACHE_DATA_DYNAMIC.lastPerformanceFetch;
                     console.log('✅ 快取命中：動態資料(課務異動、學生紀錄)，加速載入資料...');
                 } else if (cachedDynamic) {
-                     localStorage.removeItem(DYNAMIC_CACHE_KEY);
+					console.log('❌ 無動態資料快取！');
+                    localStorage.removeItem(DYNAMIC_CACHE_KEY);
                 }
             } catch (e) {
                 console.error('❌ DYNAMIC 快取讀取錯誤或損壞:', e);
@@ -1369,6 +1372,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	document.getElementById('logout-btn').addEventListener('click', () => { 
+		console.log('❌ 登出，移除使用者資料！');
         localStorage.removeItem(USER_AUTH_KEY); 
         auth.signOut().then(() => { window.location.href = 'login.html'; }); 
     });
