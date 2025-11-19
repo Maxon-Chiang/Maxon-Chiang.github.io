@@ -35,7 +35,6 @@
                 <button id="dropdown-btn" class="icon-btn" title="設定與功能">⚙️</button>
                 <div id="dropdown-menu" class="dropdown-content">
                     <button id="class-settings-btn">班級顯示設定</button>
-					<button id="homepage-settings-btn">首頁顯示設定</button>
                     <button id="change-password-btn">修改密碼</button>
                     <button id="tutorial-btn">操作說明</button>
                     <button id="info-btn-new">功能說明</button>
@@ -261,9 +260,14 @@
         <div class="modal-content">
 			<span class="close-btn" data-modal="my-timetable-modal">&times;</span>
 			<div class="modal-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 0 40px 0 10px; margin-bottom: 10px;">
-                <div class="modal-title-container" style="flex-grow: 1;">
-                     <h2 id="my-timetable-title" style="margin: 0; text-align: left; border: none; padding: 0; font-size: 1.4em;"></h2>
-                </div>
+				<div class="modal-title-container" style="flex-grow: 1;">
+					<div style="display: flex; align-items: center; gap: 15px;">
+						<h2 id="my-timetable-title" style="margin: 0; text-align: left; border: none; padding: 0; font-size: 1.4em;"></h2>
+						<label style="font-size: 0.9em; display: flex; align-items: center; cursor: pointer; color: #555; font-weight: normal; user-select: none;">
+							<input type="checkbox" id="auto-open-homepage-chk" style="margin-right: 5px; width: auto;"> 下次自動開啟
+						</label>
+					</div>
+				</div>
 				<div class="week-navigator modal-week-nav">
                     <button id="prev-change-week-btn" style="padding: 2px 4px; font-size: 0.9em;">‹異動週</button>
                     <button id="prev-week-btn" style="padding: 2px 4px; font-size: 0.9em;">‹上週</button>
@@ -274,25 +278,6 @@
             </div>
             <div id="timetable-message" style="color: var(--danger-color); text-align: center; margin-bottom: 10px;"></div>
             <div id="my-timetable-body"></div>
-        </div>
-    </div>
-
-    <div id="homepage-settings-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" data-modal="homepage-settings-modal">&times;</span>
-            <h2>首頁顯示設定</h2>
-            <p>請選擇您希望每次進入此頁面時預設顯示的畫面。</p>
-            <div style="margin-top: 20px; line-height: 2;">
-                <div>
-                    <input type="radio" id="pref-grid" name="homepage-pref" value="classGrid" checked>
-                    <label for="pref-grid">班級格子畫面 (預設)</label>
-                </div>
-                <div>
-                    <input type="radio" id="pref-timetable" name="homepage-pref" value="timetable">
-                    <label for="pref-timetable">我的課表 (自動彈出)</label>
-                </div>
-            </div>
-            <button id="save-homepage-settings-btn">儲存設定</button>
         </div>
     </div>
 
