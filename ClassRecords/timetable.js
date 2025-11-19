@@ -19,6 +19,7 @@ const MAX_RECENT_ITEMS = 10;
 const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
 const TRANSFER_KEY = 'initialActiveChanges'; 
 const USER_AUTH_KEY = 'user_auth_profile_v1';
+const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
 const TIMETABLE_CACHE_KEY = 'timetable_static_cache_v1'; 
 let CACHE_DATA = {};
 let PERIOD_TIMES = []; 
@@ -139,12 +140,26 @@ async function loadPeriodTimesFromFirestore(schoolId) {
 }
 
 async function main(userData) {
+	const staticCache = sessionStorage.getItem(STATIC_CACHE_KEY);
+	if (staticCache) {
+		try {
+			staticData = JSON.parse(staticCache);
+			PERIOD_TIMES = staticData.PERIOD_TIMES;
+			console.log(`✨ 成功載入來自 teacher.html 的靜態資料。`);
+		} catch (e) {
+			console.error("❌ 解析傳遞的靜態資料失敗，改為檢查本地快取。", e);
+		}
+	}
+	if (staticData.length === 0) {
+		await loadPeriodTimesFromFirestore(userData.schoolId);
+	}
+
     const transferredChanges = sessionStorage.getItem(TRANSFER_KEY);
 	if (transferredChanges) {
 		try {
 			activeChanges = JSON.parse(transferredChanges);
 			console.log(`✨ 成功載入 ${activeChanges.length} 筆傳遞的異動數據（來自 teacher.html）。`);
-            sessionStorage.removeItem(TRANSFER_KEY); 
+            // sessionStorage.removeItem(TRANSFER_KEY); 
 		} catch (e) {
 			console.error("❌ 解析傳遞的異動數據失敗，改為檢查本地快取。", e);
 		}
@@ -152,6 +167,7 @@ async function main(userData) {
     if (activeChanges.length === 0) {
         await loadActiveChanges();
     }
+	
 	const manualReloadBtn = document.getElementById('manual-reload-btn');
     if(manualReloadBtn){
         manualReloadBtn.addEventListener('click', () => {
@@ -159,7 +175,7 @@ async function main(userData) {
                 // 清除課表專用快取
                 localStorage.removeItem(TIMETABLE_CACHE_KEY);
                 // 建議也清除 Auth 快取以確保角色權限最新
-                localStorage.removeItem(USER_AUTH_KEY); 
+                //localStorage.removeItem(USER_AUTH_KEY); 
                 window.location.reload();
             }
         });
@@ -209,11 +225,10 @@ async function main(userData) {
     }
     const schoolRef = db.collection('schools').doc(schoolId);
     if (!useCache) {
-        console.log('載入user資料...'); 
-        await loadPeriodTimesFromFirestore(schoolId);
         scheduleSnapshot = await schoolRef.collection('timetables').get();
-        console.log('載入user資料...'); 
+        console.log('載入所有教師課表'); 
         const teachersSnapshot = await schoolRef.collection('teachers').get();
+        console.log('載入所有教師資料'); 
         teachersDataCache.clear();
         teachersSnapshot.forEach(doc => {
             teachersDataCache.set(doc.id, doc.data());
@@ -226,14 +241,17 @@ async function main(userData) {
         };
         localStorage.setItem(TIMETABLE_CACHE_KEY, JSON.stringify(CACHE_DATA));
     }
+	/*
     const teacherNameToId = new Map();
     const usersSnapshot = await db.collection('users').where('schoolId', '==', schoolId).get();
+	console.log('載入所有教師帳號');
     usersSnapshot.forEach(doc => {
         const userData = doc.data();
         if (userData.displayName && userData.role === 'teacher') {
             teacherNameToId.set(userData.displayName, doc.id);
         }
     });
+	*/
     runPostCacheLogic(teacherNameToShow);
 }
 
@@ -245,6 +263,7 @@ let activeSchedule = { type: null, name: null };
 let teacherViewSelectedCell = null;
 let classViewSelectedCell = null;
 let activeChanges = [];
+let staticData = [];
 let allTeachersList = [];
 let substitutionInfo = {};
 let allTeachersWithSchedule;
