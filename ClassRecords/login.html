@@ -190,6 +190,7 @@
                              userDocData = parsedCache.userData;
                              console.log('✅ AUTH 快取命中：讀取到用戶角色資料 (手動模式)。');
                         } else {
+							console.log('❌ ID 不符，移除快取！');
                             localStorage.removeItem(USER_AUTH_KEY);
                         }
                     } catch (e) {
