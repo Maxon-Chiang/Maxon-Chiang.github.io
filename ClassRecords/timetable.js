@@ -276,6 +276,7 @@ function runPostCacheLogic(teacherNameToShow) {
     populateTeacherListBySubject(allTeachersWithSchedule); 
     populateClassList();
     bindEventListeners(); 
+    
     if (teacherNameToShow) {
         setTimeout(() => {
             const decodedTeacherName = decodeURIComponent(teacherNameToShow);
@@ -286,8 +287,13 @@ function runPostCacheLogic(teacherNameToShow) {
             }
         }, 100);
     } else {
+        // 修改：加入自動開啟的判斷邏輯
         const lastScheduleJSON = localStorage.getItem('lastSchedule');
-        if (lastScheduleJSON) {
+        const AUTO_OPEN_KEY = 'timetable_auto_open_preference';
+        // 預設為 true (若無設定則視為開啟，以保持舊有體驗，除非使用者手動取消)
+        const shouldAutoOpen = localStorage.getItem(AUTO_OPEN_KEY) !== 'false';
+
+        if (lastScheduleJSON && shouldAutoOpen) {
             const savedData = JSON.parse(lastScheduleJSON);
             if (savedData.savedBy && savedData.savedBy === currentUser.uid) {
                 const lastSchedule = savedData.schedule;
@@ -871,43 +877,138 @@ async function showSchedule(name, type, direction = 10) {
             bodyEl.style.overflow = '';
         }, 200); 
     }
-    function bindEventListeners() {
-        document.getElementById('prev-week-btn').onclick = () => {
-            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-            showSchedule(activeSchedule.name, activeSchedule.type, -1);
-        };
-        document.getElementById('next-week-btn').onclick = () => {
-            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-            showSchedule(activeSchedule.name, activeSchedule.type, 1);
-        };
-        document.getElementById('today-btn').onclick = () => {
-            currentWeekStart = getMonday(new Date());
-            showSchedule(activeSchedule.name, activeSchedule.type, 0); 
-        };
-        const prevChangeBtn = document.getElementById('prev-change-week-btn');
-        const nextChangeBtn = document.getElementById('next-change-week-btn');
-        prevChangeBtn.onclick = () => {
-            const targetWeek = findNextChangeWeek(-1);
-            if (targetWeek) {
-                currentWeekStart = targetWeek;
-                showSchedule(activeSchedule.name, activeSchedule.type, -1);
-            } else {
-                alert('沒有找到更早的異動週次了。');
-            }
-        };
-        nextChangeBtn.onclick = () => {
-            const targetWeek = findNextChangeWeek(1);
-            if (targetWeek) {
-                currentWeekStart = targetWeek;
-                showSchedule(activeSchedule.name, activeSchedule.type, 1);
-            } else {
-                alert('沒有找到更晚的異動週次了。');
-            }
-        };
-        modal.querySelector('.close-button').onclick = () => {
-            modal.style.display = 'none';
-        };
-    }
+
+	function bindEventListeners() {
+		// 防止重複執行的旗標
+		if (window.isTimetableEventsBound) return;
+		window.isTimetableEventsBound = true;
+
+		// 1. 自動開啟 Checkbox 設定 (獨立綁定，因為它只需要處理 change)
+		const autoOpenChk = document.getElementById('auto-open-chk');
+		const AUTO_OPEN_KEY = 'timetable_auto_open_preference';
+		if (autoOpenChk) {
+			autoOpenChk.checked = localStorage.getItem(AUTO_OPEN_KEY) !== 'false';
+			autoOpenChk.addEventListener('change', (e) => {
+				localStorage.setItem(AUTO_OPEN_KEY, e.target.checked);
+			});
+		}
+
+		// 2. 統一的點擊事件管理員 (處理所有點擊：下拉選單、關閉選單、Modal、關閉按鈕)
+		document.addEventListener('click', (event) => {
+			const target = event.target;
+			const dropdownList = document.getElementById('recent-schedules-list');
+			
+			// === A. 處理「下拉選單切換」 (點擊按鈕 或 點擊標題) ===
+			// 使用 closest 確保點擊到按鈕內部的 icon 也能觸發
+			if (target.closest('#recent-schedules-btn') || target.closest('#main-title')) {
+				event.stopPropagation(); // 防止冒泡觸發其他不需要的邏輯
+				populateRecentList(); // 更新清單內容
+				if (dropdownList) {
+					dropdownList.classList.toggle('show');
+				}
+				return; // 處理完畢，結束
+			}
+
+			// === B. 處理「點擊外部關閉下拉選單」 ===
+			// 如果點擊的不是選單本身，且選單是開著的，就關掉
+			if (dropdownList && dropdownList.classList.contains('show') && !target.closest('.dropdown-content')) {
+				dropdownList.classList.remove('show');
+			}
+
+			// === C. 處理「Modal 相關關閉」 ===
+			// C-1. 點擊 Modal 黑色背景 -> 關閉
+			if (target.classList.contains('modal')) {
+				target.style.display = 'none';
+			}
+			// C-2. 點擊 Modal 內部的 X 關閉按鈕 -> 關閉
+			if (target.closest('.close-button')) {
+				const modal = target.closest('.modal');
+				if (modal) modal.style.display = 'none';
+			}
+		});
+
+		// 3. 搜尋框輸入監聽 (維持不變)
+		const searchInput = document.getElementById('search-teacher');
+		if (searchInput) {
+			searchInput.addEventListener('input', (e) => {
+				const searchTerm = e.target.value.toLowerCase().trim();
+				const container = document.getElementById('teacher-list-by-subject-container'); 
+				if (container) {
+					container.querySelectorAll('.department-table').forEach(table => {
+						let tableHasVisibleRow = false;
+						table.querySelectorAll('tbody tr').forEach(row => {
+							const nameCell = row.querySelector('.name-cell');
+							const isVisible = nameCell && nameCell.textContent.toLowerCase().includes(searchTerm);
+							row.style.display = isVisible ? '' : 'none';
+							if (isVisible) tableHasVisibleRow = true;
+						});
+						table.style.display = (tableHasVisibleRow || !searchTerm) ? '' : 'none';
+					});
+				}
+			});
+		}
+
+		// 4. 手機滑動手勢 (維持不變)
+		const scheduleModalBody = document.getElementById('modal-body'); 
+		const exchangeModalBody = document.getElementById('exchange-modal-body'); 
+		let touchStartX = 0;
+		let touchEndX = 0;
+		const swipeThreshold = 50; 
+
+		function handleTouchStart(event) {
+			if (event.touches.length === 1) {
+				touchStartX = event.touches[0].clientX;
+				touchEndX = 0;
+			}
+		}
+		function handleTouchMove(event) {
+			if (event.touches.length > 1) {
+				touchStartX = 0;
+			}
+		}
+
+		if (scheduleModalBody) {
+			scheduleModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
+			scheduleModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
+			scheduleModalBody.addEventListener('touchend', (event) => {
+				if (event.changedTouches.length === 1 && touchStartX !== 0) {
+					touchEndX = event.changedTouches[0].clientX;
+					const deltaX = touchEndX - touchStartX;
+					if (Math.abs(deltaX) > swipeThreshold && document.getElementById('schedule-modal').style.display === 'block') {
+						if (deltaX < 0) {
+							currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+							showSchedule(activeSchedule.name, activeSchedule.type, 1);
+						} else {
+							currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+							showSchedule(activeSchedule.name, activeSchedule.type, -1);
+						}
+					}
+				}
+				touchStartX = 0;
+			});
+		}
+
+		if (exchangeModalBody) {
+			exchangeModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
+			exchangeModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
+			exchangeModalBody.addEventListener('touchend', (event) => {
+				if (event.changedTouches.length === 1 && touchStartX !== 0) {
+					touchEndX = event.changedTouches[0].clientX;
+					const deltaX = touchEndX - touchStartX;
+					if (Math.abs(deltaX) > swipeThreshold && document.getElementById('exchange-modal').style.display === 'block') {
+						if (deltaX < 0) {
+							document.getElementById('exchange-next-week-btn')?.click(); 
+						} else {
+							document.getElementById('exchange-prev-week-btn')?.click(); 
+						}
+					}
+				}
+				touchStartX = 0;
+			});
+		}
+	}
+
+	
     bindEventListeners();
 }
 
@@ -2011,31 +2112,65 @@ function findNextChangeWeek(direction) {
     return targetWeekTS ? new Date(targetWeekTS) : null;
 }
 
+/* 🟢 修改 start: bindEventListeners 函式 (請完整覆蓋舊函式) */
 function bindEventListeners() {
+    // 1. 下拉選單按鈕
     document.getElementById('recent-schedules-btn').addEventListener('click', (event) => {
         event.stopPropagation();
         populateRecentList();
         document.getElementById('recent-schedules-list').classList.toggle('show');
     });
+
+    // 🟢 新增：點擊標題名稱也能觸發下拉選單
+    const mainTitle = document.getElementById('main-title');
+    if (mainTitle) {
+        mainTitle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            // 呼叫下拉按鈕的點擊事件
+            document.getElementById('recent-schedules-btn').click();
+        });
+    }
+    
+    // 🟢 新增：自動開啟 Checkbox 邏輯
+    const autoOpenChk = document.getElementById('auto-open-chk');
+    const AUTO_OPEN_KEY = 'timetable_auto_open_preference';
+    if (autoOpenChk) {
+        // 初始化狀態：如果 LocalStorage 沒有值或不是 'false'，則預設勾選
+        autoOpenChk.checked = localStorage.getItem(AUTO_OPEN_KEY) !== 'false';
+        
+        // 監聽變更
+        autoOpenChk.addEventListener('change', (e) => {
+            localStorage.setItem(AUTO_OPEN_KEY, e.target.checked);
+        });
+    }
+
+    // 🟢 修改：點擊視窗其他地方關閉下拉選單 (包含檢查標題點擊)
     window.addEventListener('click', (event) => {
-        if (!event.target.matches('#recent-schedules-btn')) {
+        // 這裡增加了 !event.target.matches('#main-title') 的判斷
+        if (!event.target.matches('#recent-schedules-btn') && !event.target.matches('#main-title')) {
             const recentSchedulesList = document.getElementById('recent-schedules-list');
             if (recentSchedulesList.classList.contains('show')) {
                 recentSchedulesList.classList.remove('show');
             }
         }
     });
+
+    // Modal 關閉按鈕
     document.querySelectorAll('.modal .close-button').forEach(btn => {
         btn.onclick = (e) => {
             const modal = e.target.closest('.modal');
             modal.style.display = 'none';
         };
     });
+
+    // 點擊 Modal 外部關閉
     window.onclick = (event) => {
         if (event.target.classList.contains('modal')) {
             event.target.style.display = 'none';
         }
     };
+
+    // 搜尋框輸入
     document.getElementById('search-teacher').addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         const container = document.getElementById('teacher-list-by-subject-container'); 
@@ -2050,11 +2185,14 @@ function bindEventListeners() {
             table.style.display = (tableHasVisibleRow || !searchTerm) ? '' : 'none';
         });
     });
+
+    // 手機滑動手勢支援
     const scheduleModalBody = document.getElementById('modal-body'); 
     const exchangeModalBody = document.getElementById('exchange-modal-body'); 
     let touchStartX = 0;
     let touchEndX = 0;
     const swipeThreshold = 50; 
+
     function handleTouchStart(event) {
         if (event.touches.length === 1) {
             touchStartX = event.touches[0].clientX;
@@ -2066,41 +2204,48 @@ function bindEventListeners() {
             touchStartX = 0;
         }
     }
-    scheduleModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
-    scheduleModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
-    scheduleModalBody.addEventListener('touchend', (event) => {
-        if (event.changedTouches.length === 1 && touchStartX !== 0) {
-            touchEndX = event.changedTouches[0].clientX;
-            const deltaX = touchEndX - touchStartX;
-            if (Math.abs(deltaX) > swipeThreshold && document.getElementById('schedule-modal').style.display === 'block') {
-                if (deltaX < 0) {
-                    currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-                    showSchedule(activeSchedule.name, activeSchedule.type, 1);
-                } else {
-                    currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-                    showSchedule(activeSchedule.name, activeSchedule.type, -1);
+
+    if (scheduleModalBody) {
+        scheduleModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
+        scheduleModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
+        scheduleModalBody.addEventListener('touchend', (event) => {
+            if (event.changedTouches.length === 1 && touchStartX !== 0) {
+                touchEndX = event.changedTouches[0].clientX;
+                const deltaX = touchEndX - touchStartX;
+                if (Math.abs(deltaX) > swipeThreshold && document.getElementById('schedule-modal').style.display === 'block') {
+                    if (deltaX < 0) {
+                        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+                        showSchedule(activeSchedule.name, activeSchedule.type, 1);
+                    } else {
+                        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+                        showSchedule(activeSchedule.name, activeSchedule.type, -1);
+                    }
                 }
             }
-        }
-        touchStartX = 0;
-    });
-    exchangeModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
-    exchangeModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
-    exchangeModalBody.addEventListener('touchend', (event) => {
-        if (event.changedTouches.length === 1 && touchStartX !== 0) {
-            touchEndX = event.changedTouches[0].clientX;
-            const deltaX = touchEndX - touchStartX;
-            if (Math.abs(deltaX) > swipeThreshold && document.getElementById('exchange-modal').style.display === 'block') {
-                if (deltaX < 0) {
-                    document.getElementById('exchange-next-week-btn')?.click(); 
-                } else {
-                    document.getElementById('exchange-prev-week-btn')?.click(); 
+            touchStartX = 0;
+        });
+    }
+
+    if (exchangeModalBody) {
+        exchangeModalBody.addEventListener('touchstart', handleTouchStart, { passive: true });
+        exchangeModalBody.addEventListener('touchmove', handleTouchMove, { passive: true });
+        exchangeModalBody.addEventListener('touchend', (event) => {
+            if (event.changedTouches.length === 1 && touchStartX !== 0) {
+                touchEndX = event.changedTouches[0].clientX;
+                const deltaX = touchEndX - touchStartX;
+                if (Math.abs(deltaX) > swipeThreshold && document.getElementById('exchange-modal').style.display === 'block') {
+                    if (deltaX < 0) {
+                        document.getElementById('exchange-next-week-btn')?.click(); 
+                    } else {
+                        document.getElementById('exchange-prev-week-btn')?.click(); 
+                    }
                 }
             }
-        }
-        touchStartX = 0;
-    });
+            touchStartX = 0;
+        });
+    }
 }
+/* 🟢 修改 end */
     
 function getRecentSchedules() {
     try {
