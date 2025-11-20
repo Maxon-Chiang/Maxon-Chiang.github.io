@@ -938,7 +938,7 @@ body.modal-open { overflow: hidden; }
         margin-right: 5px; 
     }
     #user-email {
-		font-size: 0.6em;
+		font-size: 1.0em;
 	}	
 	header h1 {
 		text-align: center;
