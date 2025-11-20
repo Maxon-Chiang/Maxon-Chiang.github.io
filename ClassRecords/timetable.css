@@ -485,7 +485,7 @@ header .header-actions {
     }	
 	header a button, header button { padding: 5px 5px; margin-left: 5px; font-size: 0.8em;}
 	#user-email {
-		font-size: 0.6em;
+		font-size: 1.0em;
 	}
 	.icon-btn {
 		padding: 5px;
@@ -539,3 +539,4 @@ header .header-actions {
     .schedule-table th:not(:first-child), .schedule-table td:not(:first-child) { width: 18%; }
     .swap-suggestion .details { display: block; margin-left: 0px; line-height: 1.2; }
 }
+
