@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const classSettingsBtn = document.getElementById('class-settings-btn');
     const infoModal = document.getElementById('info-modal');
     const myTimetableModal = document.getElementById('my-timetable-modal');
-	const myTimetableIconBtn = document.getElementById('my-timetable-icon-btn');
+	const myTimetableIconBtn = document.getElementById('user-email');
     const myTimetableTitle = document.getElementById('my-timetable-title');
     const myTimetableBody = document.getElementById('my-timetable-body');
     const timetableMessage = document.getElementById('timetable-message');
@@ -1480,13 +1480,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	const newInfoBtn = document.getElementById('info-btn-new');
 
     dropdownBtn.addEventListener('click', function(event) {
-        event.stopPropagation();
-        dropdownMenu.classList.toggle('show');
-    });
-
-    const userEmailSpan = document.getElementById('user-email');
-
-    userEmailSpan.addEventListener('click', function(event) {
         event.stopPropagation();
         dropdownMenu.classList.toggle('show');
     });
