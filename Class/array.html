@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch 清單積木全功能教學 (含初始化)</title>
+    <style>
+        body {
+            font-family: "Microsoft JhengHei", "Segoe UI", sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 { color: #333; margin-bottom: 10px; }
+        p { color: #666; margin-top: 0; max-width: 800px; text-align: center;}
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 850px;
+            max-width: 95vw;
+        }
+
+        canvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background-color: #ffffff;
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #4c97ff;
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        button:hover { background-color: #3373cc; transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-grow: 1;
+            min-width: 250px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+            height: 8px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #ff661a;
+            cursor: pointer;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .status-panel {
+            margin-top: 15px;
+            text-align: center;
+            background: #fff3e0;
+            border-left: 5px solid #ff661a;
+            padding: 15px;
+            border-radius: 4px;
+            min-height: 60px;
+        }
+
+        #sceneTitle { font-size: 20px; font-weight: bold; color: #d94d0d; margin-bottom: 5px; display: block; }
+        #sceneDesc { font-size: 16px; color: #444; }
+        
+        .highlight-text { color: #d94d0d; font-weight: bold; }
+        .warn-text { color: #d32f2f; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Scratch 清單 (List) 完整教學動畫</h1>
+    <p>包含重要觀念：初始化 (刪除所有)、CRUD操作、查詢與邏輯判斷</p>
+    
+    <div class="container">
+        <canvas id="animCanvas" width="850" height="450"></canvas>
+        
+        <div class="status-panel">
+            <span id="sceneTitle">準備開始</span>
+            <div id="sceneDesc">請點擊播放或拖動進度條</div>
+        </div>
+
+        <div class="controls">
+            <button id="btnPrev">⏮ 上個積木</button>
+            <button id="btnPlayPause">⏯ 播放/暫停</button>
+            <button id="btnNext">下個積木 ⏭</button>
+            
+            <div class="slider-container">
+                <span style="font-size:12px; color:#666">進度</span>
+                <input type="range" id="progressSlider" min="0" max="3100" value="0">
+            </div>
+
+            <select id="speedSelect" style="padding: 5px; border-radius: 5px;">
+                <option value="0.5">0.5x 慢速</option>
+                <option value="1" selected>1.0x 正常</option>
+                <option value="2">2.0x 快速</option>
+            </select>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('animCanvas');
+    const ctx = canvas.getContext('2d');
+    const sceneTitle = document.getElementById('sceneTitle');
+    const sceneDesc = document.getElementById('sceneDesc');
+    const slider = document.getElementById('progressSlider');
+    
+    // --- 核心變數 ---
+    let frame = 0;
+    const totalFrames = 3100; // 增加長度以容納初始化步驟
+    let isPlaying = false;
+    let speed = 1;
+    let animationId;
+
+    // --- Scratch 顏色 ---
+    const C_LIST = '#ff661a';
+    
+    // --- 教學場景定義 ---
+    // 調整時間軸，插入 "初始化"
+    const SCENES = [
+        { t: 0,    end: 200,  title: "1. 陣列/清單結構", desc: "清單就像有編號的櫃子。Index (索引) 代表位置。" },
+        { t: 200,  end: 500,  title: "2. 初始化 (Delete All)", desc: "程式開始時<span class='warn-text'>務必先刪除所有項目</span>，確保清單是空的，避免舊資料殘留累加。" },
+        { t: 500,  end: 800,  title: "3. 添加 (Add)", desc: "使用「添加」積木，資料會依序排在最後面。" },
+        { t: 800,  end: 1150, title: "4. 插入 (Insert)", desc: "使用「插入」積木插隊時，原位置與後面的資料會自動「往下移」。" },
+        { t: 1150, end: 1450, title: "5. 替換 (Replace)", desc: "使用「替換」積木，直接修改指定編號的內容。" },
+        { t: 1450, end: 1750, title: "6. 讀取值 (Item of)", desc: "知道編號，想找出裡面的內容。例如：第 3 項是什麽？" },
+        { t: 1750, end: 2050, title: "7. 包含 (Contains)", desc: "檢查清單有沒有某樣東西？回傳 true (真) 或 false (假)。" },
+        { t: 2050, end: 2450, title: "8. 查詢位置 (Item # of)", desc: "想知道某樣東西在第幾號櫃子？重點：<span class='highlight-text'>如果找不到，會回傳 0</span>。" },
+        { t: 2450, end: 2800, title: "9. 刪除項目 (Delete)", desc: "刪除特定資料後，下方的資料會自動「往上補位」。" },
+        { t: 2800, end: 3100, title: "10. 長度 (Length)", desc: "取得目前清單裡面總共有幾筆資料。" }
+    ];
+
+    // --- 繪圖函式 ---
+
+    function drawBlock(x, y, text, color=C_LIST, shape='stack') {
+        ctx.font = 'bold 16px Arial';
+        const tw = ctx.measureText(text).width;
+        const w = tw + 40;
+        const h = 45;
+        
+        // 陰影
+        drawPath(x+2, y+2, w, h, shape, 'rgba(0,0,0,0.2)');
+        // 本體
+        drawPath(x, y, w, h, shape, color);
+        
+        ctx.fillStyle = 'white';
+        ctx.fillText(text, x + 20, y + 28);
+    }
+
+    function drawPath(x, y, w, h, shape, color) {
+        ctx.beginPath();
+        ctx.fillStyle = color;
+        if (shape === 'stack') {
+            ctx.moveTo(x, y);
+            ctx.lineTo(x+15, y); ctx.lineTo(x+20, y+4); ctx.lineTo(x+30, y+4); ctx.lineTo(x+35, y);
+            ctx.lineTo(x+w, y);
+            ctx.lineTo(x+w, y+h);
+            ctx.lineTo(x+35, y+h); ctx.lineTo(x+30, y+h+4); ctx.lineTo(x+20, y+h+4); ctx.lineTo(x+15, y+h);
+            ctx.lineTo(x, y+h);
+        } else if (shape === 'reporter') {
+            ctx.moveTo(x+h/2, y);
+            ctx.lineTo(x+w-h/2, y);
+            ctx.arc(x+w-h/2, y+h/2, h/2, -Math.PI/2, Math.PI/2);
+            ctx.lineTo(x+h/2, y+h);
+            ctx.arc(x+h/2, y+h/2, h/2, Math.PI/2, -Math.PI/2);
+        } else if (shape === 'boolean') {
+            ctx.moveTo(x, y+h/2);
+            ctx.lineTo(x+15, y);
+            ctx.lineTo(x+w-15, y);
+            ctx.lineTo(x+w, y+h/2);
+            ctx.lineTo(x+w-15, y+h);
+            ctx.lineTo(x+15, y+h);
+        }
+        ctx.fill();
+    }
+
+    function drawList(x, y, items, activeIndex=-1, shiftIndex=-1, shiftOffset=0) {
+        const w = 140;
+        const h = 40;
+        const startY = y + 35;
+
+        ctx.fillStyle = '#ddd';
+        ctx.beginPath(); ctx.roundRect(x, y, w, 30, [5,5,0,0]); ctx.fill();
+        ctx.strokeStyle='#999'; ctx.stroke();
+        ctx.fillStyle = '#333'; ctx.font='12px Arial'; ctx.fillText('我的清單', x+10, y+20);
+
+        // Body
+        const displayLen = Math.max(items.length, 5);
+        ctx.fillStyle = '#eee';
+        ctx.fillRect(x, y+30, w, (displayLen * h) + 10);
+        ctx.strokeRect(x, y+30, w, (displayLen * h) + 10);
+
+        for(let i=0; i<Math.max(items.length, 1); i++) {
+            let itemY = startY + i*h;
+            if (shiftIndex !== -1 && i >= shiftIndex) itemY += shiftOffset;
+            if (items[i] === "__ANIM__") continue;
+
+            if (i < items.length) {
+                // Index box
+                ctx.fillStyle = '#666';
+                ctx.fillRect(x+5, itemY, 25, 30);
+                ctx.fillStyle = '#fff'; ctx.font='12px Arial';
+                ctx.fillText(i+1, x+12, itemY+20);
+
+                // Value box
+                ctx.fillStyle = (activeIndex === i) ? '#fff5cc' : '#fff'; 
+                ctx.fillRect(x+35, itemY, w-45, 30);
+                ctx.strokeStyle = (activeIndex === i) ? C_LIST : '#ccc';
+                ctx.lineWidth = (activeIndex === i) ? 2 : 1;
+                ctx.strokeRect(x+35, itemY, w-45, 30);
+
+                // Text
+                ctx.fillStyle = '#000'; ctx.font='16px Arial';
+                if(items[i]) ctx.fillText(items[i], x+45, itemY+21);
+            }
+        }
+        ctx.lineWidth = 1;
+    }
+
+    function drawBubble(x, y, text, isError=false) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, 120, 50, 10);
+        ctx.fillStyle = isError ? '#ffebee' : '#e8f5e9'; 
+        ctx.fill(); 
+        ctx.strokeStyle = isError ? '#c62828' : '#2e7d32'; 
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        ctx.fillStyle = '#333'; 
+        ctx.font='bold 20px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(text, x + 60, y + 32);
+        ctx.textAlign = 'left';
+        ctx.lineWidth = 1;
+    }
+
+    // --- Render ---
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const curScene = SCENES.find(s => frame >= s.t && frame < s.end) || SCENES[SCENES.length-1];
+        sceneTitle.textContent = curScene.title;
+        sceneDesc.innerHTML = curScene.desc;
+
+        const t = frame - curScene.t;
+        const blockX = 50;
+        const blockY = 150;
+        const listX = 600;
+        const listY = 50;
+        const commonList = ["葡萄", "橘子", "香蕉"];
+
+        // === S1: Intro ===
+        if (frame < 200) {
+            drawList(listX, listY, []); 
+            ctx.fillStyle = '#333'; ctx.font='24px Arial';
+            ctx.fillText("清單 (List) / 陣列 (Array)", 150, 200);
+            ctx.font='16px Arial'; ctx.fillStyle='#666';
+            ctx.fillText("每一個格子都有編號 (Index)", 150, 240);
+        }
+        // === S2: Delete All (Initialization) === NEW!
+        else if (frame < 500) {
+            drawBlock(blockX, blockY, "刪除 [我的清單] 的所有項目");
+            
+            // 模擬殘留資料
+            let dirtyList = ["舊資料A", "舊資料B", "舊資料C"];
+            
+            if (t < 100) {
+                // Before delete
+                drawList(listX, listY, dirtyList);
+                
+                // Warning arrow
+                ctx.beginPath();
+                ctx.moveTo(listX - 10, listY + 50);
+                ctx.lineTo(listX - 50, listY + 50);
+                ctx.strokeStyle = '#d32f2f'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#d32f2f'; ctx.font = '14px Arial';
+                ctx.fillText("上次執行的殘留資料", listX - 180, listY + 55);
+            } else {
+                // After delete
+                drawList(listX, listY, []); // Empty
+                
+                // Good checkmark
+                ctx.fillStyle = '#2e7d32'; ctx.font = 'bold 20px Arial';
+                ctx.fillText("✔ 已清空 (Ready)", listX + 20, listY + 100);
+            }
+        }
+        // === S3: Add ===
+        else if (frame < 800) {
+            if (t < 150) {
+                drawBlock(blockX, blockY, "添加 [蘋果] 到 [我的清單]");
+                if (t > 50) {
+                    let p = Math.min(1, (t-50)/50);
+                    drawList(listX, listY, []);
+                    ctx.fillStyle = C_LIST; ctx.beginPath(); ctx.arc(150 + p*480, 200 + p*(-110), 10, 0, 6.28); ctx.fill();
+                    if(p>=1) drawList(listX, listY, ["蘋果"]);
+                } else drawList(listX, listY, []);
+            } else {
+                drawBlock(blockX, blockY, "添加 [香蕉] 到 [我的清單]");
+                let p = Math.min(1, (t-200)/50);
+                drawList(listX, listY, ["蘋果"]);
+                if (p > 0) {
+                    ctx.fillStyle = C_LIST; ctx.beginPath(); ctx.arc(150 + p*480, 200 + p*(-70), 10, 0, 6.28); ctx.fill();
+                    if(p>=1) drawList(listX, listY, ["蘋果", "香蕉"]);
+                }
+            }
+        }
+        // === S4: Insert ===
+        else if (frame < 1150) {
+            drawBlock(blockX, blockY, "插入 [橘子] 到 [我的清單] 的第 (2) 項");
+            let shiftP = Math.min(1, Math.max(0, (t-50)/60));
+            let flyP = Math.min(1, Math.max(0, (t-130)/60));
+            drawList(listX, listY, ["蘋果", "香蕉"], -1, 1, shiftP * 40);
+
+            if (flyP > 0) {
+                 let targetY = listY + 35 + 40 + 20;
+                 let curX = 350 + flyP * (listX + 45 - 350);
+                 let curY = blockY + 20 + flyP * (targetY - (blockY+20));
+                 ctx.fillStyle = C_LIST; ctx.beginPath(); ctx.arc(curX, curY, 10, 0, 6.28); ctx.fill();
+                 ctx.fillStyle = '#000'; ctx.fillText("橘子", curX+15, curY+5);
+            }
+            if (flyP >= 1) drawList(listX, listY, ["蘋果", "橘子", "香蕉"], 1);
+        }
+        // === S5: Replace ===
+        else if (frame < 1450) {
+            drawBlock(blockX, blockY, "將 [我的清單] 的第 (1) 項替換為 [葡萄]");
+            let fadeP = Math.min(1, Math.max(0, (t-50)/40));
+            let appearP = Math.min(1, Math.max(0, (t-100)/40));
+            drawList(listX, listY, ["蘋果", "橘子", "香蕉"]);
+            
+            if (fadeP > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${fadeP})`; 
+                ctx.fillRect(listX+36, listY+36, 130, 28);
+            }
+            if (appearP > 0) {
+                ctx.fillStyle = `rgba(0, 0, 0, ${appearP})`;
+                ctx.font='16px Arial'; ctx.fillText("葡萄", listX+45, listY+35+21);
+                ctx.strokeStyle = 'red'; ctx.lineWidth=2; ctx.strokeRect(listX+35, listY+35, 130, 30);
+            }
+        }
+        // === S6: Item Of ===
+        else if (frame < 1750) {
+            drawBlock(blockX, blockY, " [我的清單] 的第 (3) 項", C_LIST, 'reporter');
+            drawList(listX, listY, commonList, 2);
+            if (t > 100) drawBubble(blockX + 220, blockY - 60, "香蕉");
+        }
+        // === S7: Contains ===
+        else if (frame < 2050) {
+            drawBlock(blockX, blockY, " [我的清單] 包含 [橘子] ?", C_LIST, 'boolean');
+            drawList(listX, listY, commonList);
+            let scanIdx = Math.floor((t-50)/30);
+            
+            if (t > 50 && scanIdx < 3) {
+                ctx.strokeStyle = '#ff9900'; ctx.lineWidth=3;
+                ctx.strokeRect(listX, listY+35 + scanIdx*40, 140, 40);
+            }
+            if (t > 100) { 
+                ctx.strokeStyle = '#ff0000'; ctx.lineWidth=3;
+                ctx.strokeRect(listX, listY+35+40, 140, 40);
+                drawBubble(blockX + 300, blockY + 30, "true");
+            }
+        }
+        // === S8: Item # of ===
+        else if (frame < 2450) {
+            if (t < 200) {
+                drawBlock(blockX, blockY, " [橘子] 在 [我的清單] 的位置", C_LIST, 'reporter');
+                drawList(listX, listY, commonList);
+                let scanIdx = Math.floor((t-30)/30);
+                if (t > 30 && scanIdx < 2) { 
+                    ctx.fillStyle = 'rgba(255, 165, 0, 0.3)';
+                    ctx.fillRect(listX, listY+35 + scanIdx*40, 140, 40);
+                }
+                if (t > 90) { 
+                    ctx.strokeStyle = '#ff0000'; ctx.lineWidth=3;
+                    ctx.strokeRect(listX, listY+35+40, 140, 40);
+                    drawBubble(blockX + 300, blockY + 30, "2");
+                }
+            } else {
+                let t2 = t - 200;
+                drawBlock(blockX, blockY, " [芭樂] 在 [我的清單] 的位置", C_LIST, 'reporter');
+                drawList(listX, listY, commonList);
+                let scanIdx = Math.floor((t2-30)/30);
+                if (t2 > 30 && scanIdx < 3) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                    ctx.fillRect(listX, listY+35 + scanIdx*40, 140, 40);
+                }
+                if (t2 > 130) {
+                     ctx.fillStyle = '#333'; ctx.font='bold 18px Arial';
+                     ctx.fillText("找不到...", listX, listY + 180);
+                     drawBubble(blockX + 300, blockY + 30, "0", true); 
+                }
+            }
+        }
+        // === S9: Delete ===
+        else if (frame < 2800) {
+            drawBlock(blockX, blockY, "刪除 [我的清單] 的第 (2) 項");
+            let delP = Math.min(1, Math.max(0, (t-50)/40));
+            let shiftUpP = Math.min(1, Math.max(0, (t-120)/60));
+
+            if (delP < 1) {
+                drawList(listX, listY, commonList, 1);
+            } else {
+                if (shiftUpP === 0) {
+                     drawList(listX, listY, ["葡萄", "", "香蕉"]);
+                     ctx.strokeStyle='red'; ctx.lineWidth=3;
+                     ctx.beginPath(); ctx.moveTo(listX+40, listY+35+40+5); ctx.lineTo(listX+100, listY+35+40+35); ctx.stroke();
+                     ctx.beginPath(); ctx.moveTo(listX+100, listY+35+40+5); ctx.lineTo(listX+40, listY+35+40+35); ctx.stroke();
+                } else {
+                    drawList(listX, listY, ["葡萄", "香蕉"], -1, 1, (1-shiftUpP) * 40);
+                }
+            }
+            if (shiftUpP >= 1) drawList(listX, listY, ["葡萄", "香蕉"]);
+        }
+        // === S10: Length ===
+        else {
+            drawBlock(blockX, blockY, " [我的清單] 的長度", C_LIST, 'reporter');
+            drawList(listX, listY, ["葡萄", "香蕉"]);
+            if (t > 50) {
+                ctx.strokeStyle = C_LIST; ctx.lineWidth = 3;
+                ctx.strokeRect(listX, listY + 30, 140, 2 * 40 + 10);
+                drawBubble(blockX + 250, blockY + 35, "2");
+            }
+        }
+    }
+
+    // --- Control Loop ---
+    function loop() {
+        if (isPlaying) {
+            frame += speed;
+            if (frame >= totalFrames) { frame = totalFrames; isPlaying = false; updateBtn(); }
+            slider.value = frame;
+        }
+        render();
+        animationId = requestAnimationFrame(loop);
+    }
+
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const speedSelect = document.getElementById('speedSelect');
+    slider.max = totalFrames;
+
+    function updateBtn() { btnPlayPause.textContent = isPlaying ? "⏸ 暫停" : "⏯ 播放/暫停"; }
+    btnPlayPause.addEventListener('click', () => { if (frame >= totalFrames) frame = 0; isPlaying = !isPlaying; updateBtn(); });
+    slider.addEventListener('input', (e) => { frame = parseFloat(e.target.value); isPlaying = false; updateBtn(); render(); });
+    speedSelect.addEventListener('change', (e) => speed = parseFloat(e.target.value));
+    btnPrev.addEventListener('click', () => {
+        const curIdx = SCENES.findIndex(s => frame >= s.t && frame < s.end);
+        frame = (curIdx > 0) ? SCENES[curIdx - 1].t : 0;
+        slider.value = frame; render();
+    });
+    btnNext.addEventListener('click', () => {
+        const curIdx = SCENES.findIndex(s => frame >= s.t && frame < s.end);
+        if (curIdx !== -1 && curIdx < SCENES.length - 1) frame = SCENES[curIdx + 1].t;
+        slider.value = frame; render();
+    });
+
+    render();
+    loop();
+
+</script>
+</body>
+</html>
