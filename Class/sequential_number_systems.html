@@ -2,123 +2,136 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>進位系統原理：進位動畫與規則詳解版</title>
+    <title>進位系統原理：動態規則與精準運算版</title>
     <style>
+        /* Reset & Base */
         body { font-family: 'Microsoft JhengHei', sans-serif; text-align: center; background-color: #121212; color: #e0e0e0; overflow: hidden; margin: 0; }
-        .container { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        
+        .container { 
+            position: relative; width: 100vw; height: 100vh; 
+            display: flex; flex-direction: column; justify-content: flex-start; 
+            align-items: center; padding-top: 40px; box-sizing: border-box;
+        }
         
         /* 標題系統 */
-        .title { font-size: 3em; margin-bottom: 10px; color: #bb86fc; opacity: 0; transform: translateY(-30px); transition: all 0.5s ease; text-shadow: 0 0 10px rgba(187,134,252,0.3); }
-        .subtitle { font-size: 1.5em; color: #03dac6; opacity: 0; transform: translateY(30px); transition: all 0.5s ease; margin-bottom: 10px; height: 1.5em; }
+        .title { 
+            font-size: 3em; margin: 0 0 10px 0; 
+            color: #bb86fc; opacity: 0; transform: translateY(-30px); transition: all 0.5s ease; 
+            text-shadow: 0 0 10px rgba(187,134,252,0.3); flex-shrink: 0;
+        }
+        .subtitle { 
+            font-size: 1.5em; color: #03dac6; opacity: 0; transform: translateY(30px); transition: all 0.5s ease; 
+            margin-bottom: 20px; height: 1.5em; flex-shrink: 0;
+        }
 
         /* 控制面板 */
         .control-panel {
             position: fixed; top: 20px; right: 20px;
-            background: rgba(30, 30, 30, 0.9); backdrop-filter: blur(10px);
-            padding: 15px 20px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
-            display: flex; flex-direction: column; align-items: center; gap: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 2000;
+            background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(10px);
+            padding: 15px 25px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 2000;
         }
-        .control-row { display: flex; gap: 10px; align-items: center; }
+        .control-row { display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%; }
         .btn {
-            background: transparent; border: 1px solid #fff; color: #fff; padding: 5px 10px;
-            border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s;
+            background: transparent; border: 1px solid #fff; color: #fff; padding: 6px 12px;
+            border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.2s; white-space: nowrap;
         }
         .btn:hover { background: #fff; color: #121212; }
         .btn.active { background: #03dac6; border-color: #03dac6; color: #000; font-weight: bold;}
+        .btn-nav { border-color: #bb86fc; color: #bb86fc; font-weight: bold; min-width: 80px;}
+        .btn-nav:hover { background: #bb86fc; color: #000; }
+        .page-indicator { font-size: 0.9em; color: #aaa; min-width: 40px; text-align: center; }
 
         /* 顯示區塊 */
         .display-area {
-            display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;
-            width: 95%; max-width: 1200px; opacity: 0; transition: opacity 0.5s;
-            padding-top: 50px; padding-bottom: 50px;
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            gap: 20px; width: 95%; max-width: 1600px; opacity: 0; transition: opacity 0.5s;
+            overflow-y: auto; padding-bottom: 20px;
         }
+        .display-area::-webkit-scrollbar { width: 8px; }
+        .display-area::-webkit-scrollbar-track { background: #121212; }
+        .display-area::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
 
-        /* Phase 1 & 2: 計數器與進位動畫樣式 */
+        /* Phase 1 & 2 樣式 */
         .counter-card {
             background: #1f1b24; border: 4px solid #333; border-radius: 20px;
             padding: 40px 50px; min-width: 350px; text-align: center;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;
-            display: flex; flex-direction: column; align-items: center;
+            display: flex; flex-direction: column; align-items: center; margin: auto;
         }
         .rule-tag {
             position: absolute; top: -25px; left: 50%; transform: translateX(-50%);
             background: #cf6679; color: white; padding: 8px 25px; border-radius: 15px;
-            font-weight: bold; font-size: 1.4em; box-shadow: 0 5px 10px rgba(0,0,0,0.5); white-space: nowrap;
-            z-index: 10; border: 2px solid #fff;
+            font-weight: bold; font-size: 1.4em; box-shadow: 0 5px 10px rgba(0,0,0,0.5); white-space: nowrap; z-index: 10; border: 2px solid #fff;
         }
-        
-        /* 數位顯示區 (Phase 2) */
-        .digit-container {
-            display: flex; justify-content: center; align-items: flex-end; gap: 15px; margin: 40px 0; height: 120px;
-        }
+        .digit-container { display: flex; justify-content: center; align-items: flex-end; gap: 15px; margin: 40px 0; height: 120px; }
         .digit-box {
             width: 80px; height: 100px; background: #333; border-radius: 10px;
             display: flex; justify-content: center; align-items: center;
             font-size: 4em; font-weight: bold; font-family: 'Courier New', monospace;
-            color: #fff; border: 2px solid #555; position: relative;
-            transition: all 0.2s;
+            color: #fff; border: 2px solid #555; position: relative; transition: all 0.2s;
         }
         .digit-box.changed { border-color: #03dac6; color: #03dac6; transform: scale(1.1); }
         .digit-box.reset { border-color: #cf6679; color: #cf6679; }
-        
-        /* 進位飛行粒子 */
-        .carry-particle {
-            position: absolute; top: 0; left: 0;
-            color: #ff5252; font-weight: bold; font-size: 1.5em;
-            pointer-events: none; opacity: 0; z-index: 100;
-        }
-
+        .carry-particle { position: absolute; top: 0; left: 0; color: #ff5252; font-weight: bold; font-size: 1.5em; pointer-events: none; opacity: 0; z-index: 100; }
         .process-info { font-size: 1.5em; color: #aaa; height: 40px; margin-bottom: 10px;}
         .plus-indicator { color: #03dac6; font-weight: bold; opacity: 0; font-size: 1.5em; position: absolute; bottom: -40px; right: 15px;}
 
-        /* Phase 3: 規則與計算樣式 */
-        .rule-box {
-            background: #1e1e1e; padding: 40px; border-radius: 20px; border: 2px solid #03dac6;
-            text-align: center; width: 90%;
+        /* Phase 3 樣式 (規則與範例) */
+        .rule-box { background: #1e1e1e; padding: 40px; border-radius: 20px; border: 2px solid #03dac6; text-align: center; width: 90%; margin: auto; }
+        .calc-container { display: flex; justify-content: center; align-items: flex-start; gap: 50px; margin-top: 30px; width: 100%; }
+        .digit-column { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+        
+        .d-row { padding: 10px; min-width: 80px; text-align: center; height: 60px; display: flex; align-items: center; justify-content: center; }
+        
+        /* 1. 上方數字 */
+        .d-digit { 
+            font-size: 4em; font-weight: bold; font-family: 'Courier New', monospace; 
+            background: #333; border: 2px solid #555; border-radius: 10px; color: #fff;
+            width: 80px; height: 80px; z-index: 2;
         }
-        .calc-container {
-            display: flex; justify-content: center; align-items: flex-start; gap: 50px; /* 間距加大 */
-            margin-top: 30px; width: 100%;
+        
+        /* 2. 箭頭 */
+        .d-arrow { font-size: 2em; color: #666; opacity: 0; transition: opacity 0.5s; }
+        
+        /* 3. 公式列 */
+        .d-formula { 
+            font-size: 1.6em; color: #aaa; border-bottom: 1px solid #555; padding-bottom: 5px; white-space: nowrap; font-family: 'Times New Roman', serif; 
+            opacity: 0; transition: opacity 0.5s; min-width: 120px;
         }
-        .digit-column {
-            display: flex; flex-direction: column; align-items: center; gap: 20px;
-            opacity: 0; transform: translateY(20px); transition: all 0.5s;
-        }
-        .d-row {
-            padding: 10px; border-radius: 10px; min-width: 80px; text-align: center;
-        }
-        .d-digit {
-            font-size: 4em; font-weight: bold; font-family: 'Courier New', monospace;
-            background: #333; border: 2px solid #555; color: #fff;
-        }
-        .d-arrow { font-size: 2em; color: #666; height: 30px; line-height: 30px;}
-        .d-formula {
-            font-size: 1.6em; color: #aaa; border-bottom: 1px solid #555; padding-bottom: 5px; white-space: nowrap;
-            font-family: 'Times New Roman', serif;
-        }
-        .d-val {
-            font-size: 2em; color: #03dac6; font-weight: bold;
-        }
-        .total-sum-box {
-            margin-top: 40px; font-size: 2.5em; border-top: 3px double #fff; padding-top: 20px; width: 80%;
-            opacity: 0; transition: opacity 0.5s;
+        .formula-digit-target { display: inline-block; width: 1em; text-align: center; color: transparent; } 
+        
+        /* 4. 結果列 */
+        .d-val { font-size: 2em; color: #03dac6; font-weight: bold; opacity: 0; transition: opacity 0.5s; }
+        
+        /* 下拉動畫用的飛行數字 */
+        .flying-digit {
+            position: fixed; font-size: 4em; font-weight: bold; font-family: 'Courier New', monospace;
+            color: #fff; pointer-events: none; z-index: 9999; transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), color 0.8s;
         }
 
-        /* 次方顯示優化 */
+        .total-sum-box { margin-top: 40px; font-size: 2.5em; border-top: 3px double #fff; padding-top: 20px; width: 80%; opacity: 0; transition: opacity 0.5s; }
         .math-base { font-family: 'Times New Roman', serif; font-size: 1.1em; }
-        sup.math-exp {
-            font-size: 0.6em; vertical-align: super; position: relative; top: -0.5em;
-            color: #ffb74d; margin-right: 5px;
-        }
-        .pos-indicator { font-size: 0.8em; color: #ffb74d; margin-top: 5px; }
+        sup.math-exp { font-size: 0.6em; vertical-align: super; position: relative; top: -0.5em; color: #ffb74d; margin-right: 5px; }
+        .pos-indicator { font-size: 0.8em; color: #ffb74d; margin-top: 5px; opacity: 0; transition: opacity 0.5s;}
 
         /* Phase 4: 次方表 */
-        .power-table { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; text-align: left; background: #1e1e1e; padding: 30px; border-radius: 15px; border: 1px solid #333; width: 100%; font-size: 1.1em;}
-        .power-row { padding: 8px; border-bottom: 1px solid #333; }
+        .phase4-container { display: flex; width: 100%; justify-content: center; gap: 40px; margin: auto; }
+        .power-list-left { background: #1e1e1e; padding: 20px 40px; border-radius: 15px; border: 1px solid #333; text-align: left; font-size: 1.8em; display: flex; flex-direction: column; gap: 10px; height: fit-content; }
+        .unit-ladder-right { background: #1e1e1e; padding: 30px; border-radius: 15px; border: 1px solid #333; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 1.8em; }
+        .unit-row { display: flex; align-items: center; gap: 20px; padding: 15px; background: #2c2c2c; border-radius: 10px; width: 100%; opacity: 0; transform: translateX(30px); transition: all 0.5s; border: 1px solid #444; }
+        .unit-math { color: #90caf9; min-width: 150px; text-align: left; }
+        .unit-name { color: #03dac6; font-weight: bold; min-width: 120px; text-align: center; font-size: 1.2em; }
+        .unit-example { color: #aaa; font-size: 0.7em; text-align: left; flex-grow: 1; border-left: 2px solid #555; padding-left: 15px; }
+        .connector-row { color: #ffb74d; font-size: 0.8em; display: flex; flex-direction: column; align-items: center; opacity: 0; transition: opacity 0.5s; margin: 5px 0; }
+        .connector-arrow { font-size: 1.5em; line-height: 0.8em; }
+        .connector-text { font-size: 0.8em; background: #121212; padding: 2px 10px; border-radius: 10px; border: 1px solid #555;}
 
-        /* Phase 5: 減法 */
+        /* Phase 5 樣式 */
         .subtraction-step { display: flex; justify-content: space-between; align-items: center; font-size: 1.6em; width: 100%; margin: 10px 0; opacity: 0; border-bottom: 1px dashed #333; padding-bottom: 5px;}
+        .binary-collection { display: flex; gap: 10px; justify-content: center; margin-top: 20px; font-size: 2.5em; font-family: 'Courier New', monospace; min-height: 1.5em; }
+        .collected-bit { color: #03dac6; opacity: 0; transform: translateY(-20px); transition: all 0.5s; }
 
     </style>
 </head>
@@ -126,7 +139,12 @@
 
     <div class="control-panel">
         <div class="control-row">
-            <button class="btn" id="playPauseBtn" onclick="togglePause()" style="width: 100%;">⏸ 暫停動畫</button>
+            <button class="btn btn-nav" onclick="changePage(-1)">⏮ 上一章</button>
+            <span class="page-indicator" id="pageIndicator">1 / 5</span>
+            <button class="btn btn-nav" onclick="changePage(1)">下一章 ⏭</button>
+        </div>
+        <div class="control-row" style="margin-top:5px; border-top:1px solid #555; padding-top:10px;">
+            <button class="btn" id="playPauseBtn" onclick="togglePause()" style="width: 100%;">⏸ 暫停</button>
         </div>
         <div class="control-row">
             <span style="font-size: 0.8em; color: #aaa;">速度:</span>
@@ -146,458 +164,563 @@
     </div>
 
     <script>
-        // === 核心控制邏輯 ===
+        // === 核心控制 ===
         let isPaused = false;
         let timeScale = 1.0;
+        let currentPhase = 1;
+        let skipSignal = false;
+        const TOTAL_PHASES = 5;
 
         function togglePause() {
             isPaused = !isPaused;
             const btn = document.getElementById('playPauseBtn');
-            btn.innerText = isPaused ? "▶ 播放動畫" : "⏸ 暫停動畫";
+            btn.innerText = isPaused ? "▶ 播放" : "⏸ 暫停";
             btn.style.background = isPaused ? "#03dac6" : "transparent";
             btn.style.color = isPaused ? "#000" : "#fff";
         }
 
         function setSpeed(speed) {
             timeScale = speed;
-            document.querySelectorAll('.control-panel .btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.control-panel .btn:not(.btn-nav)').forEach(b => {
+                if(b.id !== 'playPauseBtn') b.classList.remove('active');
+            });
             event.target.classList.add('active');
+        }
+
+        function changePage(delta) {
+            currentPhase += delta;
+            if (currentPhase > TOTAL_PHASES) currentPhase = 1;
+            if (currentPhase < 1) currentPhase = TOTAL_PHASES;
+            skipSignal = true;
+            updatePageIndicator();
+        }
+
+        function updatePageIndicator() {
+            document.getElementById('pageIndicator').innerText = `${currentPhase} / ${TOTAL_PHASES}`;
         }
 
         function wait(ms) {
             return new Promise(resolve => {
+                if (skipSignal) { resolve(true); return; }
                 const checkInterval = 50;
                 let elapsed = 0;
                 const timer = setInterval(() => {
-                    if (!isPaused) {
+                    if (skipSignal) { clearInterval(timer); resolve(true); } 
+                    else if (!isPaused) {
                         elapsed += checkInterval * timeScale;
-                        if (elapsed >= ms) { clearInterval(timer); resolve(); }
+                        if (elapsed >= ms) { clearInterval(timer); resolve(false); }
                     }
                 }, checkInterval);
             });
         }
 
-        // === DOM 操作 ===
         const titleEl = document.getElementById('mainTitle');
         const subTitleEl = document.getElementById('subTitle');
         const contentArea = document.getElementById('contentArea');
 
         function updateHeader(t, s) {
-            titleEl.style.opacity = 0;
-            subTitleEl.style.opacity = 0;
-            setTimeout(() => {
-                titleEl.innerText = t;
-                subTitleEl.innerText = s;
-                titleEl.style.opacity = 1;
-                subTitleEl.style.opacity = 1;
-            }, 500);
+            titleEl.style.opacity = 0; subTitleEl.style.opacity = 0;
+            setTimeout(() => { titleEl.innerText = t; subTitleEl.innerText = s; titleEl.style.opacity = 1; subTitleEl.style.opacity = 1; }, 500);
         }
 
         function clearContent() {
             contentArea.style.opacity = 0;
-            return new Promise(resolve => setTimeout(() => {
-                contentArea.innerHTML = '';
-                contentArea.style.opacity = 1;
-                resolve();
-            }, 500));
+            return new Promise(resolve => setTimeout(() => { contentArea.innerHTML = ''; contentArea.style.opacity = 1; resolve(); }, 500));
         }
 
-        // === 進位演示輔助函式 ===
-        // 將數字拆解為陣列 (例如 10進位, 11 -> [1, 1])
-        function getDigitArray(num, base) {
-            if (num === 0) return [0];
-            let arr = [];
-            let temp = num;
-            while (temp > 0) {
-                arr.unshift(temp % base);
-                temp = Math.floor(temp / base);
-            }
-            return arr;
-        }
+        function numToChar(val) { return (val < 10) ? val : String.fromCharCode(55 + val); }
 
-        function numToChar(val) {
-            if (val < 10) return val;
-            return String.fromCharCode(55 + val); // 10->A, 11->B...
-        }
-
-        // === 動畫流程 ===
-        async function startShow() {
+        // === 主循環 ===
+        async function masterLoop() {
+            updatePageIndicator();
             while(true) {
+                skipSignal = false;
+                let interrupted = false;
+                switch(currentPhase) {
+                    case 1: interrupted = await runPhase1(); break;
+                    case 2: interrupted = await runPhase2(); break;
+                    case 3: interrupted = await runPhase3(); break;
+                    case 4: interrupted = await runPhase4(); break;
+                    case 5: interrupted = await runPhase5(); break;
+                }
+                if (!interrupted) {
+                    currentPhase++;
+                    if (currentPhase > TOTAL_PHASES) currentPhase = 1;
+                    updatePageIndicator();
+                }
+            }
+        }
+
+        // === Phase 1: 進位法則 ===
+        async function runPhase1() {
+            updateHeader("1. 進位制的黃金法則", "基數是 X，最大符號就是 X-1");
+            await clearContent();
+            if(await wait(1000)) return true;
+
+            const ruleDiv = document.createElement('div');
+            ruleDiv.style.fontSize = "2.2em"; ruleDiv.style.textAlign = "left"; ruleDiv.style.lineHeight = "1.8em";
+            ruleDiv.innerHTML = `
+                <div>10 進位 (0~9) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">9</span></div>
+                <div> 2 進位 (0~1) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">1</span></div>
+                <div> 5 進位 (0~4) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">4</span></div>
+                <div> 7 進位 (0~6) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">6</span></div>
+                <div>16 進位 (0~F) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">F (15)</span></div>
+            `;
+            contentArea.appendChild(ruleDiv);
+            setTimeout(()=>contentArea.style.opacity = 1, 100);
+            return await wait(5000);
+        }
+
+        // === Phase 2: 進位演示 ===
+        async function runPhase2() {
+            updateHeader("2. 依序加 1，觀察進位", "請注意進位後的數字讀法");
+            await clearContent();
+            const bases = [
+                { name: "10 進位 (Decimal)", base: 10, max: 9, countTo: 11, color: "#90caf9" },
+                { name: "2 進位 (Binary)", base: 2, max: 1, countTo: 4, color: "#cf6679" }, 
+                { name: "5 進位 (Quinary)", base: 5, max: 4, countTo: 6, color: "#fff176" }, 
+                { name: "7 進位 (Septenary)", base: 7, max: 6, countTo: 8, color: "#ffb74d" }, 
+                { name: "16 進位 (Hex)", base: 16, max: 15, countTo: 17, color: "#03dac6" } 
+            ];
+
+            for (let bInfo of bases) {
+                if(skipSignal) return true;
+                await clearContent();
+                let maxText = bInfo.base === 16 ? "F (15)" : bInfo.max;
+                let readTip = (bInfo.base === 10) ? "習慣讀法：十、十一" : `⚠️ 注意：請讀作「1 0」而非「十」！`;
+                updateHeader(bInfo.name, readTip);
                 
-                // Phase 1: 進位法則
-                updateHeader("1. 進位制的黃金法則", "基數是 X，最大符號就是 X-1");
-                await clearContent();
-                await wait(1000);
-
-                const ruleDiv = document.createElement('div');
-                ruleDiv.style.fontSize = "2.2em";
-                ruleDiv.style.textAlign = "left";
-                ruleDiv.style.lineHeight = "1.8em";
-                ruleDiv.innerHTML = `
-                    <div>10 進位 (0~9) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">9</span></div>
-                    <div> 2 進位 (0~1) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">1</span></div>
-                    <div> 5 進位 (0~4) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">4</span></div>
-                    <div> 7 進位 (0~6) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">6</span></div>
-                    <div>16 進位 (0~F) ⮕ 最大符號 <span style="color:#cf6679; font-weight:bold">F (15)</span></div>
+                const card = document.createElement('div');
+                card.className = 'counter-card'; card.style.borderColor = bInfo.color;
+                card.innerHTML = `
+                    <div class="rule-tag" style="background:${bInfo.color}; color:#121212">MAX = ${maxText}</div>
+                    <div class="digit-container" id="digitBoxContainer"><div class="digit-box" id="digit-0">0</div></div>
+                    <div class="process-info" id="processInfo">準備開始...</div>
                 `;
-                contentArea.appendChild(ruleDiv);
-                setTimeout(()=>contentArea.style.opacity = 1, 100);
-                await wait(5000);
+                contentArea.appendChild(card);
+                if(await wait(1000)) return true;
 
+                const digitContainer = document.getElementById('digitBoxContainer');
+                const processInfo = document.getElementById('processInfo');
+                let currentDigits = [0]; 
 
-                // Phase 2: 依序演示 (具備進位動畫)
-                updateHeader("2. 依序加 1，觀察進位", "請注意進位後的數字讀法");
-                await clearContent();
-
-                const bases = [
-                    { name: "10 進位 (Decimal)", base: 10, max: 9, countTo: 11, color: "#90caf9" },
-                    { name: "2 進位 (Binary)", base: 2, max: 1, countTo: 4, color: "#cf6679" }, 
-                    { name: "5 進位 (Quinary)", base: 5, max: 4, countTo: 6, color: "#fff176" }, 
-                    { name: "7 進位 (Septenary)", base: 7, max: 6, countTo: 8, color: "#ffb74d" }, 
-                    { name: "16 進位 (Hex)", base: 16, max: 15, countTo: 17, color: "#03dac6" } 
-                ];
-
-                for (let bInfo of bases) {
-                    await clearContent();
-                    let maxText = bInfo.base === 16 ? "F (15)" : bInfo.max;
-                    let readTip = (bInfo.base === 10) ? "習慣讀法：十、十一" : `⚠️ 注意：請讀作「1 0」而非「十」！`;
-                    updateHeader(bInfo.name, readTip);
-                    
-                    const card = document.createElement('div');
-                    card.className = 'counter-card';
-                    card.style.borderColor = bInfo.color;
-                    
-                    // 動態產生數位格子的容器
-                    card.innerHTML = `
-                        <div class="rule-tag" style="background:${bInfo.color}; color:#121212">MAX = ${maxText}</div>
-                        <div class="digit-container" id="digitBoxContainer">
-                            <div class="digit-box" id="digit-0">0</div>
-                        </div>
-                        <div class="process-info" id="processInfo">準備開始...</div>
-                    `;
-                    contentArea.appendChild(card);
-                    await wait(1000);
-
-                    const digitContainer = document.getElementById('digitBoxContainer');
-                    const processInfo = document.getElementById('processInfo');
-
-                    // 模擬加法器的狀態陣列 (從個位數開始 [個位, 十位, 百位...])
-                    // 初始化：只有個位數 0
-                    let currentDigits = [0]; 
-
-                    // 更新畫面函式 (非動畫更新，用於初始化或重繪)
-                    function renderDigits() {
-                        digitContainer.innerHTML = '';
-                        // 反轉陣列來渲染 (高位在左，低位在右)
-                        for(let i = currentDigits.length - 1; i >= 0; i--) {
-                            let div = document.createElement('div');
-                            div.className = 'digit-box';
-                            div.id = `digit-${i}`;
-                            div.innerText = numToChar(currentDigits[i]);
-                            div.style.borderColor = bInfo.color;
-                            digitContainer.appendChild(div);
-                        }
+                function renderDigits() {
+                    digitContainer.innerHTML = '';
+                    for(let i = currentDigits.length - 1; i >= 0; i--) {
+                        let div = document.createElement('div');
+                        div.className = 'digit-box'; div.id = `digit-${i}`;
+                        div.innerText = numToChar(currentDigits[i]); div.style.borderColor = bInfo.color;
+                        digitContainer.appendChild(div);
                     }
-
-                    // 執行計數循環
-                    for(let k = 1; k <= bInfo.countTo; k++) {
-                        processInfo.innerText = `+1`;
-                        await wait(500);
-
-                        // 加法邏輯與進位動畫
-                        let pos = 0;
-                        let carry = true;
-                        
-                        // 找到對應的個位數 DOM
-                        let targetDigit = document.getElementById(`digit-${pos}`);
-                        if (!targetDigit) {
-                            // 如果還沒有 DOM (理論上都有)，重繪
-                            renderDigits();
-                            targetDigit = document.getElementById(`digit-${pos}`);
-                        }
-
-                        // 添加 +1 指示器
-                        let plusInd = document.createElement('div');
-                        plusInd.className = 'plus-indicator';
-                        plusInd.innerText = '+1';
-                        targetDigit.appendChild(plusInd);
-                        setTimeout(() => { plusInd.style.opacity = 1; plusInd.style.transform = 'translateY(0)'; }, 50);
-
-                        await wait(800);
-
-                        // 執行連鎖進位檢查
-                        while (carry) {
-                            // 確保陣列夠長
-                            if (pos >= currentDigits.length) {
-                                currentDigits.push(0);
-                                // 新增高位 DOM
-                                let newDigit = document.createElement('div');
-                                newDigit.className = 'digit-box';
-                                newDigit.id = `digit-${pos}`;
-                                newDigit.innerText = '0';
-                                newDigit.style.borderColor = bInfo.color;
-                                // 插在最前面 (視覺上的左邊)
-                                digitContainer.prepend(newDigit);
-                                await wait(100); // 讓新增動畫跑一下
-                            }
-
-                            let currentVal = currentDigits[pos];
-                            let dom = document.getElementById(`digit-${pos}`);
-
-                            if (currentVal < bInfo.max) {
-                                // 不進位，直接 +1
-                                currentDigits[pos]++;
-                                dom.innerText = numToChar(currentDigits[pos]);
-                                dom.classList.add('changed');
-                                setTimeout(() => dom.classList.remove('changed'), 300);
-                                carry = false;
-                            } else {
-                                // 進位發生！
-                                processInfo.innerText = "💥 滿了！進位！";
-                                dom.classList.add('reset'); // 變色提示歸零
-                                await wait(400);
-                                
-                                // 1. 歸零
-                                currentDigits[pos] = 0;
-                                dom.innerText = '0';
-                                await wait(200);
-                                dom.classList.remove('reset');
-
-                                // 2. 進位粒子動畫
-                                let particle = document.createElement('div');
-                                particle.className = 'carry-particle';
-                                particle.innerText = '+1';
-                                dom.appendChild(particle);
-                                
-                                // 計算移動距離 (往左飛一個 box 寬度 + gap)
-                                // 簡單做法：只做透明度和位移
-                                particle.animate([
-                                    { opacity: 1, transform: 'translate(0, 0)' },
-                                    { opacity: 0, transform: 'translate(-100px, -20px)' } 
-                                ], { duration: 600, easing: 'ease-out' });
-
-                                await wait(500); // 等待粒子飛過去
-                                pos++; // 檢查下一位
-                            }
-                        }
-                        
-                        processInfo.innerText = "";
-                        // 移除 +1 指示器
-                        if(plusInd && plusInd.parentNode) plusInd.remove();
-                        await wait(1000);
-                    }
-                    await wait(2000);
                 }
 
+                for(let k = 1; k <= bInfo.countTo; k++) {
+                    if(skipSignal) return true;
+                    processInfo.innerText = `+1`;
+                    if(await wait(500)) return true;
 
-                // Phase 3: 規則頁 (重構)
+                    let pos = 0; let carry = true;
+                    let targetDigit = document.getElementById(`digit-${pos}`);
+                    if (!targetDigit) { renderDigits(); targetDigit = document.getElementById(`digit-${pos}`); }
+
+                    let plusInd = document.createElement('div');
+                    plusInd.className = 'plus-indicator'; plusInd.innerText = '+1';
+                    targetDigit.appendChild(plusInd);
+                    setTimeout(() => { plusInd.style.opacity = 1; plusInd.style.transform = 'translateY(0)'; }, 50);
+                    if(await wait(800)) return true;
+
+                    while (carry) {
+                        if (pos >= currentDigits.length) {
+                            currentDigits.push(0);
+                            let newDigit = document.createElement('div');
+                            newDigit.className = 'digit-box'; newDigit.id = `digit-${pos}`;
+                            newDigit.innerText = '0'; newDigit.style.borderColor = bInfo.color;
+                            digitContainer.prepend(newDigit);
+                            if(await wait(100)) return true;
+                        }
+                        let currentVal = currentDigits[pos];
+                        let dom = document.getElementById(`digit-${pos}`);
+
+                        if (currentVal < bInfo.max) {
+                            currentDigits[pos]++;
+                            dom.innerText = numToChar(currentDigits[pos]);
+                            dom.classList.add('changed');
+                            setTimeout(() => dom.classList.remove('changed'), 300);
+                            carry = false;
+                        } else {
+                            processInfo.innerText = "💥 滿了！進位！";
+                            dom.classList.add('reset'); 
+                            if(await wait(400)) return true;
+                            
+                            currentDigits[pos] = 0; dom.innerText = '0';
+                            if(await wait(200)) return true;
+                            dom.classList.remove('reset');
+
+                            let particle = document.createElement('div');
+                            particle.className = 'carry-particle'; particle.innerText = '+1';
+                            dom.appendChild(particle);
+                            particle.animate([
+                                { opacity: 1, transform: 'translate(0, 0)' },
+                                { opacity: 0, transform: 'translate(-100px, -20px)' } 
+                            ], { duration: 600, easing: 'ease-out' });
+                            if(await wait(500)) return true;
+                            pos++;
+                        }
+                    }
+                    processInfo.innerText = "";
+                    if(plusInd && plusInd.parentNode) plusInd.remove();
+                    if(await wait(1000)) return true;
+                }
+                if(await wait(2000)) return true;
+            }
+            return false;
+        }
+
+        // === Phase 3: 轉回 10 進位 (通用規則+範例) ===
+        async function runPhase3() {
+            updateHeader("3. 轉回 10 進位：通用規則", "將每個位數拆開，分別計算");
+            await clearContent();
+            if(await wait(500)) return true;
+
+            // 1. 規則頁 (動態化)
+            const ruleBox = document.createElement('div');
+            ruleBox.className = 'rule-box'; ruleBox.style.border = "none";
+            contentArea.appendChild(ruleBox);
+
+            let ruleContainer = document.createElement('div');
+            ruleContainer.className = 'calc-container';
+            ruleBox.appendChild(ruleContainer);
+
+            const vars = ['a', 'b', 'c', 'd', 'e'];
+            const varColor = ['#cf6679', '#fff176', '#ffb74d', '#03dac6', '#90caf9'];
+            let lenRule = vars.length;
+            let ruleColumns = [];
+
+            // Step 1: 建立變數列 (只顯示最上方)
+            for(let i=0; i<lenRule; i++) {
+                let power = lenRule - 1 - i;
+                let col = document.createElement('div');
+                col.className = 'digit-column';
+                col.style.opacity = 1; col.style.transform = "translateY(0)";
+                col.innerHTML = `
+                    <div class="d-row d-digit" id="rule-digit-${i}" style="border-color:${varColor[i]}">${vars[i]}</div>
+                    <div class="pos-indicator" id="rule-pos-${i}" style="opacity:0">第 ${power} 位</div>
+                    <div class="d-arrow" id="rule-arrow-${i}">⬇</div>
+                    <div class="d-row d-formula" id="rule-formula-${i}">
+                        <span class="formula-digit-target" id="rule-target-${i}">${vars[i]}</span> 
+                        × N<sup>${power}</sup>
+                    </div>
+                    <div class="d-arrow" id="rule-arrow2-${i}" style="opacity:0">⬇</div>
+                    <div class="d-row d-val" id="rule-res-${i}" style="opacity:0">
+                        ${vars[i]}×N<sup>${power}</sup>
+                    </div>
+                `;
+                ruleContainer.appendChild(col);
+                ruleColumns.push(col);
+            }
+            setTimeout(()=>contentArea.style.opacity = 1, 100);
+            if(await wait(1500)) return true;
+
+            // Step 2: 規則下拉動畫
+            for(let i=0; i<lenRule; i++) {
+                if(skipSignal) return true;
                 
-                // 3.0 規則頁面 (直式對齊版)
-                updateHeader("3. 轉回 10 進位：通用規則", "將每個位數拆開，分別計算");
+                // 顯示下方基底
+                let formulaEl = document.getElementById(`rule-formula-${i}`);
+                let posEl = document.getElementById(`rule-pos-${i}`);
+                formulaEl.style.opacity = 1;
+                posEl.style.opacity = 1;
+                if(await wait(500)) return true;
+
+                // 飛行變數
+                let digitEl = document.getElementById(`rule-digit-${i}`);
+                let targetEl = document.getElementById(`rule-target-${i}`);
+                let rectStart = digitEl.getBoundingClientRect();
+                let rectEnd = targetEl.getBoundingClientRect();
+
+                let flying = document.createElement('div');
+                flying.className = 'flying-digit';
+                flying.innerText = vars[i];
+                flying.style.left = rectStart.left + 'px';
+                flying.style.top = rectStart.top + 'px';
+                flying.style.color = varColor[i];
+                document.body.appendChild(flying);
+
+                requestAnimationFrame(() => {
+                    flying.style.transform = `translate(${rectEnd.left - rectStart.left}px, ${rectEnd.top - rectStart.top}px) scale(0.6)`;
+                });
+
+                if(await wait(800)) { flying.remove(); return true; }
+                
+                flying.remove();
+                document.getElementById(`rule-arrow-${i}`).style.opacity = 1;
+                targetEl.style.color = varColor[i];
+                
+                if(await wait(300)) return true;
+            }
+
+            // 顯示總和公式
+            let sumBoxRule = document.createElement('div');
+            sumBoxRule.className = 'total-sum-box';
+            sumBoxRule.innerHTML = `<div style="font-size:0.5em; color:#aaa; margin-bottom:10px;">總和：</div>
+                <span style="color:#cf6679">a</span>N<sup>4</sup> + 
+                <span style="color:#fff176">b</span>N<sup>3</sup> + 
+                <span style="color:#ffb74d">c</span>N<sup>2</sup> + 
+                <span style="color:#03dac6">d</span>N<sup>1</sup> + 
+                <span style="color:#90caf9">e</span>N<sup>0</sup>
+            `;
+            ruleBox.appendChild(sumBoxRule);
+            setTimeout(()=>sumBoxRule.style.opacity = 1, 100);
+            if(await wait(6000)) return true;
+
+
+            // 2. 範例演示 (修正最後一位時間)
+            const examples = [
+                { title: "範例 0：10 進位 (3位數) 對照", numStr: "958", base: 10, digits: [9, 5, 8], color: "#90caf9" },
+                { title: "範例 1：2 進位 (5位數)", numStr: "10110", base: 2, digits: [1, 0, 1, 1, 0], color: "#cf6679" },
+                { title: "範例 2：5 進位 (3位數)", numStr: "123", base: 5, digits: [1, 2, 3], color: "#fff176" },
+                { title: "範例 3：16 進位 (2位數)", numStr: "2F", base: 16, digits: ["2", "F"], realValues: [2, 15], color: "#03dac6" }
+            ];
+
+            for (let ex of examples) {
+                if(skipSignal) return true;
+                updateHeader(ex.title, `基底：${ex.base} 進位`);
                 await clearContent();
+                
+                let container = document.createElement('div');
+                container.className = 'calc-container';
+                contentArea.appendChild(container);
+                
+                let len = ex.digits.length;
+                let calculatedValues = [];
 
-                const ruleBox = document.createElement('div');
-                ruleBox.className = 'rule-box';
-                ruleBox.style.border = "none";
-                contentArea.appendChild(ruleBox);
-
-                // 建立規則的容器 (5個變數)
-                let ruleContainer = document.createElement('div');
-                ruleContainer.className = 'calc-container';
-                ruleBox.appendChild(ruleContainer);
-
-                const vars = ['a', 'b', 'c', 'd', 'e'];
-                const varColor = ['#cf6679', '#fff176', '#ffb74d', '#03dac6', '#90caf9'];
-
-                for(let i=0; i<5; i++) {
-                    let power = 4-i;
+                // Step 1: 建立所有欄位
+                for (let i = 0; i < len; i++) {
+                    let dSym = ex.digits[i]; 
+                    let power = len - 1 - i; 
+                    
                     let col = document.createElement('div');
                     col.className = 'digit-column';
-                    
+                    col.style.opacity = 1; col.style.transform = "translateY(0)";
+
                     col.innerHTML = `
-                        <div class="d-row d-digit" style="border-color:${varColor[i]}">${vars[i]}</div>
-                        <div class="pos-indicator">第 ${power} 位</div>
-                        <div class="d-arrow">⬇</div>
-                        <div class="d-formula" style="color:#fff; border:none;">
-                            <span style="color:${varColor[i]}">${vars[i]}</span> × N<sup>${power}</sup>
+                        <div class="d-row d-digit" id="col-digit-${i}" style="border-color:${ex.color}">${dSym}</div>
+                        <div class="pos-indicator" id="pos-ind-${i}" style="opacity:0">第 ${power} 位</div>
+                        <div class="d-arrow" id="arrow-${i}">⬇</div>
+                        <div class="d-row d-formula" id="formula-${i}">
+                            <span class="formula-digit-target" id="target-${i}">0</span> 
+                            × <span class="math-base">${ex.base}</span><sup class="math-exp">${power}</sup>
                         </div>
+                        <div class="d-arrow" id="arrow2-${i}" style="opacity:0">⬇</div>
+                        <div class="d-row d-val" id="res-${i}">0</div>
                     `;
-                    ruleContainer.appendChild(col);
-                    
-                    setTimeout(() => {
-                        col.style.opacity = 1;
-                        col.style.transform = "translateY(0)";
-                    }, i * 200);
+                    container.appendChild(col);
                 }
                 setTimeout(()=>contentArea.style.opacity = 1, 100);
-                await wait(6000);
+                if(await wait(1500)) return true;
 
-                // 3.1 範例演示 (與規則頁版型一致)
-                const examples = [
-                    { 
-                        title: "範例 1：2 進位 (5位數)", numStr: "10110", base: 2, 
-                        digits: [1, 0, 1, 1, 0], color: "#cf6679"
-                    },
-                    { 
-                        title: "範例 2：5 進位 (3位數)", numStr: "123", base: 5, 
-                        digits: [1, 2, 3], color: "#fff176"
-                    },
-                    { 
-                        title: "範例 3：16 進位 (2位數)", numStr: "2F", base: 16, 
-                        digits: ["2", "F"], realValues: [2, 15], color: "#03dac6"
+                // Step 2: 逐欄動畫
+                for (let i = 0; i < len; i++) {
+                    if(skipSignal) return true;
+                    
+                    let dSym = ex.digits[i]; 
+                    let dVal = ex.realValues ? ex.realValues[i] : dSym; 
+                    let power = len - 1 - i; 
+                    let colVal = dVal * Math.pow(ex.base, power);
+                    calculatedValues.push(colVal);
+
+                    let digitEl = document.getElementById(`col-digit-${i}`);
+                    let posIndEl = document.getElementById(`pos-ind-${i}`);
+                    let arrowEl = document.getElementById(`arrow-${i}`);
+                    let formulaEl = document.getElementById(`formula-${i}`);
+                    let targetEl = document.getElementById(`target-${i}`);
+                    let arrow2El = document.getElementById(`arrow2-${i}`);
+                    let resEl = document.getElementById(`res-${i}`);
+
+                    formulaEl.style.opacity = 1;
+                    posIndEl.style.opacity = 1;
+                    if(await wait(500)) return true;
+
+                    let rectStart = digitEl.getBoundingClientRect();
+                    let rectEnd = targetEl.getBoundingClientRect();
+
+                    let flying = document.createElement('div');
+                    flying.className = 'flying-digit';
+                    flying.innerText = dSym;
+                    flying.style.left = rectStart.left + 'px';
+                    flying.style.top = rectStart.top + 'px';
+                    flying.style.color = ex.color; 
+                    document.body.appendChild(flying); 
+
+                    requestAnimationFrame(() => {
+                        flying.style.transform = `translate(${rectEnd.left - rectStart.left}px, ${rectEnd.top - rectStart.top}px) scale(0.6)`;
+                    });
+
+                    if(await wait(800)) { flying.remove(); return true; }
+
+                    flying.remove();
+                    arrowEl.style.opacity = 1;
+                    targetEl.innerText = dVal; 
+                    targetEl.style.color = ex.color;
+                    
+                    if (dSym != dVal) {
+                        targetEl.innerText = `${dSym} → ${dVal}`;
+                        targetEl.style.width = "auto";
                     }
-                ];
 
-                for (let ex of examples) {
-                    updateHeader(ex.title, `基底：${ex.base} 進位`);
-                    await clearContent();
-                    
-                    let container = document.createElement('div');
-                    container.className = 'calc-container';
-                    contentArea.appendChild(container);
-                    
-                    let len = ex.digits.length;
-                    let calculatedValues = [];
+                    if(await wait(500)) return true;
 
-                    for (let i = 0; i < len; i++) {
-                        let dSym = ex.digits[i]; 
-                        let dVal = ex.realValues ? ex.realValues[i] : dSym; 
-                        let power = len - 1 - i; 
-                        let colVal = dVal * Math.pow(ex.base, power);
-                        calculatedValues.push(colVal);
+                    arrow2El.style.opacity = 1;
+                    resEl.innerText = colVal;
+                    resEl.style.opacity = 1;
 
-                        let col = document.createElement('div');
-                        col.className = 'digit-column';
-                        
-                        let posIndicator = `<div class="pos-indicator">第 ${power} 位</div>`;
-                        
-                        let formulaHtml = `
-                            <span style="color:${ex.color}">${dVal}</span> × 
-                            <span class="math-base">${ex.base}</span><sup class="math-exp">${power}</sup>
-                        `;
-                        
-                        col.innerHTML = `
-                            <div class="d-row d-digit" style="border-color:${ex.color}">${dSym}</div>
-                            ${posIndicator}
-                            <div class="d-arrow">⬇</div>
-                            <div class="d-row d-formula">${formulaHtml}</div>
-                            <div class="d-arrow">⬇</div>
-                            <div class="d-row d-val">${colVal}</div>
-                        `;
-                        container.appendChild(col);
-                        
-                        setTimeout(() => {
-                            col.style.opacity = 1;
-                            col.style.transform = "translateY(0)";
-                        }, i * 300);
-                    }
-                    
-                    await wait(1000 + len * 300);
-                    
-                    let totalSum = calculatedValues.reduce((a, b) => a + b, 0);
-                    let sumExp = calculatedValues.join(" + ");
-                    
-                    let sumBox = document.createElement('div');
-                    sumBox.className = 'total-sum-box';
-                    sumBox.innerHTML = `
-                        <div style="font-size:0.5em; color:#aaa; margin-bottom:10px;">將下方數值加總：</div>
-                        ${sumExp} = <span style="color:${ex.color}; font-weight:bold">${totalSum}</span>
-                    `;
-                    contentArea.appendChild(sumBox);
-                    
-                    setTimeout(() => sumBox.style.opacity = 1, 100);
-                    await wait(5000);
-                }
-
-
-                // Phase 4: 次方表
-                updateHeader("4. 必備常識：2 的次方", "10進位轉2進位的好幫手");
-                await clearContent();
-
-                const powerTable = document.createElement('div');
-                powerTable.className = 'power-table';
-                
-                const powers = [
-                    { p: 0, v: 1 }, { p: 1, v: 2 }, { p: 2, v: 4 }, { p: 3, v: 8 },
-                    { p: 4, v: 16 }, { p: 5, v: 32 }, { p: 6, v: 64 }, { p: 7, v: 128 },
-                    { p: 8, v: 256 }, { p: 9, v: 512 }, { p: 10, v: "1024 (1K)" }
-                ];
-                
-                let leftDiv = document.createElement('div');
-                powers.forEach(p => {
-                    leftDiv.innerHTML += `<div class="power-row">2<sup class="math-exp" style="color:#fff">${p.p}</sup> = ${p.v}</div>`;
-                });
-                
-                let rightDiv = document.createElement('div');
-                rightDiv.innerHTML = `
-                    <div class="power-row" style="margin-top:20px; color:#03dac6">2<sup class="math-exp">10</sup> ≈ 1K (千)</div>
-                    <div class="power-row" style="margin-top:20px; color:#03dac6">2<sup class="math-exp">20</sup> ≈ 1M (百萬)</div>
-                    <div class="power-row" style="margin-top:20px; color:#03dac6">2<sup class="math-exp">30</sup> ≈ 1G (十億)</div>
-                    <div class="power-row" style="margin-top:20px; color:#03dac6">2<sup class="math-exp">40</sup> ≈ 1T (兆)</div>
-                `;
-                
-                powerTable.appendChild(leftDiv);
-                powerTable.appendChild(rightDiv);
-                contentArea.appendChild(powerTable);
-                await wait(5000);
-
-
-                // Phase 5: 減法轉換
-                updateHeader("5. 10進位轉2進位 (減法法)", "從最大次方開始減");
-                await clearContent();
-                
-                let targetNum = 85;
-                let steps = [
-                    { pow: 6, val: 64, bit: 1, rem: 21 },
-                    { pow: 5, val: 32, bit: 0, rem: 21 },
-                    { pow: 4, val: 16, bit: 1, rem: 5 },
-                    { pow: 3, val: 8,  bit: 0, rem: 5 },
-                    { pow: 2, val: 4,  bit: 1, rem: 1 },
-                    { pow: 1, val: 2,  bit: 0, rem: 1 },
-                    { pow: 0, val: 1,  bit: 1, rem: 0 }
-                ];
-
-                let calcDiv = document.createElement('div');
-                calcDiv.className = 'rule-box';
-                calcDiv.innerHTML = `<div style="font-size:2em; margin-bottom:20px;">目標：<span style="color:#fff176">${targetNum}</span></div>`;
-                
-                contentArea.appendChild(calcDiv);
-                
-                let resultStr = "";
-                for(let s of steps) {
-                    let row = document.createElement('div');
-                    row.className = 'subtraction-step';
-                    
-                    let bitColor = s.bit ? "#03dac6" : "#555";
-                    let logicText = s.bit ? 
-                        `${targetNum} - ${s.val} = <span style="color:#fff176">${s.rem}</span>` : 
-                        `${targetNum} 不夠減 ${s.val}`;
-                    
-                    row.innerHTML = `
-                        <span style="font-size:0.8em; color:#aaa">2<sup class="math-exp" style="color:#aaa">${s.pow}</sup> (${s.val})</span>
-                        <span>${logicText}</span>
-                        <span style="font-size:1.5em; color:${bitColor}; font-weight:bold">${s.bit}</span>
-                    `;
-                    calcDiv.appendChild(row);
-                    resultStr += s.bit;
-                    if(s.bit) targetNum = s.rem; 
-                    
-                    setTimeout(()=> row.style.opacity = 1, 100);
-                    await wait(1200);
+                    if(await wait(800)) return true;
                 }
                 
-                let finalDiv = document.createElement('div');
-                finalDiv.innerHTML = `結果：(${resultStr})<sub>2</sub>`;
-                finalDiv.style.fontSize = "2.5em";
-                finalDiv.style.marginTop = "20px";
-                finalDiv.style.borderTop = "1px solid #fff";
-                calcDiv.appendChild(finalDiv);
+                // 修正重點：在最後一位數動畫完成後，多等一下才顯示總和
+                if(await wait(500)) return true;
 
-                await wait(5000);
+                // Step 3: 總和
+                let totalSum = calculatedValues.reduce((a, b) => a + b, 0);
+                let sumExp = calculatedValues.join(" + ");
+                let sumBox = document.createElement('div');
+                sumBox.className = 'total-sum-box';
+                sumBox.innerHTML = `<div style="font-size:0.5em; color:#aaa; margin-bottom:10px;">將下方數值加總：</div>${sumExp} = <span style="color:${ex.color}; font-weight:bold">${totalSum}</span>`;
+                contentArea.appendChild(sumBox);
+                
+                // 捲動到底部確保總和可見
+                contentArea.scrollTop = contentArea.scrollHeight;
+                
+                setTimeout(() => sumBox.style.opacity = 1, 100);
+                if(await wait(6000)) return true;
             }
+            return false;
         }
 
-        startShow();
+        // === Phase 4: 次方表與單位 ===
+        async function runPhase4() {
+            updateHeader("4. 必備常識：2 的次方", "10進位轉2進位的好幫手 & 單位換算");
+            await clearContent();
+            if(await wait(500)) return true;
+
+            const container = document.createElement('div');
+            container.className = 'phase4-container';
+            contentArea.appendChild(container);
+
+            const leftCol = document.createElement('div');
+            leftCol.className = 'power-list-left';
+            for(let i=0; i<=10; i++) {
+                let row = document.createElement('div');
+                row.style.opacity = 0;
+                row.innerHTML = `2<sup style="color:#ffb74d">${i}</sup> = ${Math.pow(2, i)}`;
+                leftCol.appendChild(row);
+                setTimeout(()=>row.style.opacity=1, i*100);
+            }
+            container.appendChild(leftCol);
+            if(await wait(2000)) return true;
+
+            const rightCol = document.createElement('div');
+            rightCol.className = 'unit-ladder-right';
+            const units = [
+                { p: 10, val: "1K", name: "(Kilo)", ex: "純文字檔 / 小圖示" },
+                { p: 20, val: "1M", name: "(Mega)", ex: "手機照片 / MP3" },
+                { p: 30, val: "1G", name: "(Giga)", ex: "電影 / 記憶體 (RAM)" },
+                { p: 40, val: "1T", name: "(Tera)", ex: "電腦硬碟 (HDD/SSD)" }
+            ];
+            container.appendChild(rightCol);
+
+            for(let i=0; i<units.length; i++) {
+                if(skipSignal) return true;
+                let u = units[i];
+                let row = document.createElement('div');
+                row.className = 'unit-row';
+                row.innerHTML = `
+                    <div class="unit-math">2<sup style="color:#ffb74d">${u.p}</sup> ≈ ${u.val}</div>
+                    <div class="unit-name">${u.name}</div>
+                    <div class="unit-example">常見於：${u.ex}</div>
+                `;
+                rightCol.appendChild(row);
+                setTimeout(()=> { row.style.opacity=1; row.style.transform='translateX(0)'; }, 100);
+                if(await wait(1500)) return true;
+
+                if (i < units.length - 1) {
+                    let conn = document.createElement('div');
+                    conn.className = 'connector-row';
+                    conn.innerHTML = `
+                        <div class="connector-arrow">↓</div>
+                        <div class="connector-text">× 2<sup style="font-size:0.7em">10</sup> (約 × 1000)</div>
+                        <div class="connector-arrow">↓</div>
+                    `;
+                    rightCol.appendChild(conn);
+                    setTimeout(()=>conn.style.opacity=1, 100);
+                    if(await wait(500)) return true;
+                }
+            }
+            if(await wait(5000)) return true;
+            return false;
+        }
+
+        // === Phase 5: 減法轉換 ===
+        async function runPhase5() {
+            updateHeader("5. 10進位轉2進位 (減法法)", "從最大次方開始減");
+            await clearContent();
+            if(await wait(1000)) return true;
+            
+            let targetNum = 85;
+            let steps = [
+                { pow: 6, val: 64, bit: 1, rem: 21 }, { pow: 5, val: 32, bit: 0, rem: 21 },
+                { pow: 4, val: 16, bit: 1, rem: 5 }, { pow: 3, val: 8,  bit: 0, rem: 5 },
+                { pow: 2, val: 4,  bit: 1, rem: 1 }, { pow: 1, val: 2,  bit: 0, rem: 1 },
+                { pow: 0, val: 1,  bit: 1, rem: 0 }
+            ];
+
+            let calcDiv = document.createElement('div');
+            calcDiv.className = 'rule-box';
+            calcDiv.innerHTML = `<div style="font-size:2em; margin-bottom:20px;">目標：<span style="color:#fff176">${targetNum}</span></div>`;
+            
+            let resultBox = document.createElement('div');
+            resultBox.className = 'binary-collection';
+            resultBox.innerHTML = `結果：( <span id="bitCollector"></span> )<sub>2</sub>`;
+
+            contentArea.appendChild(calcDiv);
+            calcDiv.appendChild(resultBox); 
+
+            for(let s of steps) {
+                if(skipSignal) return true;
+                let row = document.createElement('div');
+                row.className = 'subtraction-step';
+                let bitColor = s.bit ? "#03dac6" : "#555";
+                let logicText = s.bit ? `${targetNum} - ${s.val} = <span style="color:#fff176">${s.rem}</span>` : `${targetNum} 不夠減 ${s.val}`;
+                
+                row.innerHTML = `
+                    <span style="font-size:0.8em; color:#aaa">2<sup class="math-exp" style="color:#aaa">${s.pow}</sup> (${s.val})</span>
+                    <span>${logicText}</span>
+                    <span style="font-size:1.5em; color:${bitColor}; font-weight:bold">${s.bit}</span>
+                `;
+                
+                calcDiv.insertBefore(row, resultBox);
+                if(s.bit) targetNum = s.rem; 
+                
+                setTimeout(()=> row.style.opacity = 1, 100);
+                
+                let bitSpan = document.createElement('span');
+                bitSpan.className = 'collected-bit';
+                bitSpan.innerText = s.bit;
+                bitSpan.style.color = bitColor;
+                document.getElementById('bitCollector').appendChild(bitSpan);
+                setTimeout(()=> { bitSpan.style.opacity = 1; bitSpan.style.transform = 'translateY(0)'; }, 500);
+
+                // 捲動保持最新行在視野內
+                contentArea.scrollTop = contentArea.scrollHeight;
+
+                if(await wait(1200)) return true;
+            }
+            if(await wait(5000)) return true;
+            return false;
+        }
+
+        // 啟動
+        masterLoop();
 
     </script>
 </body>
