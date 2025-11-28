@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生作業系統</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f0f2f5; }
+        .worksheet-content { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        
+        .worksheet-input {
+            border: 2px solid #e2e8f0;
+            padding: 8px;
+            border-radius: 6px;
+            width: 100%;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            transition: border-color 0.2s;
+        }
+        .worksheet-input:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+        
+        /* 批改結果面板 (學生端唯讀樣式) */
+        .grading-panel {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #94a3b8;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 0 4px 4px 0;
+            margin-top: 5px;
+            position: relative;
+            z-index: 10;
+        }
+        .grading-panel.correct { border-left-color: #22c55e; background-color: #f0fdf4; }
+        .grading-panel.incorrect { border-left-color: #ef4444; background-color: #fef2f2; }
+        
+        .grading-status-text { font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .text-correct { color: #166534; }
+        .text-incorrect { color: #991b1b; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <div id="login-view" class="flex flex-col items-center justify-center h-screen px-4">
+        <div class="bg-white p-8 rounded-xl shadow-xl text-center w-full max-w-md">
+            <h1 class="text-3xl font-extrabold text-blue-600 mb-2">學生作業系統</h1>
+            <p class="mb-8 text-gray-500">請使用學校 Google 帳號登入</p>
+            
+            <button id="login-btn" class="bg-white border border-gray-300 text-gray-700 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition shadow-sm w-full">
+                Google 登入
+            </button>
+            <p id="login-msg" class="mt-4 text-sm text-red-500"></p>
+        </div>
+    </div>
+
+    <div id="app-view" class="container mx-auto p-4 max-w-5xl hidden">
+        <header class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm mb-6 sticky top-0 z-10">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-100 p-2 rounded-full text-blue-600 font-bold text-xl">🎓</div>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-800" id="student-name">載入中...</h1>
+                    <p class="text-xs text-gray-500" id="class-info">...</p>
+                </div>
+            </div>
+            <button id="logout-btn" class="text-sm text-gray-500 hover:text-red-500 font-medium px-3 py-1 border rounded hover:bg-red-50 transition">登出</button>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-4">
+                <h2 class="text-xl font-bold text-gray-700 flex items-center gap-2">
+                    📝 待完成任務 
+                    <span id="todo-count" class="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                </h2>
+                <div id="todo-list" class="space-y-3">
+                    <p class="text-gray-400 text-center py-8">目前沒有待完成的作業 🎉</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-xl font-bold text-gray-700">✅ 已完成 / 歷史</h2>
+                <div id="history-list" class="space-y-3 opacity-80">
+                    <p class="text-gray-400 text-center py-8">尚無紀錄</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="worksheet-modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[95vh]">
+            
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                <div>
+                    <h3 id="modal-title" class="text-xl font-bold text-gray-800">作業標題</h3>
+                    <span id="modal-status" class="text-xs font-bold px-2 py-0.5 rounded bg-gray-200 text-gray-600">狀態</span>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-800 text-3xl font-light">&times;</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-grow bg-white">
+                
+                <div id="teacher-feedback-area" class="hidden mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r text-sm text-yellow-800">
+                    <strong>👩‍🏫 老師總評：</strong> <span id="feedback-text"></span>
+                </div>
+
+                <form id="worksheet-form" class="worksheet-content shadow-inner bg-gray-50 p-6 rounded-lg">
+                    </form>
+            </div>
+
+            <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-between items-center">
+                <span class="text-xs text-gray-400">系統自動儲存</span>
+                <div class="flex gap-3">
+                    <button onclick="closeModal()" class="px-5 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded transition">關閉</button>
+                    <button id="submit-btn" class="px-8 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow-lg transform hover:-translate-y-0.5 transition">
+                        提交作業
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
+            authDomain: "classrecords-13902.firebaseapp.com",
+            projectId: "classrecords-13902",
+            storageBucket: "classrecords-13902.firebasestorage.app",
+            messagingSenderId: "431747377367",
+            appId: "1:431747377367:web:b157a485c59ce38091e892",
+            measurementId: "G-JWTQGM9XMP"
+        };
+
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        let currentUser = null;
+        let studentProfile = null;
+        let currentAssignmentId = null;
+
+        // 2. Auth Logic (正式版：自動綁定身分)
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app-view');
+        const loginMsg = document.getElementById('login-msg');
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                loginMsg.textContent = '正在確認學生身分...';
+                currentUser = user;
+                
+                try {
+                    // 1. 先檢查 users 集合是否已有資料
+                    let userDoc = await db.collection('users').doc(user.uid).get();
+
+                    if (!userDoc.exists) {
+                        // 2. 如果是第一次登入，去全域搜尋 students 名冊 (使用 Collection Group Query)
+                        // 【注意】：這裡可能會跳出需要建立索引的錯誤，請依 Console 指示建立
+                        const snapshot = await db.collectionGroup('students')
+                                                 .where('email', '==', user.email)
+                                                 .get();
+
+                        if (!snapshot.empty) {
+                            // 找到了！自動綁定
+                            const studentDoc = snapshot.docs[0];
+                            const studentData = studentDoc.data();
+                            // 取得該學生所屬的學校 ID (從 doc ref 的 parent 往上找)
+                            // path: schools/{schoolId}/students/{studentId}
+                            const schoolId = studentDoc.ref.parent.parent.id;
+
+                            // 寫入 users 集合，方便下次快速登入
+                            const newProfile = {
+                                role: 'student',
+                                email: user.email,
+                                displayName: studentData.name,
+                                schoolId: schoolId,
+                                classId: studentData.class_id,
+                                seatNo: studentData.seat_no,
+                                fullId: studentData.full_id
+                            };
+                            
+                            await db.collection('users').doc(user.uid).set(newProfile);
+                            studentProfile = newProfile;
+                        } else {
+                            // 找不到名單
+                            throw new Error('名冊中找不到您的 Email，請聯繫老師將您加入名單。');
+                        }
+                    } else {
+                        // 舊用戶直接讀取
+                        studentProfile = userDoc.data();
+                    }
+
+                    // 登入成功，顯示主畫面
+                    if (studentProfile.role !== 'student') {
+                        // 如果用老師帳號登入學生端，給予提示
+                        throw new Error('此帳號為教師身分，無法登入學生端。');
+                    }
+
+                    renderDashboard();
+                    loginView.classList.add('hidden');
+                    appView.classList.remove('hidden');
+
+                } catch (e) {
+                    console.error(e);
+                    loginMsg.textContent = e.message;
+                    // 如果錯誤，3秒後自動登出，避免卡在錯誤畫面
+                    setTimeout(() => auth.signOut(), 3000);
+                }
+            } else {
+                loginView.classList.remove('hidden');
+                appView.classList.add('hidden');
+            }
+        });
+
+        document.getElementById('login-btn').addEventListener('click', () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()));
+        document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+
+        // 3. Dashboard
+        async function renderDashboard() {
+            document.getElementById('student-name').textContent = studentProfile.displayName;
+            document.getElementById('class-info').textContent = `${studentProfile.classId}班 ${studentProfile.seatNo}號`;
+
+            const todoList = document.getElementById('todo-list');
+            const historyList = document.getElementById('history-list');
+            
+            // 搜尋該學校、該班級的作業
+            const assignsSnap = await db.collection('assignments')
+                                        .where('target_class', '==', studentProfile.classId)
+                                        .where('school_id', '==', studentProfile.schoolId)
+                                        .orderBy('created_at', 'desc')
+                                        .get();
+
+            const responsesSnap = await db.collection('responses')
+                                         .where('student_uid', '==', currentUser.uid)
+                                         .get();
+
+            const responseMap = {};
+            responsesSnap.forEach(doc => { responseMap[doc.data().assignment_id] = doc.data(); });
+
+            todoList.innerHTML = '';
+            historyList.innerHTML = '';
+            let todoCount = 0;
+
+            if (assignsSnap.empty) {
+                todoList.innerHTML = '<p class="text-center text-gray-500 py-4">目前沒有作業</p>';
+                return;
+            }
+
+            assignsSnap.forEach(doc => {
+                const task = doc.data();
+                const taskId = doc.id;
+                const userResponse = responseMap[taskId];
+                
+                let status = 'new'; 
+                if (userResponse) status = userResponse.status;
+
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-lg shadow border-l-4 transition hover:shadow-md cursor-pointer flex justify-between items-center";
+                const dateStr = task.created_at ? new Date(task.created_at.seconds * 1000).toLocaleDateString() : '';
+
+                if (status === 'submitted' || status === 'graded') {
+                    card.classList.add('border-green-500');
+                    let scoreHtml = status === 'graded' 
+                        ? `<span class="text-green-600 font-bold text-lg">${userResponse.score} 分</span>` 
+                        : `<span class="text-gray-500 text-sm">已繳交</span>`;
+                    
+                    card.innerHTML = `<div><h4 class="font-bold text-gray-800">${task.worksheet_title}</h4><p class="text-xs text-gray-400">${dateStr}</p></div><div>${scoreHtml}</div>`;
+                    card.onclick = () => openWorksheet(taskId, task, userResponse, true); 
+                    historyList.appendChild(card);
+                } else {
+                    todoCount++;
+                    let statusLabel = status === 'needs_correction' 
+                        ? `<span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded font-bold">需訂正</span>` 
+                        : `<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold">新作業</span>`;
+                    
+                    card.classList.add(status === 'needs_correction' ? 'border-yellow-400' : 'border-blue-500');
+                    card.innerHTML = `<div><h4 class="font-bold text-gray-800 text-lg">${task.worksheet_title}</h4><div class="flex items-center gap-2 mt-1">${statusLabel}<span class="text-xs text-gray-400">截止: ${task.deadline || '無'}</span></div></div><button class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm shadow hover:bg-blue-700">前往作答</button>`;
+                    card.onclick = () => openWorksheet(taskId, task, userResponse, false);
+                    todoList.appendChild(card);
+                }
+            });
+            document.getElementById('todo-count').textContent = todoCount;
+        }
+
+        // 4. Worksheet Logic
+        async function openWorksheet(taskId, taskData, responseData, isReadOnly) {
+            currentAssignmentId = taskId;
+            const modal = document.getElementById('worksheet-modal');
+            const form = document.getElementById('worksheet-form');
+            const feedbackArea = document.getElementById('teacher-feedback-area');
+            const submitBtn = document.getElementById('submit-btn');
+
+            document.getElementById('modal-title').textContent = taskData.worksheet_title;
+            document.getElementById('modal-status').textContent = isReadOnly ? '唯讀模式' : '編輯模式';
+
+            // Fetch HTML
+            const wsDoc = await db.collection('worksheets').doc(taskData.worksheet_id).get();
+            if (!wsDoc.exists) return alert('學習單內容讀取失敗');
+            form.innerHTML = wsDoc.data().html_content;
+
+            // 回填答案與顯示批改
+            if (responseData && responseData.answers) {
+                const answers = responseData.answers;
+                const gradingDetails = responseData.grading_details || {}; // 批改細項
+
+                form.querySelectorAll('.worksheet-input').forEach(input => {
+                    const name = input.name;
+                    if (answers[name] !== undefined) {
+                        if (input.type === 'radio' || input.type === 'checkbox') {
+                            if (input.value === answers[name]) input.checked = true;
+                        } else {
+                            input.value = answers[name];
+                        }
+                    }
+                    
+                    // 如果有批改細項，插入顯示面板 (Read-only)
+                    const det = gradingDetails[name];
+                    if (det && (det.is_correct !== undefined || det.feedback)) {
+                        
+                        // Radio Button 防遮擋邏輯 (只在最後一個選項後顯示)
+                        if (input.type === 'radio') {
+                            const allRadios = form.querySelectorAll(`input[type="radio"][name="${name}"]`);
+                            const lastRadio = allRadios[allRadios.length - 1];
+                            if (input !== lastRadio) return; 
+                        }
+
+                        const isCor = det.is_correct === true;
+                        const isInc = det.is_correct === false;
+                        const fb = det.feedback || '';
+
+                        const panel = document.createElement('div');
+                        panel.className = `grading-panel ${isCor?'correct':(isInc?'incorrect':'')}`;
+                        
+                        // Radio 跨欄樣式
+                        if (input.type === 'radio') {
+                            panel.style.gridColumn = "1 / -1";
+                            panel.style.width = "100%";
+                            panel.style.marginTop = "15px";
+                        }
+
+                        let statusIcon = '';
+                        if (isCor) statusIcon = '<span class="text-correct">⭕ 答對了</span>';
+                        else if (isInc) statusIcon = '<span class="text-incorrect">❌ 答錯了</span>';
+
+                        let feedbackHtml = fb ? `<div class="mt-2 text-sm text-gray-600 bg-white p-2 rounded border border-gray-200"><strong>👩‍🏫 老師：</strong>${fb}</div>` : '';
+
+                        panel.innerHTML = `
+                            <div class="grading-status-text text-lg">${statusIcon}</div>
+                            ${feedbackHtml}
+                        `;
+
+                        // 插入位置
+                        if (input.type === 'radio') {
+                            const container = input.parentNode;
+                            if(container.nextSibling) container.parentNode.insertBefore(panel, container.nextSibling);
+                            else container.parentNode.appendChild(panel);
+                        } else {
+                            if(input.nextSibling) input.parentNode.insertBefore(panel, input.nextSibling);
+                            else input.parentNode.appendChild(panel);
+                        }
+                    }
+                });
+
+                // 總評
+                if (responseData.comment) {
+                    feedbackArea.classList.remove('hidden');
+                    document.getElementById('feedback-text').textContent = responseData.comment;
+                } else {
+                    feedbackArea.classList.add('hidden');
+                }
+            } else {
+                feedbackArea.classList.add('hidden');
+            }
+
+            // 狀態處理
+            if (isReadOnly) {
+                submitBtn.classList.add('hidden');
+                form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = true);
+            } else {
+                submitBtn.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('worksheet-modal').classList.add('hidden'); }
+
+        document.getElementById('submit-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('submit-btn');
+            const form = document.getElementById('worksheet-form');
+            const answers = {};
+            
+            form.querySelectorAll('.worksheet-input').forEach(input => {
+                if (input.name) {
+                    if (input.type === 'radio') { if (input.checked) answers[input.name] = input.value; } 
+                    else answers[input.name] = input.value;
+                }
+            });
+
+            btn.disabled = true; btn.textContent = '提交中...';
+            try {
+                const responseId = `${currentAssignmentId}_${currentUser.uid}`;
+                await db.collection('responses').doc(responseId).set({
+                    assignment_id: currentAssignmentId,
+                    student_uid: currentUser.uid,
+                    student_name: studentProfile.displayName,
+                    student_no: studentProfile.seatNo,
+                    class_id: studentProfile.classId,
+                    answers: answers,
+                    status: 'submitted',
+                    submitted_at: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                alert('作業已提交！');
+                closeModal();
+                renderDashboard();
+            } catch (e) { console.error(e); alert(e.message); } 
+            finally { btn.disabled = false; btn.textContent = '提交作業'; }
+        });
+    </script>
+</body>
+</html>
