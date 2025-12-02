@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學習單系統 - 學校管理後台</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --danger-color: #d0021b;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: var(--card-bg);
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { margin: 0; font-size: 1.5rem; }
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h2 { margin-top: 0; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; display: inline-block;}
+        
+        /* 輸入框樣式 */
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        textarea {
+            height: 200px;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+        
+        /* 學校 ID 輸入框特別樣式 (鎖定狀態) */
+        #school-id-input {
+            border: 2px solid #ccc;
+            background-color: #e9ecef;
+            font-weight: bold;
+            color: #495057;
+            cursor: not-allowed;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover { background-color: #357abd; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        
+        .status-box {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #eef;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            display: none; 
+        }
+        .error { color: var(--danger-color); font-weight: bold; }
+        .success { color: #28a745; }
+
+        #app-view { display: none; }
+        #login-view { text-align: center; margin-top: 100px; }
+        
+        /* 載入中遮罩 */
+        #loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.9); z-index: 9999;
+            display: none; justify-content: center; align-items: center;
+            flex-direction: column;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color);
+            border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p style="margin-top: 15px; color: #555;">正在驗證權限...</p>
+    </div>
+
+    <div id="login-view">
+        <h1>請先登入學校管理員帳號</h1>
+        <p>請使用具有 <code>school_admin</code> 權限的 Google 帳號登入</p>
+        <button id="login-btn">Google 登入</button>
+        <p id="login-msg" style="color: red; margin-top: 15px;"></p>
+    </div>
+
+    <div id="app-view" class="container">
+        <header>
+            <div>
+                <h1>學校管理後台</h1>
+                <span id="user-info" style="font-size: 0.9em; color: #666;"></span>
+            </div>
+            <button id="logout-btn" style="background-color: #666;">登出</button>
+        </header>
+
+        <div class="card">
+            <h2>0. 目前管理的學校 (School ID)</h2>
+            <p>系統已根據您的帳號權限，自動鎖定學校 ID。</p>
+            <input type="text" id="school-id-input" disabled title="此欄位由系統自動帶入，不可修改">
+        </div>
+
+        <div class="card">
+            <h2>1. 系統初始化 (建立資料庫結構)</h2>
+            <p>如果是第一次使用，請點擊此按鈕以建立必要的資料集合。</p>
+            <button id="init-db-btn">執行初始化</button>
+            <div id="init-status" class="status-box"></div>
+        </div>
+
+        <div class="card">
+            <h2>2. 匯入學生名單</h2>
+            <p>請將 Excel 資料複製貼上至下方。格式：<code>班級座號,姓名,email</code> (中間用逗號分隔)</p>
+            <div style="background: #f9f9f9; padding: 10px; border-left: 4px solid #aaa; margin-bottom: 15px; font-size: 0.9em;">
+                <strong>範例：</strong><br>
+                10101,王小明,student01@apps.ntpc.edu.tw<br>
+                10102,陳大華,student02@apps.ntpc.edu.tw
+            </div>
+            <textarea id="csv-input" placeholder="請在此貼上資料..."></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button id="import-btn">開始匯入</button>
+                <span id="import-summary" style="color: #666;"></span>
+            </div>
+            <div id="import-status" class="status-box"></div>
+        </div>
+
+    </div>
+
+    <script>
+        // --------------------------------------------------------
+        // 1. Firebase 設定
+        // --------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
+            authDomain: "classrecords-13902.firebaseapp.com",
+            projectId: "classrecords-13902",
+            storageBucket: "classrecords-13902.firebasestorage.app",
+            messagingSenderId: "431747377367",
+            appId: "1:431747377367:web:b157a485c59ce38091e892",
+            measurementId: "G-JWTQGM9XMP"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        let currentUser = null;
+        let currentSchoolId = null;
+
+        // --------------------------------------------------------
+        // 2. 身分驗證與嚴格權限檢查
+        // --------------------------------------------------------
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app-view');
+        const userInfo = document.getElementById('user-info');
+        const schoolIdInput = document.getElementById('school-id-input');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const loginMsg = document.getElementById('login-msg');
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                loadingOverlay.style.display = 'flex';
+                loginMsg.textContent = '';
+
+                try {
+                    // 1. 讀取使用者在 Firestore 的資料 (users/{uid})
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+
+                    if (!userDoc.exists) {
+                        throw new Error("找不到您的使用者資料。請確認您已在主系統註冊。");
+                    }
+
+                    const userData = userDoc.data();
+                    console.log("使用者資料載入:", userData);
+
+                    // 2. 嚴格檢查 Role (必須是 school_admin 或 admin)
+                    if (userData.role !== 'school_admin' && userData.role !== 'admin') {
+                        throw new Error(`權限不足！您的身分是 (${userData.role})，只有 school_admin 可以存取此頁面。`);
+                    }
+
+                    // 3. 檢查並鎖定 School ID
+                    if (!userData.schoolId) {
+                        throw new Error("您的帳號尚未綁定學校代碼 (schoolId)，無法進行管理。");
+                    }
+
+                    // 驗證通過
+                    currentUser = user;
+                    currentSchoolId = userData.schoolId;
+                    
+                    // 🟢 [修改] 顯示 Firestore 中的 displayName 欄位，而非 Google 帳號名稱
+                    userInfo.textContent = `歡迎, ${userData.displayName} (${userData.role})`;
+                    
+                    schoolIdInput.value = currentSchoolId; // 自動填入
+                    
+                    loadingOverlay.style.display = 'none';
+                    loginView.style.display = 'none';
+                    appView.style.display = 'block';
+
+                } catch (error) {
+                    console.error("驗證失敗:", error);
+                    alert("登入失敗: " + error.message);
+                    
+                    // 強制登出
+                    auth.signOut();
+                    loadingOverlay.style.display = 'none';
+                    loginView.style.display = 'block';
+                    loginMsg.textContent = error.message;
+                }
+
+            } else {
+                currentUser = null;
+                loadingOverlay.style.display = 'none';
+                loginView.style.display = 'block';
+                appView.style.display = 'none';
+            }
+        });
+
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider);
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            auth.signOut();
+        });
+
+        // --------------------------------------------------------
+        // 3. Step 2: 自動建立資料庫結構
+        // --------------------------------------------------------
+        document.getElementById('init-db-btn').addEventListener('click', async () => {
+            if (!currentSchoolId) return alert("錯誤：未取得學校 ID");
+
+            const statusBox = document.getElementById('init-status');
+            statusBox.style.display = 'block';
+            statusBox.textContent = `正在初始化學校 (${currentSchoolId}) 資料庫結構...`;
+
+            try {
+                const batch = db.batch();
+
+                // 1. 建立/確認學校設定檔
+                const schoolRef = db.collection('schools').doc(currentSchoolId);
+                batch.set(schoolRef, {
+                    last_initialized: firebase.firestore.FieldValue.serverTimestamp(),
+                    system_version: "2.0_worksheet_system",
+                    admin_email: currentUser.email
+                }, { merge: true });
+
+                // 2. 建立「學習單樣板」(Worksheets) 集合
+                const sampleWorksheetRef = db.collection('worksheets').doc('_sample_template');
+                batch.set(sampleWorksheetRef, {
+                    title: "系統範例學習單",
+                    creator_id: "system",
+                    created_at: firebase.firestore.FieldValue.serverTimestamp(),
+                    html_content: "<div>這是一個範例</div>",
+                    is_sample: true
+                });
+
+                // 3. 建立「指派任務」(Assignments) 集合
+                const sampleAssignRef = db.collection('assignments').doc('_sample_assignment');
+                batch.set(sampleAssignRef, {
+                    worksheet_id: "_sample_template",
+                    target_class: "000",
+                    status: "draft"
+                });
+
+                await batch.commit();
+                statusBox.innerHTML = `<span class="success">✅ 初始化成功！學校 ID：${currentSchoolId} 已準備就緒。</span>`;
+            } catch (error) {
+                console.error(error);
+                statusBox.innerHTML = `<span class="error">❌ 初始化失敗: ${error.message}<br>請確認 Firebase 安全規則是否正確。</span>`;
+            }
+        });
+
+        // --------------------------------------------------------
+        // 4. Step 3: 匯入學生名單
+        // --------------------------------------------------------
+        document.getElementById('import-btn').addEventListener('click', async () => {
+            if (!currentSchoolId) return alert("錯誤：未取得學校 ID");
+            
+            const inputVal = document.getElementById('csv-input').value.trim();
+            const statusBox = document.getElementById('import-status');
+            const btn = document.getElementById('import-btn');
+            
+            if (!inputVal) {
+                alert("請輸入學生 CSV 資料");
+                return;
+            }
+
+            btn.disabled = true;
+            statusBox.style.display = 'block';
+            statusBox.textContent = '正在解析並上傳資料...';
+
+            const lines = inputVal.split('\n');
+            let batch = db.batch();
+            let batchCount = 0;
+            let successCount = 0;
+            let failCount = 0;
+            const batchCommitPromises = [];
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+
+                // 解析 CSV: 10102,王大明,abcd@...
+                const parts = line.split(',').map(p => p.trim());
+
+                if (parts.length < 3) {
+                    console.warn("略過格式錯誤行:", line);
+                    failCount++;
+                    continue;
+                }
+
+                const fullId = parts[0];  // 10102
+                const name = parts[1];    // 王大明
+                const email = parts[2];   // email
+
+                // 自動解析邏輯：前3碼為班級，後2碼為座號
+                const classId = fullId.substring(0, 3);
+                const seatNo = fullId.substring(3);
+
+                // 使用 Email 產生安全的 Document ID
+                const safeEmailKey = email.replace(/[@.]/g, '_');
+
+                // 寫入路徑: schools/{currentSchoolId}/students/{safeEmailKey}
+                const docRef = db.collection('schools').doc(currentSchoolId).collection('students').doc(safeEmailKey);
+
+                const studentData = {
+                    full_id: fullId,   
+                    class_id: classId, 
+                    seat_no: seatNo,   
+                    name: name,
+                    email: email,
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                batch.set(docRef, studentData, { merge: true });
+                batchCount++;
+                successCount++;
+
+                if (batchCount >= 450) {
+                    batchCommitPromises.push(batch.commit());
+                    batch = db.batch();
+                    batchCount = 0;
+                }
+            }
+
+            if (batchCount > 0) {
+                batchCommitPromises.push(batch.commit());
+            }
+
+            try {
+                await Promise.all(batchCommitPromises);
+                statusBox.innerHTML = `<span class="success">✅ 匯入完成！<br>目標學校: ${currentSchoolId}<br>成功: ${successCount} 筆<br>失敗/格式錯: ${failCount} 筆</span>`;
+                document.getElementById('csv-input').value = ''; 
+            } catch (error) {
+                console.error(error);
+                statusBox.innerHTML = `<span class="error">❌ 寫入資料庫失敗: ${error.message}</span>`;
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+    </script>
+</body>
+</html>
