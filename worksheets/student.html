@@ -7,7 +7,14 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
+	<script>
+	  window.MathJax = {
+		tex: {
+		  inlineMath: [['$', '$'], ['\\(', '\\)']]
+		}
+	  };
+	</script>
+	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
@@ -18,7 +25,6 @@
             border: 2px solid #e2e8f0;
             padding: 8px;
             border-radius: 6px;
-            width: 100%;
             margin-top: 5px;
             margin-bottom: 15px;
             transition: border-color 0.2s;
@@ -27,8 +33,25 @@
             border-color: #3b82f6;
             outline: none;
         }
+
+        textarea.worksheet-input,
+        select.worksheet-input,
+        input[type="text"].worksheet-input,
+        input[type="number"].worksheet-input,
+        input[type="date"].worksheet-input {
+            width: 100%;
+            display: block; 
+        }
+
+        input[type="radio"].worksheet-input,
+        input[type="checkbox"].worksheet-input {
+            width: auto;
+            margin-right: 8px;
+            display: inline-block;
+            vertical-align: middle;
+            cursor: pointer;
+        }
         
-        /* 批改結果面板 (學生端唯讀樣式) */
         .grading-panel {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -58,7 +81,7 @@
             <button id="login-btn" class="bg-white border border-gray-300 text-gray-700 font-bold py-3 px-4 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition shadow-sm w-full">
                 Google 登入
             </button>
-            <p id="login-msg" class="mt-4 text-sm text-red-500"></p>
+            <p id="login-msg" class="mt-4 text-sm text-red-500 font-bold"></p>
         </div>
     </div>
 
@@ -68,7 +91,7 @@
                 <div class="bg-blue-100 p-2 rounded-full text-blue-600 font-bold text-xl">🎓</div>
                 <div>
                     <h1 class="text-lg font-bold text-gray-800" id="student-name">載入中...</h1>
-                    <p class="text-xs text-gray-500" id="class-info">...</p>
+                    <p class="text-sm text-gray-500 font-bold" id="class-info">...</p>
                 </div>
             </div>
             <button id="logout-btn" class="text-sm text-gray-500 hover:text-red-500 font-medium px-3 py-1 border rounded hover:bg-red-50 transition">登出</button>
@@ -94,33 +117,39 @@
         </div>
     </div>
 
-    <div id="worksheet-modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 hidden flex items-center justify-center z-50 p-4 overflow-y-auto">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[95vh]">
+    <div id="worksheet-modal" class="fixed inset-0 bg-gray-100 z-50 hidden overflow-y-auto">
+        <div class="min-h-screen flex flex-col max-w-4xl mx-auto bg-white shadow-2xl">
             
-            <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+            <div class="sticky top-0 z-20 bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm">
                 <div>
                     <h3 id="modal-title" class="text-xl font-bold text-gray-800">作業標題</h3>
                     <span id="modal-status" class="text-xs font-bold px-2 py-0.5 rounded bg-gray-200 text-gray-600">狀態</span>
                 </div>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-800 text-3xl font-light">&times;</button>
+                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800 transition p-2 rounded-full hover:bg-gray-100">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
 
-            <div class="p-6 overflow-y-auto flex-grow bg-white">
+            <div class="flex-grow p-6 md:p-10 bg-white">
                 
-                <div id="teacher-feedback-area" class="hidden mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r text-sm text-yellow-800">
-                    <strong>👩‍🏫 老師總評：</strong> <span id="feedback-text"></span>
+                <div id="teacher-feedback-area" class="hidden mb-8 p-6 bg-yellow-50 border-l-4 border-yellow-400 rounded-r text-base text-yellow-800 shadow-sm">
+                    <strong class="block mb-2 text-lg">👩‍🏫 老師總評：</strong> 
+                    <span id="feedback-text" class="leading-relaxed"></span>
                 </div>
 
-                <form id="worksheet-form" class="worksheet-content shadow-inner bg-gray-50 p-6 rounded-lg">
+                <form id="worksheet-form" class="worksheet-content space-y-6" onsubmit="return false;">
                     </form>
             </div>
 
-            <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-between items-center">
-                <span class="text-xs text-gray-400">系統自動儲存</span>
-                <div class="flex gap-3">
-                    <button onclick="closeModal()" class="px-5 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded transition">關閉</button>
-                    <button id="submit-btn" class="px-8 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow-lg transform hover:-translate-y-0.5 transition">
-                        提交作業
+            <div class="p-6 border-t bg-gray-50 flex justify-between items-center sticky bottom-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                <span class="text-sm text-gray-500">系統自動暫存</span>
+                <div class="flex gap-4">
+                    <button onclick="closeModal()" class="px-6 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition border border-gray-300 bg-white">
+                        暫時離開
+                    </button>
+                    <button id="submit-btn" class="px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md transform hover:-translate-y-0.5 transition flex items-center gap-2">
+                        <span>提交作業</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                     </button>
                 </div>
             </div>
@@ -128,7 +157,24 @@
     </div>
 
     <script>
-        // 1. Firebase Config
+		// 🛠️ [修改] 輔助函式：強制執行 innerHTML 中的腳本並渲染數學公式
+		function executeEmbeddedScripts(container) {
+			// 1. 處理 Script (讓分頁與互動生效)
+			const scripts = container.querySelectorAll('script');
+			scripts.forEach(oldScript => {
+				const newScript = document.createElement('script');
+				Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+				newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+				oldScript.parentNode.replaceChild(newScript, oldScript);
+			});
+
+			// 2. [新增] 處理數學公式 (讓 LaTeX 顯示正常)
+			if (window.MathJax) {
+				// 告訴 MathJax 這裡有新內容，請重新掃描並渲染
+				MathJax.typesetPromise([container]).catch((err) => console.log('MathJax error:', err));
+			}
+		}
+
         const firebaseConfig = {
             apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
             authDomain: "classrecords-13902.firebaseapp.com",
@@ -147,7 +193,6 @@
         let studentProfile = null;
         let currentAssignmentId = null;
 
-        // 2. Auth Logic (正式版：自動綁定身分)
         const loginView = document.getElementById('login-view');
         const appView = document.getElementById('app-view');
         const loginMsg = document.getElementById('login-msg');
@@ -158,30 +203,41 @@
                 currentUser = user;
                 
                 try {
-                    // 1. 先檢查 users 集合是否已有資料
                     let userDoc = await db.collection('users').doc(user.uid).get();
 
-                    if (!userDoc.exists) {
-                        // 2. 如果是第一次登入，去全域搜尋 students 名冊 (使用 Collection Group Query)
-                        // 【注意】：這裡可能會跳出需要建立索引的錯誤，請依 Console 指示建立
+                    if (userDoc.exists) {
+                        studentProfile = userDoc.data();
+                        if (!studentProfile.schoolName && studentProfile.schoolId) {
+                            try {
+                                const sDoc = await db.collection('schools').doc(studentProfile.schoolId).get();
+                                if(sDoc.exists) studentProfile.schoolName = sDoc.data().name;
+                            } catch(e) {}
+                        }
+                    } else {
                         const snapshot = await db.collectionGroup('students')
                                                  .where('email', '==', user.email)
                                                  .get();
 
                         if (!snapshot.empty) {
-                            // 找到了！自動綁定
                             const studentDoc = snapshot.docs[0];
                             const studentData = studentDoc.data();
-                            // 取得該學生所屬的學校 ID (從 doc ref 的 parent 往上找)
-                            // path: schools/{schoolId}/students/{studentId}
-                            const schoolId = studentDoc.ref.parent.parent.id;
+                            const schoolRef = studentDoc.ref.parent.parent;
+                            const schoolId = schoolRef.id;
+                            let schoolName = schoolId;
+                            
+                            try {
+                                const schoolSnap = await schoolRef.get();
+                                if(schoolSnap.exists && schoolSnap.data().name) {
+                                    schoolName = schoolSnap.data().name;
+                                }
+                            } catch(e) {}
 
-                            // 寫入 users 集合，方便下次快速登入
                             const newProfile = {
                                 role: 'student',
                                 email: user.email,
                                 displayName: studentData.name,
                                 schoolId: schoolId,
+                                schoolName: schoolName,
                                 classId: studentData.class_id,
                                 seatNo: studentData.seat_no,
                                 fullId: studentData.full_id
@@ -190,17 +246,11 @@
                             await db.collection('users').doc(user.uid).set(newProfile);
                             studentProfile = newProfile;
                         } else {
-                            // 找不到名單
-                            throw new Error('名冊中找不到您的 Email，請聯繫老師將您加入名單。');
+                            throw new Error(`在所有學校名冊中找不到 Email：${user.email}。請聯繫老師將您加入名單。`);
                         }
-                    } else {
-                        // 舊用戶直接讀取
-                        studentProfile = userDoc.data();
                     }
 
-                    // 登入成功，顯示主畫面
                     if (studentProfile.role !== 'student') {
-                        // 如果用老師帳號登入學生端，給予提示
                         throw new Error('此帳號為教師身分，無法登入學生端。');
                     }
 
@@ -209,10 +259,18 @@
                     appView.classList.remove('hidden');
 
                 } catch (e) {
-                    console.error(e);
-                    loginMsg.textContent = e.message;
-                    // 如果錯誤，3秒後自動登出，避免卡在錯誤畫面
-                    setTimeout(() => auth.signOut(), 3000);
+                    console.error("登入流程錯誤:", e);
+                    let errorHtml = `<div class="text-red-600 font-bold mb-3">⛔ ${e.message}</div>`;
+                    if(e.code === 'failed-precondition') {
+                        errorHtml += '<div class="text-xs text-gray-500 mb-3">(系統提示: 請管理員至 Firebase Console 建立 students 的 email 索引)</div>';
+                    }
+                    errorHtml += `
+                        <button onclick="firebase.auth().signOut().then(() => window.location.reload())" 
+                                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow transition flex items-center justify-center gap-2 w-full">
+                            🔄 強制登出 / 切換帳號
+                        </button>
+                    `;
+                    loginMsg.innerHTML = errorHtml;
                 }
             } else {
                 loginView.classList.remove('hidden');
@@ -220,18 +278,26 @@
             }
         });
 
-        document.getElementById('login-btn').addEventListener('click', () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()));
-        document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({
+                prompt: 'select_account'
+            });
+            auth.signInWithPopup(provider);
+        });
+        
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            auth.signOut().then(() => window.location.reload());
+        });
 
-        // 3. Dashboard
         async function renderDashboard() {
+            const schoolDisplay = studentProfile.schoolName || studentProfile.schoolId;
             document.getElementById('student-name').textContent = studentProfile.displayName;
-            document.getElementById('class-info').textContent = `${studentProfile.classId}班 ${studentProfile.seatNo}號`;
+            document.getElementById('class-info').textContent = `${schoolDisplay} | ${studentProfile.classId}班 ${studentProfile.seatNo}號`;
 
             const todoList = document.getElementById('todo-list');
             const historyList = document.getElementById('history-list');
             
-            // 搜尋該學校、該班級的作業
             const assignsSnap = await db.collection('assignments')
                                         .where('target_class', '==', studentProfile.classId)
                                         .where('school_id', '==', studentProfile.schoolId)
@@ -290,7 +356,6 @@
             document.getElementById('todo-count').textContent = todoCount;
         }
 
-        // 4. Worksheet Logic
         async function openWorksheet(taskId, taskData, responseData, isReadOnly) {
             currentAssignmentId = taskId;
             const modal = document.getElementById('worksheet-modal');
@@ -301,15 +366,20 @@
             document.getElementById('modal-title').textContent = taskData.worksheet_title;
             document.getElementById('modal-status').textContent = isReadOnly ? '唯讀模式' : '編輯模式';
 
-            // Fetch HTML
             const wsDoc = await db.collection('worksheets').doc(taskData.worksheet_id).get();
-            if (!wsDoc.exists) return alert('學習單內容讀取失敗');
+            
+            if (!wsDoc.exists) {
+                alert('⚠️ 無法開啟：老師已刪除或撤回此份學習單。\n\n系統將自動從您的列表中移除此任務。');
+                renderDashboard(); 
+                return;
+            }
+            
             form.innerHTML = wsDoc.data().html_content;
+			executeEmbeddedScripts(form);
 
-            // 回填答案與顯示批改
             if (responseData && responseData.answers) {
                 const answers = responseData.answers;
-                const gradingDetails = responseData.grading_details || {}; // 批改細項
+                const gradingDetails = responseData.grading_details || {};
 
                 form.querySelectorAll('.worksheet-input').forEach(input => {
                     const name = input.name;
@@ -321,11 +391,9 @@
                         }
                     }
                     
-                    // 如果有批改細項，插入顯示面板 (Read-only)
                     const det = gradingDetails[name];
                     if (det && (det.is_correct !== undefined || det.feedback)) {
                         
-                        // Radio Button 防遮擋邏輯 (只在最後一個選項後顯示)
                         if (input.type === 'radio') {
                             const allRadios = form.querySelectorAll(`input[type="radio"][name="${name}"]`);
                             const lastRadio = allRadios[allRadios.length - 1];
@@ -339,7 +407,6 @@
                         const panel = document.createElement('div');
                         panel.className = `grading-panel ${isCor?'correct':(isInc?'incorrect':'')}`;
                         
-                        // Radio 跨欄樣式
                         if (input.type === 'radio') {
                             panel.style.gridColumn = "1 / -1";
                             panel.style.width = "100%";
@@ -352,12 +419,8 @@
 
                         let feedbackHtml = fb ? `<div class="mt-2 text-sm text-gray-600 bg-white p-2 rounded border border-gray-200"><strong>👩‍🏫 老師：</strong>${fb}</div>` : '';
 
-                        panel.innerHTML = `
-                            <div class="grading-status-text text-lg">${statusIcon}</div>
-                            ${feedbackHtml}
-                        `;
+                        panel.innerHTML = `<div class="grading-status-text text-lg">${statusIcon}</div>${feedbackHtml}`;
 
-                        // 插入位置
                         if (input.type === 'radio') {
                             const container = input.parentNode;
                             if(container.nextSibling) container.parentNode.insertBefore(panel, container.nextSibling);
@@ -369,7 +432,6 @@
                     }
                 });
 
-                // 總評
                 if (responseData.comment) {
                     feedbackArea.classList.remove('hidden');
                     document.getElementById('feedback-text').textContent = responseData.comment;
@@ -380,7 +442,6 @@
                 feedbackArea.classList.add('hidden');
             }
 
-            // 狀態處理
             if (isReadOnly) {
                 submitBtn.classList.add('hidden');
                 form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = true);
