@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教師作業管理系統</title>
+    <title>學習單管理系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -83,7 +83,7 @@
 
     <div id="login-view" class="flex flex-col items-center justify-center h-screen">
         <div class="bg-white p-8 rounded shadow-lg text-center w-96">
-            <h1 class="text-2xl font-bold mb-4">教師作業管理系統</h1>
+            <h1 class="text-2xl font-bold mb-4">學習單管理系統</h1>
             <p class="mb-6 text-gray-600">請使用 Google 帳號登入</p>
             <button id="login-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded w-full flex justify-center items-center gap-2">
                 Google 登入
@@ -106,21 +106,26 @@
 
     <div id="app-view" class="container mx-auto p-4 hidden">
         <header class="flex justify-between items-center bg-white p-4 rounded shadow mb-6">
-            <div>
-                <h1 class="text-xl font-bold text-gray-800">📚 作業管理中心</h1>
-                <p class="text-sm text-gray-500">
-                    <span id="header-school-name" class="font-bold text-blue-600">載入中...</span> | 
-                    <span id="user-info">載入中...</span>
-                </p>
+            <div class="flex items-center gap-4">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">📚 作業管理中心</h1>
+                    <p class="text-sm text-gray-500">
+                        <span id="header-school-name" class="font-bold text-blue-600">載入中...</span> | 
+                        <span id="user-info">載入中...</span>
+                    </p>
+                </div>
+                <button id="force-refresh-btn" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition" title="手動從雲端載入最新資料">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
             </div>
             <button id="logout-btn" class="text-sm text-gray-600 hover:text-red-500 font-bold border border-gray-300 px-3 py-1 rounded">登出</button>
         </header>
 
-        <div class="flex mb-4 border-b border-gray-300 overflow-x-auto">
-            <button class="tab-btn px-6 py-3 text-blue-600 border-b-2 border-blue-600 font-bold hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('grading')">📝 批改作業</button>
-            <button class="tab-btn px-6 py-3 text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('library')">📂 學習單管理</button>
-            <button class="tab-btn px-6 py-3 text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('assign')">🚀 發布任務</button>
-            <button class="tab-btn px-6 py-3 text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('withdraw')">📊 任務管理</button>
+		<div class="flex mb-4 border-b border-gray-300 overflow-x-auto">
+            <button id="btn-tab-grading" class="tab-btn px-6 py-3 text-blue-600 border-b-2 border-blue-600 font-bold hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('grading')">📝 批改作業</button>
+            <button id="btn-tab-library" class="tab-btn px-6 py-3 text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('library')">📂 學習單管理</button>
+            <button id="btn-tab-assign" class="tab-btn px-6 py-3 text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('assign')">🚀 發布任務</button>
+            <button id="btn-tab-withdraw" class="tab-btn px-6 py-3 text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('withdraw')">📊 任務管理</button>
         </div>
 
         <div id="tab-grading" class="app-section-panel">
@@ -204,7 +209,7 @@
                     <h2 class="text-lg font-bold">📊 任務管理</h2>
                     <div class="flex gap-2">
                         <button id="batch-deadline-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded shadow text-sm disabled:opacity-50">📅 修改截止日</button>
-                        <button id="batch-withdraw-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow text-sm disabled:opacity-50">🗑️ 撤回勾選</button>
+                        <button id="batch-withdraw-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow text-sm disabled:opacity-50">🗑️ 撤回發布</button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
@@ -336,7 +341,6 @@
     <script>
 		// 🛠️ [修改] 輔助函式：強制執行腳本並重新渲染數學公式
 		function executeEmbeddedScripts(container) {
-			// 1. 處理 Script (讓分頁與互動生效)
 			const scripts = container.querySelectorAll('script');
 			scripts.forEach(oldScript => {
 				const newScript = document.createElement('script');
@@ -344,13 +348,11 @@
 				newScript.appendChild(document.createTextNode(oldScript.innerHTML));
 				oldScript.parentNode.replaceChild(newScript, oldScript);
 			});
-
-			// 2. [新增] 處理數學公式 (讓 LaTeX 顯示正常)
 			if (window.MathJax) {
-				// 告訴 MathJax 這裡有新內容，請重新掃描並渲染
 				MathJax.typesetPromise([container]).catch((err) => console.log('MathJax error:', err));
 			}
 		}
+
          // 1. Config
         const firebaseConfig = {
             apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
@@ -368,10 +370,13 @@
         let currentUser = null;
         let currentSchoolId = null;
         let availableClasses = [];
-        let worksheetsCache = {};
+        let worksheetsCache = {}; // 記憶體內的快取 (用於預覽等)
         
         let currentGradingResponseId = null;
         let currentGradingWorksheetId = null;
+
+        // 🔥 [新增] 快取 Key 前綴
+        const CACHE_PREFIX = 'ws_sys_cache_';
 
         // 2. Auth Logic
         const loginView = document.getElementById('login-view');
@@ -398,6 +403,7 @@
                             loginView.classList.add('hidden');
                             appView.classList.remove('hidden');
                             
+                            // 初始載入 (嘗試使用 Local Cache)
                             loadGradingList(); 
                             loadWorksheets();
                             analyzeClasses();
@@ -469,7 +475,7 @@
             loginView.classList.remove('hidden');
         });
 
-        // 3. Login/Logout
+        // 3. Login/Logout & Force Refresh
         document.getElementById('login-btn').addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
@@ -477,34 +483,98 @@
         });
         document.getElementById('logout-btn').addEventListener('click', () => auth.signOut().then(() => window.location.reload()));
 
+        // 🔥 [新增] 手動強制同步按鈕
+        document.getElementById('force-refresh-btn').addEventListener('click', async () => {
+            if(!confirm('確定要從雲端重新下載最新資料嗎？')) return;
+            const btn = document.getElementById('force-refresh-btn');
+            btn.classList.add('animate-spin', 'text-blue-600'); // 旋轉動畫
+            
+            try {
+                await Promise.all([
+                    loadWorksheets(true),
+                    loadAssignmentsData(true), // 先抓資料
+                    analyzeClasses(true)
+                ]);
+                // 根據目前分頁重繪
+                loadGradingList(); 
+                loadAssignments();
+                alert('✅ 資料同步完成！');
+            } catch(e) {
+                alert('❌ 同步失敗: ' + e.message);
+            } finally {
+                btn.classList.remove('animate-spin', 'text-blue-600');
+            }
+        });
+
+        // 🔥 [新增] 通用快取讀取函式
+        async function fetchDataWithCache(keySuffix, forceRefresh, fetcher) {
+            const cacheKey = CACHE_PREFIX + keySuffix;
+            let data = null;
+			const cacheHead = keySuffix.split("_")[0];
+			let cacheName = null;
+			if (cacheHead=='ws')
+				cacheName = '學習單';
+			else if (cacheHead=='assign')
+				cacheName = '任務指派';
+			else
+				cacheName = '班級學生';
+            // 1. 嘗試讀快取
+            if (!forceRefresh) {
+                const cachedJson = localStorage.getItem(cacheKey);
+                if (cachedJson) {
+                    try {
+                        data = JSON.parse(cachedJson);
+                        console.log(`📦 [本地快取] ${cacheName}... `);
+                    } catch(e) {
+                        console.warn('快取解析錯誤，移除快取:', e);
+                        localStorage.removeItem(cacheKey);
+                    }
+                }
+            }
+
+            // 2. 若無快取或強制更新，則從雲端讀取
+            if (!data) {
+                console.log(`☁️ [雲端載入] ${cacheName}...`);
+                data = await fetcher();
+                // 存入快取
+                localStorage.setItem(cacheKey, JSON.stringify(data));
+            }
+            return data;
+        }
+
         // 4. Tab Logic
+		// 4. Tab Logic (修復版)
         window.switchAppMenu = (tabName) => {
+            // 1. 隱藏所有面板
             document.querySelectorAll('.app-section-panel').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            // 2. 重置所有按鈕樣式 (變回灰色)
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
                 btn.classList.add('text-gray-500');
             });
-            event.target.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
-            event.target.classList.remove('text-gray-500');
+
+            // 3. 點亮目標按鈕 (變藍色)
+            const targetBtn = document.getElementById(`btn-tab-${tabName}`);
+            if (targetBtn) {
+                targetBtn.classList.remove('text-gray-500');
+                targetBtn.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
+            }
             
+            // 4. 載入對應資料
             if (tabName === 'grading') loadGradingList();
             if (tabName === 'withdraw') loadAssignments();
         };
-
+		
         // 5. Library Logic
 		document.getElementById('preview-btn').addEventListener('click', () => {
-			// 🔥 [新增] 強制清除「彈出視窗」的內容，避免 ID 衝突
 			document.getElementById('view-modal-content').innerHTML = '';
-			document.getElementById('view-modal').classList.add('hidden'); // 確保視窗關閉
-
-			// ... 原本的程式碼 ...
+			document.getElementById('view-modal').classList.add('hidden'); 
 			const previewDiv = document.getElementById('preview-content');
 			const htmlContent = document.getElementById('ws-html').value;
-			
 			previewDiv.innerHTML = htmlContent;
 			document.getElementById('preview-area').classList.remove('hidden');
-			
 			executeEmbeddedScripts(previewDiv);
 		});
 
@@ -522,60 +592,65 @@
             }
 
             try {
-                // 1. Check duplicate title logic
                 const dupSnap = await db.collection('worksheets')
                     .where('creator_id', '==', currentUser.uid)
                     .where('title', '==', title)
                     .get();
 
                 if (!dupSnap.empty) {
-                    // Duplicate found
-                    if (confirm(`學習單 "${title}" 已存在。\n\n按「確定」覆蓋原檔案\n按「取消」返回修改標題`)) {
-                        const docId = dupSnap.docs[0].id;
-                        await db.collection('worksheets').doc(docId).update({
-                            html_content: html,
-                            answer_key: answerKey,
-                            created_at: firebase.firestore.FieldValue.serverTimestamp() // Optional: Update time
+                    if (confirm(`學習單 "${title}" 已存在，確定覆蓋？`)) {
+                        await db.collection('worksheets').doc(dupSnap.docs[0].id).update({
+                            html_content: html, answer_key: answerKey,
+                            created_at: firebase.firestore.FieldValue.serverTimestamp()
                         });
-                        alert('覆蓋成功！');
-                    } else {
-                        return; // User canceled
-                    }
+                    } else return;
                 } else {
-                    // No duplicate, add new
                     await db.collection('worksheets').add({
-                        title, 
-                        html_content: html, 
-                        answer_key: answerKey,
-                        creator_id: currentUser.uid,
-                        created_at: firebase.firestore.FieldValue.serverTimestamp()
+                        title, html_content: html, answer_key: answerKey,
+                        creator_id: currentUser.uid, created_at: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    alert('已儲存！');
                 }
+                alert('已儲存！');
+                document.getElementById('ws-title').value = ''; document.getElementById('ws-html').value = ''; document.getElementById('ws-json').value = ''; document.getElementById('preview-area').classList.add('hidden');
+                
+                // 🔥 [Cache] 清除快取並強制重載
+                localStorage.removeItem(CACHE_PREFIX + 'ws_' + currentUser.uid);
+                loadWorksheets(true);
 
-                // Cleanup UI
-                document.getElementById('ws-title').value = ''; 
-                document.getElementById('ws-html').value = '';
-                document.getElementById('ws-json').value = '';
-                document.getElementById('preview-area').classList.add('hidden');
-                loadWorksheets();
-
-            } catch(e) { 
-                console.error(e);
-                alert('操作失敗: ' + e.message); 
-            }
+            } catch(e) { console.error(e); alert('操作失敗: ' + e.message); }
         });
 
-		async function loadWorksheets() {
+        // 🔥 [修改] 支援快取的學習單載入
+		async function loadWorksheets(force = false) {
 			const listEl = document.getElementById('ws-list');
 			const selectEl = document.getElementById('assign-ws-select');
-			const snap = await db.collection('worksheets').where('creator_id', '==', currentUser.uid).orderBy('created_at', 'desc').get();
+            
+            // 讀取資料
+            const items = await fetchDataWithCache('ws_' + currentUser.uid, force, async () => {
+                const snap = await db.collection('worksheets').where('creator_id', '==', currentUser.uid).orderBy('created_at', 'desc').get();
+                const res = [];
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    // 轉換時間戳記以便 JSON 儲存
+                    res.push({
+                        id: doc.id,
+                        title: d.title,
+                        html_content: d.html_content, // 快取也存 HTML
+                        answer_key: d.answer_key,
+                        created_at_iso: d.created_at ? d.created_at.toDate().toISOString() : new Date().toISOString()
+                    });
+                });
+                return res;
+            });
+
 			listEl.innerHTML = ''; selectEl.innerHTML = '<option value="">請選擇學習單...</option>'; worksheetsCache = {};
-			if (snap.empty) { listEl.innerHTML = '<p class="text-center text-gray-500 py-4">無資料</p>'; return; }
-			snap.forEach(doc => {
-				const data = doc.data(); worksheetsCache[doc.id] = data;
+			
+            if (items.length === 0) { listEl.innerHTML = '<p class="text-center text-gray-500 py-4">無資料</p>'; return; }
+			
+            items.forEach(data => {
+				worksheetsCache[data.id] = data; // 存入記憶體供預覽用
 				
-				const dateObj = data.created_at ? data.created_at.toDate() : new Date();
+				const dateObj = new Date(data.created_at_iso);
 				const dateStr = dateObj.toLocaleString('zh-TW', { hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 				const item = document.createElement('div');
@@ -586,43 +661,40 @@
 						<div class="text-xs text-gray-400 mt-1">建立於：${dateStr}</div>
 					</div>
 					<div class="space-x-2">
-						<button class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-sm font-bold hover:bg-yellow-200" onclick="renameWorksheet('${doc.id}', '${data.title}')">✏️ 改名</button>
-						<button class="bg-purple-100 text-purple-600 px-3 py-1 rounded text-sm font-bold hover:bg-purple-200" onclick="viewSourceCode('${doc.id}')">📝 原始碼</button>
-						<button class="bg-blue-100 text-blue-600 px-3 py-1 rounded text-sm font-bold hover:bg-blue-200" onclick="viewWorksheet('${doc.id}')">👁️ 預覽</button>
-						<button class="bg-red-100 text-red-500 px-3 py-1 rounded text-sm font-bold hover:bg-red-200" onclick="deleteWorksheet('${doc.id}')">刪除</button>
+						<button class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-sm font-bold hover:bg-yellow-200" onclick="renameWorksheet('${data.id}', '${data.title}')">✏️ 改名</button>
+						<button class="bg-purple-100 text-purple-600 px-3 py-1 rounded text-sm font-bold hover:bg-purple-200" onclick="viewSourceCode('${data.id}')">📝 原始碼</button>
+						<button class="bg-blue-100 text-blue-600 px-3 py-1 rounded text-sm font-bold hover:bg-blue-200" onclick="viewWorksheet('${data.id}')">👁️ 預覽</button>
+						<button class="bg-red-100 text-red-500 px-3 py-1 rounded text-sm font-bold hover:bg-red-200" onclick="deleteWorksheet('${data.id}')">刪除</button>
 					</div>`;
 				listEl.appendChild(item);
-				const opt = document.createElement('option'); opt.value = doc.id; opt.textContent = data.title; selectEl.appendChild(opt);
+				const opt = document.createElement('option'); opt.value = data.id; opt.textContent = data.title; selectEl.appendChild(opt);
 			});
 		}
+
         window.renameWorksheet = async (id, oldTitle) => {
             const newTitle = prompt('請輸入新的標題：', oldTitle);
             if (newTitle && newTitle.trim() !== '' && newTitle !== oldTitle) {
                 try {
                     await db.collection('worksheets').doc(id).update({ title: newTitle.trim() });
-                    loadWorksheets();
+                    // 🔥 [Cache] 清除快取並重載
+                    localStorage.removeItem(CACHE_PREFIX + 'ws_' + currentUser.uid);
+                    loadWorksheets(true);
                 } catch (e) { alert('更新失敗: ' + e.message); }
             }
         };
+
 		window.viewWorksheet = (id) => {
-			// 🔥 [新增] 強制清除「編輯區」的預覽內容，避免 ID 衝突
 			document.getElementById('preview-content').innerHTML = '';
 			document.getElementById('preview-area').classList.add('hidden');
-
-			// ... 原本的程式碼 ...
 			const data = worksheetsCache[id]; if(!data) return;
 			document.getElementById('view-modal-title').textContent = data.title;
-			
 			const contentDiv = document.getElementById('view-modal-content');
 			contentDiv.innerHTML = data.html_content;
-			
 			executeEmbeddedScripts(contentDiv);
-
 			document.getElementById('view-modal').classList.remove('hidden');
 		};
         window.closeViewModal = () => document.getElementById('view-modal').classList.add('hidden');
         
-        // 🛠️ 連鎖刪除功能
         window.deleteWorksheet = async (id) => {
             if(!confirm('⚠️ 警告：刪除這份學習單，將會一併「撤回」所有已派發給學生的任務！\n\n確定要刪除嗎？')) return;
             const btn = event.target; const originalText = btn.textContent;
@@ -633,24 +705,41 @@
                 const assignSnap = await db.collection('assignments').where('worksheet_id', '==', id).get();
                 assignSnap.forEach(doc => { batch.delete(doc.ref); });
                 await batch.commit();
-                alert(`刪除成功！\n已同時撤回 ${assignSnap.size} 筆相關的派發任務。`);
-                loadWorksheets(); loadAssignments(); loadGradingList();
+                alert(`刪除成功！`);
+                
+                // 🔥 [Cache] 清除多個快取
+                localStorage.removeItem(CACHE_PREFIX + 'ws_' + currentUser.uid);
+                localStorage.removeItem(CACHE_PREFIX + 'assign_' + currentUser.uid);
+                
+                loadWorksheets(true); 
+                loadAssignmentsData(true).then(() => {
+                    loadAssignments(); 
+                    loadGradingList();
+                });
+
             } catch(e) {
                 console.error(e); alert('刪除失敗: ' + e.message);
                 btn.textContent = originalText; btn.disabled = false;
             }
         };
 
-        // 6. Assign Logic
-        async function analyzeClasses() {
+        // 6. Assign Logic (Classes)
+        // 🔥 [修改] 支援快取的班級資料載入
+        async function analyzeClasses(force = false) {
             const container = document.getElementById('class-checkboxes');
-            const s = await db.collection('schools').doc(currentSchoolId).collection('students').get();
-            if(s.empty) { container.innerHTML = '<p class="text-red-500 col-span-full text-center">無學生資料</p>'; return; }
-            const set = new Set(); s.forEach(d => { if(d.data().class_id) set.add(d.data().class_id); });
-            availableClasses = Array.from(set).sort();
             
+            const classes = await fetchDataWithCache('classes_' + currentSchoolId, force, async () => {
+                const s = await db.collection('schools').doc(currentSchoolId).collection('students').get();
+                const set = new Set();
+                s.forEach(d => { if(d.data().class_id) set.add(d.data().class_id); });
+                return Array.from(set).sort();
+            });
+            
+            availableClasses = classes;
+            if(classes.length === 0) { container.innerHTML = '<p class="text-red-500 col-span-full text-center">無學生資料</p>'; return; }
+
             const groups = {};
-            availableClasses.forEach(cls => {
+            classes.forEach(cls => {
                 const grade = cls.charAt(0);
                 if (!groups[grade]) groups[grade] = [];
                 groups[grade].push(cls);
@@ -660,16 +749,16 @@
             container.className = "p-4 bg-gray-50 rounded border max-h-60 overflow-y-auto space-y-4"; 
 
             Object.keys(groups).sort().forEach(grade => {
-                const classes = groups[grade];
+                const clsList = groups[grade];
                 const section = document.createElement('div');
                 section.className = "border-b border-gray-200 pb-2 last:border-0";
                 const header = document.createElement('div');
                 header.className = "flex items-center mb-2";
-                header.innerHTML = `<label class="flex items-center space-x-2 cursor-pointer select-none"><input type="checkbox" class="grade-master-checkbox form-checkbox h-4 w-4 text-blue-600 rounded border-gray-400" data-grade="${grade}" onchange="toggleGradeGroup(this)"><span class="font-bold text-gray-800 text-sm">${grade} 年級 (${classes.length} 班)</span></label>`;
+                header.innerHTML = `<label class="flex items-center space-x-2 cursor-pointer select-none"><input type="checkbox" class="grade-master-checkbox form-checkbox h-4 w-4 text-blue-600 rounded border-gray-400" data-grade="${grade}" onchange="toggleGradeGroup(this)"><span class="font-bold text-gray-800 text-sm">${grade} 年級 (${clsList.length} 班)</span></label>`;
                 section.appendChild(header);
                 const grid = document.createElement('div');
                 grid.className = "grid grid-cols-4 md:grid-cols-5 gap-2"; 
-                classes.forEach(cls => {
+                clsList.forEach(cls => {
                     grid.innerHTML += `<label class="flex items-center space-x-1 cursor-pointer p-1 hover:bg-blue-100 rounded transition select-none"><input type="checkbox" name="target_class" value="${cls}" class="grade-${grade}-item form-checkbox h-4 w-4 text-blue-500 rounded border-gray-300"><span class="text-gray-700 text-sm font-medium">${cls}</span></label>`;
                 });
                 section.appendChild(grid);
@@ -680,66 +769,311 @@
             document.querySelectorAll(`.grade-${btn.dataset.grade}-item`).forEach(cb => cb.checked = btn.checked);
         };
 
+		// 🔥 [修改] 發布任務邏輯：防重複 + 成功後清空表單並跳轉至任務管理
         document.getElementById('submit-assign-btn').addEventListener('click', async () => {
-            const wid = document.getElementById('assign-ws-select').value;
-            const dead = document.getElementById('assign-deadline').value;
+            const selectEl = document.getElementById('assign-ws-select');
+            const deadlineEl = document.getElementById('assign-deadline');
+            
+            const wid = selectEl.value;
+            const dead = deadlineEl.value;
+            // 取得所有被勾選的班級
             const cls = Array.from(document.querySelectorAll('input[name="target_class"]:checked')).map(c => c.value);
-            if(!wid || cls.length === 0) return alert('請選擇');
-            const wtitle = document.querySelector(`#assign-ws-select option[value="${wid}"]`).textContent;
-            try {
-                const batch = db.batch();
-                cls.forEach(c => {
-                    const ref = db.collection('assignments').doc();
-                    batch.set(ref, {
-                        worksheet_id: wid, worksheet_title: wtitle, target_class: c,
-                        teacher_id: currentUser.uid, school_id: currentSchoolId, deadline: dead,
-                        status: 'published', created_at: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                });
-                await batch.commit(); alert('發布成功'); loadAssignments(); loadGradingList();
-            } catch(e) { alert(e.message); }
-        });
+            
+            if(!wid || cls.length === 0) return alert('請選擇學習單與班級');
+            
+            const btn = document.getElementById('submit-assign-btn');
+            const originalText = btn.textContent;
+            btn.disabled = true; 
+            btn.textContent = '處理中...';
 
-        // 7. Withdraw Logic
+            const wtitle = document.querySelector(`#assign-ws-select option[value="${wid}"]`).textContent;
+
+            try {
+                // 1. 準備查詢：檢查每個班級是否已經有這份作業
+                const checkPromises = cls.map(async (className) => {
+                    const snapshot = await db.collection('assignments')
+                        .where('worksheet_id', '==', wid)
+                        .where('target_class', '==', className)
+                        .where('school_id', '==', currentSchoolId)
+                        .limit(1)
+                        .get();
+                    return { className, snapshot };
+                });
+
+                // 2. 等待所有查詢完成
+                const results = await Promise.all(checkPromises);
+
+                const batch = db.batch();
+                let updatedCount = 0;
+                let createdCount = 0;
+
+                // 3. 根據查詢結果決定是「新增」還是「更新」
+                results.forEach(({ className, snapshot }) => {
+                    if (!snapshot.empty) {
+                        // 更新現有任務 (保留學生作答紀錄)
+                        const docRef = snapshot.docs[0].ref;
+                        batch.update(docRef, {
+                            deadline: dead,
+                            worksheet_title: wtitle,
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        updatedCount++;
+                    } else {
+                        // 建立新任務
+                        const newRef = db.collection('assignments').doc();
+                        batch.set(newRef, {
+                            worksheet_id: wid, 
+                            worksheet_title: wtitle, 
+                            target_class: className,
+                            teacher_id: currentUser.uid, 
+                            school_id: currentSchoolId, 
+                            deadline: dead,
+                            status: 'published', 
+                            created_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        createdCount++;
+                    }
+                });
+
+                // 4. 送出批次變更
+                await batch.commit(); 
+                
+                let msg = '操作成功！\n';
+                if (createdCount > 0) msg += `✅ 新發布給 ${createdCount} 個班級\n`;
+                if (updatedCount > 0) msg += `🔄 更新了 ${updatedCount} 個班級的任務設定`;
+                alert(msg);
+
+                // 5. 資料更新與快取清除
+                localStorage.removeItem(CACHE_PREFIX + 'assign_' + currentUser.uid);
+                await loadAssignmentsData(true); // 強制重載資料
+                loadAssignments(); // 渲染任務列表
+                loadGradingList();
+
+                // 🛑 [新增 UX 優化]：清空表單
+                selectEl.value = ''; // 清空學習單選擇
+                deadlineEl.value = ''; // 清空日期
+                
+                // 清空所有班級勾選
+                document.querySelectorAll('input[name="target_class"]').forEach(cb => cb.checked = false);
+                // 清空年級全選按鈕
+                document.querySelectorAll('.grade-master-checkbox').forEach(cb => cb.checked = false);
+
+                // 🛑 [新增 UX 優化]：跳轉至「任務管理」頁面檢視結果
+                switchAppMenu('withdraw'); 
+
+            } catch(e) { 
+                console.error(e);
+                alert('發布失敗: ' + e.message); 
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        });
+		
+        // 7. Withdraw & Grading Data (Shared Fetcher)
+        // 🔥 [新增] 共享的 Assignment 資料抓取函式 (快取版)
         async function loadAssignments() {
             const tb = document.getElementById('assignment-table-body');
-            const s = await db.collection('assignments').where('teacher_id', '==', currentUser.uid).orderBy('created_at', 'desc').get();
+            const items = await loadAssignmentsData(); // 讀取資料 (支援快取)
+            
             tb.innerHTML = '';
-            if(s.empty) { tb.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">無紀錄</td></tr>'; return; }
+            if(items.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">無紀錄</td></tr>'; return; }
+            
+            // 1. 分組：依據學習單標題分組
             const g = {};
-            s.forEach(d => {
-                const t = d.data().worksheet_title || '未命名';
-                if(!g[t]) g[t] = [];
-                g[t].push({ 
-                    id: d.id, 
-                    c: d.data().target_class, 
-                    d: d.data().created_at ? new Date(d.data().created_at.seconds*1000).toLocaleDateString() : '',
-                    dead: d.data().deadline 
-                });
+            items.forEach(i => {
+                if(!g[i.title]) g[i.title] = [];
+                g[i.title].push(i);
             });
+
             Object.keys(g).forEach(t => {
-                const items = g[t].sort((a,b) => a.c.localeCompare(b.c));
+                const list = g[t];
+                
+                // 2. 計算該組中「最新的」發布時間
+                let lastPubStr = '未知';
+                if (list.length > 0) {
+                    // 取出所有時間字串，排序後抓最後一個 (最大的日期)
+                    const dates = list.map(i => i.created_at_iso).filter(d => d).sort();
+                    if (dates.length > 0) {
+                        const lastIso = dates[dates.length - 1];
+                        const dateObj = new Date(lastIso);
+                        // 格式化為：2023/12/03 14:05
+                        lastPubStr = dateObj.toLocaleString('zh-TW', { 
+                            hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+                        });
+                    }
+                }
+
+                // 3. 排序班級顯示順序
+                list.sort((a,b) => a.target_class.localeCompare(b.target_class));
+                
                 const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50';
                 const tdTitle = document.createElement('td'); tdTitle.className = "p-3 align-top";
-                tdTitle.innerHTML = `<div class="flex flex-col gap-1"><span class="font-bold text-gray-800 text-lg">${t}</span><label class="inline-flex items-center text-xs text-gray-500 cursor-pointer select-none hover:text-blue-600 transition w-fit"><input type="checkbox" class="form-checkbox h-3 w-3 text-blue-500 mr-1 rounded border-gray-300" onchange="toggleGroup(this)">全選 / 全取消</label></div>`;
+                
+                // 🔥 [修改點] 在標題下方加入日期顯示
+                tdTitle.innerHTML = `
+                    <div class="flex flex-col gap-1">
+                        <span class="font-bold text-gray-800 text-lg">${t}</span>
+                        <span class="text-xs text-gray-500 font-mono tracking-wide">🕒 最後發布：${lastPubStr}</span>
+                        <label class="inline-flex items-center text-xs text-gray-400 cursor-pointer select-none hover:text-blue-600 transition w-fit mt-1">
+                            <input type="checkbox" class="form-checkbox h-3 w-3 text-blue-500 mr-1 rounded border-gray-300" onchange="toggleGroup(this)">
+                            全選 / 全取消
+                        </label>
+                    </div>`;
+                
                 const tdClasses = document.createElement('td'); tdClasses.className = "p-3 align-top";
                 let clsHtml = '';
-                items.forEach(i => {
-                    const deadInfo = i.dead ? `<span class="text-red-500 ml-1 font-bold">期限:${i.dead.slice(5)}</span>` : '<span class="text-green-500 ml-1">無期限</span>';
-                    clsHtml += `<label class="inline-flex items-center mr-3 mb-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 cursor-pointer select-none transition"><input type="checkbox" class="withdraw-checkbox form-checkbox h-4 w-4 text-red-500 mr-2 rounded border-gray-300 focus:ring-red-500" value="${i.id}"><span class="font-bold text-gray-700">${i.c} 班</span><span class="text-xs text-gray-500 ml-1">(${deadInfo})</span></label>`;
+                list.forEach(i => {
+                    const deadInfo = i.deadline ? `<span class="text-red-500 ml-1 font-bold">期限:${i.deadline.slice(5)}</span>` : '<span class="text-green-500 ml-1">無期限</span>';
+                    clsHtml += `<label class="inline-flex items-center mr-3 mb-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 cursor-pointer select-none transition"><input type="checkbox" class="withdraw-checkbox form-checkbox h-4 w-4 text-red-500 mr-2 rounded border-gray-300 focus:ring-red-500" value="${i.id}"><span class="font-bold text-gray-700">${i.target_class} 班</span><span class="text-xs text-gray-500 ml-1">(${deadInfo})</span></label>`;
                 });
                 tdClasses.innerHTML = clsHtml;
                 tr.appendChild(tdTitle); tr.appendChild(tdClasses); tb.appendChild(tr);
             });
         }
+
+		// -------------------------------------------------------------------------
+        // 7. 共用資料層：讀取任務資料 (含快取機制)
+        // -------------------------------------------------------------------------
+        
+        // 🔥 [補回遺失的函式] 這是核心資料讀取函式，必須存在！
+        async function loadAssignmentsData(force = false) {
+            // 使用前面定義的 fetchDataWithCache
+            return await fetchDataWithCache('assign_' + currentUser.uid, force, async () => {
+                const s = await db.collection('assignments')
+                    .where('teacher_id', '==', currentUser.uid)
+                    .orderBy('created_at', 'desc')
+                    .get();
+                
+                const res = [];
+                s.forEach(d => {
+                    const data = d.data();
+                    res.push({
+                        id: d.id,
+                        worksheet_id: data.worksheet_id,
+                        title: data.worksheet_title || '未命名',
+                        target_class: data.target_class,
+                        deadline: data.deadline,
+                        created_at_iso: data.created_at ? data.created_at.toDate().toISOString() : null
+                    });
+                });
+                return res;
+            });
+        }
+
+        // -------------------------------------------------------------------------
+        // 任務管理列表 (含最後發布時間顯示)
+        // -------------------------------------------------------------------------
+        async function loadAssignments() {
+            const tb = document.getElementById('assignment-table-body');
+            
+            // 呼叫上面的共用函式
+            const items = await loadAssignmentsData(); 
+            
+            tb.innerHTML = '';
+            if(items.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">無紀錄</td></tr>'; return; }
+            
+            // 1. 分組：依據學習單標題分組
+            const g = {};
+            items.forEach(i => {
+                if(!g[i.title]) g[i.title] = [];
+                g[i.title].push(i);
+            });
+
+            Object.keys(g).forEach(t => {
+                const list = g[t];
+                
+                // 2. 計算該組中「最新的」發布時間
+                let lastPubStr = '未知';
+                if (list.length > 0) {
+                    // 取出所有時間字串，排序後抓最後一個 (最大的日期)
+                    const dates = list.map(i => i.created_at_iso).filter(d => d).sort();
+                    if (dates.length > 0) {
+                        const lastIso = dates[dates.length - 1];
+                        const dateObj = new Date(lastIso);
+                        // 格式化為：2023/12/03 14:05
+                        lastPubStr = dateObj.toLocaleString('zh-TW', { 
+                            hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+                        });
+                    }
+                }
+
+                // 3. 排序班級顯示順序
+                list.sort((a,b) => a.target_class.localeCompare(b.target_class));
+                
+                const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50';
+                const tdTitle = document.createElement('td'); tdTitle.className = "p-3 align-top";
+                
+                // 顯示標題與時間
+                tdTitle.innerHTML = `
+                    <div class="flex flex-col gap-1">
+                        <span class="font-bold text-gray-800 text-lg">${t}</span>
+                        <span class="text-xs text-gray-500 font-mono tracking-wide">🕒 最後發布：${lastPubStr}</span>
+                        <label class="inline-flex items-center text-xs text-gray-400 cursor-pointer select-none hover:text-blue-600 transition w-fit mt-1">
+                            <input type="checkbox" class="form-checkbox h-3 w-3 text-blue-500 mr-1 rounded border-gray-300" onchange="toggleGroup(this)">
+                            全選 / 全取消
+                        </label>
+                    </div>`;
+                
+                const tdClasses = document.createElement('td'); tdClasses.className = "p-3 align-top";
+                let clsHtml = '';
+                list.forEach(i => {
+                    const deadInfo = i.deadline ? `<span class="text-red-500 ml-1 font-bold">期限:${i.deadline.slice(5)}</span>` : '<span class="text-green-500 ml-1">無期限</span>';
+                    clsHtml += `<label class="inline-flex items-center mr-3 mb-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 cursor-pointer select-none transition"><input type="checkbox" class="withdraw-checkbox form-checkbox h-4 w-4 text-red-500 mr-2 rounded border-gray-300 focus:ring-red-500" value="${i.id}"><span class="font-bold text-gray-700">${i.target_class} 班</span><span class="text-xs text-gray-500 ml-1">(${deadInfo})</span></label>`;
+                });
+                tdClasses.innerHTML = clsHtml;
+                tr.appendChild(tdTitle); tr.appendChild(tdClasses); tb.appendChild(tr);
+            });
+        }
+        
+        // -------------------------------------------------------------------------
+        // 8. 批改列表 (也使用共用函式)
+        // -------------------------------------------------------------------------
+        async function loadGradingList() {
+            const tb = document.getElementById('grading-list-body');
+            
+            // 呼叫共用函式，確保不會報錯
+            const items = await loadAssignmentsData(); 
+            
+            tb.innerHTML = '';
+            if(items.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="p-8 text-center text-gray-500">目前無發布作業</td></tr>'; return; }
+            
+            const g = {};
+            items.forEach(i => {
+                if(!g[i.title]) g[i.title] = [];
+                g[i.title].push(i);
+            });
+
+            Object.keys(g).forEach(t => {
+                const list = g[t].sort((a,b) => a.target_class.localeCompare(b.target_class));
+                const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-blue-50';
+                let clsBtns = '';
+                list.forEach(i => {
+                    clsBtns += `<button onclick="openSubmissionList('${i.id}', '${i.target_class}', '${i.worksheet_id}', '${i.title}')" class="m-1 bg-white hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 px-4 py-2 rounded shadow-sm font-bold transition flex items-center gap-2"><span>🏫 ${i.target_class} 班</span><span class="text-xs opacity-70">➔ 批改</span></button>`;
+                });
+                tr.innerHTML = `<td class="p-4 font-bold text-gray-800 text-lg align-middle">${t}</td><td class="p-4 align-middle flex flex-wrap">${clsBtns}</td>`;
+                tb.appendChild(tr);
+            });
+        }
+
         window.toggleGroup = (master) => {
             master.closest('tr').querySelectorAll('.withdraw-checkbox').forEach(cb => cb.checked = master.checked);
         };
+        
         document.getElementById('batch-withdraw-btn').addEventListener('click', async () => {
             const chk = document.querySelectorAll('.withdraw-checkbox:checked');
             if(chk.length === 0 || !confirm('確定撤回？')) return;
             const b = db.batch(); chk.forEach(c => b.delete(db.collection('assignments').doc(c.value)));
-            try { await b.commit(); alert('已撤回'); loadAssignments(); loadGradingList(); } catch(e) { alert(e.message); }
+            try { 
+                await b.commit(); 
+                alert('已撤回'); 
+                
+                // 🔥 [Cache] 清除快取
+                localStorage.removeItem(CACHE_PREFIX + 'assign_' + currentUser.uid);
+                await loadAssignmentsData(true);
+                loadAssignments(); 
+                loadGradingList();
+            } catch(e) { alert(e.message); }
         });
         
         document.getElementById('batch-deadline-btn').addEventListener('click', () => {
@@ -751,27 +1085,35 @@
             const newDate = document.getElementById('new-deadline-input').value;
             const chk = document.querySelectorAll('.withdraw-checkbox:checked');
             const b = db.batch(); chk.forEach(c => b.update(db.collection('assignments').doc(c.value), { deadline: newDate || null }));
-            try { await b.commit(); alert('更新成功'); document.getElementById('deadline-modal').classList.add('hidden'); loadAssignments(); } 
-            catch(e) { alert(e.message); }
+            try { 
+                await b.commit(); alert('更新成功'); document.getElementById('deadline-modal').classList.add('hidden'); 
+                
+                // 🔥 [Cache] 清除快取
+                localStorage.removeItem(CACHE_PREFIX + 'assign_' + currentUser.uid);
+                await loadAssignmentsData(true);
+                loadAssignments(); 
+            } catch(e) { alert(e.message); }
         });
 
-        // 8. Grading List
+        // 8. Grading List (Uses Shared Fetcher)
         async function loadGradingList() {
             const tb = document.getElementById('grading-list-body');
-            const s = await db.collection('assignments').where('teacher_id', '==', currentUser.uid).orderBy('created_at', 'desc').get();
+            const items = await loadAssignmentsData(); // 讀快取
+            
             tb.innerHTML = '';
-            if(s.empty) { tb.innerHTML = '<tr><td colspan="2" class="p-8 text-center text-gray-500">目前無發布作業</td></tr>'; return; }
+            if(items.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="p-8 text-center text-gray-500">目前無發布作業</td></tr>'; return; }
+            
             const g = {};
-            s.forEach(doc => {
-                const data = doc.data(); const t = data.worksheet_title || '未命名';
-                if(!g[t]) g[t] = [];
-                g[t].push({ id: doc.id, target_class: data.target_class, worksheet_id: data.worksheet_id, title: t });
+            items.forEach(i => {
+                if(!g[i.title]) g[i.title] = [];
+                g[i.title].push(i);
             });
+
             Object.keys(g).forEach(t => {
-                const items = g[t].sort((a,b) => a.target_class.localeCompare(b.target_class));
+                const list = g[t].sort((a,b) => a.target_class.localeCompare(b.target_class));
                 const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-blue-50';
                 let clsBtns = '';
-                items.forEach(i => {
+                list.forEach(i => {
                     clsBtns += `<button onclick="openSubmissionList('${i.id}', '${i.target_class}', '${i.worksheet_id}', '${i.title}')" class="m-1 bg-white hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 px-4 py-2 rounded shadow-sm font-bold transition flex items-center gap-2"><span>🏫 ${i.target_class} 班</span><span class="text-xs opacity-70">➔ 批改</span></button>`;
                 });
                 tr.innerHTML = `<td class="p-4 font-bold text-gray-800 text-lg align-middle">${t}</td><td class="p-4 align-middle flex flex-wrap">${clsBtns}</td>`;
@@ -812,9 +1154,6 @@
             const rightPanel = document.getElementById('grading-right-panel');
             const viewCloseBtn = document.getElementById('view-mode-close-btn');
 
-            // 🛑【修復 2：ID 衝突問題】
-            // 在載入批改內容前，強制清空「預覽區」和「唯讀視窗」的內容
-            // 避免 DOM 裡面有重複的 ID (如 tab1, content1)，導致分頁切換失效
             document.getElementById('preview-content').innerHTML = ''; 
             document.getElementById('view-modal-content').innerHTML = ''; 
 
@@ -844,13 +1183,10 @@
                 let currentAutoScore = 0;
                 let hasManualScore = (rd.score !== undefined && rd.score !== null);
                 
-                // 🛑【修復 1：分數暴增問題】
-                // 新增一個 Set 來記錄「已經算過分數的題目名稱」
                 const calculatedQuestions = new Set(); 
 
                 if(rd.comment) commIn.value = rd.comment;
 
-                // 🛑 替換這整個 forEach 區塊
                 view.querySelectorAll('.worksheet-input').forEach(inp => {
                     const n = inp.name; if(!n) return;
                     
@@ -898,13 +1234,11 @@
                         panel.className = `grading-panel ${isCor?'correct':(isInc?'incorrect':'')}`;
                         if (inp.type === 'radio') panel.style.marginTop = "15px";
 
-                        // 🔥 [新增] 紀錄目前的狀態 (c=正確, i=錯誤, ''=無)，供連動扣分使用
                         const currentStatus = isCor ? 'c' : (isInc ? 'i' : '');
                         panel.setAttribute('data-status', currentStatus);
 
                         const pointsBadge = points > 0 ? `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded ml-2">配分: ${points}</span>` : '';
 
-                        // 🔥 [新增] 在 input 上加入 data-points，讓點擊事件知道這題幾分
                         panel.innerHTML = `
                             <div class="flex items-center justify-between mb-2">
                                 <div class="flex gap-2 items-center">
@@ -932,7 +1266,6 @@
                         }
                     }
                 });
-                
  
                 if (mode === 'edit') {
                     if (hasManualScore) {
@@ -947,28 +1280,20 @@
             } catch(e) { console.error(e); alert(e.message); modal.classList.add('hidden'); }
         };
 
-		// 🔥 [修改] 更新面板樣式 + 即時連動總分
         window.updPanel = (r) => { 
             const p = r.closest('.grading-panel'); 
-            const oldStatus = p.getAttribute('data-status') || ''; // 取得舊狀態
-            const newStatus = r.value; // 新狀態 (c 或 i)
-            const points = parseInt(r.getAttribute('data-points')) || 0; // 該題配分
+            const oldStatus = p.getAttribute('data-status') || ''; 
+            const newStatus = r.value; 
+            const points = parseInt(r.getAttribute('data-points')) || 0; 
             
-            // 1. 更新樣式
             p.classList.remove('correct', 'incorrect'); 
             if(newStatus==='c') p.classList.add('correct'); 
             if(newStatus==='i') p.classList.add('incorrect'); 
             
-            // 2. 計算分數差異 (Delta Update)
-            // 只有當狀態改變涉及「正確」時才需要調整分數
-            if (oldStatus === newStatus) return; // 狀態沒變，不動作
+            if (oldStatus === newStatus) return; 
 
             const scoreInput = document.getElementById('grade-score');
             let currentTotal = parseInt(scoreInput.value) || 0;
-
-            // 邏輯：
-            // 變成正確 (c) -> 加分
-            // 從正確 (c) 變成其他 -> 扣分
             
             if (newStatus === 'c' && oldStatus !== 'c') {
                 currentTotal += points;
@@ -977,19 +1302,16 @@
             }
 
             scoreInput.value = currentTotal;
-            p.setAttribute('data-status', newStatus); // 更新狀態紀錄
+            p.setAttribute('data-status', newStatus); 
         };
 		
-		// 🔥 [修改] 清除評分 + 若原本是正確需扣回分數
         window.clsGrade = (n, btn) => { 
             const p = btn.closest('.grading-panel'); 
             const oldStatus = p.getAttribute('data-status') || '';
             
-            // 1. 找出這題幾分 (從裡面的 radio 找)
             const cRadio = p.querySelector('input[value="c"]');
             const points = cRadio ? (parseInt(cRadio.getAttribute('data-points')) || 0) : 0;
 
-            // 2. 若原本是「正確」，清除時要扣分
             if (oldStatus === 'c') {
                 const scoreInput = document.getElementById('grade-score');
                 let currentTotal = parseInt(scoreInput.value) || 0;
@@ -997,7 +1319,6 @@
                 scoreInput.value = currentTotal;
             }
 
-            // 3. 重置 UI 與狀態
             p.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false); 
             p.classList.remove('correct', 'incorrect'); 
             p.setAttribute('data-status', ''); 
@@ -1033,40 +1354,23 @@
         document.getElementById('submit-grade-btn').onclick = () => doGrade('graded');
         document.getElementById('return-correction-btn').onclick = () => doGrade('needs_correction');
 		
-		// 顯示原始碼視窗
 		window.viewSourceCode = (id) => {
 			const data = worksheetsCache[id];
 			if (!data) return;
-
-			// 填入 HTML
 			document.getElementById('view-src-html').value = data.html_content || '';
-			
-			// 填入 JSON (格式化縮排顯示，縮排 4 空格)
 			const jsonStr = data.answer_key ? JSON.stringify(data.answer_key, null, 4) : '{}';
 			document.getElementById('view-src-json').value = jsonStr;
-
-			// 開啟 Modal
 			document.getElementById('source-code-modal').classList.remove('hidden');
 		};
 
-		// 通用複製函式 (接收 elementId 與 按鈕本身 btn)
 		window.copyToClipboard = (elementId, btn) => {
 			const el = document.getElementById(elementId);
 			if (!el) return;
-
-			// 選取文字
 			el.select();
-			el.setSelectionRange(0, 99999); // 支援手機版選取
-
-			// 執行複製
+			el.setSelectionRange(0, 99999); 
 			navigator.clipboard.writeText(el.value).then(() => {
-				// 成功後，暫存原本的按鈕文字
 				const originalContent = btn.innerHTML;
-				
-				// 改變按鈕顯示
 				btn.textContent = '✅ 已複製！';
-				
-				// 1.5秒後還原
 				setTimeout(() => {
 					btn.innerHTML = originalContent;
 				}, 1500);
