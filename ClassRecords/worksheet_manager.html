@@ -801,7 +801,7 @@
             });
         };
 
-        window.openGradingModal = async (rid, wid, sname, mode = 'edit') => {
+		window.openGradingModal = async (rid, wid, sname, mode = 'edit') => {
             currentGradingResponseId = rid; currentGradingWorksheetId = wid;
             const modal = document.getElementById('grading-modal');
             const view = document.getElementById('grading-worksheet-content');
@@ -811,6 +811,12 @@
             const leftPanel = document.getElementById('grading-left-panel');
             const rightPanel = document.getElementById('grading-right-panel');
             const viewCloseBtn = document.getElementById('view-mode-close-btn');
+
+            // 🛑【修復 2：ID 衝突問題】
+            // 在載入批改內容前，強制清空「預覽區」和「唯讀視窗」的內容
+            // 避免 DOM 裡面有重複的 ID (如 tab1, content1)，導致分頁切換失效
+            document.getElementById('preview-content').innerHTML = ''; 
+            document.getElementById('view-modal-content').innerHTML = ''; 
 
             document.getElementById('grading-student-name').textContent = sname;
             view.innerHTML = '<p class="p-4 text-center">載入中...</p>';
@@ -828,14 +834,26 @@
             try {
                 const [r, w] = await Promise.all([db.collection('responses').doc(rid).get(), db.collection('worksheets').doc(wid).get()]);
                 const rd = r.data(); const wd = w.data();
-                if(rd.score !== undefined) scoreIn.value = rd.score;
-                if(rd.comment) commIn.value = rd.comment;
+                
                 view.innerHTML = wd.html_content;
-				executeEmbeddedScripts(view);
-                const ans = rd.answers || {}; const details = rd.grading_details || {};
+                executeEmbeddedScripts(view);
+                
+                const ans = rd.answers || {}; 
+                const details = rd.grading_details || {};
+                
+                let currentAutoScore = 0;
+                let hasManualScore = (rd.score !== undefined && rd.score !== null);
+                
+                // 🛑【修復 1：分數暴增問題】
+                // 新增一個 Set 來記錄「已經算過分數的題目名稱」
+                const calculatedQuestions = new Set(); 
 
+                if(rd.comment) commIn.value = rd.comment;
+
+                // 🛑 替換這整個 forEach 區塊
                 view.querySelectorAll('.worksheet-input').forEach(inp => {
                     const n = inp.name; if(!n) return;
+                    
                     if(ans[n] !== undefined) {
                         if(inp.type === 'radio' || inp.type === 'checkbox') { if(inp.value === ans[n]) inp.checked = true; }
                         else inp.value = ans[n];
@@ -843,19 +861,32 @@
                     inp.disabled = true;
 
                     if (mode === 'edit') {
-                        // 🟢 [Auto-Grading Logic]
                         let isCor = null, isInc = null, fb = '';
+                        let points = 0; 
+
+                        if (wd.answer_key && wd.answer_key[n]) {
+                            const key = wd.answer_key[n];
+                            points = parseInt(key.points) || 0; 
+                            if(key.note) fb = key.note;
+                            
+                            const stdAns = ans[n];
+                            if (key.answer !== null && key.answer !== undefined && stdAns !== undefined) {
+                                if (String(stdAns).trim() === String(key.answer).trim()) {
+                                    isCor = true;
+                                    if (!calculatedQuestions.has(n)) {
+                                        currentAutoScore += points;
+                                        calculatedQuestions.add(n);
+                                    }
+                                } else {
+                                    isInc = true;
+                                }
+                            }
+                        }
+
                         if (details[n]) {
                             isCor = details[n].is_correct === true;
                             isInc = details[n].is_correct === false;
-                            fb = details[n].feedback || '';
-                        } else if (wd.answer_key && wd.answer_key[n]) {
-                            const key = wd.answer_key[n];
-                            const stdAns = ans[n];
-                            if(key.note) fb = key.note;
-                            if (key.answer !== null && key.answer !== undefined && stdAns !== undefined) {
-                                if (String(stdAns).trim() === String(key.answer).trim()) isCor = true; else isInc = true;
-                            }
+                            fb = details[n].feedback || fb;
                         }
 
                         if (inp.type === 'radio') {
@@ -867,7 +898,30 @@
                         panel.className = `grading-panel ${isCor?'correct':(isInc?'incorrect':'')}`;
                         if (inp.type === 'radio') panel.style.marginTop = "15px";
 
-                        panel.innerHTML = `<div class="flex items-center justify-between mb-2"><div class="flex gap-2"><label class="grading-radio-label"><input type="radio" name="gs_${n}" value="c" ${isCor?'checked':''} onchange="updPanel(this)"><span class="ml-1 btn-text-correct">⭕ 正確</span></label><label class="grading-radio-label"><input type="radio" name="gs_${n}" value="i" ${isInc?'checked':''} onchange="updPanel(this)"><span class="ml-1 btn-text-incorrect">❌ 錯誤</span></label></div><button class="text-xs text-gray-400" onclick="clsGrade('${n}', this)">清除</button></div><input type="text" class="grading-feedback-input w-full border border-gray-300 rounded p-1 text-sm outline-none" placeholder="個別評語..." value="${fb}" data-field="${n}">`;
+                        // 🔥 [新增] 紀錄目前的狀態 (c=正確, i=錯誤, ''=無)，供連動扣分使用
+                        const currentStatus = isCor ? 'c' : (isInc ? 'i' : '');
+                        panel.setAttribute('data-status', currentStatus);
+
+                        const pointsBadge = points > 0 ? `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded ml-2">配分: ${points}</span>` : '';
+
+                        // 🔥 [新增] 在 input 上加入 data-points，讓點擊事件知道這題幾分
+                        panel.innerHTML = `
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex gap-2 items-center">
+                                    <label class="grading-radio-label">
+                                        <input type="radio" name="gs_${n}" value="c" data-points="${points}" ${isCor?'checked':''} onchange="updPanel(this)">
+                                        <span class="ml-1 btn-text-correct">⭕ 正確</span>
+                                    </label>
+                                    <label class="grading-radio-label">
+                                        <input type="radio" name="gs_${n}" value="i" data-points="${points}" ${isInc?'checked':''} onchange="updPanel(this)">
+                                        <span class="ml-1 btn-text-incorrect">❌ 錯誤</span>
+                                    </label>
+                                    ${pointsBadge}
+                                </div>
+                                <button class="text-xs text-gray-400" onclick="clsGrade('${n}', this)">清除</button>
+                            </div>
+                            <input type="text" class="grading-feedback-input w-full border border-gray-300 rounded p-1 text-sm outline-none" placeholder="個別評語..." value="${fb}" data-field="${n}">
+                        `;
                         
                         if (inp.type === 'radio') {
                             panel.style.gridColumn = "1 / -1"; panel.style.width = "100%";
@@ -878,10 +932,77 @@
                         }
                     }
                 });
+                
+ 
+                if (mode === 'edit') {
+                    if (hasManualScore) {
+                        scoreIn.value = rd.score;
+                    } else {
+                        scoreIn.value = currentAutoScore;
+                    }
+                } else {
+                    scoreIn.value = rd.score !== undefined ? rd.score : '';
+                }
+
             } catch(e) { console.error(e); alert(e.message); modal.classList.add('hidden'); }
         };
-        window.updPanel = (r) => { const p = r.closest('.grading-panel'); p.classList.remove('correct', 'incorrect'); if(r.value==='c') p.classList.add('correct'); if(r.value==='i') p.classList.add('incorrect'); };
-        window.clsGrade = (n, btn) => { const p = btn.closest('.grading-panel'); p.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false); p.classList.remove('correct', 'incorrect'); };
+
+		// 🔥 [修改] 更新面板樣式 + 即時連動總分
+        window.updPanel = (r) => { 
+            const p = r.closest('.grading-panel'); 
+            const oldStatus = p.getAttribute('data-status') || ''; // 取得舊狀態
+            const newStatus = r.value; // 新狀態 (c 或 i)
+            const points = parseInt(r.getAttribute('data-points')) || 0; // 該題配分
+            
+            // 1. 更新樣式
+            p.classList.remove('correct', 'incorrect'); 
+            if(newStatus==='c') p.classList.add('correct'); 
+            if(newStatus==='i') p.classList.add('incorrect'); 
+            
+            // 2. 計算分數差異 (Delta Update)
+            // 只有當狀態改變涉及「正確」時才需要調整分數
+            if (oldStatus === newStatus) return; // 狀態沒變，不動作
+
+            const scoreInput = document.getElementById('grade-score');
+            let currentTotal = parseInt(scoreInput.value) || 0;
+
+            // 邏輯：
+            // 變成正確 (c) -> 加分
+            // 從正確 (c) 變成其他 -> 扣分
+            
+            if (newStatus === 'c' && oldStatus !== 'c') {
+                currentTotal += points;
+            } else if (oldStatus === 'c' && newStatus !== 'c') {
+                currentTotal -= points;
+            }
+
+            scoreInput.value = currentTotal;
+            p.setAttribute('data-status', newStatus); // 更新狀態紀錄
+        };
+		
+		// 🔥 [修改] 清除評分 + 若原本是正確需扣回分數
+        window.clsGrade = (n, btn) => { 
+            const p = btn.closest('.grading-panel'); 
+            const oldStatus = p.getAttribute('data-status') || '';
+            
+            // 1. 找出這題幾分 (從裡面的 radio 找)
+            const cRadio = p.querySelector('input[value="c"]');
+            const points = cRadio ? (parseInt(cRadio.getAttribute('data-points')) || 0) : 0;
+
+            // 2. 若原本是「正確」，清除時要扣分
+            if (oldStatus === 'c') {
+                const scoreInput = document.getElementById('grade-score');
+                let currentTotal = parseInt(scoreInput.value) || 0;
+                currentTotal -= points;
+                scoreInput.value = currentTotal;
+            }
+
+            // 3. 重置 UI 與狀態
+            p.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false); 
+            p.classList.remove('correct', 'incorrect'); 
+            p.setAttribute('data-status', ''); 
+        };
+		
         window.insertComment = (t) => { const el = document.getElementById('grade-comment'); el.value = el.value ? el.value+'，'+t : t; };
 
         const doGrade = async (status) => {
