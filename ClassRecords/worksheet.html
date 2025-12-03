@@ -364,7 +364,7 @@
             const submitBtn = document.getElementById('submit-btn');
 
             document.getElementById('modal-title').textContent = taskData.worksheet_title;
-            document.getElementById('modal-status').textContent = isReadOnly ? '唯讀模式' : '編輯模式';
+            document.getElementById('modal-status').textContent = isReadOnly ? '唯讀模式' : '作答模式';
 
             const wsDoc = await db.collection('worksheets').doc(taskData.worksheet_id).get();
             
@@ -488,4 +488,3 @@
     </script>
 </body>
 </html>
-
