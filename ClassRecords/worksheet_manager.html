@@ -54,6 +54,30 @@
         /* 學校選擇清單 */
         .school-select-item { cursor: pointer; transition: all 0.2s; }
         .school-select-item:hover { background-color: #eff6ff; border-color: #3b82f6; }
+		/* --- 在 <style> 標籤內最後面加入以下 CSS --- */
+
+		/* 新增：查看題目按鈕樣式 */
+		.view-btn {
+			display: inline-flex;
+			align-items: center;
+			background-color: #eff6ff; /* blue-50 */
+			color: #1d4ed8; /* blue-700 */
+			border: 1px solid #bfdbfe; /* blue-200 */
+			padding: 2px 8px;
+			border-radius: 4px;
+			font-size: 0.75rem; /* text-xs */
+			cursor: pointer;
+			margin-left: 8px;
+			transition: all 0.2s;
+			font-weight: bold;
+			line-height: 1.5;
+		}
+		.view-btn:hover {
+			background-color: #2563eb; /* blue-600 */
+			color: white;
+			border-color: #2563eb;
+			z-index: 10; /* 確保浮在上方 */
+		}
     </style>
 </head>
 <body class="bg-gray-100">
@@ -201,7 +225,7 @@
 
     </div>
 
-    <div id="view-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50">
+	<div id="view-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-[60]">
         <div class="bg-white rounded-lg shadow-xl w-11/12 md:w-1/2 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b">
                 <h3 id="view-modal-title" class="text-xl font-bold">預覽</h3>
@@ -343,18 +367,22 @@
                         </div>
                     </div>
 
-                    <div id="analysis-chart-view" class="hidden flex flex-col h-full absolute inset-0 bg-white p-5 z-20">
-                        <div class="flex items-center justify-between mb-4 border-b pb-2">
-                            <button onclick="toggleAnalysisView('table')" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded flex items-center gap-1 transition">
-                                ⬅️ 返回列表
-                            </button>
-                            <h4 id="chart-question-title" class="text-md font-bold text-purple-800 truncate max-w-lg">題目標題</h4>
-                        </div>
-                        <div class="flex-grow flex items-center justify-center bg-gray-50 rounded border border-gray-100 p-4">
-                            <canvas id="analysis-chart"></canvas>
-                        </div>
-                    </div>
-
+					<div id="analysis-chart-view" class="hidden flex flex-col h-full absolute inset-0 bg-white p-5 z-20">
+						<div class="flex items-center justify-between mb-4 border-b pb-2">
+							<div class="flex items-center gap-2">
+								<button onclick="toggleAnalysisView('table')" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded flex items-center gap-1 transition">
+									⬅️ 返回列表
+								</button>
+								<button id="analysis-view-question-btn" class="text-sm bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded flex items-center gap-1 transition font-bold">
+									👁️ 查看題目內容
+								</button>
+							</div>
+							<h4 id="chart-question-title" class="text-md font-bold text-purple-800 truncate max-w-lg">題目標題</h4>
+						</div>
+						<div class="flex-grow flex items-center justify-center bg-gray-50 rounded border border-gray-100 p-4 cursor-pointer" title="點擊查看題目內容">
+							<canvas id="analysis-chart"></canvas>
+						</div>
+					</div>
                 </div>
             </div>
         </div>
@@ -393,7 +421,7 @@
     </div>
 
     <script>
-		// 輔助函式：強制執行腳本並重新渲染數學公式
+		// 修改後：回傳 Promise 以便等待 MathJax 渲染完成
 		function executeEmbeddedScripts(container) {
 			const scripts = container.querySelectorAll('script');
 			scripts.forEach(oldScript => {
@@ -402,10 +430,14 @@
 				newScript.appendChild(document.createTextNode(oldScript.innerHTML));
 				oldScript.parentNode.replaceChild(newScript, oldScript);
 			});
-			if (window.MathJax) {
-				MathJax.typesetPromise([container]).catch((err) => console.log('MathJax error:', err));
+			
+			// 如果有 MathJax，回傳渲染的 Promise；否則回傳立即完成的 Promise
+			if (window.MathJax && window.MathJax.typesetPromise) {
+				return MathJax.typesetPromise([container]).catch((err) => console.log('MathJax error:', err));
 			}
+			return Promise.resolve();
 		}
+
 		// 輔助：蒐集目前批改面板的資料
 		function collectCurrentGradingData() {
 			const s = document.getElementById('grade-score').value;
@@ -462,7 +494,8 @@
         
         // 用於圖表的實例 (避免重複建立)
         let analysisChartInstance = null;
-
+		let currentAnalysisHtmlContent = ''; // 🔥 用來暫存學習單 HTML
+		
         const CACHE_PREFIX = 'ws_sys_cache_';
 
         // 2. Auth Logic
@@ -1266,18 +1299,22 @@
             }
         };
 
-        // 🔥 [修改] 答題分析邏輯：生成右側統計表格 + Top 5
+		// 🔥 [修改] 答題分析邏輯：生成右側統計表格 + Top 5
         async function openAnalysisModal(assignmentIdOrArray, worksheetId, title) {
             const modal = document.getElementById('analysis-modal');
-			const mainTitleEl = document.getElementById('analysis-main-title'); // 抓取主標題
+            const mainTitleEl = document.getElementById('analysis-main-title'); // 抓取主標題
             const leaderboardEl = document.getElementById('analysis-leaderboard');
             const tableBody = document.getElementById('analysis-table-body');
+            
+            // ❌ 錯誤：這裡還沒有 wsDoc，請刪除這兩行
+            // const wsData = wsDoc.data();
+            // currentAnalysisHtmlContent = wsData.html_content; 
             
             // 重置狀態
             if (analysisChartInstance) { analysisChartInstance.destroy(); analysisChartInstance = null; }
             toggleAnalysisView('table'); // 預設顯示表格
-			
-			if (Array.isArray(assignmentIdOrArray)) {
+            
+            if (Array.isArray(assignmentIdOrArray)) {
                 mainTitleEl.textContent = '📊 全體答題分析';
             } else {
                 mainTitleEl.textContent = '📊 班級答題分析';
@@ -1292,7 +1329,6 @@
                 // 1. 下載資料 (支援單一 ID 或 ID 陣列)
                 let resPromise;
                 
-                // 🔥 修正點：這裡參數名稱已統一為 assignmentIdOrArray
                 if (Array.isArray(assignmentIdOrArray)) {
                     // 如果是陣列 (整體分析)，使用 'in' 查詢 (分批處理)
                     const chunks = [];
@@ -1319,13 +1355,19 @@
                     resPromise = db.collection('responses').where('assignment_id', '==', assignmentIdOrArray).get();
                 }
 
+                // 這裡才開始抓取 wsDoc 資料
                 const [wsDoc, resSnap] = await Promise.all([
                     db.collection('worksheets').doc(worksheetId).get(),
                     resPromise
                 ]);
 
                 if (!wsDoc.exists) throw new Error('找不到學習單');
+                
                 const wsData = wsDoc.data();
+                
+                // ✅ 修正：確定取得資料後，再存入全域變數
+                currentAnalysisHtmlContent = wsData.html_content; 
+
                 const answerKey = wsData.answer_key || {}; 
                 const totalStudents = resSnap.size;
 
@@ -1406,7 +1448,7 @@
                     return a.key.localeCompare(b.key, undefined, { numeric: true, sensitivity: 'base' });
                 });
 
-                // 5. 產生 Top 5 排行榜
+				// 5. 產生 Top 5 排行榜 (修改後)
                 const top5 = [...allQuestions]
                     .filter(q => q.total > 0 && q.stats.incorrect > 0)
                     .sort((a, b) => b.errorRate - a.errorRate)
@@ -1419,11 +1461,16 @@
                     top5.forEach((q, idx) => {
                         const barWidth = `${q.errorRate}%`;
                         const colorClass = idx === 0 ? 'bg-red-500' : (idx === 1 ? 'bg-orange-500' : 'bg-yellow-500');
+                        
+                        // 🔥 修改處：加入查看題目按鈕，並使用 event.stopPropagation() 防止觸發圖表切換
                         leaderboardEl.innerHTML += `
-                            <div class="mb-3 cursor-pointer hover:bg-gray-50 p-1 rounded transition" onclick="showChartFromLeaderboard('${q.key}')">
-                                <div class="flex justify-between text-sm mb-1">
-                                    <span class="font-bold text-gray-800 truncate w-3/4">${idx+1}. ${q.fullLabel}</span>
-                                    <span class="text-red-600 font-bold">${Math.round(q.errorRate)}%</span>
+                            <div class="mb-3 cursor-pointer hover:bg-gray-50 p-2 rounded transition border border-transparent hover:border-gray-200" onclick="showChartFromLeaderboard('${q.key}')">
+                                <div class="flex justify-between items-center text-sm mb-2">
+                                    <div class="flex items-center flex-grow overflow-hidden mr-2">
+                                        <span class="font-bold text-gray-800 truncate mr-1" style="max-width: 70%;" title="${q.fullLabel}">${idx+1}. ${q.fullLabel}</span>
+                                        <button onclick="event.stopPropagation(); showQuestionContext('${q.key}')" class="view-btn flex-shrink-0">👁️ 查看題目</button>
+                                    </div>
+                                    <span class="text-red-600 font-bold flex-shrink-0">${Math.round(q.errorRate)}%</span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-2.5">
                                     <div class="${colorClass} h-2.5 rounded-full" style="width: ${barWidth}"></div>
@@ -1431,8 +1478,9 @@
                             </div>`;
                     });
                 }
-
+				
                 // 6. 產生右側統計表格
+				// 6. 產生右側統計表格 (修改後)
                 tableBody.innerHTML = '';
                 let lastUnit = null;
 
@@ -1446,7 +1494,9 @@
                     }
 
                     const tr = document.createElement('tr');
-                    tr.className = "hover:bg-purple-50 cursor-pointer transition border-b border-gray-100 last:border-0";
+                    tr.className = "hover:bg-purple-50 cursor-pointer transition border-b border-gray-100 last:border-0 group"; // 加了 group class
+                    
+                    // 點擊整列顯示圖表
                     tr.onclick = () => {
                         document.getElementById('chart-question-title').textContent = q.fullLabel;
                         renderChart(q);
@@ -1455,8 +1505,14 @@
 
                     const rateColor = q.errorRate > 50 ? 'text-red-600 font-bold' : (q.errorRate > 0 ? 'text-orange-500' : 'text-gray-400');
                     
+                    // 🔥 修改處：在第一個 td 加入按鈕
                     tr.innerHTML = `
-                        <td class="p-3 text-gray-700 font-medium">${q.rawLabel}</td>
+                        <td class="p-3 text-gray-700 font-medium relative">
+                            <div class="flex items-center justify-between">
+                                <span class="truncate pr-2">${q.rawLabel}</span>
+                                <button onclick="event.stopPropagation(); showQuestionContext('${q.key}')" class="view-btn opacity-0 group-hover:opacity-100 transition-opacity">👁️ 查看題目</button>
+                            </div>
+                        </td>
                         <td class="p-3 text-center text-gray-500">${q.total}</td>
                         <td class="p-3 text-center text-green-600 bg-green-50/50">${q.stats.correct}</td>
                         <td class="p-3 text-center text-red-600 bg-red-50/50">${q.stats.incorrect}</td>
@@ -1479,46 +1535,179 @@
                 leaderboardEl.innerHTML = `<p class="text-red-500">分析失敗: ${e.message}</p>`;
             }
         }
- 
-        function renderChart(qData) {
-            const ctx = document.getElementById('analysis-chart').getContext('2d');
-            
-            // 銷毀舊圖表
-            if (analysisChartInstance) analysisChartInstance.destroy();
+		
+		function renderChart(qData) {
+			const ctx = document.getElementById('analysis-chart').getContext('2d');
+			if (analysisChartInstance) analysisChartInstance.destroy();
 
-            const labels = Object.keys(qData.stats.options);
-            const data = Object.values(qData.stats.options);
-            
-            // 顏色生成
-            const bgColors = labels.map(() => 'rgba(54, 162, 235, 0.6)');
-            const borderColors = labels.map(() => 'rgba(54, 162, 235, 1)');
+			// 按鈕事件綁定
+			const viewBtn = document.getElementById('analysis-view-question-btn');
+			if (viewBtn) {
+				viewBtn.onclick = null;
+				viewBtn.onclick = function() {
+					showQuestionContext(qData.key);
+				};
+			}
 
-            analysisChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '選擇人數',
-                        data: data,
-                        backgroundColor: bgColors,
-                        borderColor: borderColors,
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        title: { display: true, text: `作答分佈：${qData.label}` }
-                    }
-                }
-            });
-        }
+			const labels = Object.keys(qData.stats.options);
+			const data = Object.values(qData.stats.options);
+			const totalCount = data.reduce((a, b) => a + b, 0);
 
+			const bgColors = labels.map(() => 'rgba(54, 162, 235, 0.6)');
+			const borderColors = labels.map(() => 'rgba(54, 162, 235, 1)');
+
+			// -----------------------------------------------------------
+			// 插件 1：頂端雙色文字 (維持不變)
+			// -----------------------------------------------------------
+			const topLabelPlugin = {
+				id: 'topLabels',
+				afterDatasetsDraw(chart, args, pluginOptions) {
+					const { ctx } = chart;
+					chart.data.datasets.forEach((dataset, i) => {
+						const meta = chart.getDatasetMeta(i);
+						meta.data.forEach((bar, index) => {
+							const value = dataset.data[index];
+							if (value > 0) {
+								let percentage = totalCount > 0 ? Math.round((value / totalCount) * 100) : 0;
+								const countText = `${value}`;
+								const pctText = ` (${percentage}%)`;
+								
+								// 字體設定
+								const countFont = 'bold 16px "Microsoft JhengHei", sans-serif'; 
+								const pctFont = 'normal 12px "Microsoft JhengHei", sans-serif';  
+								
+								// 計算位置
+								ctx.font = countFont;
+								const countWidth = ctx.measureText(countText).width;
+								ctx.font = pctFont;
+								const pctWidth = ctx.measureText(pctText).width;
+								const totalWidth = countWidth + pctWidth;
+								const startX = bar.x - (totalWidth / 2);
+								const yPos = bar.y - 8; 
+
+								// 繪製人數 (深藍)
+								ctx.font = countFont;
+								ctx.fillStyle = '#1e40af'; 
+								ctx.textAlign = 'left';
+								ctx.textBaseline = 'bottom';
+								ctx.fillText(countText, startX, yPos);
+
+								// 繪製百分比 (灰)
+								ctx.font = pctFont;
+								ctx.fillStyle = '#6b7280';
+								ctx.fillText(pctText, startX + countWidth, yPos);
+							}
+						});
+					});
+				}
+			};
+
+			// -----------------------------------------------------------
+			// 🔥 插件 2 (修正版)：經典垂直引導線 (Classic Vertical Tick)
+			// -----------------------------------------------------------
+			const bottomTickPlugin = {
+				id: 'bottomTickConnector',
+				afterDraw(chart) {
+					const { ctx, scales: { x } } = chart;
+					const yTop = x.top; // X軸線的 Y 座標
+
+					ctx.save();
+					ctx.beginPath();
+					ctx.lineWidth = 1; 
+					ctx.strokeStyle = '#9ca3af'; // 淺灰色 (Gray-400)
+
+					x.ticks.forEach((tick, index) => {
+						const xPos = x.getPixelForTick(index);
+						
+						// 畫一條簡單的垂直線向下延伸 6px
+						// 這樣無論文字怎麼轉，這條中垂線都是最穩定的視覺引導
+						ctx.moveTo(xPos, yTop);
+						ctx.lineTo(xPos, yTop + 6); 
+					});
+					
+					ctx.stroke();
+					ctx.restore();
+				}
+			};
+
+			analysisChartInstance = new Chart(ctx, {
+				type: 'bar',
+				data: {
+					labels: labels,
+					datasets: [{
+						label: '選擇人數',
+						data: data,
+						backgroundColor: bgColors,
+						borderColor: borderColors,
+						borderWidth: 1
+					}]
+				},
+				plugins: [topLabelPlugin, bottomTickPlugin],
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					onClick: (e) => {
+						showQuestionContext(qData.key);
+					},
+					layout: {
+						padding: { top: 10 } 
+					},
+					scales: {
+						y: { 
+							beginAtZero: true, 
+							grace: '15%', // 讓柱子不會頂天
+							ticks: { 
+								stepSize: 1,
+								color: '#000000',
+								font: { weight: 'normal' }
+							},
+							title: {
+								display: true,
+								text: '人數',
+								align: 'end',
+								color: '#374151',
+								font: { weight: 'bold', size: 13 },
+								padding: { bottom: 5 }
+							}
+						},
+						x: {
+							ticks: {
+								color: '#000000',
+								font: { weight: 'normal', size: 11 },
+								// 🔥 關鍵修正：Padding 設為 8
+								// 剛好比我們的線 (6px) 多一點點，創造出 2px 的呼吸空間
+								// 讓文字看起來是「掛」在線下，而不是「飄」在空中
+								padding: 4 
+							},
+							grid: {
+								drawOnChartArea: true, 
+								drawTicks: false // 隱藏預設刻度
+							}
+						}
+					},
+					plugins: {
+						legend: { display: false },
+						title: { 
+							display: true, 
+							text: `作答分佈：${qData.fullLabel || qData.rawLabel}`, 
+							color: '#6b21a8',
+							font: { size: 16, weight: 'bold' },
+							padding: { bottom: 10 } 
+						},
+						tooltip: {
+							callbacks: {
+								label: function(context) {
+									const val = context.parsed.y;
+									const pct = totalCount > 0 ? Math.round((val / totalCount) * 100) : 0;
+									return ` ${val} 人 (${pct}%)`;
+								}
+							}
+						}
+					}
+				}
+			});
+		}
+		
 		window.openGradingModal = async (rid, wid, sname, mode = 'edit') => {
 			currentGradingResponseId = rid; 
 			currentGradingWorksheetId = wid;
@@ -1878,6 +2067,133 @@
 			document.getElementById('grading-exit-modal').classList.add('hidden');
 			document.getElementById('grading-modal').classList.add('hidden');
 		};
+
+		window.showQuestionContext = (key) => {
+			console.log("嘗試跳轉題目:", key);
+
+			// 1. 檢查是否有 HTML 內容
+			if (!currentAnalysisHtmlContent) {
+				alert("⚠️ 系統錯誤：無法讀取題目內容 (HTML 未載入)");
+				return;
+			}
+
+			// 2. 載入內容到檢視視窗
+			const contentDiv = document.getElementById('view-modal-content');
+			contentDiv.innerHTML = currentAnalysisHtmlContent;
+			document.getElementById('view-modal-title').textContent = '題目內容檢視';
+
+			// 3. 顯示視窗
+			const modal = document.getElementById('view-modal');
+			modal.classList.remove('hidden');
+
+			// 4. 執行腳本並重新渲染 MathJax
+			executeEmbeddedScripts(contentDiv).then(() => {
+				// 延遲 300ms 確保渲染完成
+				setTimeout(async () => {
+					// 尋找目標元素
+					let targetInput = contentDiv.querySelector(`[name="${CSS.escape(key)}"]`);
+					if (!targetInput) {
+						targetInput = contentDiv.querySelector(`[name="${key}"]`);
+					}
+
+					if (targetInput) {
+						// 🔥🔥🔥【新增修正邏輯開始】：處理 Tab 切換問題 🔥🔥🔥
+						// 如果 offsetParent 為 null，代表元素被隱藏 (在其他 Tab 內)
+						if (targetInput.offsetParent === null) {
+							console.log("目標題目被隱藏 (位於其他 Tab)，正在尋找並切換...");
+							
+							let curr = targetInput.parentElement;
+							let foundTab = false;
+
+							// 向上遍歷 DOM，尋找被隱藏的父容器 (即 Tab 內容區塊)
+							while (curr && curr !== contentDiv) {
+								const style = window.getComputedStyle(curr);
+								if (style.display === 'none' || curr.classList.contains('hidden')) {
+									
+									// 策略 A: 嘗試尋找控制此區塊的按鈕 (依據 ID)
+									if (curr.id) {
+										// 常見的 Tab 寫法：按鈕上有 href="#id", data-target="#id", 或 onclick="...id..."
+										const tabTrigger = contentDiv.querySelector(`a[href="#${curr.id}"], button[data-target="#${curr.id}"], label[for="${curr.id}"], [onclick*="${curr.id}"]`);
+										
+										if (tabTrigger) {
+											console.log("觸發 Tab 切換按鈕:", tabTrigger);
+											tabTrigger.click(); // 模擬點擊
+											foundTab = true;
+											// 等待一下讓 UI 反應
+											await new Promise(r => setTimeout(r, 100));
+											break;
+										}
+									}
+
+									// 策略 B: 如果找不到按鈕，直接暴力顯示該區塊
+									if (!foundTab) {
+										console.log("找不到 Tab 按鈕，強制顯示區塊:", curr);
+										curr.classList.remove('hidden');
+										curr.style.display = 'block';
+										// 如果是純 CSS Tab (radio button)，可能需要更複雜的處理，但通常強制 block 已足夠計算高度
+										foundTab = true;
+									}
+								}
+								curr = curr.parentElement;
+							}
+						}
+						// 🔥🔥🔥【新增修正邏輯結束】🔥🔥🔥
+
+						console.log("元素已顯示，開始計算捲動位置");
+
+						// --- 核心捲動邏輯 (維持原樣) ---
+						const scrollContainer = contentDiv.parentElement;
+						const elementRect = targetInput.getBoundingClientRect();
+						const containerRect = scrollContainer.getBoundingClientRect();
+
+						// 重新計算 (因為切換 Tab 後位置可能變了)
+						if (elementRect.height > 0) {
+							const offsetTop = elementRect.top - containerRect.top + scrollContainer.scrollTop;
+							const centerPosition = offsetTop - (scrollContainer.clientHeight / 2) + (elementRect.height / 2);
+
+							scrollContainer.scrollTo({
+								top: centerPosition,
+								behavior: 'smooth'
+							});
+
+							// 高亮特效
+							let highlightTarget = targetInput;
+							if ((targetInput.type === 'radio' || targetInput.type === 'checkbox') && targetInput.parentElement) {
+								highlightTarget = targetInput.parentElement;
+							}
+
+							const originalShadow = highlightTarget.style.boxShadow;
+							const originalTransition = highlightTarget.style.transition;
+							const originalBg = highlightTarget.style.backgroundColor;
+
+							highlightTarget.style.transition = "all 0.5s ease";
+							highlightTarget.style.boxShadow = "0 0 0 6px rgba(251, 191, 36, 0.8)";
+							highlightTarget.style.backgroundColor = "rgba(254, 243, 199, 0.5)";
+
+							setTimeout(() => {
+								highlightTarget.style.boxShadow = originalShadow || "";
+								highlightTarget.style.backgroundColor = originalBg || "";
+								highlightTarget.style.transition = originalTransition || "";
+							}, 2000);
+						} else {
+							 console.warn("元素高度仍為 0，切換 Tab 失敗或樣式特殊。");
+						}
+
+					} else {
+						// 模糊搜尋備案
+						const fuzzyInput = contentDiv.querySelector(`[name*="${key}"]`);
+						if (fuzzyInput) {
+							// 如果模糊搜尋找到的也是隱藏的，這裡通常還是會失敗，
+							// 但因為邏輯較複雜，這裡僅做基本捲動
+							fuzzyInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+						} else {
+							alert(`找不到題目 (name="${key}")，請確認 HTML 結構。`);
+						}
+					}
+				}, 300);
+			});
+		};
+
     </script>
 	<div id="grading-exit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-[60]">
     <div class="bg-white rounded-lg shadow-xl w-96 p-6">
