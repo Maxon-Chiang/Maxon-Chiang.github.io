@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學習單系統</title>
+    <title>學生作業系統</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-	<script>
-	  window.MathJax = {
-		tex: {
-		  inlineMath: [['$', '$'], ['\\(', '\\)']]
-		}
-	  };
-	</script>
-	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']]
+        }
+      };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
@@ -52,6 +52,7 @@
             cursor: pointer;
         }
         
+        /* 批改面板樣式 */
         .grading-panel {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
@@ -109,7 +110,7 @@
             </div>
 
             <div class="space-y-4">
-                <h2 class="text-xl font-bold text-gray-700">✅ 已完成 </h2>
+                <h2 class="text-xl font-bold text-gray-700">✅ 已繳交 / 成績</h2>
                 <div id="history-list" class="space-y-3 opacity-80">
                     <p class="text-gray-400 text-center py-8">尚無紀錄</p>
                 </div>
@@ -123,9 +124,11 @@
             <div class="sticky top-0 z-20 bg-white border-b px-6 py-4 flex justify-between items-center shadow-sm">
                 <div>
                     <h3 id="modal-title" class="text-xl font-bold text-gray-800">作業標題</h3>
-                    <span id="modal-status" class="text-xs font-bold px-2 py-0.5 rounded bg-gray-200 text-gray-600">狀態</span>
+                    <div id="modal-status-container" class="flex gap-2 mt-1">
+                        <span id="modal-status" class="text-xs font-bold px-2 py-0.5 rounded bg-gray-200 text-gray-600">狀態</span>
+                    </div>
                 </div>
-                <button onclick="closeModal()" class="text-gray-500 hover:text-gray-800 transition p-2 rounded-full hover:bg-gray-100">
+                <button onclick="saveLocalAndClose()" class="text-gray-500 hover:text-gray-800 transition p-2 rounded-full hover:bg-gray-100" title="暫時離開 (自動存入本機)">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
             </div>
@@ -138,28 +141,40 @@
                 </div>
 
                 <form id="worksheet-form" class="worksheet-content space-y-6" onsubmit="return false;">
-                    </form>
+                </form>
             </div>
 
-            <div class="p-6 border-t bg-gray-50 flex justify-between items-center sticky bottom-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-                <span class="text-sm text-gray-500">系統自動暫存</span>
-                <div class="flex gap-4">
-                    <button onclick="closeModal()" class="px-6 py-2.5 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition border border-gray-300 bg-white">
-                        暫時離開
+            <div class="p-6 border-t bg-gray-50 sticky bottom-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                <div id="action-buttons" class="flex flex-col md:flex-row justify-between items-center gap-4">
+                    
+                    <div class="flex gap-3 w-full md:w-auto">
+                        <button id="btn-leave-temp" class="flex-1 md:flex-none px-4 py-2 text-gray-600 font-bold hover:bg-gray-200 rounded-lg transition border border-gray-300 bg-white text-sm flex items-center justify-center gap-1">
+                            🚪 暫時離開 <span class="text-xs font-normal text-gray-500">(存本機)</span>
+                        </button>
+                        <button id="btn-save-cloud" class="flex-1 md:flex-none px-4 py-2 text-orange-700 font-bold hover:bg-orange-100 rounded-lg transition border border-orange-300 bg-white text-sm flex items-center justify-center gap-1">
+                            ☁️ 暫存雲端 <span class="text-xs font-normal text-orange-500">(可跨裝置)</span>
+                        </button>
+                    </div>
+
+                    <button id="btn-submit" class="w-full md:w-auto px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md transform hover:-translate-y-0.5 transition flex items-center justify-center gap-2">
+                        <span>✅ 完成繳交</span>
                     </button>
-                    <button id="submit-btn" class="px-8 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md transform hover:-translate-y-0.5 transition flex items-center gap-2">
-                        <span>提交作業</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                    </button>
+                </div>
+                
+                <div id="readonly-buttons" class="hidden text-right">
+                    <button onclick="closeModal()" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white font-bold rounded">關閉視窗</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-		// 🛠️ [修改] 輔助函式：強制執行 innerHTML 中的腳本並渲染數學公式
+        // -----------------------------------------------------------
+        // 1. 初始化與設定
+        // -----------------------------------------------------------
+        
+		// 輔助函式：強制執行 script 並渲染 MathJax
 		function executeEmbeddedScripts(container) {
-			// 1. 處理 Script (讓分頁與互動生效)
 			const scripts = container.querySelectorAll('script');
 			scripts.forEach(oldScript => {
 				const newScript = document.createElement('script');
@@ -167,10 +182,7 @@
 				newScript.appendChild(document.createTextNode(oldScript.innerHTML));
 				oldScript.parentNode.replaceChild(newScript, oldScript);
 			});
-
-			// 2. [新增] 處理數學公式 (讓 LaTeX 顯示正常)
 			if (window.MathJax) {
-				// 告訴 MathJax 這裡有新內容，請重新掃描並渲染
 				MathJax.typesetPromise([container]).catch((err) => console.log('MathJax error:', err));
 			}
 		}
@@ -197,6 +209,9 @@
         const appView = document.getElementById('app-view');
         const loginMsg = document.getElementById('login-msg');
 
+        // -----------------------------------------------------------
+        // 2. 身分驗證 (Login/Auth)
+        // -----------------------------------------------------------
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 loginMsg.textContent = '正在確認學生身分...';
@@ -207,6 +222,7 @@
 
                     if (userDoc.exists) {
                         studentProfile = userDoc.data();
+                        // 補齊學校名稱 (如果有的話)
                         if (!studentProfile.schoolName && studentProfile.schoolId) {
                             try {
                                 const sDoc = await db.collection('schools').doc(studentProfile.schoolId).get();
@@ -214,6 +230,7 @@
                             } catch(e) {}
                         }
                     } else {
+                        // 首次登入：嘗試從 students 集合尋找 Email
                         const snapshot = await db.collectionGroup('students')
                                                  .where('email', '==', user.email)
                                                  .get();
@@ -227,9 +244,7 @@
                             
                             try {
                                 const schoolSnap = await schoolRef.get();
-                                if(schoolSnap.exists && schoolSnap.data().name) {
-                                    schoolName = schoolSnap.data().name;
-                                }
+                                if(schoolSnap.exists && schoolSnap.data().name) schoolName = schoolSnap.data().name;
                             } catch(e) {}
 
                             const newProfile = {
@@ -246,13 +261,11 @@
                             await db.collection('users').doc(user.uid).set(newProfile);
                             studentProfile = newProfile;
                         } else {
-                            throw new Error(`在所有學校名冊中找不到 Email：${user.email}。請聯繫老師將您加入名單。`);
+                            throw new Error(`找不到您的學生資料 (Email: ${user.email})。請聯繫老師確認。`);
                         }
                     }
 
-                    if (studentProfile.role !== 'student') {
-                        throw new Error('此帳號為教師身分，無法登入學生端。');
-                    }
+                    if (studentProfile.role !== 'student') throw new Error('此帳號為教師身分，無法登入學生端。');
 
                     renderDashboard();
                     loginView.classList.add('hidden');
@@ -261,15 +274,7 @@
                 } catch (e) {
                     console.error("登入流程錯誤:", e);
                     let errorHtml = `<div class="text-red-600 font-bold mb-3">⛔ ${e.message}</div>`;
-                    if(e.code === 'failed-precondition') {
-                        errorHtml += '<div class="text-xs text-gray-500 mb-3">(系統提示: 請管理員至 Firebase Console 建立 students 的 email 索引)</div>';
-                    }
-                    errorHtml += `
-                        <button onclick="firebase.auth().signOut().then(() => window.location.reload())" 
-                                class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg shadow transition flex items-center justify-center gap-2 w-full">
-                            🔄 強制登出 / 切換帳號
-                        </button>
-                    `;
+                    errorHtml += `<button onclick="firebase.auth().signOut().then(() => window.location.reload())" class="bg-red-500 text-white font-bold py-2 px-6 rounded">🔄 重新登入</button>`;
                     loginMsg.innerHTML = errorHtml;
                 }
             } else {
@@ -280,15 +285,21 @@
 
         document.getElementById('login-btn').addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
-            provider.setCustomParameters({
-                prompt: 'select_account'
-            });
+            provider.setCustomParameters({ prompt: 'select_account' });
             auth.signInWithPopup(provider);
         });
         
         document.getElementById('logout-btn').addEventListener('click', () => {
             auth.signOut().then(() => window.location.reload());
         });
+
+        // -----------------------------------------------------------
+        // 3. 儀表板 (Dashboard)
+        // -----------------------------------------------------------
+        // 取得本機暫存的 Key
+        function getLocalDraftKey(uid, assignmentId) {
+            return `ws_draft_${uid}_${assignmentId}`;
+        }
 
         async function renderDashboard() {
             const schoolDisplay = studentProfile.schoolName || studentProfile.schoolId;
@@ -298,12 +309,14 @@
             const todoList = document.getElementById('todo-list');
             const historyList = document.getElementById('history-list');
             
+            // 抓取班級任務
             const assignsSnap = await db.collection('assignments')
                                         .where('target_class', '==', studentProfile.classId)
                                         .where('school_id', '==', studentProfile.schoolId)
                                         .orderBy('created_at', 'desc')
                                         .get();
 
+            // 抓取學生已繳交/暫存紀錄
             const responsesSnap = await db.collection('responses')
                                          .where('student_uid', '==', currentUser.uid)
                                          .get();
@@ -325,6 +338,10 @@
                 const taskId = doc.id;
                 const userResponse = responseMap[taskId];
                 
+                // 檢查本地暫存
+                const localKey = getLocalDraftKey(currentUser.uid, taskId);
+                const hasLocalDraft = localStorage.getItem(localKey) !== null;
+
                 let status = 'new'; 
                 if (userResponse) status = userResponse.status;
 
@@ -332,6 +349,7 @@
                 card.className = "bg-white p-4 rounded-lg shadow border-l-4 transition hover:shadow-md cursor-pointer flex justify-between items-center";
                 const dateStr = task.created_at ? new Date(task.created_at.seconds * 1000).toLocaleDateString() : '';
 
+                // 已繳交或已批改 -> 歷史區
                 if (status === 'submitted' || status === 'graded') {
                     card.classList.add('border-green-500');
                     let scoreHtml = status === 'graded' 
@@ -339,37 +357,68 @@
                         : `<span class="text-gray-500 text-sm">已繳交</span>`;
                     
                     card.innerHTML = `<div><h4 class="font-bold text-gray-800">${task.worksheet_title}</h4><p class="text-xs text-gray-400">${dateStr}</p></div><div>${scoreHtml}</div>`;
-                    card.onclick = () => openWorksheet(taskId, task, userResponse, true); 
+                    card.onclick = () => openWorksheet(taskId, task, userResponse, true); // true = 唯讀
                     historyList.appendChild(card);
-                } else {
+                } 
+                // 未繳交 / 訂正 / 草稿 -> 待辦區
+                else {
                     todoCount++;
-                    let statusLabel = status === 'needs_correction' 
-                        ? `<span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded font-bold">需訂正</span>` 
-                        : `<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold">新作業</span>`;
+                    let statusLabel = '';
+                    let borderColor = 'border-blue-500';
+
+                    // 優先權顯示：本機暫存 > 雲端草稿 > 訂正 > 新作業
+                    if (hasLocalDraft) {
+                        statusLabel = `<span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded font-bold">💾 本機暫存</span>`;
+                        borderColor = 'border-gray-400';
+                    } else if (status === 'draft') {
+                        statusLabel = `<span class="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded font-bold">☁️ 雲端暫存</span>`;
+                        borderColor = 'border-orange-400';
+                    } else if (status === 'needs_correction') {
+                        statusLabel = `<span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded font-bold">⚠️ 需訂正</span>`;
+                        borderColor = 'border-yellow-400';
+                    } else {
+                        statusLabel = `<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold">🆕 新作業</span>`;
+                    }
                     
-                    card.classList.add(status === 'needs_correction' ? 'border-yellow-400' : 'border-blue-500');
-                    card.innerHTML = `<div><h4 class="font-bold text-gray-800 text-lg">${task.worksheet_title}</h4><div class="flex items-center gap-2 mt-1">${statusLabel}<span class="text-xs text-gray-400">截止: ${task.deadline || '無'}</span></div></div><button class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm shadow hover:bg-blue-700">前往作答</button>`;
-                    card.onclick = () => openWorksheet(taskId, task, userResponse, false);
+                    card.classList.remove('border-blue-500'); // 移除預設
+                    card.classList.add(borderColor);
+
+                    card.innerHTML = `
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-lg">${task.worksheet_title}</h4>
+                            <div class="flex items-center gap-2 mt-1">
+                                ${statusLabel}
+                                <span class="text-xs text-gray-400">截止: ${task.deadline || '無'}</span>
+                            </div>
+                        </div>
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm shadow hover:bg-blue-700">前往作答</button>
+                    `;
+                    card.onclick = () => openWorksheet(taskId, task, userResponse, false); // false = 作答模式
                     todoList.appendChild(card);
                 }
             });
             document.getElementById('todo-count').textContent = todoCount;
         }
 
+        // -----------------------------------------------------------
+        // 4. 學習單邏輯 (開啟、填答、三按鈕功能)
+        // -----------------------------------------------------------
         async function openWorksheet(taskId, taskData, responseData, isReadOnly) {
             currentAssignmentId = taskId;
             const modal = document.getElementById('worksheet-modal');
             const form = document.getElementById('worksheet-form');
             const feedbackArea = document.getElementById('teacher-feedback-area');
-            const submitBtn = document.getElementById('submit-btn');
+            const actionBtns = document.getElementById('action-buttons');
+            const readOnlyBtns = document.getElementById('readonly-buttons');
+            const statusDiv = document.getElementById('modal-status');
+            const statusContainer = document.getElementById('modal-status-container');
 
             document.getElementById('modal-title').textContent = taskData.worksheet_title;
-            document.getElementById('modal-status').textContent = isReadOnly ? '唯讀模式' : '作答模式';
-
-            const wsDoc = await db.collection('worksheets').doc(taskData.worksheet_id).get();
             
+            // 下載學習單 HTML
+            const wsDoc = await db.collection('worksheets').doc(taskData.worksheet_id).get();
             if (!wsDoc.exists) {
-                alert('⚠️ 無法開啟：老師已刪除或撤回此份學習單。\n\n系統將自動從您的列表中移除此任務。');
+                alert('⚠️ 無法開啟：此學習單已被刪除。');
                 renderDashboard(); 
                 return;
             }
@@ -377,61 +426,23 @@
             form.innerHTML = wsDoc.data().html_content;
 			executeEmbeddedScripts(form);
 
+            // 狀態初始化
+            statusContainer.innerHTML = ''; 
+            
+            // --- 填入答案邏輯 ---
+            
+            // 1. 先填入雲端資料 (如果有的話：草稿、訂正退回、或已繳交)
             if (responseData && responseData.answers) {
-                const answers = responseData.answers;
-                const gradingDetails = responseData.grading_details || {};
+                fillAnswers(form, responseData.answers);
+                
+                // 顯示狀態標籤
+                if(responseData.status === 'draft') statusContainer.innerHTML += `<span class="text-xs font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700">☁️ 載入雲端暫存</span>`;
+                if(responseData.status === 'needs_correction') statusContainer.innerHTML += `<span class="text-xs font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">⚠️ 退回訂正</span>`;
 
-                form.querySelectorAll('.worksheet-input').forEach(input => {
-                    const name = input.name;
-                    if (answers[name] !== undefined) {
-                        if (input.type === 'radio' || input.type === 'checkbox') {
-                            if (input.value === answers[name]) input.checked = true;
-                        } else {
-                            input.value = answers[name];
-                        }
-                    }
-                    
-                    const det = gradingDetails[name];
-                    if (det && (det.is_correct !== undefined || det.feedback)) {
-                        
-                        if (input.type === 'radio') {
-                            const allRadios = form.querySelectorAll(`input[type="radio"][name="${name}"]`);
-                            const lastRadio = allRadios[allRadios.length - 1];
-                            if (input !== lastRadio) return; 
-                        }
+                // 處理批改回饋 (顯示紅圈圈/綠圈圈)
+                renderGradingFeedback(form, responseData.grading_details);
 
-                        const isCor = det.is_correct === true;
-                        const isInc = det.is_correct === false;
-                        const fb = det.feedback || '';
-
-                        const panel = document.createElement('div');
-                        panel.className = `grading-panel ${isCor?'correct':(isInc?'incorrect':'')}`;
-                        
-                        if (input.type === 'radio') {
-                            panel.style.gridColumn = "1 / -1";
-                            panel.style.width = "100%";
-                            panel.style.marginTop = "15px";
-                        }
-
-                        let statusIcon = '';
-                        if (isCor) statusIcon = '<span class="text-correct">⭕ 答對了</span>';
-                        else if (isInc) statusIcon = '<span class="text-incorrect">❌ 答錯了</span>';
-
-                        let feedbackHtml = fb ? `<div class="mt-2 text-sm text-gray-600 bg-white p-2 rounded border border-gray-200"><strong>👩‍🏫 老師：</strong>${fb}</div>` : '';
-
-                        panel.innerHTML = `<div class="grading-status-text text-lg">${statusIcon}</div>${feedbackHtml}`;
-
-                        if (input.type === 'radio') {
-                            const container = input.parentNode;
-                            if(container.nextSibling) container.parentNode.insertBefore(panel, container.nextSibling);
-                            else container.parentNode.appendChild(panel);
-                        } else {
-                            if(input.nextSibling) input.parentNode.insertBefore(panel, input.nextSibling);
-                            else input.parentNode.appendChild(panel);
-                        }
-                    }
-                });
-
+                // 顯示老師評語
                 if (responseData.comment) {
                     feedbackArea.classList.remove('hidden');
                     document.getElementById('feedback-text').textContent = responseData.comment;
@@ -440,33 +451,155 @@
                 }
             } else {
                 feedbackArea.classList.add('hidden');
+                statusContainer.innerHTML += `<span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700">🆕 開始作答</span>`;
             }
 
+            // 2. 檢查並填入本地暫存 (僅在作答模式下)
+            if (!isReadOnly) {
+                const localKey = getLocalDraftKey(currentUser.uid, taskId);
+                const localJson = localStorage.getItem(localKey);
+                
+                if (localJson) {
+                    try {
+                        const localDraft = JSON.parse(localJson);
+                        console.log("載入本地暫存:", localDraft);
+                        fillAnswers(form, localDraft.answers);
+                        
+                        const timeStr = new Date(localDraft.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        statusContainer.innerHTML += `<span class="text-xs font-bold px-2 py-0.5 rounded bg-gray-200 text-gray-700 border border-gray-400">💾 載入本機暫存 (${timeStr})</span>`;
+                    } catch(e) { console.error("本地暫存讀取失敗", e); }
+                }
+            }
+
+            // --- 介面模式切換 ---
             if (isReadOnly) {
-                submitBtn.classList.add('hidden');
+                actionBtns.classList.add('hidden');
+                readOnlyBtns.classList.remove('hidden');
                 form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = true);
             } else {
-                submitBtn.classList.remove('hidden');
+                actionBtns.classList.remove('hidden');
+                readOnlyBtns.classList.add('hidden');
+                form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
+                // 注意：如果有點選過的 radio 且有批改面板，可能要保持 disabled，這裡簡化處理全部開放編輯
             }
 
             modal.classList.remove('hidden');
         }
 
+        // 填寫表單輔助函式
+        function fillAnswers(form, answers) {
+            form.querySelectorAll('.worksheet-input').forEach(input => {
+                const name = input.name;
+                if (answers[name] !== undefined) {
+                    if (input.type === 'radio' || input.type === 'checkbox') {
+                        if (input.value === answers[name]) input.checked = true;
+                    } else {
+                        input.value = answers[name];
+                    }
+                }
+            });
+        }
+
+        // 渲染批改回饋輔助函式
+        function renderGradingFeedback(form, gradingDetails) {
+            if (!gradingDetails) return;
+            form.querySelectorAll('.worksheet-input').forEach(input => {
+                const name = input.name;
+                const det = gradingDetails[name];
+                if (det && (det.is_correct !== undefined || det.feedback)) {
+                    // 避免重複渲染 (Radio button 每個選項都會跑一次迴圈)
+                    if (input.type === 'radio') {
+                        const allRadios = form.querySelectorAll(`input[type="radio"][name="${name}"]`);
+                        if (input !== allRadios[allRadios.length - 1]) return; 
+                    }
+
+                    const isCor = det.is_correct === true;
+                    const isInc = det.is_correct === false;
+                    const fb = det.feedback || '';
+
+                    const panel = document.createElement('div');
+                    panel.className = `grading-panel ${isCor?'correct':(isInc?'incorrect':'')}`;
+                    
+                    if (input.type === 'radio') {
+                        panel.style.gridColumn = "1 / -1"; panel.style.width = "100%"; panel.style.marginTop = "15px";
+                    }
+
+                    let statusIcon = '';
+                    if (isCor) statusIcon = '<span class="text-correct">⭕ 答對了</span>';
+                    else if (isInc) statusIcon = '<span class="text-incorrect">❌ 答錯了</span>';
+
+                    let feedbackHtml = fb ? `<div class="mt-2 text-sm text-gray-600 bg-white p-2 rounded border border-gray-200"><strong>👩‍🏫 老師：</strong>${fb}</div>` : '';
+                    panel.innerHTML = `<div class="grading-status-text text-lg">${statusIcon}</div>${feedbackHtml}`;
+
+                    // 插入到適當位置
+                    if (input.type === 'radio') {
+                        const container = input.parentNode;
+                        if(container.nextSibling) container.parentNode.insertBefore(panel, container.nextSibling);
+                        else container.parentNode.appendChild(panel);
+                    } else {
+                        if(input.nextSibling) input.parentNode.insertBefore(panel, input.nextSibling);
+                        else input.parentNode.appendChild(panel);
+                    }
+                }
+            });
+        }
+
+        // 關閉視窗 (單純隱藏)
         function closeModal() { document.getElementById('worksheet-modal').classList.add('hidden'); }
 
-        document.getElementById('submit-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('submit-btn');
+        // 蒐集表單資料輔助函式
+        function collectAnswers() {
             const form = document.getElementById('worksheet-form');
             const answers = {};
-            
             form.querySelectorAll('.worksheet-input').forEach(input => {
                 if (input.name) {
                     if (input.type === 'radio') { if (input.checked) answers[input.name] = input.value; } 
+                    else if (input.type === 'checkbox') { if (input.checked) answers[input.name] = input.value; }
                     else answers[input.name] = input.value;
                 }
             });
+            return answers;
+        }
 
-            btn.disabled = true; btn.textContent = '提交中...';
+        // ==========================================
+        //  三按鈕邏輯實作
+        // ==========================================
+
+        // 1. 暫時離開 (存本機 -> 關閉)
+        // 綁定到右上角 X 按鈕和底部按鈕
+        async function saveLocalAndClose() {
+            if(document.getElementById('worksheet-modal').classList.contains('hidden')) return;
+            // 唯讀模式直接關閉
+            const isReadOnly = document.getElementById('submit-btn') ? false : true; // 簡單判斷
+            if(document.getElementById('action-buttons').classList.contains('hidden')) {
+                closeModal(); return;
+            }
+
+            const answers = collectAnswers();
+            try {
+                const key = getLocalDraftKey(currentUser.uid, currentAssignmentId);
+                const draftData = { timestamp: new Date().getTime(), answers: answers };
+                localStorage.setItem(key, JSON.stringify(draftData));
+                
+                // 不使用 alert 阻斷，改用 console 提示或簡易通知 (這裡為了體驗流暢直接關閉)
+                console.log('已存入本機暫存');
+                closeModal();
+                renderDashboard(); // 重新渲染列表以更新狀態圖示
+            } catch(e) {
+                alert('本機暫存失敗 (儲存空間可能已滿)');
+                closeModal();
+            }
+        }
+        document.getElementById('btn-leave-temp').addEventListener('click', saveLocalAndClose);
+        // 注意：HTML 中的 X 按鈕也呼叫此函式
+
+        // 2. 暫存雲端 (存 Firebase[draft] -> 清除本機 -> 關閉)
+        document.getElementById('btn-save-cloud').addEventListener('click', async () => {
+            const btn = document.getElementById('btn-save-cloud');
+            const answers = collectAnswers();
+            
+            btn.disabled = true; btn.innerHTML = '☁️ 儲存中...';
+
             try {
                 const responseId = `${currentAssignmentId}_${currentUser.uid}`;
                 await db.collection('responses').doc(responseId).set({
@@ -476,15 +609,65 @@
                     student_no: studentProfile.seatNo,
                     class_id: studentProfile.classId,
                     answers: answers,
-                    status: 'submitted',
-                    submitted_at: firebase.firestore.FieldValue.serverTimestamp()
+                    status: 'draft', // 🔥 關鍵狀態
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
-                alert('作業已提交！');
+
+                // 🔥 清除本機暫存，避免舊資料干擾
+                const key = getLocalDraftKey(currentUser.uid, currentAssignmentId);
+                localStorage.removeItem(key);
+
+                alert('☁️ 已成功暫存到雲端！\n您可以在其他裝置繼續編輯。');
                 closeModal();
                 renderDashboard();
-            } catch (e) { console.error(e); alert(e.message); } 
-            finally { btn.disabled = false; btn.textContent = '提交作業'; }
+
+            } catch (e) {
+                console.error(e); alert('雲端儲存失敗: ' + e.message);
+            } finally {
+                btn.disabled = false; 
+                btn.innerHTML = '☁️ 暫存雲端 <span class="text-xs font-normal text-orange-500">(可跨裝置)</span>';
+            }
         });
+
+        // 3. 完成繳交 (存 Firebase[submitted] -> 清除本機 -> 關閉)
+        document.getElementById('btn-submit').addEventListener('click', async () => {
+            if(!confirm('確定要繳交作業嗎？\n繳交後將無法再修改，直到老師發回。')) return;
+
+            const btn = document.getElementById('btn-submit');
+            const answers = collectAnswers();
+
+            btn.disabled = true; btn.innerHTML = '🚀 提交中...';
+
+            try {
+                const responseId = `${currentAssignmentId}_${currentUser.uid}`;
+                await db.collection('responses').doc(responseId).set({
+                    assignment_id: currentAssignmentId,
+                    student_uid: currentUser.uid,
+                    student_name: studentProfile.displayName,
+                    student_no: studentProfile.seatNo,
+                    class_id: studentProfile.classId,
+                    answers: answers,
+                    status: 'submitted', // 🔥 關鍵狀態
+                    submitted_at: firebase.firestore.FieldValue.serverTimestamp(),
+                    updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+
+                // 🔥 繳交後必定清除本機暫存
+                const key = getLocalDraftKey(currentUser.uid, currentAssignmentId);
+                localStorage.removeItem(key);
+
+                alert('🎉 作業已成功繳交！');
+                closeModal();
+                renderDashboard();
+
+            } catch (e) {
+                console.error(e); alert('繳交失敗: ' + e.message);
+            } finally {
+                btn.disabled = false; 
+                btn.innerHTML = '<span>✅ 完成繳交</span>';
+            }
+        });
+
     </script>
 </body>
 </html>
