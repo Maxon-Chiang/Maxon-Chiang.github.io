@@ -7,61 +7,44 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-	<script>
+    
+    <script>
 	  window.MathJax = {
-		tex: {
-		  inlineMath: [['$', '$'], ['\\(', '\\)']]
-		}
+		tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
 	  };
 	</script>
 	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f3f4f6; }
         
         /* 學習單預覽區塊 */
         .worksheet-preview { 
-            border: 2px dashed #ccc; 
-            padding: 20px; 
-            background: #fff; 
-            border-radius: 8px; 
-            min-height: 100px; 
+            border: 2px dashed #ccc; padding: 20px; background: #fff; 
+            border-radius: 8px; min-height: 100px; 
         }
         .worksheet-input {
-            border: 1px solid #ccc;
-            padding: 4px 8px;
-            border-radius: 4px;
-            margin: 0 5px;
-            background-color: #fff;
+            border: 1px solid #ccc; padding: 4px 8px; border-radius: 4px; 
+            margin: 0 5px; background-color: #fff;
         }
 
         /* 批改面板樣式 */
         .grading-panel {
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-left: 4px solid #94a3b8;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-radius: 0 4px 4px 0;
-            margin-top: 5px; 
-            position: relative;
-            z-index: 10;
+            background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #94a3b8;
+            padding: 10px; margin-bottom: 20px; border-radius: 0 4px 4px 0;
+            margin-top: 5px; position: relative; z-index: 10;
         }
         .grading-panel.correct { border-left-color: #22c55e; background-color: #f0fdf4; }
         .grading-panel.incorrect { border-left-color: #ef4444; background-color: #fef2f2; }
         
         .grading-radio-label {
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 4px;
-            margin-right: 10px;
-            font-size: 0.9em;
-            font-weight: bold;
-            display: inline-flex;
-            align-items: center;
-            border: 1px solid transparent;
-            transition: all 0.2s;
+            cursor: pointer; padding: 4px 8px; border-radius: 4px; margin-right: 10px;
+            font-size: 0.9em; font-weight: bold; display: inline-flex; align-items: center;
+            border: 1px solid transparent; transition: all 0.2s;
         }
         .grading-radio-label:hover { background-color: #e2e8f0; }
         
@@ -69,14 +52,8 @@
         input[type="radio"]:checked + span.btn-text-incorrect { color: #991b1b; }
 
         /* 學校選擇清單 */
-        .school-select-item {
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .school-select-item:hover {
-            background-color: #eff6ff;
-            border-color: #3b82f6;
-        }
+        .school-select-item { cursor: pointer; transition: all 0.2s; }
+        .school-select-item:hover { background-color: #eff6ff; border-color: #3b82f6; }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -121,7 +98,7 @@
             <button id="logout-btn" class="text-sm text-gray-600 hover:text-red-500 font-bold border border-gray-300 px-3 py-1 rounded">登出</button>
         </header>
 
-		<div class="flex mb-4 border-b border-gray-300 overflow-x-auto">
+        <div class="flex mb-4 border-b border-gray-300 overflow-x-auto">
             <button id="btn-tab-grading" class="tab-btn px-6 py-3 text-blue-600 border-b-2 border-blue-600 font-bold hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('grading')">📝 批改作業</button>
             <button id="btn-tab-library" class="tab-btn px-6 py-3 text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('library')">📂 學習單管理</button>
             <button id="btn-tab-assign" class="tab-btn px-6 py-3 text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition whitespace-nowrap" onclick="switchAppMenu('assign')">🚀 發布任務</button>
@@ -132,14 +109,14 @@
             <div class="bg-white p-6 rounded shadow max-w-5xl mx-auto">
                 <h2 class="text-lg font-bold mb-6 pb-2 border-b flex items-center gap-2">
                     📝 待批改作業列表
-                    <span class="text-xs font-normal text-gray-500 ml-2">(請選擇要進入的班級作業)</span>
+                    <span class="text-xs font-normal text-gray-500 ml-2">(點選班級進入批改)</span>
                 </h2>
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-blue-50 border-b border-blue-200">
                                 <th class="p-4 font-bold text-blue-800 w-1/3">學習單名稱</th>
-                                <th class="p-4 font-bold text-blue-800 w-2/3">班級與批改入口</th>
+                                <th class="p-4 font-bold text-blue-800 w-2/3">發布班級</th>
                             </tr>
                         </thead>
                         <tbody id="grading-list-body" class="text-sm">
@@ -154,16 +131,12 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="md:col-span-1 bg-white p-6 rounded shadow h-fit">
                     <h2 class="text-lg font-bold mb-4 border-b pb-2">➕ 新增學習單</h2>
-                    
                     <label class="block text-sm font-bold mb-2">標題</label>
                     <input type="text" id="ws-title" class="w-full border p-2 rounded mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-                    
                     <label class="block text-sm font-bold mb-2">HTML 原始碼</label>
                     <textarea id="ws-html" class="w-full border p-2 rounded h-40 font-mono text-xs mb-4 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="<div>...</div>"></textarea>
-                    
                     <label class="block text-sm font-bold mb-2 text-blue-600">答案卷資料 (JSON) <span class="text-xs font-normal text-gray-500">(自動批改用)</span></label>
                     <textarea id="ws-json" class="w-full border p-2 rounded h-32 font-mono text-xs mb-4 focus:ring-2 focus:ring-blue-500 outline-none" placeholder='{"q1": {"answer": "A", "note": "..."}}'></textarea>
-
                     <button id="preview-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm mb-4 w-full">👇 預覽 HTML</button>
                     <button id="save-ws-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow transition">儲存到題庫</button>
                 </div>
@@ -239,7 +212,7 @@
         </div>
     </div>
 	
-	<div id="source-code-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50">
+    <div id="source-code-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-50">
 		<div class="bg-white rounded-lg shadow-xl w-11/12 md:w-2/3 max-h-[90vh] flex flex-col">
 			<div class="flex justify-between items-center p-4 border-b">
 				<h3 class="text-xl font-bold text-gray-800">📝 原始碼檢視</h3>
@@ -255,7 +228,6 @@
 					</div>
 					<textarea id="view-src-html" class="w-full border p-3 rounded h-48 font-mono text-xs bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" readonly></textarea>
 				</div>
-				
 				<div>
 					<div class="flex justify-between items-center mb-2">
 						<label class="block text-sm font-bold text-blue-600">答案卷資料 (JSON)</label>
@@ -287,13 +259,35 @@
     <div id="submission-list-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex items-center justify-center z-40">
         <div class="bg-white rounded-lg shadow-xl w-11/12 md:w-3/4 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center p-4 border-b bg-blue-50 rounded-t-lg">
-                <div><h3 class="text-xl font-bold text-gray-800" id="submission-modal-title">作業繳交概況</h3><p class="text-sm text-gray-500" id="submission-modal-subtitle">...</p></div>
-                <button onclick="document.getElementById('submission-list-modal').classList.add('hidden')" class="text-gray-500 text-3xl">&times;</button>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800" id="submission-modal-title">作業繳交概況</h3>
+                    <p class="text-sm text-gray-500" id="submission-modal-subtitle">...</p>
+                </div>
+                <div class="flex gap-2">
+                    <button id="open-analysis-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded shadow font-bold text-sm flex items-center gap-2">
+                        📊 班級答題分析
+                    </button>
+                    <button onclick="document.getElementById('submission-list-modal').classList.add('hidden')" class="text-gray-500 text-3xl hover:text-gray-800 ml-4">&times;</button>
+                </div>
             </div>
+            
+            <div class="bg-orange-50 p-3 border-b flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-orange-800">批量操作：</span>
+                    <button id="batch-return-continue-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded shadow text-sm font-bold flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        ↩️ 發回續寫 (解鎖)
+                    </button>
+                </div>
+                <span class="text-xs text-orange-600 font-bold">※ 注意：「發回續寫」會將作業狀態改回草稿，學生可再次編輯內容。</span>
+            </div>
+
             <div class="p-6 overflow-y-auto flex-grow">
                 <table class="min-w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-gray-100 border-b">
+                            <th class="p-3 w-10 text-center">
+                                <input type="checkbox" id="submission-master-checkbox" class="form-checkbox h-4 w-4 text-blue-600 cursor-pointer">
+                            </th>
                             <th class="p-3 font-bold text-gray-600">座號</th>
                             <th class="p-3 font-bold text-gray-600">姓名</th>
                             <th class="p-3 font-bold text-gray-600">狀態</th>
@@ -303,6 +297,65 @@
                     </thead>
                     <tbody id="submission-list-body" class="text-sm"></tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+	<div id="analysis-modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden relative">
+            
+            <div class="flex justify-between items-center p-4 border-b bg-purple-50">
+                <div>
+					<h3 id="analysis-main-title" class="text-xl font-bold text-purple-900">📊 班級答題分析</h3>
+                    <p id="analysis-subtitle" class="text-sm text-purple-600">載入中...</p>
+                </div>
+                <button onclick="document.getElementById('analysis-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
+            
+            <div class="flex-grow p-4 md:p-6 overflow-hidden grid grid-cols-1 lg:grid-cols-5 gap-6 bg-gray-50">
+                
+                <div class="lg:col-span-2 bg-white p-5 rounded-lg shadow overflow-y-auto">
+                    <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
+                        🔥 錯誤率 Top 5 <span class="text-xs font-normal text-gray-500">(魔王題)</span>
+                    </h4>
+                    <div id="analysis-leaderboard" class="space-y-4">
+                        <p class="text-center text-gray-400 py-10">資料載入中...</p>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-3 bg-white p-5 rounded-lg shadow flex flex-col overflow-hidden relative">
+                    
+                    <div id="analysis-table-view" class="flex flex-col h-full">
+                        <h4 class="text-lg font-bold text-gray-800 mb-2 border-b pb-2">📋 完整答題統計表 <span class="text-xs font-normal text-gray-500">(點擊題目查看分佈)</span></h4>
+                        <div class="flex-grow overflow-y-auto">
+                            <table class="min-w-full text-left text-sm table-fixed"> <thead class="bg-gray-100 text-gray-600 sticky top-0 z-10">
+                                    <tr>
+                                        <th class="p-3 font-bold w-5/12">題目</th>
+                                        <th class="p-3 font-bold text-center w-1/12">人數</th>
+                                        <th class="p-3 font-bold text-center w-1/12 text-green-600">對</th>
+                                        <th class="p-3 font-bold text-center w-1/12 text-red-600">錯</th>
+                                        <th class="p-3 font-bold text-center w-2/12">錯誤率</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="analysis-table-body" class="divide-y divide-gray-100">
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="analysis-chart-view" class="hidden flex flex-col h-full absolute inset-0 bg-white p-5 z-20">
+                        <div class="flex items-center justify-between mb-4 border-b pb-2">
+                            <button onclick="toggleAnalysisView('table')" class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded flex items-center gap-1 transition">
+                                ⬅️ 返回列表
+                            </button>
+                            <h4 id="chart-question-title" class="text-md font-bold text-purple-800 truncate max-w-lg">題目標題</h4>
+                        </div>
+                        <div class="flex-grow flex items-center justify-center bg-gray-50 rounded border border-gray-100 p-4">
+                            <canvas id="analysis-chart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
@@ -332,14 +385,15 @@
                 </div>
                 <div class="p-4 border-t bg-gray-50 space-y-2 z-10">
                     <button id="submit-grade-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow transition">✅ 送出成績</button>
-                    <div class="grid grid-cols-2 gap-2"><button id="return-correction-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition">↩️ 退回訂正</button><button onclick="document.getElementById('grading-modal').classList.add('hidden')" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-lg text-sm transition">取消</button></div>
+                    <div class="grid grid-cols-2 gap-2"><button id="return-correction-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition">↩️ 退回訂正</button>
+					<button onclick="confirmGradingExit()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-lg text-sm transition">取消</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-		// 🛠️ [修改] 輔助函式：強制執行腳本並重新渲染數學公式
+		// 輔助函式：強制執行腳本並重新渲染數學公式
 		function executeEmbeddedScripts(container) {
 			const scripts = container.querySelectorAll('script');
 			scripts.forEach(oldScript => {
@@ -351,6 +405,36 @@
 			if (window.MathJax) {
 				MathJax.typesetPromise([container]).catch((err) => console.log('MathJax error:', err));
 			}
+		}
+		// 輔助：蒐集目前批改面板的資料
+		function collectCurrentGradingData() {
+			const s = document.getElementById('grade-score').value;
+			const c = document.getElementById('grade-comment').value;
+			const gd = {};
+			
+			document.querySelectorAll('.grading-feedback-input').forEach(inp => {
+				const n = inp.dataset.field; 
+				const p = inp.closest('.grading-panel');
+				// 取得 Radio 狀態
+				const isC = p.querySelector('input[value="c"]').checked; 
+				const isI = p.querySelector('input[value="i"]').checked;
+				
+				let finalC = null; 
+				if(isC) finalC = true; 
+				else if(isI) finalC = false;
+				
+				// 只要有改動過 (有勾選或有評語) 就記錄
+				if(finalC !== null || inp.value.trim() !== '') {
+					gd[n] = { is_correct: finalC, feedback: inp.value };
+				}
+			});
+			
+			return {
+				score: s,
+				comment: c,
+				grading_details: gd,
+				timestamp: new Date().getTime()
+			};
 		}
 
          // 1. Config
@@ -370,12 +454,15 @@
         let currentUser = null;
         let currentSchoolId = null;
         let availableClasses = [];
-        let worksheetsCache = {}; // 記憶體內的快取 (用於預覽等)
+        let worksheetsCache = {}; 
         
         let currentGradingResponseId = null;
         let currentGradingWorksheetId = null;
+		let editingWorksheetId = null;
+        
+        // 用於圖表的實例 (避免重複建立)
+        let analysisChartInstance = null;
 
-        // 🔥 [新增] 快取 Key 前綴
         const CACHE_PREFIX = 'ws_sys_cache_';
 
         // 2. Auth Logic
@@ -403,7 +490,6 @@
                             loginView.classList.add('hidden');
                             appView.classList.remove('hidden');
                             
-                            // 初始載入 (嘗試使用 Local Cache)
                             loadGradingList(); 
                             loadWorksheets();
                             analyzeClasses();
@@ -475,7 +561,6 @@
             loginView.classList.remove('hidden');
         });
 
-        // 3. Login/Logout & Force Refresh
         document.getElementById('login-btn').addEventListener('click', () => {
             const provider = new firebase.auth.GoogleAuthProvider();
             provider.setCustomParameters({ prompt: 'select_account' });
@@ -483,19 +568,17 @@
         });
         document.getElementById('logout-btn').addEventListener('click', () => auth.signOut().then(() => window.location.reload()));
 
-        // 🔥 [新增] 手動強制同步按鈕
         document.getElementById('force-refresh-btn').addEventListener('click', async () => {
             if(!confirm('確定要從雲端重新下載最新資料嗎？')) return;
             const btn = document.getElementById('force-refresh-btn');
-            btn.classList.add('animate-spin', 'text-blue-600'); // 旋轉動畫
+            btn.classList.add('animate-spin', 'text-blue-600'); 
             
             try {
                 await Promise.all([
                     loadWorksheets(true),
-                    loadAssignmentsData(true), // 先抓資料
+                    loadAssignmentsData(true), 
                     analyzeClasses(true)
                 ]);
-                // 根據目前分頁重繪
                 loadGradingList(); 
                 loadAssignments();
                 alert('✅ 資料同步完成！');
@@ -506,19 +589,15 @@
             }
         });
 
-        // 🔥 [新增] 通用快取讀取函式
         async function fetchDataWithCache(keySuffix, forceRefresh, fetcher) {
             const cacheKey = CACHE_PREFIX + keySuffix;
             let data = null;
 			const cacheHead = keySuffix.split("_")[0];
 			let cacheName = null;
-			if (cacheHead=='ws')
-				cacheName = '學習單';
-			else if (cacheHead=='assign')
-				cacheName = '任務指派';
-			else
-				cacheName = '班級學生';
-            // 1. 嘗試讀快取
+			if (cacheHead=='ws') cacheName = '學習單';
+			else if (cacheHead=='assign') cacheName = '任務指派';
+			else cacheName = '班級學生';
+            
             if (!forceRefresh) {
                 const cachedJson = localStorage.getItem(cacheKey);
                 if (cachedJson) {
@@ -532,42 +611,33 @@
                 }
             }
 
-            // 2. 若無快取或強制更新，則從雲端讀取
             if (!data) {
                 console.log(`☁️ [雲端載入] ${cacheName}...`);
                 data = await fetcher();
-                // 存入快取
                 localStorage.setItem(cacheKey, JSON.stringify(data));
             }
             return data;
         }
 
-        // 4. Tab Logic
-		// 4. Tab Logic (修復版)
         window.switchAppMenu = (tabName) => {
-            // 1. 隱藏所有面板
             document.querySelectorAll('.app-section-panel').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
 
-            // 2. 重置所有按鈕樣式 (變回灰色)
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 btn.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
                 btn.classList.add('text-gray-500');
             });
 
-            // 3. 點亮目標按鈕 (變藍色)
             const targetBtn = document.getElementById(`btn-tab-${tabName}`);
             if (targetBtn) {
                 targetBtn.classList.remove('text-gray-500');
                 targetBtn.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
             }
             
-            // 4. 載入對應資料
             if (tabName === 'grading') loadGradingList();
             if (tabName === 'withdraw') loadAssignments();
         };
 		
-        // 5. Library Logic
 		document.getElementById('preview-btn').addEventListener('click', () => {
 			document.getElementById('view-modal-content').innerHTML = '';
 			document.getElementById('view-modal').classList.add('hidden'); 
@@ -591,51 +661,70 @@
                 try { answerKey = JSON.parse(jsonStr); } catch(e) { return alert('答案卷 JSON 格式錯誤: ' + e.message); }
             }
 
-            try {
-                const dupSnap = await db.collection('worksheets')
-                    .where('creator_id', '==', currentUser.uid)
-                    .where('title', '==', title)
-                    .get();
+            const btn = document.getElementById('save-ws-btn');
+            btn.disabled = true;
 
-                if (!dupSnap.empty) {
-                    if (confirm(`學習單 "${title}" 已存在，確定覆蓋？`)) {
-                        await db.collection('worksheets').doc(dupSnap.docs[0].id).update({
+            try {
+                if (editingWorksheetId) {
+                    await db.collection('worksheets').doc(editingWorksheetId).update({
+                        title: title,
+                        html_content: html,
+                        answer_key: answerKey,
+                        updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    alert('更新成功！');
+                    resetEditMode(); 
+                } else {
+                    const dupSnap = await db.collection('worksheets')
+                        .where('creator_id', '==', currentUser.uid)
+                        .where('title', '==', title)
+                        .get();
+
+                    if (!dupSnap.empty) {
+                        if (!confirm(`學習單 "${title}" 已存在。\n確定要覆蓋它嗎？(這將變成更新模式)`)) {
+                            btn.disabled = false; return;
+                        }
+                        const oldId = dupSnap.docs[0].id;
+                        await db.collection('worksheets').doc(oldId).update({
                             html_content: html, answer_key: answerKey,
                             created_at: firebase.firestore.FieldValue.serverTimestamp()
                         });
-                    } else return;
-                } else {
-                    await db.collection('worksheets').add({
-                        title, html_content: html, answer_key: answerKey,
-                        creator_id: currentUser.uid, created_at: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    } else {
+                        await db.collection('worksheets').add({
+                            title, html_content: html, answer_key: answerKey,
+                            creator_id: currentUser.uid, 
+                            created_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    alert('已儲存！');
+                    resetEditMode(); 
                 }
-                alert('已儲存！');
-                document.getElementById('ws-title').value = ''; document.getElementById('ws-html').value = ''; document.getElementById('ws-json').value = ''; document.getElementById('preview-area').classList.add('hidden');
-                
-                // 🔥 [Cache] 清除快取並強制重載
+
+                document.getElementById('preview-area').classList.add('hidden');
                 localStorage.removeItem(CACHE_PREFIX + 'ws_' + currentUser.uid);
                 loadWorksheets(true);
 
-            } catch(e) { console.error(e); alert('操作失敗: ' + e.message); }
+            } catch(e) { 
+                console.error(e);
+                alert('操作失敗: ' + e.message); 
+            } finally {
+                btn.disabled = false;
+            }
         });
 
-        // 🔥 [修改] 支援快取的學習單載入
 		async function loadWorksheets(force = false) {
 			const listEl = document.getElementById('ws-list');
 			const selectEl = document.getElementById('assign-ws-select');
             
-            // 讀取資料
             const items = await fetchDataWithCache('ws_' + currentUser.uid, force, async () => {
                 const snap = await db.collection('worksheets').where('creator_id', '==', currentUser.uid).orderBy('created_at', 'desc').get();
                 const res = [];
                 snap.forEach(doc => {
                     const d = doc.data();
-                    // 轉換時間戳記以便 JSON 儲存
                     res.push({
                         id: doc.id,
                         title: d.title,
-                        html_content: d.html_content, // 快取也存 HTML
+                        html_content: d.html_content,
                         answer_key: d.answer_key,
                         created_at_iso: d.created_at ? d.created_at.toDate().toISOString() : new Date().toISOString()
                     });
@@ -648,11 +737,10 @@
             if (items.length === 0) { listEl.innerHTML = '<p class="text-center text-gray-500 py-4">無資料</p>'; return; }
 			
             items.forEach(data => {
-				worksheetsCache[data.id] = data; // 存入記憶體供預覽用
+				worksheetsCache[data.id] = data; 
 				
 				const dateObj = new Date(data.created_at_iso);
 				const dateStr = dateObj.toLocaleString('zh-TW', { hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-
 				const item = document.createElement('div');
 				item.className = 'flex justify-between items-center p-4 border rounded bg-white shadow-sm';
 				item.innerHTML = `
@@ -661,22 +749,56 @@
 						<div class="text-xs text-gray-400 mt-1">建立於：${dateStr}</div>
 					</div>
 					<div class="space-x-2">
+                        <button class="bg-orange-100 text-orange-600 px-3 py-1 rounded text-sm font-bold hover:bg-orange-200" onclick="editWorksheet('${data.id}')">✏️ 編輯</button>
 						<button class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded text-sm font-bold hover:bg-yellow-200" onclick="renameWorksheet('${data.id}', '${data.title}')">✏️ 改名</button>
 						<button class="bg-purple-100 text-purple-600 px-3 py-1 rounded text-sm font-bold hover:bg-purple-200" onclick="viewSourceCode('${data.id}')">📝 原始碼</button>
 						<button class="bg-blue-100 text-blue-600 px-3 py-1 rounded text-sm font-bold hover:bg-blue-200" onclick="viewWorksheet('${data.id}')">👁️ 預覽</button>
 						<button class="bg-red-100 text-red-500 px-3 py-1 rounded text-sm font-bold hover:bg-red-200" onclick="deleteWorksheet('${data.id}')">刪除</button>
 					</div>`;
+
 				listEl.appendChild(item);
 				const opt = document.createElement('option'); opt.value = data.id; opt.textContent = data.title; selectEl.appendChild(opt);
 			});
 		}
+		
+        window.editWorksheet = (id) => {
+            const data = worksheetsCache[id];
+            if (!data) return alert('找不到快取資料，請嘗試重新整理頁面');
+
+            document.getElementById('ws-title').value = data.title;
+            document.getElementById('ws-html').value = data.html_content;
+            
+            const jsonStr = data.answer_key ? JSON.stringify(data.answer_key, null, 4) : '';
+            document.getElementById('ws-json').value = jsonStr;
+
+            editingWorksheetId = id;
+
+            const saveBtn = document.getElementById('save-ws-btn');
+            saveBtn.textContent = '💾 更新學習單 (編輯中)';
+            saveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            saveBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+            
+            document.getElementById('tab-library').scrollIntoView({ behavior: 'smooth' });
+            alert('已載入內容！\n\n請在上方編輯區修改 HTML 或 JSON，\n完成後按橘色的「更新學習單」按鈕。');
+        };
+
+        function resetEditMode() {
+            editingWorksheetId = null;
+            document.getElementById('ws-title').value = '';
+            document.getElementById('ws-html').value = '';
+            document.getElementById('ws-json').value = '';
+            
+            const saveBtn = document.getElementById('save-ws-btn');
+            saveBtn.textContent = '儲存到題庫';
+            saveBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            saveBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+        }
 
         window.renameWorksheet = async (id, oldTitle) => {
             const newTitle = prompt('請輸入新的標題：', oldTitle);
             if (newTitle && newTitle.trim() !== '' && newTitle !== oldTitle) {
                 try {
                     await db.collection('worksheets').doc(id).update({ title: newTitle.trim() });
-                    // 🔥 [Cache] 清除快取並重載
                     localStorage.removeItem(CACHE_PREFIX + 'ws_' + currentUser.uid);
                     loadWorksheets(true);
                 } catch (e) { alert('更新失敗: ' + e.message); }
@@ -707,7 +829,6 @@
                 await batch.commit();
                 alert(`刪除成功！`);
                 
-                // 🔥 [Cache] 清除多個快取
                 localStorage.removeItem(CACHE_PREFIX + 'ws_' + currentUser.uid);
                 localStorage.removeItem(CACHE_PREFIX + 'assign_' + currentUser.uid);
                 
@@ -723,8 +844,6 @@
             }
         };
 
-        // 6. Assign Logic (Classes)
-        // 🔥 [修改] 支援快取的班級資料載入
         async function analyzeClasses(force = false) {
             const container = document.getElementById('class-checkboxes');
             
@@ -769,14 +888,12 @@
             document.querySelectorAll(`.grade-${btn.dataset.grade}-item`).forEach(cb => cb.checked = btn.checked);
         };
 
-		// 🔥 [修改] 發布任務邏輯：防重複 + 成功後清空表單並跳轉至任務管理
         document.getElementById('submit-assign-btn').addEventListener('click', async () => {
             const selectEl = document.getElementById('assign-ws-select');
             const deadlineEl = document.getElementById('assign-deadline');
             
             const wid = selectEl.value;
             const dead = deadlineEl.value;
-            // 取得所有被勾選的班級
             const cls = Array.from(document.querySelectorAll('input[name="target_class"]:checked')).map(c => c.value);
             
             if(!wid || cls.length === 0) return alert('請選擇學習單與班級');
@@ -789,7 +906,6 @@
             const wtitle = document.querySelector(`#assign-ws-select option[value="${wid}"]`).textContent;
 
             try {
-                // 1. 準備查詢：檢查每個班級是否已經有這份作業
                 const checkPromises = cls.map(async (className) => {
                     const snapshot = await db.collection('assignments')
                         .where('worksheet_id', '==', wid)
@@ -800,17 +916,13 @@
                     return { className, snapshot };
                 });
 
-                // 2. 等待所有查詢完成
                 const results = await Promise.all(checkPromises);
-
                 const batch = db.batch();
                 let updatedCount = 0;
                 let createdCount = 0;
 
-                // 3. 根據查詢結果決定是「新增」還是「更新」
                 results.forEach(({ className, snapshot }) => {
                     if (!snapshot.empty) {
-                        // 更新現有任務 (保留學生作答紀錄)
                         const docRef = snapshot.docs[0].ref;
                         batch.update(docRef, {
                             deadline: dead,
@@ -819,7 +931,6 @@
                         });
                         updatedCount++;
                     } else {
-                        // 建立新任務
                         const newRef = db.collection('assignments').doc();
                         batch.set(newRef, {
                             worksheet_id: wid, 
@@ -835,7 +946,6 @@
                     }
                 });
 
-                // 4. 送出批次變更
                 await batch.commit(); 
                 
                 let msg = '操作成功！\n';
@@ -843,22 +953,16 @@
                 if (updatedCount > 0) msg += `🔄 更新了 ${updatedCount} 個班級的任務設定`;
                 alert(msg);
 
-                // 5. 資料更新與快取清除
                 localStorage.removeItem(CACHE_PREFIX + 'assign_' + currentUser.uid);
-                await loadAssignmentsData(true); // 強制重載資料
-                loadAssignments(); // 渲染任務列表
+                await loadAssignmentsData(true);
+                loadAssignments(); 
                 loadGradingList();
 
-                // 🛑 [新增 UX 優化]：清空表單
-                selectEl.value = ''; // 清空學習單選擇
-                deadlineEl.value = ''; // 清空日期
-                
-                // 清空所有班級勾選
+                selectEl.value = ''; 
+                deadlineEl.value = ''; 
                 document.querySelectorAll('input[name="target_class"]').forEach(cb => cb.checked = false);
-                // 清空年級全選按鈕
                 document.querySelectorAll('.grade-master-checkbox').forEach(cb => cb.checked = false);
 
-                // 🛑 [新增 UX 優化]：跳轉至「任務管理」頁面檢視結果
                 switchAppMenu('withdraw'); 
 
             } catch(e) { 
@@ -870,16 +974,13 @@
             }
         });
 		
-        // 7. Withdraw & Grading Data (Shared Fetcher)
-        // 🔥 [新增] 共享的 Assignment 資料抓取函式 (快取版)
         async function loadAssignments() {
             const tb = document.getElementById('assignment-table-body');
-            const items = await loadAssignmentsData(); // 讀取資料 (支援快取)
+            const items = await loadAssignmentsData(); 
             
             tb.innerHTML = '';
             if(items.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">無紀錄</td></tr>'; return; }
             
-            // 1. 分組：依據學習單標題分組
             const g = {};
             items.forEach(i => {
                 if(!g[i.title]) g[i.title] = [];
@@ -888,29 +989,23 @@
 
             Object.keys(g).forEach(t => {
                 const list = g[t];
-                
-                // 2. 計算該組中「最新的」發布時間
                 let lastPubStr = '未知';
                 if (list.length > 0) {
-                    // 取出所有時間字串，排序後抓最後一個 (最大的日期)
                     const dates = list.map(i => i.created_at_iso).filter(d => d).sort();
                     if (dates.length > 0) {
                         const lastIso = dates[dates.length - 1];
                         const dateObj = new Date(lastIso);
-                        // 格式化為：2023/12/03 14:05
                         lastPubStr = dateObj.toLocaleString('zh-TW', { 
                             hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
                         });
                     }
                 }
 
-                // 3. 排序班級顯示順序
                 list.sort((a,b) => a.target_class.localeCompare(b.target_class));
                 
                 const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50';
                 const tdTitle = document.createElement('td'); tdTitle.className = "p-3 align-top";
                 
-                // 🔥 [修改點] 在標題下方加入日期顯示
                 tdTitle.innerHTML = `
                     <div class="flex flex-col gap-1">
                         <span class="font-bold text-gray-800 text-lg">${t}</span>
@@ -932,13 +1027,7 @@
             });
         }
 
-		// -------------------------------------------------------------------------
-        // 7. 共用資料層：讀取任務資料 (含快取機制)
-        // -------------------------------------------------------------------------
-        
-        // 🔥 [補回遺失的函式] 這是核心資料讀取函式，必須存在！
         async function loadAssignmentsData(force = false) {
-            // 使用前面定義的 fetchDataWithCache
             return await fetchDataWithCache('assign_' + currentUser.uid, force, async () => {
                 const s = await db.collection('assignments')
                     .where('teacher_id', '==', currentUser.uid)
@@ -961,99 +1050,91 @@
             });
         }
 
-        // -------------------------------------------------------------------------
-        // 任務管理列表 (含最後發布時間顯示)
-        // -------------------------------------------------------------------------
-        async function loadAssignments() {
-            const tb = document.getElementById('assignment-table-body');
-            
-            // 呼叫上面的共用函式
-            const items = await loadAssignmentsData(); 
-            
-            tb.innerHTML = '';
-            if(items.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="p-4 text-center text-gray-500">無紀錄</td></tr>'; return; }
-            
-            // 1. 分組：依據學習單標題分組
-            const g = {};
-            items.forEach(i => {
-                if(!g[i.title]) g[i.title] = [];
-                g[i.title].push(i);
-            });
-
-            Object.keys(g).forEach(t => {
-                const list = g[t];
-                
-                // 2. 計算該組中「最新的」發布時間
-                let lastPubStr = '未知';
-                if (list.length > 0) {
-                    // 取出所有時間字串，排序後抓最後一個 (最大的日期)
-                    const dates = list.map(i => i.created_at_iso).filter(d => d).sort();
-                    if (dates.length > 0) {
-                        const lastIso = dates[dates.length - 1];
-                        const dateObj = new Date(lastIso);
-                        // 格式化為：2023/12/03 14:05
-                        lastPubStr = dateObj.toLocaleString('zh-TW', { 
-                            hour12: false, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
-                        });
-                    }
-                }
-
-                // 3. 排序班級顯示順序
-                list.sort((a,b) => a.target_class.localeCompare(b.target_class));
-                
-                const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50';
-                const tdTitle = document.createElement('td'); tdTitle.className = "p-3 align-top";
-                
-                // 顯示標題與時間
-                tdTitle.innerHTML = `
-                    <div class="flex flex-col gap-1">
-                        <span class="font-bold text-gray-800 text-lg">${t}</span>
-                        <span class="text-xs text-gray-500 font-mono tracking-wide">🕒 最後發布：${lastPubStr}</span>
-                        <label class="inline-flex items-center text-xs text-gray-400 cursor-pointer select-none hover:text-blue-600 transition w-fit mt-1">
-                            <input type="checkbox" class="form-checkbox h-3 w-3 text-blue-500 mr-1 rounded border-gray-300" onchange="toggleGroup(this)">
-                            全選 / 全取消
-                        </label>
-                    </div>`;
-                
-                const tdClasses = document.createElement('td'); tdClasses.className = "p-3 align-top";
-                let clsHtml = '';
-                list.forEach(i => {
-                    const deadInfo = i.deadline ? `<span class="text-red-500 ml-1 font-bold">期限:${i.deadline.slice(5)}</span>` : '<span class="text-green-500 ml-1">無期限</span>';
-                    clsHtml += `<label class="inline-flex items-center mr-3 mb-2 bg-white px-3 py-1.5 rounded border border-gray-200 shadow-sm hover:bg-blue-50 hover:border-blue-200 cursor-pointer select-none transition"><input type="checkbox" class="withdraw-checkbox form-checkbox h-4 w-4 text-red-500 mr-2 rounded border-gray-300 focus:ring-red-500" value="${i.id}"><span class="font-bold text-gray-700">${i.target_class} 班</span><span class="text-xs text-gray-500 ml-1">(${deadInfo})</span></label>`;
-                });
-                tdClasses.innerHTML = clsHtml;
-                tr.appendChild(tdTitle); tr.appendChild(tdClasses); tb.appendChild(tr);
-            });
-        }
-        
-        // -------------------------------------------------------------------------
-        // 8. 批改列表 (也使用共用函式)
+		// -------------------------------------------------------------------------
+        // 8. 批改列表 (含繳交狀況統計 + 整體分析按鈕)
         // -------------------------------------------------------------------------
         async function loadGradingList() {
             const tb = document.getElementById('grading-list-body');
             
-            // 呼叫共用函式，確保不會報錯
+            // 1. 取得任務列表
             const items = await loadAssignmentsData(); 
             
             tb.innerHTML = '';
             if(items.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="p-8 text-center text-gray-500">目前無發布作業</td></tr>'; return; }
             
+            // 2. 分組：依據學習單標題分組
             const g = {};
             items.forEach(i => {
                 if(!g[i.title]) g[i.title] = [];
                 g[i.title].push(i);
             });
 
-            Object.keys(g).forEach(t => {
+            // 3. 逐一處理每個標題群組
+            const titles = Object.keys(g);
+            for (const t of titles) {
                 const list = g[t].sort((a,b) => a.target_class.localeCompare(b.target_class));
-                const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-blue-50';
-                let clsBtns = '';
-                list.forEach(i => {
-                    clsBtns += `<button onclick="openSubmissionList('${i.id}', '${i.target_class}', '${i.worksheet_id}', '${i.title}')" class="m-1 bg-white hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 px-4 py-2 rounded shadow-sm font-bold transition flex items-center gap-2"><span>🏫 ${i.target_class} 班</span><span class="text-xs opacity-70">➔ 批改</span></button>`;
+                const tr = document.createElement('tr'); 
+                tr.className = 'border-b hover:bg-blue-50';
+                
+                // 取得該群組的第一個任務資訊 (用來抓 worksheet_id)
+                // 假設同一標題的任務都對應同一份 worksheet_id (通常是這樣)
+                const firstTask = list[0]; 
+                const worksheetId = firstTask.worksheet_id;
+                
+                // 收集該標題下所有的 assignment_id (用於整體分析)
+                const allAssignmentIds = list.map(item => item.id);
+
+                // 🔥 [新增] 左側標題欄位：加入「整體分析」按鈕
+                // 點擊時，傳入 null 作為 assignmentId，並傳入 id 陣列作為 extraData
+                // 我們稍後會修改 openAnalysisModal 來支援傳入陣列
+                const titleHtml = `
+                    <div class="flex flex-col gap-2">
+                        <span class="font-bold text-gray-800 text-lg align-middle">${t}</span>
+                        <button onclick="openOverallAnalysis('${worksheetId}', '${encodeURIComponent(JSON.stringify(allAssignmentIds))}', '${t} (全體)')" 
+                                class="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1.5 rounded border border-indigo-200 w-fit flex items-center gap-1 transition">
+                            📊 整體分析 (${list.length} 個班級)
+                        </button>
+                    </div>
+                `;
+
+                // 右側班級按鈕 (邏輯不變)
+                const classPromises = list.map(async (i) => {
+                    const q = await db.collection('responses').where('assignment_id', '==', i.id).get();
+                    let sub = 0; let corr = 0;
+                    q.forEach(d => {
+                        const st = d.data().status;
+                        if(st === 'submitted') sub++;
+                        if(st === 'needs_correction') corr++;
+                    });
+                    
+                    const hasPending = (sub > 0 || corr > 0);
+                    const badgeClass = hasPending ? 'bg-red-100 text-red-700 border-red-200 font-bold' : 'bg-gray-100 text-gray-400 border-gray-200';
+                    const btnBorder = hasPending ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200';
+
+                    return `
+                        <button onclick="openSubmissionList('${i.id}', '${i.target_class}', '${i.worksheet_id}', '${i.title}')" 
+                                class="m-1 bg-white hover:bg-white hover:shadow-lg border ${btnBorder} px-3 py-2 rounded shadow-sm transition flex flex-col items-center justify-center min-w-[110px] group">
+                            <span class="font-bold text-blue-700 text-base mb-1 group-hover:text-blue-900">🏫 ${i.target_class} 班</span>
+                            <span class="text-xs px-2 py-0.5 rounded border ${badgeClass} w-full text-center">
+                                已交: ${sub} | 訂正: ${corr}
+                            </span>
+                        </button>`;
                 });
-                tr.innerHTML = `<td class="p-4 font-bold text-gray-800 text-lg align-middle">${t}</td><td class="p-4 align-middle flex flex-wrap">${clsBtns}</td>`;
+
+                const buttonsHtml = await Promise.all(classPromises);
+                const clsBtns = buttonsHtml.join('');
+
+                tr.innerHTML = `<td class="p-4 align-top">${titleHtml}</td><td class="p-4 align-middle flex flex-wrap">${clsBtns}</td>`;
                 tb.appendChild(tr);
-            });
+            }
+        }
+
+        // 🔥 [新增] 專門處理整體分析的入口函式
+        async function openOverallAnalysis(worksheetId, assignmentIdsStr, title) {
+            const assignmentIds = JSON.parse(decodeURIComponent(assignmentIdsStr));
+            // 呼叫原本的分析 Modal，但傳入特殊參數
+            // 這裡我們需要微調 openAnalysisModal 來支援 "assignmentIds 是陣列" 的情況
+            await openAnalysisModal(assignmentIds, worksheetId, title);
         }
 
         window.toggleGroup = (master) => {
@@ -1067,8 +1148,6 @@
             try { 
                 await b.commit(); 
                 alert('已撤回'); 
-                
-                // 🔥 [Cache] 清除快取
                 localStorage.removeItem(CACHE_PREFIX + 'assign_' + currentUser.uid);
                 await loadAssignmentsData(true);
                 loadAssignments(); 
@@ -1087,198 +1166,545 @@
             const b = db.batch(); chk.forEach(c => b.update(db.collection('assignments').doc(c.value), { deadline: newDate || null }));
             try { 
                 await b.commit(); alert('更新成功'); document.getElementById('deadline-modal').classList.add('hidden'); 
-                
-                // 🔥 [Cache] 清除快取
                 localStorage.removeItem(CACHE_PREFIX + 'assign_' + currentUser.uid);
                 await loadAssignmentsData(true);
                 loadAssignments(); 
             } catch(e) { alert(e.message); }
         });
 
-        // 8. Grading List (Uses Shared Fetcher)
-        async function loadGradingList() {
-            const tb = document.getElementById('grading-list-body');
-            const items = await loadAssignmentsData(); // 讀快取
-            
-            tb.innerHTML = '';
-            if(items.length === 0) { tb.innerHTML = '<tr><td colspan="2" class="p-8 text-center text-gray-500">目前無發布作業</td></tr>'; return; }
-            
-            const g = {};
-            items.forEach(i => {
-                if(!g[i.title]) g[i.title] = [];
-                g[i.title].push(i);
-            });
-
-            Object.keys(g).forEach(t => {
-                const list = g[t].sort((a,b) => a.target_class.localeCompare(b.target_class));
-                const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-blue-50';
-                let clsBtns = '';
-                list.forEach(i => {
-                    clsBtns += `<button onclick="openSubmissionList('${i.id}', '${i.target_class}', '${i.worksheet_id}', '${i.title}')" class="m-1 bg-white hover:bg-blue-600 hover:text-white text-blue-700 border border-blue-200 px-4 py-2 rounded shadow-sm font-bold transition flex items-center gap-2"><span>🏫 ${i.target_class} 班</span><span class="text-xs opacity-70">➔ 批改</span></button>`;
-                });
-                tr.innerHTML = `<td class="p-4 font-bold text-gray-800 text-lg align-middle">${t}</td><td class="p-4 align-middle flex flex-wrap">${clsBtns}</td>`;
-                tb.appendChild(tr);
-            });
-        }
-
         window.openSubmissionList = async (aid, cls, wid, title) => {
             const modal = document.getElementById('submission-list-modal');
             const tb = document.getElementById('submission-list-body');
+            const masterChk = document.getElementById('submission-master-checkbox');
+            const analysisBtn = document.getElementById('open-analysis-btn');
+            
+            // 綁定分析按鈕
+            analysisBtn.onclick = () => openAnalysisModal(aid, wid, `${title} (${cls}班)`);
+
+            if(masterChk) {
+                masterChk.checked = false;
+                masterChk.onclick = (e) => {
+                    document.querySelectorAll('.sub-checkbox:not(:disabled)').forEach(cb => cb.checked = e.target.checked);
+                };
+            }
+
             document.getElementById('submission-modal-title').textContent = title;
             document.getElementById('submission-modal-subtitle').textContent = `班級：${cls} 班`;
-            tb.innerHTML = '<tr><td colspan="5" class="p-4 text-center">載入中...</td></tr>';
+            tb.innerHTML = '<tr><td colspan="6" class="p-4 text-center">載入中...</td></tr>';
             modal.classList.remove('hidden');
+            
             const snap = await db.collection('responses').where('assignment_id', '==', aid).orderBy('student_no').get();
             tb.innerHTML = '';
-            if(snap.empty) { tb.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">尚無繳交</td></tr>'; return; }
+            
+            if(snap.empty) { tb.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">尚無繳交</td></tr>'; return; }
+            
             snap.forEach(doc => {
                 const d = doc.data();
                 let st = '';
                 if(d.status==='submitted') st='<span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded font-bold">已繳交</span>';
                 else if(d.status==='graded') st='<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded font-bold">已批改</span>';
-                else st='<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded font-bold">訂正中</span>';
+                else if(d.status==='needs_correction') st='<span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded font-bold">訂正中</span>';
+                else st='<span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded">草稿/未交</span>';
+                
+                const canReturn = (d.status === 'submitted' || d.status === 'graded' || d.status === 'needs_correction');
+                const checkboxHtml = `<input type="checkbox" class="sub-checkbox form-checkbox h-4 w-4 text-orange-500 cursor-pointer" value="${doc.id}" ${canReturn ? '' : 'disabled'}>`;
+
                 const tr = document.createElement('tr'); tr.className = 'border-b hover:bg-gray-50';
-                tr.innerHTML = `<td class="p-3">${d.student_no||'?'}</td><td class="p-3 font-bold">${d.student_name}</td><td class="p-3">${st}</td><td class="p-3 font-mono font-bold text-blue-600">${d.score!==undefined?d.score:'-'}</td><td class="p-3 flex gap-2"><button onclick="openGradingModal('${doc.id}', '${wid}', '${d.student_name}', 'view')" class="bg-gray-100 text-gray-600 px-3 py-1 rounded text-sm hover:bg-gray-200 border border-gray-300 font-bold">👁️ 檢視</button><button onclick="openGradingModal('${doc.id}', '${wid}', '${d.student_name}', 'edit')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 font-bold shadow-sm">批改</button></td>`;
+                tr.innerHTML = `
+                    <td class="p-3 text-center">${checkboxHtml}</td>
+                    <td class="p-3">${d.student_no||'?'}</td>
+                    <td class="p-3 font-bold">${d.student_name}</td>
+                    <td class="p-3">${st}</td>
+                    <td class="p-3 font-mono font-bold text-blue-600">${d.score!==undefined?d.score:'-'}</td>
+                    <td class="p-3 flex gap-2">
+                        <button onclick="openGradingModal('${doc.id}', '${wid}', '${d.student_name}', 'view')" class="bg-gray-100 text-gray-600 px-3 py-1 rounded text-sm hover:bg-gray-200 border border-gray-300 font-bold">👁️ 檢視</button>
+                        <button onclick="openGradingModal('${doc.id}', '${wid}', '${d.student_name}', 'edit')" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 font-bold shadow-sm">批改</button>
+                    </td>`;
                 tb.appendChild(tr);
+            });
+            
+            const batchBtn = document.getElementById('batch-return-continue-btn');
+            const newBtn = batchBtn.cloneNode(true);
+            batchBtn.parentNode.replaceChild(newBtn, batchBtn);
+            
+            newBtn.addEventListener('click', async () => {
+                const checkedBoxes = document.querySelectorAll('.sub-checkbox:checked');
+                if(checkedBoxes.length === 0) return alert('請先勾選學生！');
+                if(!confirm(`確定要將選取的 ${checkedBoxes.length} 位學生發回續寫嗎？`)) return;
+
+                newBtn.disabled = true; newBtn.textContent = '處理中...';
+                try {
+                    const batch = db.batch();
+                    checkedBoxes.forEach(cb => {
+                        const ref = db.collection('responses').doc(cb.value);
+                        batch.update(ref, {
+                            status: 'draft',
+                            updated_at: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    });
+                    await batch.commit();
+                    alert('✅ 已成功發回續寫！');
+                    openSubmissionList(aid, cls, wid, title);
+                    loadGradingList();
+                } catch(e) { alert('發生錯誤: ' + e.message); } 
+                finally { newBtn.disabled = false; newBtn.textContent = '↩️ 發回續寫 (解鎖)'; }
             });
         };
 
-		window.openGradingModal = async (rid, wid, sname, mode = 'edit') => {
-            currentGradingResponseId = rid; currentGradingWorksheetId = wid;
-            const modal = document.getElementById('grading-modal');
-            const view = document.getElementById('grading-worksheet-content');
-            const scoreIn = document.getElementById('grade-score');
-            const commIn = document.getElementById('grade-comment');
+		// 🔥 [修改] 答題分析邏輯：(1) 修正圖表殘留 (2) 自動批改 (3) 單元標籤
+		// 🔥 [新增] 切換分析視圖 (列表 <-> 圖表)
+        window.toggleAnalysisView = (viewName) => {
+            const tableView = document.getElementById('analysis-table-view');
+            const chartView = document.getElementById('analysis-chart-view');
             
-            const leftPanel = document.getElementById('grading-left-panel');
-            const rightPanel = document.getElementById('grading-right-panel');
-            const viewCloseBtn = document.getElementById('view-mode-close-btn');
-
-            document.getElementById('preview-content').innerHTML = ''; 
-            document.getElementById('view-modal-content').innerHTML = ''; 
-
-            document.getElementById('grading-student-name').textContent = sname;
-            view.innerHTML = '<p class="p-4 text-center">載入中...</p>';
-            scoreIn.value = ''; commIn.value = '';
-            modal.classList.remove('hidden');
-
-            if (mode === 'view') {
-                leftPanel.classList.remove('w-2/3'); leftPanel.classList.add('w-full');
-                rightPanel.classList.add('hidden'); viewCloseBtn.classList.remove('hidden');
+            if (viewName === 'chart') {
+                tableView.classList.add('hidden');
+                chartView.classList.remove('hidden');
             } else {
-                leftPanel.classList.remove('w-full'); leftPanel.classList.add('w-2/3');
-                rightPanel.classList.remove('hidden'); viewCloseBtn.classList.add('hidden');
+                chartView.classList.add('hidden');
+                tableView.classList.remove('hidden');
+            }
+        };
+
+        // 🔥 [修改] 答題分析邏輯：生成右側統計表格 + Top 5
+        async function openAnalysisModal(assignmentIdOrArray, worksheetId, title) {
+            const modal = document.getElementById('analysis-modal');
+			const mainTitleEl = document.getElementById('analysis-main-title'); // 抓取主標題
+            const leaderboardEl = document.getElementById('analysis-leaderboard');
+            const tableBody = document.getElementById('analysis-table-body');
+            
+            // 重置狀態
+            if (analysisChartInstance) { analysisChartInstance.destroy(); analysisChartInstance = null; }
+            toggleAnalysisView('table'); // 預設顯示表格
+			
+			if (Array.isArray(assignmentIdOrArray)) {
+                mainTitleEl.textContent = '📊 全體答題分析';
+            } else {
+                mainTitleEl.textContent = '📊 班級答題分析';
             }
 
+            document.getElementById('analysis-subtitle').textContent = title;
+            leaderboardEl.innerHTML = '<p class="text-center text-gray-400 py-10">資料運算中...</p>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">載入中...</td></tr>';
+            modal.classList.remove('hidden');
+
             try {
-                const [r, w] = await Promise.all([db.collection('responses').doc(rid).get(), db.collection('worksheets').doc(wid).get()]);
-                const rd = r.data(); const wd = w.data();
+                // 1. 下載資料 (支援單一 ID 或 ID 陣列)
+                let resPromise;
                 
-                view.innerHTML = wd.html_content;
-                executeEmbeddedScripts(view);
-                
-                const ans = rd.answers || {}; 
-                const details = rd.grading_details || {};
-                
-                let currentAutoScore = 0;
-                let hasManualScore = (rd.score !== undefined && rd.score !== null);
-                
-                const calculatedQuestions = new Set(); 
-
-                if(rd.comment) commIn.value = rd.comment;
-
-                view.querySelectorAll('.worksheet-input').forEach(inp => {
-                    const n = inp.name; if(!n) return;
+                // 🔥 修正點：這裡參數名稱已統一為 assignmentIdOrArray
+                if (Array.isArray(assignmentIdOrArray)) {
+                    // 如果是陣列 (整體分析)，使用 'in' 查詢 (分批處理)
+                    const chunks = [];
+                    const ids = assignmentIdOrArray;
+                    for (let i = 0; i < ids.length; i += 10) {
+                        chunks.push(ids.slice(i, i + 10));
+                    }
                     
-                    if(ans[n] !== undefined) {
-                        if(inp.type === 'radio' || inp.type === 'checkbox') { if(inp.value === ans[n]) inp.checked = true; }
-                        else inp.value = ans[n];
-                    }
-                    inp.disabled = true;
+                    const promises = chunks.map(chunk => 
+                        db.collection('responses').where('assignment_id', 'in', chunk).get()
+                    );
+                    
+                    resPromise = Promise.all(promises).then(snapshots => {
+                        const allDocs = [];
+                        snapshots.forEach(snap => snap.forEach(doc => allDocs.push(doc)));
+                        return { 
+                            size: allDocs.length, 
+                            forEach: (cb) => allDocs.forEach(cb) 
+                        };
+                    });
 
-                    if (mode === 'edit') {
-                        let isCor = null, isInc = null, fb = '';
-                        let points = 0; 
-
-                        if (wd.answer_key && wd.answer_key[n]) {
-                            const key = wd.answer_key[n];
-                            points = parseInt(key.points) || 0; 
-                            if(key.note) fb = key.note;
-                            
-                            const stdAns = ans[n];
-                            if (key.answer !== null && key.answer !== undefined && stdAns !== undefined) {
-                                if (String(stdAns).trim() === String(key.answer).trim()) {
-                                    isCor = true;
-                                    if (!calculatedQuestions.has(n)) {
-                                        currentAutoScore += points;
-                                        calculatedQuestions.add(n);
-                                    }
-                                } else {
-                                    isInc = true;
-                                }
-                            }
-                        }
-
-                        if (details[n]) {
-                            isCor = details[n].is_correct === true;
-                            isInc = details[n].is_correct === false;
-                            fb = details[n].feedback || fb;
-                        }
-
-                        if (inp.type === 'radio') {
-                            const all = view.querySelectorAll(`input[type="radio"][name="${n}"]`);
-                            if (inp !== all[all.length - 1]) return;
-                        }
-                        
-                        const panel = document.createElement('div');
-                        panel.className = `grading-panel ${isCor?'correct':(isInc?'incorrect':'')}`;
-                        if (inp.type === 'radio') panel.style.marginTop = "15px";
-
-                        const currentStatus = isCor ? 'c' : (isInc ? 'i' : '');
-                        panel.setAttribute('data-status', currentStatus);
-
-                        const pointsBadge = points > 0 ? `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded ml-2">配分: ${points}</span>` : '';
-
-                        panel.innerHTML = `
-                            <div class="flex items-center justify-between mb-2">
-                                <div class="flex gap-2 items-center">
-                                    <label class="grading-radio-label">
-                                        <input type="radio" name="gs_${n}" value="c" data-points="${points}" ${isCor?'checked':''} onchange="updPanel(this)">
-                                        <span class="ml-1 btn-text-correct">⭕ 正確</span>
-                                    </label>
-                                    <label class="grading-radio-label">
-                                        <input type="radio" name="gs_${n}" value="i" data-points="${points}" ${isInc?'checked':''} onchange="updPanel(this)">
-                                        <span class="ml-1 btn-text-incorrect">❌ 錯誤</span>
-                                    </label>
-                                    ${pointsBadge}
-                                </div>
-                                <button class="text-xs text-gray-400" onclick="clsGrade('${n}', this)">清除</button>
-                            </div>
-                            <input type="text" class="grading-feedback-input w-full border border-gray-300 rounded p-1 text-sm outline-none" placeholder="個別評語..." value="${fb}" data-field="${n}">
-                        `;
-                        
-                        if (inp.type === 'radio') {
-                            panel.style.gridColumn = "1 / -1"; panel.style.width = "100%";
-                            const c = inp.parentNode;
-                            if(c.nextSibling) c.parentNode.insertBefore(panel, c.nextSibling); else c.parentNode.appendChild(panel);
-                        } else {
-                            if(inp.nextSibling) inp.parentNode.insertBefore(panel, inp.nextSibling); else inp.parentNode.appendChild(panel);
-                        }
-                    }
-                });
- 
-                if (mode === 'edit') {
-                    if (hasManualScore) {
-                        scoreIn.value = rd.score;
-                    } else {
-                        scoreIn.value = currentAutoScore;
-                    }
                 } else {
-                    scoreIn.value = rd.score !== undefined ? rd.score : '';
+                    // 原本的單一班級查詢
+                    resPromise = db.collection('responses').where('assignment_id', '==', assignmentIdOrArray).get();
                 }
 
-            } catch(e) { console.error(e); alert(e.message); modal.classList.add('hidden'); }
-        };
+                const [wsDoc, resSnap] = await Promise.all([
+                    db.collection('worksheets').doc(worksheetId).get(),
+                    resPromise
+                ]);
+
+                if (!wsDoc.exists) throw new Error('找不到學習單');
+                const wsData = wsDoc.data();
+                const answerKey = wsData.answer_key || {}; 
+                const totalStudents = resSnap.size;
+
+                if (totalStudents === 0) {
+                    const noDataHtml = '<p class="text-center text-gray-400 py-10">尚無學生繳交，無法分析。</p>';
+                    leaderboardEl.innerHTML = noDataHtml;
+                    tableBody.innerHTML = `<tr><td colspan="5">${noDataHtml}</td></tr>`;
+                    return;
+                }
+
+                // 2. 初始化題目結構
+                const questionMeta = {};
+                Object.keys(answerKey).forEach(key => {
+                    const qData = answerKey[key];
+                    // 解析單元
+                    let unitLabel = '';
+                    const parts = key.split('_');
+                    if (parts.length > 0 && parts[0].startsWith('u')) {
+                        const unitNum = parts[0].substring(1);
+                        if (!isNaN(unitNum)) unitLabel = `【單元 ${unitNum}】`;
+                    }
+                    // 標題
+                    let rawLabel = qData.label; 
+                    if (!rawLabel) rawLabel = qData.note ? qData.note.substring(0, 15) + '...' : key;
+                    
+                    questionMeta[key] = { 
+                        key: key,
+                        unit: unitLabel, 
+                        rawLabel: rawLabel,
+                        fullLabel: unitLabel ? `${unitLabel} ${rawLabel}` : rawLabel,
+                        stats: { answeredCount: 0, correct: 0, incorrect: 0, options: {} } 
+                    };
+                });
+
+                // 3. 統計數據
+                resSnap.forEach(doc => {
+                    const d = doc.data();
+                    const answers = d.answers || {};
+                    const details = d.grading_details || {};
+
+                    Object.keys(questionMeta).forEach(qKey => {
+                        const qStat = questionMeta[qKey].stats;
+                        const userAns = answers[qKey];
+                        
+                        const hasAnswered = (userAns !== undefined && userAns !== null && String(userAns).trim() !== '');
+
+                        if (hasAnswered) {
+                            qStat.answeredCount++; 
+                            const val = String(userAns).trim();
+                            qStat.options[val] = (qStat.options[val] || 0) + 1;
+
+                            let isCorrect = null;
+                            if (details[qKey] && details[qKey].is_correct !== undefined) {
+                                isCorrect = details[qKey].is_correct;
+                            } else {
+                                const stdData = answerKey[qKey];
+                                if (stdData && stdData.answer) {
+                                    const studentStr = String(userAns).trim().toLowerCase();
+                                    const stdStr = String(stdData.answer).trim().toLowerCase();
+                                    isCorrect = (studentStr === stdStr);
+                                }
+                            }
+
+                            if (isCorrect !== null) {
+                                if (isCorrect) qStat.correct++;
+                                else qStat.incorrect++;
+                            }
+                        }
+                    });
+                });
+
+                // 4. 計算錯誤率並排序 (自然排序)
+                const allQuestions = Object.values(questionMeta).map(q => {
+                    const total = q.stats.answeredCount;
+                    const errorRate = total > 0 ? (q.stats.incorrect / total) * 100 : 0;
+                    return { ...q, total, errorRate };
+                }).sort((a, b) => {
+                    return a.key.localeCompare(b.key, undefined, { numeric: true, sensitivity: 'base' });
+                });
+
+                // 5. 產生 Top 5 排行榜
+                const top5 = [...allQuestions]
+                    .filter(q => q.total > 0 && q.stats.incorrect > 0)
+                    .sort((a, b) => b.errorRate - a.errorRate)
+                    .slice(0, 5);
+
+                leaderboardEl.innerHTML = '';
+                if (top5.length === 0) {
+                     leaderboardEl.innerHTML = `<div class="text-center py-8"><div class="text-4xl mb-2">🎉</div><p class="text-gray-500 font-bold">目前沒有錯誤紀錄</p></div>`;
+                } else {
+                    top5.forEach((q, idx) => {
+                        const barWidth = `${q.errorRate}%`;
+                        const colorClass = idx === 0 ? 'bg-red-500' : (idx === 1 ? 'bg-orange-500' : 'bg-yellow-500');
+                        leaderboardEl.innerHTML += `
+                            <div class="mb-3 cursor-pointer hover:bg-gray-50 p-1 rounded transition" onclick="showChartFromLeaderboard('${q.key}')">
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="font-bold text-gray-800 truncate w-3/4">${idx+1}. ${q.fullLabel}</span>
+                                    <span class="text-red-600 font-bold">${Math.round(q.errorRate)}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div class="${colorClass} h-2.5 rounded-full" style="width: ${barWidth}"></div>
+                                </div>
+                            </div>`;
+                    });
+                }
+
+                // 6. 產生右側統計表格
+                tableBody.innerHTML = '';
+                let lastUnit = null;
+
+                allQuestions.forEach(q => {
+                    // 插入單元標題列
+                    if (q.unit !== lastUnit && q.unit) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td colspan="5" class="bg-gray-200 font-bold text-gray-700 py-1 px-3 text-xs">${q.unit}</td>`;
+                        tableBody.appendChild(row);
+                        lastUnit = q.unit;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-purple-50 cursor-pointer transition border-b border-gray-100 last:border-0";
+                    tr.onclick = () => {
+                        document.getElementById('chart-question-title').textContent = q.fullLabel;
+                        renderChart(q);
+                        toggleAnalysisView('chart');
+                    };
+
+                    const rateColor = q.errorRate > 50 ? 'text-red-600 font-bold' : (q.errorRate > 0 ? 'text-orange-500' : 'text-gray-400');
+                    
+                    tr.innerHTML = `
+                        <td class="p-3 text-gray-700 font-medium">${q.rawLabel}</td>
+                        <td class="p-3 text-center text-gray-500">${q.total}</td>
+                        <td class="p-3 text-center text-green-600 bg-green-50/50">${q.stats.correct}</td>
+                        <td class="p-3 text-center text-red-600 bg-red-50/50">${q.stats.incorrect}</td>
+                        <td class="p-3 text-center ${rateColor}">${Math.round(q.errorRate)}%</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+
+                window.showChartFromLeaderboard = (key) => {
+                    const q = questionMeta[key];
+                    if(q) {
+                        document.getElementById('chart-question-title').textContent = q.fullLabel;
+                        renderChart(q);
+                        toggleAnalysisView('chart');
+                    }
+                };
+
+            } catch (e) {
+                console.error(e);
+                leaderboardEl.innerHTML = `<p class="text-red-500">分析失敗: ${e.message}</p>`;
+            }
+        }
+ 
+        function renderChart(qData) {
+            const ctx = document.getElementById('analysis-chart').getContext('2d');
+            
+            // 銷毀舊圖表
+            if (analysisChartInstance) analysisChartInstance.destroy();
+
+            const labels = Object.keys(qData.stats.options);
+            const data = Object.values(qData.stats.options);
+            
+            // 顏色生成
+            const bgColors = labels.map(() => 'rgba(54, 162, 235, 0.6)');
+            const borderColors = labels.map(() => 'rgba(54, 162, 235, 1)');
+
+            analysisChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '選擇人數',
+                        data: data,
+                        backgroundColor: bgColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: `作答分佈：${qData.label}` }
+                    }
+                }
+            });
+        }
+
+		window.openGradingModal = async (rid, wid, sname, mode = 'edit') => {
+			currentGradingResponseId = rid; 
+			currentGradingWorksheetId = wid;
+			const modal = document.getElementById('grading-modal');
+			const view = document.getElementById('grading-worksheet-content');
+			const scoreIn = document.getElementById('grade-score');
+			const commIn = document.getElementById('grade-comment');
+			
+			const leftPanel = document.getElementById('grading-left-panel');
+			const rightPanel = document.getElementById('grading-right-panel');
+			const viewCloseBtn = document.getElementById('view-mode-close-btn');
+
+			document.getElementById('preview-content').innerHTML = ''; 
+			document.getElementById('view-modal-content').innerHTML = ''; 
+
+			document.getElementById('grading-student-name').textContent = sname;
+			// 增加一個標籤顯示載入狀態
+			const nameArea = document.getElementById('grading-student-name');
+			const draftBadgeId = 'draft-badge-indicator';
+			const oldBadge = document.getElementById(draftBadgeId);
+			if(oldBadge) oldBadge.remove();
+
+			view.innerHTML = '<p class="p-4 text-center">載入中...</p>';
+			scoreIn.value = ''; commIn.value = '';
+			modal.classList.remove('hidden');
+
+			// 切換模式顯示
+			if (mode === 'view') {
+				leftPanel.classList.remove('w-2/3'); leftPanel.classList.add('w-full');
+				rightPanel.classList.add('hidden'); viewCloseBtn.classList.remove('hidden');
+			} else {
+				leftPanel.classList.remove('w-full'); leftPanel.classList.add('w-2/3');
+				rightPanel.classList.remove('hidden'); viewCloseBtn.classList.add('hidden');
+			}
+
+			try {
+				const [r, w] = await Promise.all([
+					db.collection('responses').doc(rid).get(), 
+					db.collection('worksheets').doc(wid).get()
+				]);
+				
+				// 1. 取得雲端資料
+				let rd = r.data(); 
+				const wd = w.data();
+				
+				// ---------------------------------------------------------
+				// 🔥 新增：檢查本地暫存邏輯
+				// ---------------------------------------------------------
+				if (mode === 'edit') {
+					const draftKey = `grading_draft_${rid}`;
+					const localJson = localStorage.getItem(draftKey);
+					
+					if (localJson) {
+						const draft = JSON.parse(localJson);
+						// 簡單的時間比較或直接詢問
+						const useDraft = confirm(`⚠️ 系統發現此作業有「未送出的批改暫存」。\n\n是否載入暫存檔？\n(按「取消」則載入雲端原始資料)`);
+						
+						if (useDraft) {
+							// 使用暫存資料覆蓋 rd (雲端資料)
+							console.log("載入暫存:", draft);
+							if (draft.score !== undefined) rd.score = draft.score;
+							if (draft.comment !== undefined) rd.comment = draft.comment;
+							// 合併 grading_details：以暫存為主，保留原有的 key
+							rd.grading_details = { ...(rd.grading_details || {}), ...draft.grading_details };
+							
+							// 顯示標記
+							nameArea.innerHTML += ` <span id="${draftBadgeId}" class="text-xs bg-gray-600 text-white px-2 py-0.5 rounded ml-2">💾 已載入暫存</span>`;
+						}
+					}
+				}
+				// ---------------------------------------------------------
+
+				view.innerHTML = wd.html_content;
+				executeEmbeddedScripts(view);
+				
+				const ans = rd.answers || {}; 
+				const details = rd.grading_details || {};
+				
+				let currentAutoScore = 0;
+				let hasManualScore = (rd.score !== undefined && rd.score !== null && rd.score !== "");
+				
+				const calculatedQuestions = new Set(); 
+
+				if(rd.comment) commIn.value = rd.comment;
+
+				view.querySelectorAll('.worksheet-input').forEach(inp => {
+					const n = inp.name; if(!n) return;
+					
+					// 填入學生答案
+					if(ans[n] !== undefined) {
+						if(inp.type === 'radio' || inp.type === 'checkbox') { if(inp.value === ans[n]) inp.checked = true; }
+						else inp.value = ans[n];
+					}
+					inp.disabled = true;
+
+					// 產生批改面板
+					if (mode === 'edit') {
+						let isCor = null, isInc = null, fb = '';
+						let points = 0; 
+
+						// 取得自動批改邏輯與配分
+						if (wd.answer_key && wd.answer_key[n]) {
+							const key = wd.answer_key[n];
+							points = parseInt(key.points) || 0; 
+							if(key.note) fb = key.note;
+							
+							// 如果尚未有人工批改 (details[n])，才進行自動算分累加
+							// 但因為我們可能載入了暫存，details[n] 可能已經有值了
+							const stdAns = ans[n];
+							if (key.answer !== null && key.answer !== undefined && stdAns !== undefined) {
+								if (String(stdAns).trim() === String(key.answer).trim()) {
+									if (!calculatedQuestions.has(n)) {
+										currentAutoScore += points;
+										calculatedQuestions.add(n);
+									}
+								}
+							}
+						}
+
+						// 應用批改狀態 (來自雲端 或 暫存)
+						if (details[n]) {
+							isCor = details[n].is_correct === true;
+							isInc = details[n].is_correct === false;
+							// 如果暫存有評語，就用暫存的，否則用預設/雲端的
+							if (details[n].feedback !== undefined) fb = details[n].feedback;
+						}
+
+						// 避免 Radio 重複渲染
+						if (inp.type === 'radio') {
+							const all = view.querySelectorAll(`input[type="radio"][name="${n}"]`);
+							if (inp !== all[all.length - 1]) return;
+						}
+						
+						const panel = document.createElement('div');
+						panel.className = `grading-panel ${isCor?'correct':(isInc?'incorrect':'')}`;
+						if (inp.type === 'radio') panel.style.marginTop = "15px";
+
+						const currentStatus = isCor ? 'c' : (isInc ? 'i' : '');
+						panel.setAttribute('data-status', currentStatus);
+
+						const pointsBadge = points > 0 ? `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded ml-2">配分: ${points}</span>` : '';
+
+						panel.innerHTML = `
+							<div class="flex items-center justify-between mb-2">
+								<div class="flex gap-2 items-center">
+									<label class="grading-radio-label">
+										<input type="radio" name="gs_${n}" value="c" data-points="${points}" ${isCor?'checked':''} onchange="updPanel(this)">
+										<span class="ml-1 btn-text-correct">⭕ 正確</span>
+									</label>
+									<label class="grading-radio-label">
+										<input type="radio" name="gs_${n}" value="i" data-points="${points}" ${isInc?'checked':''} onchange="updPanel(this)">
+										<span class="ml-1 btn-text-incorrect">❌ 錯誤</span>
+									</label>
+									${pointsBadge}
+								</div>
+								<button class="text-xs text-gray-400 hover:text-red-500 transition" onclick="clsGrade('${n}', this)">清除評語</button>
+							</div>
+							<input type="text" class="grading-feedback-input w-full border border-gray-300 rounded p-1 text-sm outline-none" placeholder="個別評語..." value="${fb}" data-field="${n}">
+						`;
+						
+						// 插入 DOM
+						if (inp.type === 'radio') {
+							panel.style.gridColumn = "1 / -1"; panel.style.width = "100%";
+							const c = inp.parentNode;
+							if(c.nextSibling) c.parentNode.insertBefore(panel, c.nextSibling); else c.parentNode.appendChild(panel);
+						} else {
+							if(inp.nextSibling) inp.parentNode.insertBefore(panel, inp.nextSibling); else inp.parentNode.appendChild(panel);
+						}
+					}
+				});
+
+				// 設定總分欄位
+				if (mode === 'edit') {
+					// 如果暫存/雲端已有分數，就用已有的 (hasManualScore 判斷邏輯需修正，因為 rd 可能被暫存覆蓋)
+					// 只要 rd.score 有值 (包含0)，就顯示 rd.score，否則顯示自動計算的 currentAutoScore
+					if (rd.score !== undefined && rd.score !== null && rd.score !== "") {
+						scoreIn.value = rd.score;
+					} else {
+						scoreIn.value = currentAutoScore;
+					}
+				} else {
+					scoreIn.value = rd.score !== undefined ? rd.score : '';
+				}
+
+			} catch(e) { console.error(e); alert(e.message); modal.classList.add('hidden'); }
+		};		
 
         window.updPanel = (r) => { 
             const p = r.closest('.grading-panel'); 
@@ -1304,53 +1730,92 @@
             scoreInput.value = currentTotal;
             p.setAttribute('data-status', newStatus); 
         };
-		
+
+		// 🔥 [修改] 清除按鈕邏輯：支援「清除」與「復原 (Undo)」切換
         window.clsGrade = (n, btn) => { 
             const p = btn.closest('.grading-panel'); 
-            const oldStatus = p.getAttribute('data-status') || '';
+            const input = p.querySelector('.grading-feedback-input');
             
-            const cRadio = p.querySelector('input[value="c"]');
-            const points = cRadio ? (parseInt(cRadio.getAttribute('data-points')) || 0) : 0;
+            if (!input) return;
 
-            if (oldStatus === 'c') {
-                const scoreInput = document.getElementById('grade-score');
-                let currentTotal = parseInt(scoreInput.value) || 0;
-                currentTotal -= points;
-                scoreInput.value = currentTotal;
+            // 檢查目前按鈕是否處於「等待復原」狀態
+            const isUndoMode = btn.getAttribute('data-is-undo') === 'true';
+
+            if (isUndoMode) {
+                // 🟢 [復原模式]：把之前的文字填回去
+                const prevText = input.getAttribute('data-prev-text') || '';
+                input.value = prevText;
+
+                // 重置按鈕樣式回「清除評語」
+                btn.textContent = '清除評語';
+                btn.classList.remove('text-blue-600', 'font-bold');
+                btn.classList.add('text-gray-400', 'hover:text-red-500');
+                btn.setAttribute('data-is-undo', 'false');
+                input.removeAttribute('data-prev-text'); // 清除暫存
+
+            } else {
+                // 🔴 [清除模式]：先備份文字，再清空
+                const currentText = input.value;
+                if (!currentText) return; // 如果本來就沒字，就不動作
+
+                // 備份文字到 input 的屬性中
+                input.setAttribute('data-prev-text', currentText);
+                input.value = '';
+
+                // 改變按鈕變成「復原」
+                btn.textContent = '↩️ 復原';
+                btn.classList.remove('text-gray-400', 'hover:text-red-500');
+                btn.classList.add('text-blue-600', 'font-bold'); // 變藍色顯眼一點
+                btn.setAttribute('data-is-undo', 'true');
             }
-
-            p.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false); 
-            p.classList.remove('correct', 'incorrect'); 
-            p.setAttribute('data-status', ''); 
+            
+            input.focus(); // 保持焦點方便操作
         };
 		
         window.insertComment = (t) => { const el = document.getElementById('grade-comment'); el.value = el.value ? el.value+'，'+t : t; };
 
-        const doGrade = async (status) => {
-            const s = parseFloat(document.getElementById('grade-score').value);
-            const c = document.getElementById('grade-comment').value;
-            if(status==='graded' && isNaN(s)) return alert('請打分');
-            const btn = document.getElementById(status==='graded'?'submit-grade-btn':'return-correction-btn');
-            btn.disabled = true; btn.textContent = '儲存中...';
-            const gd = {};
-            document.querySelectorAll('.grading-feedback-input').forEach(inp => {
-                const n = inp.dataset.field; const p = inp.closest('.grading-panel');
-                const isC = p.querySelector('input[value="c"]').checked; const isI = p.querySelector('input[value="i"]').checked;
-                let finalC = null; if(isC) finalC = true; else if(isI) finalC = false;
-                if(finalC !== null || inp.value.trim()!=='') gd[n] = { is_correct: finalC, feedback: inp.value.trim() };
-            });
-            try {
-                await db.collection('responses').doc(currentGradingResponseId).update({
-                    score: isNaN(s)?0:s, comment: c, grading_details: gd, status: status,
-                    graded_at: firebase.firestore.FieldValue.serverTimestamp(), graded_by: currentUser.uid
-                });
-                alert('完成！');
-                document.getElementById('grading-modal').classList.add('hidden');
-                document.getElementById('submission-list-modal').classList.add('hidden'); 
-                loadGradingList(); 
-            } catch(e) { alert(e.message); } 
-            finally { btn.disabled=false; btn.textContent=status==='graded'?'✅ 送出成績':'↩️ 退回訂正'; }
-        };
+		const doGrade = async (status) => {
+			const s = parseFloat(document.getElementById('grade-score').value);
+			const c = document.getElementById('grade-comment').value;
+			
+			// 如果是正式給分，必須填寫分數
+			if(status==='graded' && isNaN(s)) return alert('請打分');
+			
+			// 使用新寫的 collectCurrentGradingData 來保持邏輯一致 (稍微修改以符合 db 寫入格式)
+			const btn = document.getElementById(status==='graded'?'submit-grade-btn':'return-correction-btn');
+			btn.disabled = true; btn.textContent = '儲存中...';
+
+			// 重新蒐集一次資料，確保是最新狀態
+			const data = collectCurrentGradingData();
+			
+			try {
+				await db.collection('responses').doc(currentGradingResponseId).update({
+					score: isNaN(s) ? 0 : s, 
+					comment: c, 
+					grading_details: data.grading_details, // 使用 helper 蒐集的 details
+					status: status,
+					graded_at: firebase.firestore.FieldValue.serverTimestamp(), 
+					graded_by: currentUser.uid
+				});
+				
+				// ---------------------------------------------------------
+				// 🔥 新增：送出成功後，清除對應的 LocalStorage 暫存
+				// ---------------------------------------------------------
+				const draftKey = `grading_draft_${currentGradingResponseId}`;
+				localStorage.removeItem(draftKey);
+				// ---------------------------------------------------------
+
+				alert('完成！');
+				document.getElementById('grading-modal').classList.add('hidden');
+				document.getElementById('submission-list-modal').classList.add('hidden'); 
+				loadGradingList(); 
+			} catch(e) { 
+				alert(e.message); 
+			} finally { 
+				btn.disabled=false; 
+				btn.textContent=status==='graded'?'✅ 送出成績':'↩️ 退回訂正'; 
+			}
+		};
         document.getElementById('submit-grade-btn').onclick = () => doGrade('graded');
         document.getElementById('return-correction-btn').onclick = () => doGrade('needs_correction');
 		
@@ -1379,6 +1844,58 @@
 				alert('複製失敗，請手動選取複製。');
 			});
 		};
+		
+		// 觸發退出確認
+		window.confirmGradingExit = () => {
+			// 簡單判斷：如果是檢視模式 (view mode)，直接關閉即可
+			const rightPanel = document.getElementById('grading-right-panel');
+			if (rightPanel.classList.contains('hidden')) {
+				document.getElementById('grading-modal').classList.add('hidden');
+				return;
+			}
+			document.getElementById('grading-exit-modal').classList.remove('hidden');
+		};
+
+		// 暫存並退出
+		window.saveDraftAndExit = () => {
+			try {
+				const data = collectCurrentGradingData();
+				const key = `grading_draft_${currentGradingResponseId}`;
+				localStorage.setItem(key, JSON.stringify(data));
+				
+				// 視覺回饋 (可選)
+				console.log('批改暫存已儲存', data);
+				
+				document.getElementById('grading-exit-modal').classList.add('hidden');
+				document.getElementById('grading-modal').classList.add('hidden');
+			} catch (e) {
+				alert('暫存失敗 (可能是儲存空間已滿)');
+			}
+		};
+
+		// 直接退出
+		window.discardAndExit = () => {
+			document.getElementById('grading-exit-modal').classList.add('hidden');
+			document.getElementById('grading-modal').classList.add('hidden');
+		};
     </script>
+	<div id="grading-exit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-[60]">
+    <div class="bg-white rounded-lg shadow-xl w-96 p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">⚠️ 尚未送出成績</h3>
+        <p class="text-gray-600 mb-6">您正在批改這份作業，尚未送出到雲端。請問要如何處理？</p>
+        
+        <div class="flex flex-col gap-3">
+            <button onclick="saveDraftAndExit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition flex items-center justify-center gap-2">
+                💾 暫存並退出 <span class="text-xs font-normal opacity-80">(下次載入)</span>
+            </button>
+            <button onclick="discardAndExit()" class="w-full bg-red-100 hover:bg-red-200 text-red-600 font-bold py-2 px-4 rounded transition">
+                🚪 直接退出 <span class="text-xs font-normal opacity-70">(不儲存)</span>
+            </button>
+            <button onclick="document.getElementById('grading-exit-modal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition">
+                ↩️ 回到批改
+            </button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
