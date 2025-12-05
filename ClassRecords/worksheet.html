@@ -293,10 +293,9 @@
             auth.signOut().then(() => window.location.reload());
         });
 
-        // -----------------------------------------------------------
+		// -----------------------------------------------------------
         // 3. 儀表板 (Dashboard)
         // -----------------------------------------------------------
-        // 取得本機暫存的 Key
         function getLocalDraftKey(uid, assignmentId) {
             return `ws_draft_${uid}_${assignmentId}`;
         }
@@ -338,7 +337,6 @@
                 const taskId = doc.id;
                 const userResponse = responseMap[taskId];
                 
-                // 檢查本地暫存
                 const localKey = getLocalDraftKey(currentUser.uid, taskId);
                 const hasLocalDraft = localStorage.getItem(localKey) !== null;
 
@@ -346,60 +344,80 @@
                 if (userResponse) status = userResponse.status;
 
                 const card = document.createElement('div');
-                card.className = "bg-white p-4 rounded-lg shadow border-l-4 transition hover:shadow-md cursor-pointer flex justify-between items-center";
-                const dateStr = task.created_at ? new Date(task.created_at.seconds * 1000).toLocaleDateString() : '';
+                card.className = "bg-white p-4 rounded-lg shadow border-l-4 transition hover:shadow-md cursor-pointer flex justify-between items-center gap-4";
+                
+                // 日期格式化 (簡化顯示)
+                const dateObj = task.created_at ? new Date(task.created_at.seconds * 1000) : null;
+                const dateStr = dateObj ? `${dateObj.getFullYear()}/${dateObj.getMonth()+1}/${dateObj.getDate()}` : '--/--';
 
-                // 已繳交或已批改 -> 歷史區
+                // ---------------------------------------------------
+                // 歷史紀錄區 (已繳交/已批改)
+                // ---------------------------------------------------
                 if (status === 'submitted' || status === 'graded') {
                     card.classList.add('border-green-500');
                     let scoreHtml = status === 'graded' 
-                        ? `<span class="text-green-600 font-bold text-lg">${userResponse.score} 分</span>` 
-                        : `<span class="text-gray-500 text-sm">已繳交</span>`;
+                        ? `<span class="text-green-600 font-bold text-lg whitespace-nowrap">${userResponse.score} 分</span>` 
+                        : `<span class="text-gray-500 text-sm whitespace-nowrap">已繳交</span>`;
                     
-                    card.innerHTML = `<div><h4 class="font-bold text-gray-800">${task.worksheet_title}</h4><p class="text-xs text-gray-400">${dateStr}</p></div><div>${scoreHtml}</div>`;
-                    card.onclick = () => openWorksheet(taskId, task, userResponse, true); // true = 唯讀
+                    // 修改：將日期與標題放在一起，或在下方單行顯示
+                    card.innerHTML = `
+                        <div class="flex-grow overflow-hidden">
+                            <h4 class="font-bold text-gray-800 truncate">${task.worksheet_title}</h4>
+                            <p class="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                                📅 ${dateStr} 發布
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0 text-right pl-2">
+                            ${scoreHtml}
+                        </div>
+                    `;
+                    card.onclick = () => openWorksheet(taskId, task, userResponse, true); 
                     historyList.appendChild(card);
                 } 
-                // 未繳交 / 訂正 / 草稿 -> 待辦區
+                // ---------------------------------------------------
+                // 待辦事項區 (新作業/草稿/訂正)
+                // ---------------------------------------------------
                 else {
                     todoCount++;
                     let statusLabel = '';
                     let borderColor = 'border-blue-500';
 
-                    // 優先權顯示：本機暫存 > 雲端草稿 > 訂正 > 新作業
                     if (hasLocalDraft) {
-                        statusLabel = `<span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded font-bold">💾 本機暫存</span>`;
+                        statusLabel = `<span class="bg-gray-200 text-gray-700 text-xs px-2 py-0.5 rounded font-bold whitespace-nowrap">💾 暫存</span>`;
                         borderColor = 'border-gray-400';
                     } else if (status === 'draft') {
-                        statusLabel = `<span class="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded font-bold">☁️ 雲端暫存</span>`;
+                        statusLabel = `<span class="bg-orange-100 text-orange-700 text-xs px-2 py-0.5 rounded font-bold whitespace-nowrap">☁️ 暫存</span>`;
                         borderColor = 'border-orange-400';
                     } else if (status === 'needs_correction') {
-                        statusLabel = `<span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded font-bold">⚠️ 需訂正</span>`;
+                        statusLabel = `<span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded font-bold whitespace-nowrap">⚠️ 訂正</span>`;
                         borderColor = 'border-yellow-400';
                     } else {
-                        statusLabel = `<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold">🆕 新作業</span>`;
+                        statusLabel = `<span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-bold whitespace-nowrap">🆕 新作業</span>`;
                     }
                     
-                    card.classList.remove('border-blue-500'); // 移除預設
+                    card.classList.remove('border-blue-500');
                     card.classList.add(borderColor);
 
+                    // 修改：將狀態、發布日、截止日整合在同一行 (使用 flex-wrap 避免手機版跑版)
                     card.innerHTML = `
-                        <div>
-                            <h4 class="font-bold text-gray-800 text-lg">${task.worksheet_title}</h4>
-                            <div class="flex items-center gap-2 mt-1">
+                        <div class="flex-grow pr-2">
+                            <h4 class="font-bold text-gray-800 text-lg leading-tight mb-1.5">${task.worksheet_title}</h4>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                                 ${statusLabel}
-                                <span class="text-xs text-gray-400">截止: ${task.deadline || '無'}</span>
+                                <span class="flex items-center gap-1" title="發布日期">📅 ${dateStr}</span>
+                                <span class="flex items-center gap-1 ${task.deadline?'text-red-400':''}" title="截止日期">⏳ ${task.deadline || '無期限'}</span>
                             </div>
                         </div>
-                        <button class="bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm shadow hover:bg-blue-700">前往作答</button>
+                        <button class="flex-shrink-0 bg-blue-600 text-white px-4 py-2 rounded font-bold text-sm shadow hover:bg-blue-700 whitespace-nowrap">前往作答</button>
                     `;
-                    card.onclick = () => openWorksheet(taskId, task, userResponse, false); // false = 作答模式
+                    card.onclick = () => openWorksheet(taskId, task, userResponse, false);
                     todoList.appendChild(card);
                 }
             });
             document.getElementById('todo-count').textContent = todoCount;
         }
-
+		
+ 
         // -----------------------------------------------------------
         // 4. 學習單邏輯 (開啟、填答、三按鈕功能)
         // -----------------------------------------------------------
