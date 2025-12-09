@@ -22,24 +22,39 @@
             </div>            
         </div>
        <div class="header-right-panel">
-            <div class="main-actions">
-				<a id="timetable-link" href="./timetable.html" style="color: white; text-decoration: none;"><button>課表系統</button></a>
-                <a href="./calculator.html" style="color: white; text-decoration: none;"><button>成績計算</button></a>
-                <a href="./report.html" style="color: white; text-decoration: none;"><button>數據報告</button></a>
-                </div>
-           <div class="user-profile">
+			<div class="system-switcher-container">
+				<button id="sys-switch-btn" class="sys-switch-btn">
+					🗂️ 切換系統 ▼
+				</button>
+				<div id="sys-switch-menu" class="sys-switch-content">
+					<div class="sys-item" data-target="teacher.html">
+						<span class="sys-link" onclick="window.location.href='teacher.html'">學生綜合紀錄系統(主頁)</span>
+						<span class="sys-home-icon" onclick="setDefaultSystem('teacher.html', '學生綜合紀錄系統')">🏠</span>
+					</div>
+					<div class="sys-item" data-target="timetable.html">
+						<span class="sys-link" onclick="window.location.href='timetable.html'">課表系統</span>
+						<span class="sys-home-icon" onclick="setDefaultSystem('timetable.html', '課表系統')">🏠</span>
+					</div>
+					<div class="sys-item" data-target="worksheet_manager.html">
+						<span class="sys-link" onclick="window.location.href='worksheet_manager.html'">學習單系統</span>
+						<span class="sys-home-icon" onclick="setDefaultSystem('worksheet_manager.html', '學習單系統')">🏠</span>
+					</div>
+				</div>
+			</div>
+			<div class="user-profile">
 				<button id="reload-cache-btn" title="重新載入基本資料 (學生名冊/課表)">🔄</button>
             </div>
             <div class="dropdown">
                 <button id="dropdown-btn" class="icon-btn" title="設定與功能">⚙️</button>
-                <div id="dropdown-menu" class="dropdown-content">
-                    <button id="class-settings-btn">班級顯示設定</button>
-                    <button id="change-password-btn">修改密碼</button>
-                    <button id="tutorial-btn">操作說明</button>
-                    <button id="info-btn-new">功能說明</button>
-                    <hr style="margin: 4px 10px; border-color: #eee; border-style: solid; border-width: 1px 0 0 0;">
-                    <button id="logout-btn">登出</button>					
-                </div>
+				<div id="dropdown-menu" class="dropdown-content">
+					<button id="class-settings-btn">班級顯示設定</button>
+					<button id="toggle-direct-entry-btn">⚡ 直進上課班級 (檢查中...)</button>
+					<button id="change-password-btn">修改密碼</button>
+					<button id="tutorial-btn">操作說明</button>
+					<button id="info-btn-new">功能說明</button>
+					<hr style="margin: 4px 10px; border-color: #eee; border-style: solid; border-width: 1px 0 0 0;">
+					<button id="logout-btn">登出</button>					
+				</div>
 				<span id="user-email" title="我的課表"></span>
             </div>
         </div>
@@ -91,7 +106,10 @@
                 </div>
 				<form id="add-record-form" novalidate>
 					<input type="number" id="record-points" placeholder="加/減分" disabled>
-					<input type="text" id="record-text" placeholder="文字紀錄 (選填)" list="recent-texts-list">
+					<div class="input-wrapper">
+						<input type="text" id="record-text" placeholder="文字紀錄 (選填)" list="recent-texts-list" autocomplete="off">
+						<span id="clear-text-btn" title="清除文字">X</span>
+					</div>
 					<datalist id="recent-texts-list"></datalist>
 				</form>
             </div>
