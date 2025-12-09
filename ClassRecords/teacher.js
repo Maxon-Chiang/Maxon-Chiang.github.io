@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function() {
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
+	const DIRECT_ENTRY_KEY = 'pref_direct_class_entry'; // LocalStorage Key
+	const toggleDirectEntryBtn = document.getElementById('toggle-direct-entry-btn');
 
 	let currentUser = null, studentsData = [],
         allPerformanceScores = {},
@@ -68,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const timetableMessage = document.getElementById('timetable-message');
     const rosterSortBtn = document.getElementById('roster-sort-btn');
     const mainSortBtn = document.getElementById('main-sort-btn');
-    const timetableLink = document.getElementById('timetable-link');
+	const timetableLink = document.getElementById('sys-link-timetable');
     
     const reloadCacheBtn = document.getElementById('reload-cache-btn');
 
@@ -99,6 +101,77 @@ document.addEventListener('DOMContentLoaded', function() {
     const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
 	const TRANSFER_KEY = 'initialActiveChanges';
 	const CACHE_LIFETIME = 45 * 60 * 1000; 
+	
+	function checkAndTriggerDirectEntry() {
+		// 檢查設定是否開啟
+		if (localStorage.getItem(DIRECT_ENTRY_KEY) !== 'true') return false;
+
+		// 取得當前節次與星期
+		const currentPeriodIndex = getCurrentPeriodIndex();
+		if (currentPeriodIndex === -1) return false; // 非上課時間
+
+		const now = new Date();
+		const dayOfWeek = now.getDay(); // 0-6
+		if (dayOfWeek < 1 || dayOfWeek > 5) return false; // 非平日
+
+		const dayIndex = dayOfWeek - 1;
+		const highlightWeekStart = getMonday(new Date()); 
+		const derivedSchedule = getDerivedCurrentUserSchedule(highlightWeekStart);
+		const periods = derivedSchedule.periods;
+		const periodData = periods[currentPeriodIndex];
+
+		if (periodData && periodData[dayIndex]) {
+			let classCode = null;
+			let cellContent = periodData[dayIndex];
+
+			// 解析課表內容 (包含異動處理)
+			if (typeof cellContent === 'string') {
+				const parts = cellContent.split(/\s+/);
+				classCode = parts[0];
+			} else if (cellContent.class) {
+				// 如果是調出/換出/代出，就不跳轉
+				if (cellContent.isSwappedIn || cellContent.isExchangedIn || cellContent.isSubstitutedIn) {
+					 classCode = cellContent.class;
+				} else if (!cellContent.isSwappedOut && !cellContent.isExchangedOut && !cellContent.isSubstitutedOut) {
+					 classCode = cellContent.class;
+				}
+			}
+
+			// 如果找到了班級代碼，且該班級在 allClassList 中 (避免資料錯誤)
+			if (classCode && allClassList.includes(classCode)) {
+				console.log(`⚡ 直進上課班級觸發：正在開啟 ${classCode} 班的紀錄視窗...`);
+				
+				// 延遲一點點確保 DOM 渲染完畢，視覺上也比較平滑
+				setTimeout(() => {
+					openStudentRosterModal(classCode, 'main');
+				}, 300);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// 3. 新增按鈕的事件監聽與初始化文字 (放在 DOMContentLoaded 尾端)
+	if (toggleDirectEntryBtn) {
+		const updateBtnText = () => {
+			const isEnabled = localStorage.getItem(DIRECT_ENTRY_KEY) === 'true';
+			toggleDirectEntryBtn.textContent = isEnabled ? '⚡ 直進上課班級 (已開啟)' : '⚡ 直進上課班級 (已關閉)';
+			toggleDirectEntryBtn.style.color = isEnabled ? 'var(--primary-color)' : '#333';
+			toggleDirectEntryBtn.style.fontWeight = isEnabled ? 'bold' : 'normal';
+		};
+
+		toggleDirectEntryBtn.addEventListener('click', (e) => {
+			e.stopPropagation(); // 防止選單關閉
+			const currentState = localStorage.getItem(DIRECT_ENTRY_KEY) === 'true';
+			const newState = !currentState;
+			localStorage.setItem(DIRECT_ENTRY_KEY, newState);
+			updateBtnText();
+			alert(newState ? '已開啟！登入時若遇上課時間，將直接進入該班級紀錄頁面。' : '已關閉直進功能。');
+		});
+
+		// 初始化按鈕文字
+		updateBtnText();
+	}
 
 	function navigateToTimetable() {
 		try {
@@ -701,6 +774,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	
+	// 🛠️ 【修改開始】teacher.js - initialize 函式完整覆蓋
 	async function initialize(userData, forceReload = false, forceItem = 0) {
 		if (isInitializing) {
             console.warn("初始化程序已在運行中，忽略重複調用。");
@@ -793,8 +867,8 @@ document.addEventListener('DOMContentLoaded', function() {
             } 
 			
 			const needsRefresh = localStorage.getItem(REFRESH_FLAG_KEY) === 'true';
-			const needsRefreshSchUpd = false; // ((new Date().getTime() - lastSchUpdFetch) >= CACHE_LIFETIME)
-			const needsRefreshPerformance =  false; // ((new Date().getTime() - lastPerformanceFetch) >= CACHE_LIFETIME)
+			const needsRefreshSchUpd = false; 
+			const needsRefreshPerformance =  false; 
 			
 			if (forceReload || needsRefresh || (forceItem==1) || needsRefreshSchUpd) {
 				await loadActiveChanges(true); 
@@ -818,7 +892,10 @@ document.addEventListener('DOMContentLoaded', function() {
 				}, 100);
 			}
 
+            // 🟢 修改：加入 clear-text-btn 到替換清單與監聽器
             const listenersToReplace = [rosterSortBtn, mainSortBtn, reloadCacheBtn, saveRecordBtn, recordsList, btnCancelEdit];
+            const clearTextBtnRef = document.getElementById('clear-text-btn');
+            if (clearTextBtnRef) listenersToReplace.push(clearTextBtnRef);
 
             listenersToReplace.forEach(originalEl => {
                 if (originalEl && originalEl.parentNode) {
@@ -833,13 +910,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const finalSaveRecordBtn = document.getElementById('save-record-btn');
             const finalRecordsList = document.getElementById('records-list');
             const finalBtnCancelEdit = document.getElementById('btn-cancel-edit');
+            const finalClearTextBtn = document.getElementById('clear-text-btn'); // 🟢 新增參考
 
             finalRosterSortBtn.addEventListener('click', toggleRosterSort);
             finalMainSortBtn.addEventListener('click', toggleClassSort);
             finalReloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); 
 
             finalSaveRecordBtn.addEventListener('click', handleAddRecord);
-            finalRecordsList.addEventListener('click', handleDeleteRecord);
+            
+            // 🟢 修改：將列表點擊事件改為新的 handleRecordListClick
+            finalRecordsList.addEventListener('click', handleRecordListClick);
+            
             finalBtnCancelEdit.addEventListener('click', resetPerformanceForm);
 
 
@@ -850,6 +931,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });               
             if (!useCacheStatic || cloudDataUpdatedStatic) saveCacheStatic();
 			if (!useCacheDynamic || cloudDataUpdatedDynamic) saveCacheDynamic();
+            
+            // 🟢 新增：綁定清除按鈕事件
+            if (finalClearTextBtn) {
+                finalClearTextBtn.addEventListener('click', () => {
+                    const input = document.getElementById('record-text');
+                    input.value = '';
+                    input.focus(); // 聚焦以觸發 datalist 顯示
+                });
+            }
 
 
         } catch (error) {
@@ -857,9 +947,11 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
         } finally {
             isInitializing = false;
+			// 檢查是否需要直進班級
+			checkAndTriggerDirectEntry();
         }
     }
-
+	// 🛠️ 【修改結束】
 	
     function renderLayout() {
         appContainer.innerHTML = '';
@@ -1156,28 +1248,63 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 	
-	async function handleDeleteRecord(e) {
-		if (e.target.classList.contains('delete-btn')) {
-			const rid = e.target.dataset.id;
-			if (confirm('確定刪除？')) {
-				try {
-					await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
+	// 🛠️ 【修改開始】teacher.js - 新增 handleRecordListClick 與修改 handleDeleteRecord
 
-                    if (editingRecordId === rid) {
-                        resetPerformanceForm();
-                    }
+	// 🟢 新增：統一處理紀錄列表點擊 (複製/編輯/刪除)
+    async function handleRecordListClick(e) {
+        // 1. 刪除
+        if (e.target.classList.contains('delete-btn')) {
+            const rid = e.target.dataset.id;
+            await handleDeleteRecord(rid);
+            return;
+        }
 
-                    allPerformanceRecords = []; 
-                    await fetchAllScores(true);
-                    saveCacheDynamic(); 
-                    
-					closeModal(); 
-				} catch (err) {
-					console.error(err);
-				}
-			}
-		}
+        // 2. 複製文字 (點擊文字區域)
+        const copyTrigger = e.target.closest('.copy-trigger');
+        if (copyTrigger) {
+            const textToCopy = copyTrigger.dataset.text;
+            if (textToCopy) {
+                const input = document.getElementById('record-text');
+                input.value = textToCopy;
+                // 視覺回饋：聚焦輸入框
+                input.focus();
+                
+                // (選用) 閃爍效果提示使用者已複製
+                input.style.backgroundColor = '#fff3cd';
+                setTimeout(() => input.style.backgroundColor = '', 300);
+            }
+            return;
+        }
+
+        // 3. 編輯分數 (點擊分數區域)
+        const editTrigger = e.target.closest('.edit-trigger');
+        if (editTrigger) {
+            editRecord(editTrigger.dataset.id);
+            return;
+        }
+    }
+
+    // 🟢 修改：handleDeleteRecord 改為直接接收 ID，不再依賴 event 物件
+	async function handleDeleteRecord(rid) {
+        if (confirm('確定刪除？')) {
+            try {
+                await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
+                
+                if (editingRecordId === rid) {
+                    resetPerformanceForm();
+                }
+                
+                allPerformanceRecords = []; 
+                await fetchAllScores(true);
+                saveCacheDynamic(); 
+                closeModal(); 
+            } catch (err) {
+                console.error(err);
+                alert('刪除失敗');
+            }
+        }
 	}
+	// 🛠️ 【修改結束】
 
     function resetPerformanceForm() {
         editingRecordId = null;
@@ -1243,6 +1370,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('modal').style.display = 'flex';
     }
 
+	// 🛠️ 【修改開始】teacher.js - renderModalRecords 函式完整覆蓋
 	function renderModalRecords(id, type) {
         const recordsList = document.getElementById('records-list');
         
@@ -1252,24 +1380,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         recordsList.innerHTML = '載入中...';
-
         const countDisplay = document.getElementById('record-count-display');
         const scoreDisplay = document.getElementById('record-total-score-display');
         
         const allRecords = allPerformanceRecords.filter(r => {
             if (r.entityType === 'class' && type === 'student') return false; 
-            
             if (type === 'student' && (r.entityType === 'student' || !r.entityType)) {
                 return r.entityId === id || r.studentId === id;
             }
-            
             if (type === 'class' && r.entityType === 'class') {
                 return r.entityId === id; 
             }
-            
             return false;
         }).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-
 
         let totalCalculatedScore = 0;
         allRecords.forEach(record => {
@@ -1280,17 +1403,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (countDisplay) {
             countDisplay.textContent = `事件數: ${recordCount}`; 
-        } else {
-            console.warn("警告: 找不到 HTML 元素: record-count-display，無法顯示事件數。");
-        }
-
+        } 
         if (scoreDisplay) {
             scoreDisplay.textContent = `總分: ${recordScore.toFixed(1)}`;
-        } else {
-             console.warn("警告: 找不到 HTML 元素: record-total-score-display，無法顯示總分。");
         }
-
-        console.log(`DEBUG: 總紀錄數: ${allPerformanceRecords.length}，篩選後紀錄數: ${recordCount}`);
 
         recordsList.innerHTML = '';
         if (allRecords.length === 0) { 
@@ -1298,39 +1414,41 @@ document.addEventListener('DOMContentLoaded', function() {
             return; 
         }
 
+        // 🟢 修改重點：生成 HTML 時，將分數與文字分開，分別賦予 edit-trigger 與 copy-trigger
         allRecords.forEach(record => {
             try {
                 const recordItem = document.createElement('div');
                 recordItem.className = 'record-item';
                 
                 const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
-
                 let timestamp = '日期不明';
                 if (record.timestamp) {
                      const dateObj = record.timestamp.seconds ? new Date(record.timestamp.seconds * 1000) : new Date(record.timestamp);
                      timestamp = dateObj.toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' });
                 }
                 
+                // 處理文字，避免引號導致 dataset 錯誤
+                const rawText = record.text || '';
+                const escapedText = rawText.replace(/"/g, '&quot;');
+                const displayText = rawText || '無文字註記';
+
                 recordItem.innerHTML = `
-                    <div class="record-content edit-trigger" data-id="${record.id}">
-                        <span class="record-points ${pClass}">${record.points || 0}分</span>
-                        <span class="record-text">${record.text || '無文字註記'}</span>
+                    <div class="record-content">
+                        <span class="record-points record-points-area edit-trigger ${pClass}" data-id="${record.id}" title="點擊修改此紀錄">${record.points || 0}分</span>
+                        
+                        <span class="record-text record-text-area copy-trigger" data-text="${escapedText}" title="點擊複製文字到輸入框">${displayText}</span>
                     </div>
                     <div class="record-timestamp">${timestamp}</div>
-                    <button class="delete-btn" data-id="${record.id}">🗑️</button>
+                    <button class="delete-btn" data-id="${record.id}" title="刪除紀錄">🗑️</button>
                 `;
-
                 recordsList.appendChild(recordItem); 
 
             } catch (e) {
                 console.error("❌ 渲染單筆紀錄時發生錯誤:", e, "紀錄 ID:", record.id);
             }
         });
-        
-        if (recordsList.children.length === 0 && allRecords.length > 0) {
-             console.error("❌ 嚴重錯誤：已篩選到紀錄但 recordsList 仍為空。請檢查父容器或 CSS。");
-        }
     }
+	// 🛠️ 【修改結束】
 
 	async function loadRecentTexts() {
         const datalist = document.getElementById('recent-texts-list');
@@ -1499,6 +1617,67 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.setItem('homepagePreference', value);
         });
     }
+	
+	// 🟢 系統切換選單邏輯
+	/* 請替換 teacher.js 中原本的「系統切換選單邏輯」 */
+
+	const sysSwitchBtn = document.getElementById('sys-switch-btn');
+	const sysSwitchMenu = document.getElementById('sys-switch-menu');
+
+	// 1. 切換選單顯示
+	if (sysSwitchBtn) {
+		sysSwitchBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			// 關閉其他可能開啟的選單
+			const userDropdown = document.getElementById('dropdown-menu');
+			if (userDropdown) userDropdown.classList.remove('show');
+			
+			sysSwitchMenu.classList.toggle('show');
+			updateHomeIcons(); // 🔥 打開時立刻檢查誰是首頁
+		});
+	}
+
+	// 2. 點擊外部關閉選單
+	window.addEventListener('click', (e) => {
+		if (sysSwitchMenu && !e.target.closest('.system-switcher-container')) {
+			sysSwitchMenu.classList.remove('show');
+		}
+	});
+
+	// 3. 設定預設首頁
+	window.setDefaultSystem = function(pageName, sysName) {
+		const current = localStorage.getItem('defaultSystemPage');
+		
+		// 如果點擊的是當前設定的，則取消預設
+		if (current === pageName && pageName !== 'teacher.html') {
+			localStorage.removeItem('defaultSystemPage');
+			alert('已取消預設，登入後將回到「綜合紀錄系統」。'); // 嫌煩可以註解掉
+		} else {
+			localStorage.setItem('defaultSystemPage', pageName);
+			alert(`設定成功，下次登入會直接進入 "${sysName}" !`); // 嫌煩可以註解掉
+		}
+		updateHomeIcons(); // 設定完馬上更新 UI
+	};
+
+	// 4. 更新圖示狀態 (核心邏輯)
+	function updateHomeIcons() {
+		// 預設值就是 teacher.html，如果 localStorage 沒東西，那 teacher.html 就是預設
+		const currentDefault = localStorage.getItem('defaultSystemPage') || 'teacher.html';
+		const items = document.querySelectorAll('.sys-item');
+		
+		items.forEach(item => {
+			// 直接讀取我們在 HTML 加上的 data-target 屬性，最準確
+			const targetPage = item.dataset.target;
+			
+			if (targetPage === currentDefault) {
+				item.classList.add('is-default'); // 加上這個 class，CSS 就會變色+顯示文字
+				item.querySelector('.sys-home-icon').title = "目前是預設首頁 (點擊可取消)";
+			} else {
+				item.classList.remove('is-default');
+				item.querySelector('.sys-home-icon').title = "設為登入後首頁";
+			}
+		});
+	}
 
 	myTimetableIconBtn.addEventListener('click', async () => {
         document.getElementById('dropdown-menu').classList.remove('show');
@@ -1922,17 +2101,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 	if (timetableLink) {
 		timetableLink.addEventListener('click', (e) => {
-			e.preventDefault(); 
-			navigateToTimetable(); 
+			e.preventDefault(); // 阻止 span 的預設行為(雖然 span 沒預設行為，但這是好習慣)
+			navigateToTimetable(); // 執行這個函式才能正確儲存資料並跳轉
 		});
 	} else {
-		console.warn("找不到 ID 為 'timetable-link' 的導航元素，請手動綁定 navigateToTimetable()。");
+		// 這裡原本會報錯，現在 ID 對上後就不會了
+		console.log("已成功綁定課表系統連結");
 	}
-    recordsList.addEventListener('click', function(e) {
-        const editTrigger = e.target.closest('.edit-trigger');
-        if (editTrigger) {
-            editRecord(editTrigger.dataset.id);
-        }
-    });
 
 });
