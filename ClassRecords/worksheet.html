@@ -7,6 +7,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+    
     <script>
       window.MathJax = {
         tex: {
@@ -173,19 +175,19 @@
         // 1. 初始化與設定
         // -----------------------------------------------------------
         
-		// 輔助函式：強制執行 script 並渲染 MathJax
-		function executeEmbeddedScripts(container) {
-			const scripts = container.querySelectorAll('script');
-			scripts.forEach(oldScript => {
-				const newScript = document.createElement('script');
-				Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-				newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-				oldScript.parentNode.replaceChild(newScript, oldScript);
-			});
-			if (window.MathJax) {
-				MathJax.typesetPromise([container]).catch((err) => console.log('MathJax error:', err));
-			}
-		}
+        // 輔助函式：強制執行 script 並渲染 MathJax
+        function executeEmbeddedScripts(container) {
+            const scripts = container.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
+            if (window.MathJax) {
+                MathJax.typesetPromise([container]).catch((err) => console.log('MathJax error:', err));
+            }
+        }
 
         const firebaseConfig = {
             apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
@@ -200,10 +202,14 @@
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
+        // ☁️【新增】初始化 Storage
+        const storage = firebase.storage();
 
         let currentUser = null;
         let studentProfile = null;
         let currentAssignmentId = null;
+        // ☁️【新增】紀錄目前載入的答案 (用於保留未修改的檔案連結)
+        let currentLoadedAnswers = {}; 
 
         const loginView = document.getElementById('login-view');
         const appView = document.getElementById('app-view');
@@ -222,7 +228,7 @@
 
                     if (userDoc.exists) {
                         studentProfile = userDoc.data();
-                        // 補齊學校名稱 (如果有的話)
+                        // 補齊學校名稱
                         if (!studentProfile.schoolName && studentProfile.schoolId) {
                             try {
                                 const sDoc = await db.collection('schools').doc(studentProfile.schoolId).get();
@@ -293,7 +299,7 @@
             auth.signOut().then(() => window.location.reload());
         });
 
-		// -----------------------------------------------------------
+        // -----------------------------------------------------------
         // 3. 儀表板 (Dashboard)
         // -----------------------------------------------------------
         function getLocalDraftKey(uid, assignmentId) {
@@ -346,7 +352,6 @@
                 const card = document.createElement('div');
                 card.className = "bg-white p-4 rounded-lg shadow border-l-4 transition hover:shadow-md cursor-pointer flex justify-between items-center gap-4";
                 
-                // 日期格式化 (簡化顯示)
                 const dateObj = task.created_at ? new Date(task.created_at.seconds * 1000) : null;
                 const dateStr = dateObj ? `${dateObj.getFullYear()}/${dateObj.getMonth()+1}/${dateObj.getDate()}` : '--/--';
 
@@ -359,7 +364,6 @@
                         ? `<span class="text-green-600 font-bold text-lg whitespace-nowrap">${userResponse.score} 分</span>` 
                         : `<span class="text-gray-500 text-sm whitespace-nowrap">已繳交</span>`;
                     
-                    // 修改：將日期與標題放在一起，或在下方單行顯示
                     card.innerHTML = `
                         <div class="flex-grow overflow-hidden">
                             <h4 class="font-bold text-gray-800 truncate">${task.worksheet_title}</h4>
@@ -398,7 +402,6 @@
                     card.classList.remove('border-blue-500');
                     card.classList.add(borderColor);
 
-                    // 修改：將狀態、發布日、截止日整合在同一行 (使用 flex-wrap 避免手機版跑版)
                     card.innerHTML = `
                         <div class="flex-grow pr-2">
                             <h4 class="font-bold text-gray-800 text-lg leading-tight mb-1.5">${task.worksheet_title}</h4>
@@ -416,13 +419,16 @@
             });
             document.getElementById('todo-count').textContent = todoCount;
         }
-		
+        
  
         // -----------------------------------------------------------
         // 4. 學習單邏輯 (開啟、填答、三按鈕功能)
         // -----------------------------------------------------------
         async function openWorksheet(taskId, taskData, responseData, isReadOnly) {
             currentAssignmentId = taskId;
+            // 每次開啟都重置載入的答案，避免資料汙染
+            currentLoadedAnswers = {}; 
+
             const modal = document.getElementById('worksheet-modal');
             const form = document.getElementById('worksheet-form');
             const feedbackArea = document.getElementById('teacher-feedback-area');
@@ -442,25 +448,23 @@
             }
             
             form.innerHTML = wsDoc.data().html_content;
-			executeEmbeddedScripts(form);
+            executeEmbeddedScripts(form);
 
-            // 狀態初始化
             statusContainer.innerHTML = ''; 
             
             // --- 填入答案邏輯 ---
             
-            // 1. 先填入雲端資料 (如果有的話：草稿、訂正退回、或已繳交)
+            // 1. 先填入雲端資料
             if (responseData && responseData.answers) {
+                // ☁️【新增】更新全域變數
+                currentLoadedAnswers = { ...responseData.answers };
                 fillAnswers(form, responseData.answers);
                 
-                // 顯示狀態標籤
                 if(responseData.status === 'draft') statusContainer.innerHTML += `<span class="text-xs font-bold px-2 py-0.5 rounded bg-orange-100 text-orange-700">☁️ 載入雲端暫存</span>`;
                 if(responseData.status === 'needs_correction') statusContainer.innerHTML += `<span class="text-xs font-bold px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">⚠️ 退回訂正</span>`;
 
-                // 處理批改回饋 (顯示紅圈圈/綠圈圈)
                 renderGradingFeedback(form, responseData.grading_details);
 
-                // 顯示老師評語
                 if (responseData.comment) {
                     feedbackArea.classList.remove('hidden');
                     document.getElementById('feedback-text').textContent = responseData.comment;
@@ -472,7 +476,7 @@
                 statusContainer.innerHTML += `<span class="text-xs font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-700">🆕 開始作答</span>`;
             }
 
-            // 2. 檢查並填入本地暫存 (僅在作答模式下)
+            // 2. 檢查並填入本地暫存
             if (!isReadOnly) {
                 const localKey = getLocalDraftKey(currentUser.uid, taskId);
                 const localJson = localStorage.getItem(localKey);
@@ -481,6 +485,8 @@
                     try {
                         const localDraft = JSON.parse(localJson);
                         console.log("載入本地暫存:", localDraft);
+                        // ☁️【新增】合併本地暫存到全域變數 (本地優先)
+                        currentLoadedAnswers = { ...currentLoadedAnswers, ...localDraft.answers };
                         fillAnswers(form, localDraft.answers);
                         
                         const timeStr = new Date(localDraft.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -498,18 +504,34 @@
                 actionBtns.classList.remove('hidden');
                 readOnlyBtns.classList.add('hidden');
                 form.querySelectorAll('input, textarea, select').forEach(el => el.disabled = false);
-                // 注意：如果有點選過的 radio 且有批改面板，可能要保持 disabled，這裡簡化處理全部開放編輯
             }
 
             modal.classList.remove('hidden');
         }
 
-        // 填寫表單輔助函式
+        // 填寫表單輔助函式 (修改版)
         function fillAnswers(form, answers) {
             form.querySelectorAll('.worksheet-input').forEach(input => {
                 const name = input.name;
                 if (answers[name] !== undefined) {
-                    if (input.type === 'radio' || input.type === 'checkbox') {
+                    // ☁️【新增】支援檔案顯示邏輯
+                    if (input.type === 'file') {
+                        const oldLink = input.parentNode.querySelector('.file-download-link');
+                        if (oldLink) oldLink.remove();
+
+                        const val = answers[name];
+                        if (val && typeof val === 'string' && val.startsWith('http')) {
+                            const link = document.createElement('a');
+                            link.href = val;
+                            link.target = '_blank';
+                            link.className = 'file-download-link text-blue-600 underline text-sm ml-2 font-bold hover:text-blue-800';
+                            link.innerHTML = '📂 已上傳檔案 (點擊查看)';
+                            
+                            if(input.nextSibling) input.parentNode.insertBefore(link, input.nextSibling);
+                            else input.parentNode.appendChild(link);
+                        }
+                    } 
+                    else if (input.type === 'radio' || input.type === 'checkbox') {
                         if (input.value === answers[name]) input.checked = true;
                     } else {
                         input.value = answers[name];
@@ -518,14 +540,12 @@
             });
         }
 
-        // 渲染批改回饋輔助函式
         function renderGradingFeedback(form, gradingDetails) {
             if (!gradingDetails) return;
             form.querySelectorAll('.worksheet-input').forEach(input => {
                 const name = input.name;
                 const det = gradingDetails[name];
                 if (det && (det.is_correct !== undefined || det.feedback)) {
-                    // 避免重複渲染 (Radio button 每個選項都會跑一次迴圈)
                     if (input.type === 'radio') {
                         const allRadios = form.querySelectorAll(`input[type="radio"][name="${name}"]`);
                         if (input !== allRadios[allRadios.length - 1]) return; 
@@ -549,7 +569,6 @@
                     let feedbackHtml = fb ? `<div class="mt-2 text-sm text-gray-600 bg-white p-2 rounded border border-gray-200"><strong>👩‍🏫 老師：</strong>${fb}</div>` : '';
                     panel.innerHTML = `<div class="grading-status-text text-lg">${statusIcon}</div>${feedbackHtml}`;
 
-                    // 插入到適當位置
                     if (input.type === 'radio') {
                         const container = input.parentNode;
                         if(container.nextSibling) container.parentNode.insertBefore(panel, container.nextSibling);
@@ -562,63 +581,108 @@
             });
         }
 
-        // 關閉視窗 (單純隱藏)
         function closeModal() { document.getElementById('worksheet-modal').classList.add('hidden'); }
 
-        // 蒐集表單資料輔助函式
-        function collectAnswers() {
+        // ☁️【新增】上傳單一檔案到 Firebase Storage
+        async function uploadFileToStorage(file) {
+            if (!file) return null;
+            const timestamp = new Date().getTime();
+            // 路徑結構: uploads/作業ID/學生ID/時間戳_檔名
+            const path = `uploads/${currentAssignmentId}/${currentUser.uid}/${timestamp}_${file.name}`;
+            const ref = storage.ref().child(path);
+            
+            const snapshot = await ref.put(file);
+            return await snapshot.ref.getDownloadURL();
+        }
+
+        // ☁️【新增】非同步收集答案並處理上傳
+        async function collectAnswersAndUpload() {
             const form = document.getElementById('worksheet-form');
-            const answers = {};
-            form.querySelectorAll('.worksheet-input').forEach(input => {
-                if (input.name) {
-                    if (input.type === 'radio') { if (input.checked) answers[input.name] = input.value; } 
-                    else if (input.type === 'checkbox') { if (input.checked) answers[input.name] = input.value; }
-                    else answers[input.name] = input.value;
+            // 複製一份目前的答案，作為基底 (保留未修改的舊檔案連結)
+            const answers = { ...currentLoadedAnswers }; 
+            
+            const inputs = form.querySelectorAll('.worksheet-input');
+            
+            for (const input of inputs) {
+                if (!input.name) continue;
+
+                if (input.type === 'file') {
+                    // 如果使用者選了新檔案 -> 上傳並更新網址
+                    if (input.files && input.files.length > 0) {
+                        try {
+                            const url = await uploadFileToStorage(input.files[0]);
+                            answers[input.name] = url;
+                        } catch (e) {
+                            console.error(`檔案 ${input.name} 上傳失敗`, e);
+                            alert(`檔案上傳失敗：${input.files[0].name}`);
+                            throw e; 
+                        }
+                    } 
+                } 
+                else if (input.type === 'radio') { 
+                    if (input.checked) answers[input.name] = input.value; 
+                } 
+                else if (input.type === 'checkbox') { 
+                    if (input.checked) answers[input.name] = input.value; 
                 }
-            });
+                else {
+                    answers[input.name] = input.value;
+                }
+            }
+            
+            currentLoadedAnswers = answers;
             return answers;
         }
 
         // ==========================================
-        //  三按鈕邏輯實作
+        //  三按鈕邏輯實作 (更新)
         // ==========================================
 
         // 1. 暫時離開 (存本機 -> 關閉)
-        // 綁定到右上角 X 按鈕和底部按鈕
         async function saveLocalAndClose() {
             if(document.getElementById('worksheet-modal').classList.contains('hidden')) return;
-            // 唯讀模式直接關閉
-            const isReadOnly = document.getElementById('submit-btn') ? false : true; // 簡單判斷
+            const isReadOnly = document.getElementById('btn-submit') ? false : true; 
             if(document.getElementById('action-buttons').classList.contains('hidden')) {
                 closeModal(); return;
             }
 
-            const answers = collectAnswers();
+            // ☁️ 本機暫存不包含未上傳的檔案
+            const form = document.getElementById('worksheet-form');
+            const simpleAnswers = { ...currentLoadedAnswers };
+            form.querySelectorAll('.worksheet-input').forEach(input => {
+                if(input.name && input.type !== 'file') { 
+                     if (input.type === 'radio' || input.type === 'checkbox') {
+                        if (input.checked) simpleAnswers[input.name] = input.value;
+                    } else {
+                        simpleAnswers[input.name] = input.value;
+                    }
+                }
+            });
+
             try {
                 const key = getLocalDraftKey(currentUser.uid, currentAssignmentId);
-                const draftData = { timestamp: new Date().getTime(), answers: answers };
+                const draftData = { timestamp: new Date().getTime(), answers: simpleAnswers };
                 localStorage.setItem(key, JSON.stringify(draftData));
                 
-                // 不使用 alert 阻斷，改用 console 提示或簡易通知 (這裡為了體驗流暢直接關閉)
                 console.log('已存入本機暫存');
                 closeModal();
-                renderDashboard(); // 重新渲染列表以更新狀態圖示
+                renderDashboard(); 
             } catch(e) {
                 alert('本機暫存失敗 (儲存空間可能已滿)');
                 closeModal();
             }
         }
         document.getElementById('btn-leave-temp').addEventListener('click', saveLocalAndClose);
-        // 注意：HTML 中的 X 按鈕也呼叫此函式
 
-        // 2. 暫存雲端 (存 Firebase[draft] -> 清除本機 -> 關閉)
+        // 2. 暫存雲端 (非同步上傳 -> 存 Firestore)
         document.getElementById('btn-save-cloud').addEventListener('click', async () => {
             const btn = document.getElementById('btn-save-cloud');
-            const answers = collectAnswers();
-            
-            btn.disabled = true; btn.innerHTML = '☁️ 儲存中...';
+            btn.disabled = true; btn.innerHTML = '☁️ 上傳儲存中...';
 
             try {
+                // ☁️ 執行上傳
+                const answers = await collectAnswersAndUpload();
+
                 const responseId = `${currentAssignmentId}_${currentUser.uid}`;
                 await db.collection('responses').doc(responseId).set({
                     assignment_id: currentAssignmentId,
@@ -627,15 +691,14 @@
                     student_no: studentProfile.seatNo,
                     class_id: studentProfile.classId,
                     answers: answers,
-                    status: 'draft', // 🔥 關鍵狀態
+                    status: 'draft', 
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
 
-                // 🔥 清除本機暫存，避免舊資料干擾
                 const key = getLocalDraftKey(currentUser.uid, currentAssignmentId);
                 localStorage.removeItem(key);
 
-                alert('☁️ 已成功暫存到雲端！\n您可以在其他裝置繼續編輯。');
+                alert('☁️ 已成功上傳並暫存到雲端！');
                 closeModal();
                 renderDashboard();
 
@@ -647,16 +710,17 @@
             }
         });
 
-        // 3. 完成繳交 (存 Firebase[submitted] -> 清除本機 -> 關閉)
+        // 3. 完成繳交 (非同步上傳 -> 存 Firestore)
         document.getElementById('btn-submit').addEventListener('click', async () => {
             if(!confirm('確定要繳交作業嗎？\n繳交後將無法再修改，直到老師發回。')) return;
 
             const btn = document.getElementById('btn-submit');
-            const answers = collectAnswers();
-
-            btn.disabled = true; btn.innerHTML = '🚀 提交中...';
+            btn.disabled = true; btn.innerHTML = '🚀 上傳並提交中...';
 
             try {
+                // ☁️ 執行上傳
+                const answers = await collectAnswersAndUpload();
+
                 const responseId = `${currentAssignmentId}_${currentUser.uid}`;
                 await db.collection('responses').doc(responseId).set({
                     assignment_id: currentAssignmentId,
@@ -665,12 +729,11 @@
                     student_no: studentProfile.seatNo,
                     class_id: studentProfile.classId,
                     answers: answers,
-                    status: 'submitted', // 🔥 關鍵狀態
+                    status: 'submitted', 
                     submitted_at: firebase.firestore.FieldValue.serverTimestamp(),
                     updated_at: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
 
-                // 🔥 繳交後必定清除本機暫存
                 const key = getLocalDraftKey(currentUser.uid, currentAssignmentId);
                 localStorage.removeItem(key);
 
