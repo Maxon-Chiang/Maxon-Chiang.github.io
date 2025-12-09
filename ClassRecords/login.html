@@ -379,17 +379,31 @@
 			});
 		});
 
-        function routeUser(role) {
-            if (role === 'admin') {
-                window.location.href = 'admin.html';
-            } else if (role === 'school_admin') {
-                window.location.href = 'school_admin.html';
-            } else if (role === 'teacher') {
-                window.location.href = 'teacher.html';
-            } else {
-                showLoginError(`未知的用戶角色 (${role})，無法登入。`);
-            }
-        }
+		function routeUser(role) {
+			if (role === 'admin') {
+				window.location.href = 'admin.html';
+			} else if (role === 'school_admin') {
+				window.location.href = 'school_admin.html';
+			} else if (role === 'teacher') {
+				const directEntryEnabled = localStorage.getItem('pref_direct_class_entry') === 'true';
+				if (directEntryEnabled) {
+					// 如果開啟了直進功能，強制進入主系統(teacher.html) 進行課表檢查
+					window.location.href = 'teacher.html';
+					return; 
+				}			
+				// 🟢 修改開始：檢查是否有設定「預設登入頁」
+				const defaultPage = localStorage.getItem('defaultSystemPage');
+				if (defaultPage && (defaultPage === 'timetable.html' || defaultPage === 'worksheet_manager.html')) {
+					window.location.href = defaultPage;
+				} else {
+					// 預設還是回到主系統
+					window.location.href = 'teacher.html';
+				}
+				// 🟢 修改結束
+			} else {
+				showLoginError(`未知的用戶角色 (${role})，無法登入。`);
+			}
+		}
 
         function showLoginError(msg) {
             splashScreen.style.display = 'none';
