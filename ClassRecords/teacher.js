@@ -1,3 +1,18 @@
+	// 3. 設定預設首頁
+	window.setDefaultSystem = function(pageName, sysName) {
+		const current = localStorage.getItem('defaultSystemPage');
+		
+		// 如果點擊的是當前設定的，則取消預設
+		if (current === pageName && pageName !== 'teacher.html') {
+			localStorage.removeItem('defaultSystemPage');
+			alert('已取消預設，登入後將回到「綜合紀錄系統」。'); // 嫌煩可以註解掉
+		} else {
+			localStorage.setItem('defaultSystemPage', pageName);
+			alert(`設定成功，下次登入會直接進入 "${sysName}" !`); // 嫌煩可以註解掉
+		}
+		updateHomeIcons(); // 設定完馬上更新 UI
+	};
+
 document.addEventListener('DOMContentLoaded', function() {
     const firebaseConfig = {
         apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
@@ -1644,20 +1659,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 
-	// 3. 設定預設首頁
-	window.setDefaultSystem = function(pageName, sysName) {
-		const current = localStorage.getItem('defaultSystemPage');
-		
-		// 如果點擊的是當前設定的，則取消預設
-		if (current === pageName && pageName !== 'teacher.html') {
-			localStorage.removeItem('defaultSystemPage');
-			alert('已取消預設，登入後將回到「綜合紀錄系統」。'); // 嫌煩可以註解掉
-		} else {
-			localStorage.setItem('defaultSystemPage', pageName);
-			alert(`設定成功，下次登入會直接進入 "${sysName}" !`); // 嫌煩可以註解掉
-		}
-		updateHomeIcons(); // 設定完馬上更新 UI
-	};
 
 	// 4. 更新圖示狀態 (核心邏輯)
 	function updateHomeIcons() {
