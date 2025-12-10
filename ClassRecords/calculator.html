@@ -66,8 +66,7 @@
         }
         #btn-save-rule { background-color: #28a745; }
         #btn-delete-rule { background-color: #dc3545; }
-        
-        
+                
         .steps-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -210,10 +209,9 @@
                         <select id="calc-rule-select" disabled><option value="">請先選擇計算對象</option></select>
                     </div>
                 </div>
-            </div>
-            <div class="section-header">
                 <h2>計算結果</h2>
-                <div id="results-container"><p>請選擇計算對象和規則後，點擊按鈕開始計算。</p></div>
+				<p>請選擇計算對象和規則後，點擊按鈕開始計算。</p>
+                <div id="results-container"></div>
             </div>
         </div>
         <div id="rules-tab" class="tab-content">
@@ -467,7 +465,15 @@
             
             if (!assignmentsDataLoaded) {
                 fetchPromises.push((async () => {
-                    const assignmentsSnapshot = await db.collectionGroup('assignments').where('teacherId', '==', currentUser.uid).get();
+                    /* 🛠️ 修改處開始：修正讀取成績的路徑 🛠️ */
+                    /* 原本代碼 (錯誤)：使用 collectionGroup 且依賴不存在的 teacherId 欄位
+                    const assignmentsSnapshot = await db.collectionGroup('assignments').where('teacherId', '==', currentUser.uid).get(); 
+                    */
+                    
+                    /* 修改後代碼 (正確)：直接指向該老師的 gradebooks 路徑，這與 grades.html 的讀取方式一致 */
+                    const assignmentsSnapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').get();
+                    /* 🛠️ 修改處結束 🛠️ */
+
                     console.log('載入作業名稱資料...');
                     const tempAssignments = {};
                     assignmentsSnapshot.forEach(doc => {
@@ -509,14 +515,24 @@
                  }
             }
             const classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
-            Object.keys(gradeLevels).forEach(grade => gradeLevels[grade] = []);
+            
+            gradeLevels = {}; // 清空並動態建立
             classList.forEach(c => {
                 const grade = getGradeLevelFromClassId(c);
-                if (grade && gradeLevels[grade]) gradeLevels[grade].push(c);
+                if (grade) {
+                    // 如果該年段還沒有陣列，則建立一個
+                    if (!gradeLevels[grade]) {
+                        gradeLevels[grade] = [];
+                    }
+                    gradeLevels[grade].push(c);
+                }
             });
+
             const calcTargetSelect = document.getElementById('calc-target-select');
             const ruleGradeSelect = document.getElementById('rule-grade-select');
             ruleGradeSelect.innerHTML = '<option value="">請選擇年段</option>';
+            
+            // 這裡的迴圈會自動根據實際存在的年段 (gradeLevels 的 key) 來產生選項
             for (const grade in gradeLevels) {
                 if (gradeLevels[grade].length > 0) {
                     const gradeName = GRADE_MAP[grade] || grade;
@@ -527,13 +543,13 @@
                         optGroup.appendChild(new Option(`${c}班`, c));
                     });
                     calcTargetSelect.appendChild(optGroup);
-                    const option = new Option(`${gradeName}年級 (原 ${grade}xx)`, grade);
+                    const option = new Option(`${gradeName}年級`, grade); // 顯示名稱
                     ruleGradeSelect.appendChild(option);
                 }
             }
             bindEventListeners();
         }
-       
+   
         function getGradeLevelFromClassId(classId) {
             if (!classId || classId.length < 3) return null;
             const firstDigit = classId.charAt(0);
@@ -629,7 +645,7 @@
             clearRuleForm();
         }
         
-        function populateAssignmentsForGrade(grade) {
+		function populateAssignmentsForGrade(grade) {
             const classesInGrade = gradeLevels[grade] || [];
             const assignmentNames = new Set();
             classesInGrade.forEach(classId => {
@@ -646,8 +662,13 @@
                 step2Container.innerHTML = '<small>此年段尚無成績項目</small>';
                 return;
             }
-            sortedNames.forEach(name => {
-                const safeId = name.replace(/[^a-zA-Z0-9]/g, '');
+            
+            /* 🟢 修改處開始：改用 index 作為 ID 基礎，解決中文名稱導致 ID 重複的問題 */
+            sortedNames.forEach((name, index) => {
+                // 原本：const safeId = name.replace(/[^a-zA-Z0-9]/g, ''); 
+                // 修改為：直接使用 index，保證唯一
+                const safeId = index; 
+                
                 const item1HTML = `
                     <input type="checkbox" id="s1-${safeId}" data-name="${name}" data-peer="s2-${safeId}">
                     <label for="s1-${safeId}">${name}</label>
@@ -659,6 +680,8 @@
                 step1Container.innerHTML += `<div class="assignment-item">${item1HTML}</div>`;
                 step2Container.innerHTML += `<div class="assignment-item">${item2HTML}</div>`;
             });
+            /* 🟢 修改處結束 */
+
             const handleCheckboxChange = (e) => {
                 document.getElementById(e.target.dataset.peer).disabled = e.target.checked;
                 if(e.target.id.startsWith('s1-')) {
@@ -710,14 +733,21 @@
             return ruleData;
         }
 
-        function loadRuleIntoForm(rule) {
+		function loadRuleIntoForm(rule) {
             clearRuleForm();
             document.getElementById('rule-name').value = rule.ruleName;
             document.getElementById('rule-default-score').value = rule.defaultMissingScore || 0;
+            
+            /* 🟢 修改處開始：改用 dataset.name 查找元素，不依賴 ID 計算 */
             if(rule.step1) {
+                // 取得所有步驟1的 checkbox
+                const step1Checkboxes = Array.from(document.querySelectorAll('#step1-assignments input[type="checkbox"]'));
+                
                 for(const assignName in rule.step1) {
-                    const safeId = assignName.replace(/[^a-zA-Z0-9]/g, '');
-                    const cb = document.getElementById(`s1-${safeId}`);
+                    // 原本：const safeId = assignName.replace(...); const cb = document.getElementById(...);
+                    // 修改為：尋找 data-name 等於 assignName 的 checkbox
+                    const cb = step1Checkboxes.find(el => el.dataset.name === assignName);
+                    
                     if(cb) {
                         cb.checked = true;
                         cb.dispatchEvent(new Event('change'));
@@ -726,9 +756,13 @@
                 }
             }
             if(rule.step2) {
+                // 取得所有步驟2的 checkbox
+                const step2Checkboxes = Array.from(document.querySelectorAll('#step2-assignments input[type="checkbox"]'));
+                
                 rule.step2.assignments.forEach(assignName => {
-                    const safeId = assignName.replace(/[^a-zA-Z0-9]/g, '');
-                    const cb = document.getElementById(`s2-${safeId}`);
+                    // 同樣修改為透過 data-name 查找
+                    const cb = step2Checkboxes.find(el => el.dataset.name === assignName);
+                    
                     if(cb) {
                         cb.checked = true;
                         cb.dispatchEvent(new Event('change'));
@@ -736,6 +770,8 @@
                 });
                 document.getElementById('step2-multiplier').value = rule.step2.multiplier;
             }
+            /* 🟢 修改處結束 */
+
             if(rule.step3) {
                  document.getElementById('step3-n').value = rule.step3.n;
                  document.getElementById('step3-multiplier').value = rule.step3.multiplier;
