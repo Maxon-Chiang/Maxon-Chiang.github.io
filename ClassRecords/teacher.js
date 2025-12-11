@@ -420,7 +420,29 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 
 				if (userDocData && (userDocData.role === 'teacher' || userDocData.role === 'school_admin' || userDocData.role === 'admin')) {
-					currentUserData = userDocData; 
+					
+                    // 🛠️ 【修改開始】手機版/書籤直連的預設系統跳轉修正
+                    // 如果使用者略過 login.html 直接進入，且設定了其他系統為首頁，需在此處補執行跳轉
+                    const directEntryEnabled = localStorage.getItem('pref_direct_class_entry') === 'true';
+                    const defaultPage = localStorage.getItem('defaultSystemPage');
+                    
+                    // 邏輯：沒開直進班級 + 有設定預設頁 + 預設頁不是 teacher.html
+                    if (!directEntryEnabled && defaultPage && defaultPage !== 'teacher.html' && defaultPage !== 'teacher.html#') {
+                        
+                        // 關鍵檢查：判斷是否是「手動」從其他系統切換過來的
+                        // 如果 document.referrer 包含 timetable.html，代表使用者剛從課表點擊連結過來，我們就不該踢他回去
+                        const referrer = document.referrer || "";
+                        const cameFromOtherSystem = referrer.includes('timetable.html') || referrer.includes('worksheet_manager.html');
+
+                        if (!cameFromOtherSystem) {
+                            console.log(`📱 (Mobile/Direct) 偵測到預設首頁設定為 ${defaultPage}，執行補救跳轉...`);
+                            window.location.href = defaultPage;
+                            return; // 中斷 teacher.js 的後續載入
+                        }
+                    }
+                    // 🛠️ 【修改結束】
+
+                    currentUserData = userDocData; 
 					
 					document.getElementById('user-email').textContent = currentUserData.displayName || user.email;
 					
