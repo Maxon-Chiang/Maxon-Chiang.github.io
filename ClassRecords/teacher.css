@@ -949,17 +949,49 @@ body.modal-open { overflow: hidden; }
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
+        flex-wrap: nowrap; /* 🟢 確保不換行 */
 	}
+	
+    /* 🛠️ 【修改開始】將文字按鈕轉為圖示 & 調整切換系統按鈕 */
 	.main-actions {
-		flex-grow: 1;
-		flex-shrink: 1;
-		min-width: 0;
+		flex-grow: 0; /* 不需過度伸展，由內容決定寬度 */
+		flex-shrink: 0;
+        display: flex;
+        gap: 8px; /* 按鈕間距 */
+        margin-right: 5px;
 	}
+	
+    /* 將「成績計算」與「數據報告」的文字隱藏，改用圖示顯示 */
 	.main-actions button, .main-actions a button {
-		padding: 5px 5px;
-		font-size: 0.85em;
+		padding: 6px 8px; /* 縮小內距 */
+		font-size: 0 !important; /* 隱藏原本的中文文字 */
+        line-height: 1;
 		white-space: nowrap;
+        min-width: 40px; /* 確保按鈕好點擊 */
 	}
+
+    /* 第一個按鈕 (成績計算) 插入計算機圖示 */
+    .main-actions a:nth-child(1) button::before {
+        content: "🧮"; 
+        font-size: 1.2rem; /* 設定圖示大小 */
+        visibility: visible;
+    }
+
+    /* 第二個按鈕 (數據報告) 插入圖表圖示 */
+    .main-actions a:nth-child(2) button::before {
+        content: "📊"; 
+        font-size: 1.2rem; 
+        visibility: visible;
+    }
+
+    /* 縮小切換系統按鈕的內距與字體 */
+    .sys-switch-btn {
+        padding: 4px 8px !important;
+        font-size: 0.9em !important;
+        white-space: nowrap;
+    }
+    /* 🛠️ 【修改結束】 */
+
 	.header-right-panel .user-profile,
 	.header-right-panel .dropdown {
 		flex-shrink: 0;
@@ -1102,7 +1134,6 @@ body.modal-open { overflow: hidden; }
          font-size: 0.85em;
     }
 }
-/* 🛠️ 【修改開始】teacher.css (請貼於檔案最末端) */
 
 /* 🟢 新增：文字輸入框容器 (為了定位清除按鈕) */
 .input-wrapper {
