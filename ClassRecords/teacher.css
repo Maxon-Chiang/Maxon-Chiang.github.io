@@ -916,7 +916,7 @@ body.modal-open { overflow: hidden; }
 	box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
 @media (max-width: 768px) {
-    /* --- 版面配置調整 --- */
+    /* --- 版面配置 --- */
     header {
         flex-direction: column;
         align-items: center;
@@ -935,59 +935,79 @@ body.modal-open { overflow: hidden; }
         font-size: 1.5em;
     }
     
-    /* 🟢 修改：確保右側面板不換行，避免高度破版 */
+    /* 🟢 修改：強制不換行，並平均分配空間 */
     .header-right-panel {
         width: 100%;
         display: flex;
-        justify-content: space-between;
+        justify-content: center; /* 居中排列 */
         align-items: center;
-        flex-wrap: nowrap; 
+        flex-wrap: nowrap;
+        gap: 5px; /* 元件之間的間距 */
     }
 
-    /* --- 功能按鈕優化：文字變圖示 --- */
-    /* 🟢 修改：將「成績計算」與「數據報告」縮小並轉為圖示 */
+    /* --- 1. 左側功能按鈕 (成績/報告) 改為圖示 --- */
     .main-actions {
         flex-shrink: 0;
         display: flex;
-        gap: 8px; /* 稍微拉開圖示間距 */
-        margin-right: 5px;
+        gap: 5px; 
     }
     .main-actions button, .main-actions a button {
-        padding: 6px 10px; /* 方形外觀 */
-        font-size: 0 !important; /* 隱藏中文文字 */
-        line-height: 1;
-        min-width: 38px;
+        padding: 0;
+        width: 36px; /* 固定寬高 */
+        height: 36px;
+        font-size: 0 !important; /* 隱藏文字 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 4px;
     }
-    /* 插入計算機圖示 */
-    .main-actions a:nth-child(1) button::before {
-        content: "🧮"; font-size: 1.2rem; visibility: visible;
-    }
-    /* 插入圖表圖示 */
-    .main-actions a:nth-child(2) button::before {
-        content: "📊"; font-size: 1.2rem; visibility: visible;
-    }
+    /* 插入圖示 */
+    .main-actions a:nth-child(1) button::before { content: "🧮"; font-size: 1.4rem; visibility: visible; }
+    .main-actions a:nth-child(2) button::before { content: "📊"; font-size: 1.4rem; visibility: visible; }
 
-    /* --- 切換系統選單修復 --- */
-    /* 🟢 修改：按鈕縮小 */
+    /* --- 2. 切換系統按鈕 (修正：保留文字) --- */
+    .system-switcher-container {
+        position: relative;
+        flex-shrink: 0;
+    }
     .sys-switch-btn {
-        padding: 4px 8px !important;
-        font-size: 0.9em !important;
-        white-space: nowrap;
+        /* 改回 auto 寬度，並顯示文字 */
+        width: auto !important; 
+        height: 36px;
+        padding: 0 10px !important; 
+        font-size: 0.9em !important; /* 確保文字可見 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 4px;
+        gap: 5px; /* 圖示與文字間距 */
     }
-    /* 🟢 關鍵修改：選單靠右對齊，防止被切掉 */
-    .sys-switch-content {
-        left: auto !important;  /* 取消原本的靠左 */
-        right: 0;               /* 改為靠右對齊容器 */
-        min-width: 240px;       /* 稍微縮窄寬度 */
-        max-width: 85vw;        /* 限制最大寬度為視窗 85%，防止撐爆 */
+    /* 移除額外插入的圖示，因為 HTML 裡已經有了 */
+    .sys-switch-btn::before {
+        content: none !important;
     }
 
-    /* --- 其他既有樣式保留 --- */
+    /* --- 3. 修復選單位置 --- */
+    .sys-switch-content {
+        position: absolute;
+        top: 100%;
+        left: 0; /* 因為按鈕變小且靠左了，選單靠左對齊通常不會切到右邊 */
+        min-width: 220px; /* 確保寬度足夠顯示文字 */
+        z-index: 9999;
+    }
+
+    /* --- 其他小調整 --- */
     #my-timetable-icon-btn { font-size: 1.4em !important; padding-left: 5px; }
-    #reload-cache-btn { margin-left: 10px; margin-right: 5px; }
-    #user-email { font-size: 1.0em; }
+    #reload-cache-btn { margin-left: 5px; margin-right: 5px; }
+    
+    /* 隱藏 Email 文字，只留名字或圖示，避免太擠 (選擇性) */
+    /* 若您的名字很長，建議取消下面這行的註解 */
+    /* #user-email { display: none; } */
+
     .header-right-panel .user-profile, .header-right-panel .dropdown { flex-shrink: 0; }
     .user-profile { font-size: 0.8em; }
+    
+    /* --- 以下保留原本的手機樣式 --- */
     main { padding: 1rem; width: 100%; box-sizing: border-box; overflow-x: hidden; }
     .class-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; }
     .class-block { min-height: 90px; }
@@ -1123,8 +1143,6 @@ body.modal-open { overflow: hidden; }
 }
 /* 🛠️ 【修改結束】 */
 
-/* 請將這段 CSS 取代原本 teacher.css 最下方的系統選單樣式 */
-
 .system-switcher-container {
     position: relative;
     display: inline-block;
@@ -1207,4 +1225,32 @@ body.modal-open { overflow: hidden; }
     color: #ea580c;
     font-weight: bold;
     white-space: nowrap;
+}
+
+/* --- 修正手機版選單文字被截斷的問題 --- */
+@media (max-width: 768px) {
+    /* 1. 讓選單寬度自動依照文字內容撐開，不要固定 220px */
+    .sys-switch-content {
+        min-width: max-content !important; 
+        width: auto !important;
+        right: auto; /* 確保不會因為靠左對齊而超出右邊界 (視情況) */
+    }
+
+    /* 2. 縮小選單內的文字大小與內距 */
+    .sys-item, .sys-link {
+        font-size: 13px !important; /* 縮小字體 */
+        padding: 8px 12px !important; /* 稍微縮小格子的高度與寬度 */
+    }
+
+    /* 3. 稍微調整那顆房子 icon 的大小與位置，避免太擠 */
+    .sys-home-icon {
+        font-size: 1.1em !important; 
+        margin-left: 8px !important;
+    }
+	.class-block-actions {
+		padding: 5px;
+	}
+	.class-block-actions a, .class-block-actions button {
+		padding: 2px 5px;
+	}	
 }
