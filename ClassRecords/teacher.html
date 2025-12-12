@@ -6,7 +6,1266 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <link rel="stylesheet" href="teacher.css">
+    <style>
+:root {
+    --primary-color: #4a90e2;
+    --secondary-color: #f5f5ff;
+    --font-color: #333;
+    --border-color: #ddd;
+    --danger-color: #d0021b;
+    --success-color: #1976D2;
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
+    margin: 0;
+    background-color: var(--secondary-color);
+    color: var(--font-color);
+}
+button, input, select, textarea {
+    font-family: inherit;
+}
+header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.6rem 1rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+	flex-wrap: wrap;
+}
+.header-left-panel {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+header h1 {
+    font-size: 1.6em;
+    margin: 0;
+    flex-shrink: 0;
+}
+.header-right-panel {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+#main-sort-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+#main-sort-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px 0;
+    font-size: 1.2em;
+    color: #fff;
+    line-height: 1;
+    display: block;
+    height: 1.8em;
+    width: 1.5em;
+    position: relative;
+    flex-shrink: 0;
+}
+.main-sort-arrow {
+    color: #fff;
+    transition: color 0.2s;
+    font-weight: bold;
+    line-height: 1;
+    display: block;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+#main-sort-up-arrow {
+    top: 0;
+}
+#main-sort-down-arrow {
+    top: 50%;
+}
+.main-sort-arrow.active { color: #f4d03f; }
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 1.0em;
+    flex-shrink: 0;
+}
+#user-email {
+    margin-left: 10px;
+    font-size: 1.0em;
+}
+.main-actions {
+    display: flex;
+    gap: 5px;
+}
+.main-actions button, .main-actions a button {
+    background: none;
+    border: 1px solid white;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+}
+#reload-cache-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 0 0px;
+    line-height: 1;
+    margin-right: 10px;
+}
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+.icon-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    cursor: pointer;
+    padding: 0 0px;
+    line-height: 1;
+}
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 10px;
+    background-color: white;
+    min-width: 150px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1001;
+    border-radius: 4px;
+    overflow: hidden;
+}
+.dropdown-content button {
+    color: #333;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+}
+.dropdown-content button:hover {
+    background-color: #f1f1f1;
+}
+.show {
+    display: block;
+}
+main {
+    padding: 1.5rem;
+}
+.class-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+.class-block {
+    border-radius: 8px;
+	box-shadow: 
+		0 4px 6px rgba(0, 0, 0, 0.1),       
+		0 1px 3px rgba(0, 0, 0, 0.05),      
+		0 0 0 1px rgba(0, 0, 0, 0.03);      
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    min-height: 100px;
+    justify-content: space-between;
+    transition: background-color 0.3s ease;
+}
+.class-block-title {
+    padding: 5px 10px 0px 10px;
+    font-size: 1.6em;
+    font-weight: normal;
+    color: var(--primary-color);
+    cursor: pointer;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px 8px 0 0;
+}
+.class-block-title:hover {
+    background-color: rgba(240, 248, 255, 0.5);
+}
+.class-total-score {
+    font-size: 1.0em;
+    font-weight: bold;
+    color: #333;
+    padding: 0px 10px 5px 10px;
+    margin: 0;
+    flex-shrink: 0;
+}
+.current-class-highlight {
+    border: 4px solid #FF5733;
+    box-shadow: 0 0 15px rgba(255, 87, 51, 0.8);
+    animation: pulse-border 1.5s infinite;
+}
+@keyframes pulse-border {
+    0% {
+        border-color: #FF5733;
+        box-shadow: 0 0 15px rgba(255, 87, 51, 0.8);
+    }
+    50% {
+        border-color: #FFA500;
+        box-shadow: 0 0 20px rgba(255, 165, 0, 0.9);
+    }
+    100% {
+        border-color: #FF5733;
+        box-shadow: 0 0 15px rgba(255, 87, 51, 0.8);
+    }
+}
+.schedule-table.slide-in {
+	animation: slideInRight 0.35s ease-out forwards; 
+}
+.schedule-table.slide-out {
+	animation: slideOutLeft 0.35s ease-in forwards; 
+}
+.class-block-actions {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px;
+    border-top: 1px solid #eee;
+}
+.class-block-actions a, .class-block-actions button {
+    background: none;
+    border: none;
+    font-size: 1.6em;
+    cursor: pointer;
+    color: #555;
+    padding: 5px 10px;
+    border-radius: 4px;
+    text-decoration: none;
+}
+.class-block-actions a:hover, .class-block-actions button:hover {
+    background-color: #f1f1f1;
+    color: var(--primary-color);
+}
+#student-roster-modal .modal-content {
+    max-width: 95%;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+#student-roster-modal .modal-content h2 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-right: 35px;
+    text-align: left;
+    flex-wrap: wrap;
+    min-height: 40px;
+}
+.roster-title-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-grow: 1;
+    min-width: 0;
+}
+.roster-title-clickable {
+    cursor: pointer;
+    padding: 5px 0;
+    white-space: nowrap;
+}
+.roster-title-text h3 {
+    margin: 0;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #333;
+}
+.roster-title-text .score-display {
+    font-size: 0.9em;
+    font-weight: normal;
+    color: #555;
+    margin-top: 2px;
+}
+#roster-sort-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px 0;
+    font-size: 1.5em;
+    color: #999;
+    flex-shrink: 0;
+    margin-left: 10px;
+    line-height: 1;
+    display: block;
+    height: 1.2em;
+    width: 1.5em;
+    position: relative;
+}
+#roster-sort-btn .roster-sort-arrow {
+    display: block;
+    transition: color 0.2s;
+    font-weight: bold;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+	font-size: 0.7em;
+}
+#roster-sort-up-arrow {
+    top: 0;
+}
+#roster-sort-down-arrow {
+    top: 50%;
+}
+.roster-sort-arrow.active { color: var(--primary-color); }
+.roster-sort-arrow.inactive {
+    color: #aaa;
+    opacity: 0.6;
+}
+#student-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    padding: 10px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+.student-block {
+    background-color: #f9f9f9;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 2x;
+	height: 80px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+	justify-content: center;
+}
+.student-block:hover {
+    background-color: #eef3f8;
+    border-color: var(--primary-color);
+}
+.student-block-info {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 2px;
+}
+.student-block-info .score {
+    font-size: 0.8em;
+    font-weight: normal;
+    color: #333;
+}
+.student-block-name {
+    font-size: 1.1em;
+}
+.score-negative { background-color: #ffebee; }
+.score-positive-low { background-color: #e8f5e9; }
+.score-positive-high { background-color: #fff8e1; }
+.student-block.highlight-no-score {
+	border: 2px solid var(--primary-color); 
+    box-shadow: 0 0 5px rgba(74, 144, 226, 0.5); 
+}
+.student-record-summary {
+    font-size: 0.7em; 
+    color: var(--danger-color);
+    margin-top: 5px;
+    white-space: normal; 
+    word-break: break-all; 
+    line-height: 1.2;
+}
+.student-record-text {
+    font-size: 0.7em; 
+    color: var(--danger-color);
+	flex-wrap: nowrap;
+    margin-top: 5px;
+    line-height: 1.2;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	overflow:hidden;
+}
+.modal, .modal2, .modal-notes {
+	display: none;
+    position: fixed;
+    z-index: 2000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    box-sizing: border-box;
+}
+.modal-content {
+	background-color: #fefefe;
+    padding: 25px;
+    border: 1px solid #888;
+    width: 100%;
+    max-width: 600px;
+    border-radius: 10px;
+    position: relative; 
+    box-sizing: border-box;
+    max-height: 90vh; 
+    overflow-y: hidden; 
+}
+#info-modal .modal-content,
+#tutorial-modal .modal-content {
+    max-height: 90vh;
+	padding-top: 50px; 
+	overflow: hidden; 
+	display: flex; 
+	flex-direction: column;
+}
+#info-modal .info-modal-header {
+	position: absolute; 
+	top: 0;
+	left: 0;
+	right: 0;
+	background-color: white; 
+	z-index: 2001; 
+	padding-top: 20px;
+	padding-left: 25px;
+	padding-right: 50px;
+}
+#info-modal-body {
+	overflow-y: auto; 
+	flex-grow: 1; 
+	padding-top: 10px; 
+	padding-right: 15px; 
+	padding-bottom: 5px;
+}
+#tutorial-modal-body {
+	overflow-y: auto; 
+	flex-grow: 1; 
+	padding-top: 0px; 
+	padding-right: 15px; 
+	padding-bottom: 25px;
+}
+#password-reset-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 3000;
+    justify-content: center;
+    align-items: center;
+	padding: 15px;
+	box-sizing: border-box;
+}
+.close-btn {
+	color: #aaa;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 3000; 
+}
+#class-settings-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: none;
+    border: none;
+    padding: 0;
+    margin-top: 15px;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+.class-setting-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background-color: white;
+}
+.password-reset-box {
+    background-color: white;
+    padding: 40px;
+    border-radius: 8px;
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+}
+.modal-content input {
+    padding: 12px;
+    margin: 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+#cp-error-message, #password-error-message {
+    color: var(--danger-color);
+    height: 20px;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    min-height: 30px;
+}
+.record-stats-display {
+    display: flex;
+    gap: 15px;
+    font-size: 1.0em;
+    font-weight: bold;
+}
+.record-stats-display span {
+     font-weight: normal;
+     color: #555;
+}
+#add-record-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+#record-points[disabled] {
+     background-color: #f1f1f1;
+     color: #6c757d;
+     cursor: not-allowed;
+}
+#record-points { flex: 0 1 100px; max-width: 110px; }
+#record-text { flex: 1 1 auto; }
+.mobile-score-controls {
+    display: none;
+    gap: 5px;
+}
+.score-adjust-btn {
+    padding: 5px 10px;
+    font-size: 1.2em;
+    background-color: #f1f1f1;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: background-color 0.2s;
+}
+.score-adjust-btn:hover {
+    background-color: #e0e0e0;
+}
+#save-record-btn, #btn-cancel-edit { border: none !important; padding: 10px 15px; font-size: 1.1em; border-radius: 6px;}
+#save-record-btn { color: white; }
+#save-record-btn.update-mode { background-color: #ff9800 !important; }
+#save-record-btn.update-mode:hover { background-color: #e68900 !important; }
+#btn-cancel-edit { display:none; color: white !important; background-color: #6c757d !important;}
+#btn-cancel-edit:hover { background-color: #5a6268 !important; }
+.record-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+}
+.record-content {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    min-width: 0;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+.record-content:hover {
+    background-color: #f5f5f5;
+}
+.record-points { font-weight: bold; font-size: 1.1em; flex-shrink: 0; }
+.record-points.positive { color: #28a745; }
+.record-points.negative { color: var(--danger-color); }
+.record-text { color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.record-timestamp { font-size: 0.8em; color: #999; flex-shrink: 0; white-space: nowrap; }
+.delete-btn { background: none; border: none; cursor: pointer; font-size: 1.2em; padding: 5px; flex-shrink: 0; }
+.icon-btn-main {
+    background: none;
+    border: 1px solid white;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 2px 8px;
+    line-height: 1.2;
+}
+#welcome-modal .modal-content { max-width: 500px; }
+#welcome-modal .modal-footer { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; }
+#welcome-modal ul { list-style-type: disc; padding-left: 25px; }
+#info-modal .modal-content { width: 100%; box-sizing: border-box; max-height: 85vh; overflow-y: auto; }
+#tutorial-modal .modal-content {
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    text-align: left;
+    padding-top: 20px;
+    line-height: 1.6;
+}
+#tutorial-modal h2 {
+    border-bottom: none;
+}
+#tutorial-modal h3 {
+    border-bottom: 2px solid #4a90e2;
+    padding-bottom: 5px;
+    margin-top: 0px;
+}		
+#tutorial-modal ul {
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+.instruction-highlight {
+    font-weight: bold;
+    color: #d0021b;
+}
+.info-modal-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-right: 40px; }
+.info-modal-header h2 { margin: 0; padding: 0; border: none; font-size: 1.5em; }
+#reset-welcome-prefs-btn { 
+    margin: 0; 
+    padding: 6px 12px; 
+    font-size: 0.9em; 
+    flex-shrink: 0; 
+    background-color: var(--danger-color); 
+    color: white; 
+    border: none; 
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); 
+    transition: background-color 0.2s, box-shadow 0.2s; 
+}
+#info-modal ul { list-style-type: disc; padding-left: 25px; }
+#my-timetable-modal .modal-content {
+    max-width: 900px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+#my-timetable-modal .modal-week-nav {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+#my-timetable-body {
+    overflow-y: auto;
+    overflow-x: auto;
+    flex-grow: 1;
+}
+.schedule-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 0.9em;
+    min-width: 600px;
+}
+.schedule-table th, .schedule-table td {
+    border: 1px solid #999;
+    padding: 2px;
+    text-align: center;
+    vertical-align: middle;
+    word-wrap: break-word;
+    position: relative;
+    height: 60px;
+}
+.schedule-table th {
+    background-color: #e9ecef;
+    font-weight: bold;
+    height: 35px;
+}
+.schedule-table th:first-child, .schedule-table td:first-child {
+    width: 10%;
+}
+.schedule-table .period-header {
+    font-weight: bold;
+    background-color: #e9ecef;
+}
+.schedule-table .subject {
+    font-weight: normal;
+    display: block;
+    font-size: 1.2em;
+}
+.schedule-table .class-detail {
+    font-size: 1.2em;
+    color: #0000FF;
+    display: block;
+    line-height: 1.1;
+	font-weight: bold;
+}
+.timetable-clickable-cell {
+	cursor: pointer;
+    transition: background-color 0.2s;
+}
+.timetable-clickable-cell:hover {
+	background-color: #cceeff;
+}
+.timetable-empty-cell {
+    background-color: #f7f7f7;
+}
+.current-timetable-cell {
+	background-color: #ffe0b2 !important;
+	border: 2px dashed #ff9800 !important;
+	box-shadow: 0 0 5px rgba(255, 152, 0, 0.5);
+}
+body.modal-open { overflow: hidden; }
+.password-reset-box form {
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	margin: 20px 0;
+}
+.password-reset-box input, .password-reset-box button {
+	width: 100%;
+	box-sizing: border-box;
+	height: 44px;
+	padding: 12px;
+}
+.password-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+.toggle-password {
+	position: absolute;
+	right: 15px;
+	cursor: pointer;
+	font-size: 1.2em;
+	color: #888;
+}
+.week-navigator button.current {
+	color: black;
+	border-color: #007bff;
+	background-color: #e6f7ff; 
+}
+.schedule-table thead.current-week th { 
+    color: blue;
+    font-weight: bold;
+    background-color: #F7EED6; 
+}
+.schedule-table thead th .date-span {
+     font-weight: bold !important; 
+}
+@keyframes pulse-purple {
+	from { background-color: #e6e0f4; }
+	to { background-color: #c9bddd; } 
+}
+@keyframes pulse-orange {
+    from { background-color: #fff3e0; } 
+    to { background-color: ##ffddb3; }
+}
+@keyframes pulse-gray {
+    from { background-color: #e9ecef; } 
+    to { background-color: #dcdcdc; } 
+}	
+.swapped-cell-pulse {
+    animation-name: pulse-purple; 
+    animation-duration: 0.8s;      
+    animation-iteration-count: infinite; 
+    animation-direction: alternate; 
+}
+.exchanged-cell-pulse {
+    animation-name: pulse-orange; 
+    animation-duration: 1.2s;
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}
+.substituted-cell-pulse {
+    animation-name: pulse-gray;
+    animation-duration: 1.0s; 
+    animation-iteration-count: infinite;
+    animation-direction: alternate;
+}				
+#my-timetable-icon-btn {
+    background: none !important;
+    border: none !important;
+    color: white !important;
+    font-size: 1.5em !important; 
+    padding: 0 5px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-color: transparent !important;
+}
+.header-left-panel button {
+    vertical-align: middle;:
+    line-height: 1; 
+	gap: 0px;
+}
+#my-timetable-icon-btn {
+    font-size: 1.5em !important; 
+	padding-left: 5px;
+}
+#reload-cache-btn {
+	margin-left: 0px; 
+    margin-right: 0; 
+	padding-left: 5px;
+}
+#save-homepage-settings-btn, #save-class-settings-btn, #save_new_password_btn {
+	padding: 10px 15px;
+	font-size: 1.1em;
+	color: white;
+	background-color: #28a745; 
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	outline: none;
+	margin-top: 15px;
+	box-shadow: 0 3px 0 0 #008020; 
+	transition: all 0.1s ease;
+}
+#save-homepage-settings-btn:active, #save-class-settings-btn:active, #save_new_password_btn:active {
+	transform: translateY(5px); 
+	box-shadow: 0 0 0 0 #28a745; 
+}
+@keyframes slideInRight {
+	from {
+		transform: translateX(100%); 
+		opacity: 0.5;
+	}
+	to {
+		transform: translateX(0); 
+		opacity: 1;
+	}
+}
+@keyframes slideInLeft {
+	from {
+		transform: translateX(-100%); 
+		opacity: 0.5;
+	}
+	to {
+		transform: translateX(0); 
+		opacity: 1;
+	}
+}
+@keyframes slideOutLeft {
+	from {
+		transform: translateX(0); 
+		opacity: 1;
+	}
+	to {
+		transform: translateX(-100%); 
+		opacity: 0.5;
+	}
+}
+@keyframes slideOutRight {
+	from {
+		transform: translateX(0); 
+		opacity: 1;
+	}
+	to {
+		transform: translateX(100%); 
+		opacity: 0.5;
+	}
+}
+@keyframes slideInDown {
+	from {
+		transform: translateY(-100%); 
+		opacity: 0.5;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
+}
+@keyframes slideOutUp {
+	from {
+		transform: translateY(0);
+		opacity: 1;
+	}
+	to {
+		transform: translateY(-100%); 
+		opacity: 0.5;
+	}
+}
+.schedule-table.slide-in-right {
+	animation: slideInRight 0.2s ease-out forwards;
+}
+.schedule-table.slide-in-left {
+	animation: slideInLeft 0.2s ease-out forwards;
+}
+.schedule-table.slide-out-left {
+	animation: slideOutLeft 0.2s ease-in forwards;
+}
+.schedule-table.slide-out-right {
+	animation: slideOutRight 0.2s ease-in forwards;
+}
+.schedule-table.slide-in-down {
+	animation: slideInDown 0.2s ease-out forwards;
+}
+.schedule-table.slide-out-up {
+	animation: slideOutUp 0.2s ease-in forwards;
+}
+.notice {
+	background-color: #fff3cd; 
+	color: #856404; 
+	border: 1px solid #ffeeba; 
+	border-left: 5px solid #ffc107;
+	padding: 12px 15px; 
+	border-radius: 4px; 
+	margin: 10px 0 20px 0; 
+	font-size: 1em; 
+	line-height: 1.6;
+	box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+@media (max-width: 768px) {
+    /* --- 版面配置 --- */
+    header {
+        flex-direction: column;
+        align-items: center;
+        padding-bottom: 5px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .header-left-panel {
+        width: 100%;
+        justify-content: center;
+        padding-bottom: 5px;
+        gap: 0px;
+    }
+    header h1 {
+        text-align: center;
+        font-size: 1.5em;
+    }
+    
+    /* 🟢 修改：強制不換行，並平均分配空間 */
+    .header-right-panel {
+        width: 100%;
+        display: flex;
+        justify-content: center; /* 居中排列 */
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 5px; /* 元件之間的間距 */
+    }
+
+    /* --- 1. 左側功能按鈕 (成績/報告) 改為圖示 --- */
+    .main-actions {
+        flex-shrink: 0;
+        display: flex;
+        gap: 5px; 
+    }
+    .main-actions button, .main-actions a button {
+        padding: 0;
+        width: 36px; /* 固定寬高 */
+        height: 36px;
+        font-size: 0 !important; /* 隱藏文字 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 4px;
+    }
+    /* 插入圖示 */
+    .main-actions a:nth-child(1) button::before { content: "🧮"; font-size: 1.4rem; visibility: visible; }
+    .main-actions a:nth-child(2) button::before { content: "📊"; font-size: 1.4rem; visibility: visible; }
+
+    /* --- 2. 切換系統按鈕 (修正：保留文字) --- */
+    .system-switcher-container {
+        position: relative;
+        flex-shrink: 0;
+    }
+    .sys-switch-btn {
+        /* 改回 auto 寬度，並顯示文字 */
+        width: auto !important; 
+        height: 36px;
+        padding: 0 10px !important; 
+        font-size: 0.9em !important; /* 確保文字可見 */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 4px;
+        gap: 5px; /* 圖示與文字間距 */
+    }
+    /* 移除額外插入的圖示，因為 HTML 裡已經有了 */
+    .sys-switch-btn::before {
+        content: none !important;
+    }
+
+    /* --- 3. 修復選單位置 --- */
+    .sys-switch-content {
+        position: absolute;
+        top: 100%;
+        left: 0; /* 因為按鈕變小且靠左了，選單靠左對齊通常不會切到右邊 */
+        min-width: 220px; /* 確保寬度足夠顯示文字 */
+        z-index: 9999;
+    }
+
+    /* --- 其他小調整 --- */
+    #my-timetable-icon-btn { font-size: 1.4em !important; padding-left: 5px; }
+    #reload-cache-btn { margin-left: 5px; margin-right: 5px; }
+    
+    /* 隱藏 Email 文字，只留名字或圖示，避免太擠 (選擇性) */
+    /* 若您的名字很長，建議取消下面這行的註解 */
+    /* #user-email { display: none; } */
+
+    .header-right-panel .user-profile, .header-right-panel .dropdown { flex-shrink: 0; }
+    .user-profile { font-size: 0.8em; }
+    
+    /* --- 以下保留原本的手機樣式 --- */
+    main { padding: 1rem; width: 100%; box-sizing: border-box; overflow-x: hidden; }
+    .class-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; }
+    .class-block { min-height: 90px; }
+    .class-block-title { font-size: 1.4em; }
+    .class-total-score { font-size: 0.9em; }
+    #student-roster-modal .modal-content h2 { flex-wrap: nowrap; padding-right: 25px; }
+    .roster-title-text h3, .roster-title-clickable { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    #roster-sort-btn { flex-shrink: 0; font-size: 1.2em; }
+    #student-grid-container { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 5px; padding: 5px; }
+    .student-block { height: 60px; }
+    .student-block-info { font-size: 0.9em; margin-bottom: 0px; }
+    .student-block-name { font-size: 0.9em; }
+    .modal2 .modal-content { padding: 15px; }
+    .mobile-score-controls { display: flex; }
+    #save-record-btn, #btn-cancel-edit { padding: 5px 8px !important; font-size: 1em !important; flex-shrink: 0; }
+    #add-record-form { flex-wrap: nowrap; gap: 5px; }
+    #record-points { max-width: 60px; flex: 0 0 60px; padding: 8px; text-align: center; }
+    #record-text { padding: 8px; }
+    .score-adjust-btn { width: 35px; height: 35px; font-size: 1.1em; }
+    .form-header button[type="submit"] { padding: 8px 10px; font-size: 0.9em; flex-shrink: 0; }
+    #records-list { max-height: 25vh; }
+    #my-timetable-modal .modal-content { max-width: 98%; padding: 10px; }
+    .schedule-table { font-size: 0.8em; min-width: unset; }
+    .schedule-table .subject { font-size: 0.8em; }
+    .schedule-table th, .schedule-table td { white-space: normal; word-wrap: break-word; }
+    .schedule-table th:first-child, .schedule-table td:first-child { width: 20%; padding: 0px; }
+    .schedule-table th:not(:first-child), .schedule-table td:not(:first-child) { width: 16%; }
+    .schedule-table td { height: 50px; }
+    #my-timetable-body { overflow-x: hidden; }
+    #my-timetable-modal .modal-header { padding: 0 35px 0 10px; margin-bottom: 5px; flex-wrap: wrap; }
+    #my-timetable-modal .modal-title-container { width: 100%; text-align: center; margin-bottom: 8px; }
+    #my-timetable-modal .modal-week-nav { width: 100%; margin-top: 0; justify-content: space-around; padding: 2px 0; gap: 5px; }
+    #my-timetable-modal .modal-week-nav button { padding: 2px; font-size: 0.85em; }
+}
+
+/* 🟢 新增：文字輸入框容器 (為了定位清除按鈕) */
+.input-wrapper {
+    position: relative;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+}
+
+/* 🟢 修改：調整輸入框右側內距，避免文字被 X 按鈕擋住 */
+#record-text {
+    width: 100%;
+    padding-right: 30px !important; /* 強制覆蓋原有 padding */
+    flex: 1;
+}
+
+/* 🟢 新增：清除按鈕樣式 */
+#clear-text-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.4em;
+    color: #999;
+    font-weight: bold;
+    line-height: 1;
+    padding: 0 4px;
+    border-radius: 50%;
+    user-select: none;
+    z-index: 5;
+    background-color: transparent;
+    transition: all 0.2s;
+}
+
+#clear-text-btn:hover {
+    color: var(--danger-color);
+    background-color: rgba(0,0,0,0.05);
+}
+
+/* 🟢 修改：紀錄列表內容容器 (移除原本整行的 cursor:pointer) */
+.record-content {
+    cursor: default; 
+    padding: 0; 
+    gap: 0;    
+    display: flex;
+    align-items: center;
+}
+
+/* 🟢 新增：可修改的分數區域樣式 */
+.record-points-area {
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    font-weight: bold;
+    font-size: 1.1em;
+    flex-shrink: 0;
+    margin-right: 8px;
+    border: 1px solid transparent;
+}
+.record-points-area:hover {
+    background-color: #e0e0e0;
+    border-color: #ccc;
+    text-decoration: underline;
+}
+
+/* 🟢 新增：可複製的文字區域樣式 */
+.record-text-area {
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    flex-grow: 1;
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis;
+    position: relative;
+    border: 1px solid transparent;
+}
+.record-text-area:hover {
+    background-color: #fff3cd; /* 淺黃色提示可複製 */
+    color: #856404;
+    border-color: #ffeeba;
+}
+/* 滑鼠移上去顯示「複製」提示 */
+.record-text-area:hover::after {
+    content: "📋 複製";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.7em;
+    background-color: rgba(255,255,255,0.9);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #ccc;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+/* 🛠️ 【修改結束】 */
+
+.system-switcher-container {
+    position: relative;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.sys-switch-btn {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 6px 12px;
+    font-size: 1em;
+    border: 1px solid rgba(255,255,255,0.5);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.sys-switch-btn:hover { background-color: rgba(255, 255, 255, 0.3); }
+
+.sys-switch-content {
+    display: none;
+    position: absolute;
+    top: 100%; left: 0;
+    background-color: #fff;
+    min-width: 300px; /*稍微加寬以容納文字*/
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    z-index: 2000;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    color: #333;
+}
+.sys-switch-content.show { display: block; }
+
+.sys-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    transition: background-color 0.2s;
+	white-space: nowrap;
+}
+.sys-item:hover { background-color: #f5f5f5; }
+
+.sys-link {
+    cursor: pointer;
+    flex-grow: 1;
+    font-weight: bold;
+    color: #333;
+}
+.sys-link:hover { color: var(--primary-color); }
+
+/* --- 首頁圖示樣式 --- */
+.sys-home-icon {
+    cursor: pointer;
+    font-size: 1.3em;
+    margin-left: 15px;
+    color: #d1d5db; /* 未選中時為淺灰色 */
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+}
+.sys-home-icon:hover {
+    color: #9ca3af; /* 滑鼠移過去變深灰 */
+    transform: scale(1.1);
+}
+
+/* 🔥 關鍵：被設為 Default 時的樣式 */
+.sys-item.is-default {
+    background-color: #fff7ed; /* 極淺橘色背景 */
+}
+.sys-item.is-default .sys-home-icon {
+    color: #ea580c; /* 亮橘色 */
+    transform: scale(1.1);
+}
+/* 利用 CSS 偽元素直接加上文字標籤，不用改 HTML */
+.sys-item.is-default .sys-home-icon::after {
+    content: "(預設)";
+    font-size: 0.6em;
+    margin-left: 4px;
+    color: #ea580c;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+/* --- 修正手機版選單文字被截斷的問題 --- */
+@media (max-width: 768px) {
+    /* 1. 讓選單寬度自動依照文字內容撐開，不要固定 220px */
+    .sys-switch-content {
+        min-width: max-content !important; 
+        width: auto !important;
+        right: auto; /* 確保不會因為靠左對齊而超出右邊界 (視情況) */
+    }
+
+    /* 2. 縮小選單內的文字大小與內距 */
+    .sys-item, .sys-link {
+        font-size: 13px !important; /* 縮小字體 */
+        padding: 8px 12px !important; /* 稍微縮小格子的高度與寬度 */
+    }
+
+    /* 3. 稍微調整那顆房子 icon 的大小與位置，避免太擠 */
+    .sys-home-icon {
+        font-size: 1.1em !important; 
+        margin-left: 8px !important;
+    }
+	.class-block-actions {
+		padding: 5px;
+	}
+	.class-block-actions a, .class-block-actions button {
+		padding: 2px 5px;
+	}	
+}
+	
+	</style>
+	
 </head>
 
 <body>
@@ -301,6 +1560,2141 @@
         </div>
     </div>
 
-<script src="teacher.js?v=2.0"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const firebaseConfig = {
+        apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
+        authDomain: "classrecords-13902.firebaseapp.com",
+        projectId: "classrecords-13902",
+        storageBucket: "classrecords-13902.firebasestorage.app",
+        messagingSenderId: "431747377367",
+        appId: "1:431747377367:web:b157a485c59ce38091e892",
+        measurementId: "G-JWTQGM9XMP"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+	const DIRECT_ENTRY_KEY = 'pref_direct_class_entry'; // LocalStorage Key
+	const toggleDirectEntryBtn = document.getElementById('toggle-direct-entry-btn');
+
+	let currentUser = null, studentsData = [],
+        allPerformanceScores = {},
+        allClassList = [], visibleClassList = [], modalOrigin = null, rosterModalOrigin = null;
+
+    let scheduleDataLoaded = false;
+    let teacherTimetableData = { periods: {} };
+    let currentUserData = null;
+    let classTotalScores = {};
+    let activeChanges = [];
+    let currentWeekStart = getMonday(new Date());
+    let timetableIntervalId = null;
+    
+	const USER_AUTH_KEY = 'user_auth_profile_v1';
+	const STATIC_CACHE_KEY = 'teacher_static_cache_v6'; 
+	const DYNAMIC_CACHE_KEY = 'teacher_dynamic_cache_v6';
+	let CACHE_DATA_STATIC = {};
+	let CACHE_DATA_DYNAMIC = {};
+   
+    const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
+	
+    let rosterSortState = 0;
+    let classSortState = 0;
+    let currentRosterClassId = null;
+    let currentEntity = null;
+
+    let editingRecordId = null;
+
+    let PERIOD_TIMES = [];
+	let allPerformanceRecords = []; 
+    let studentLatestRecords = {};
+	let lastSchUpdFetch = 0;
+	let lastPerformanceFetch = 0;
+	let cloudDataUpdatedStatic = false;
+	let cloudDataUpdatedDynamic = false;
+	let isInitializing = false;
+	let allScheduleChanges = []; 
+	
+    const appContainer = document.getElementById('app-container');
+    const welcomeModal = document.getElementById('welcome-modal');
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const recordsList = document.getElementById('records-list');
+    const passwordResetOverlay = document.getElementById('password-reset-overlay');
+    const changePasswordModal = document.getElementById('change-password-modal');
+    const changePasswordBtn = document.getElementById('change-password-btn');
+    const classSettingsModal = document.getElementById('class-settings-modal');
+    const classSettingsBtn = document.getElementById('class-settings-btn');
+    const infoModal = document.getElementById('info-modal');
+    const myTimetableModal = document.getElementById('my-timetable-modal');
+	const myTimetableIconBtn = document.getElementById('user-email');
+    const myTimetableTitle = document.getElementById('my-timetable-title');
+    const myTimetableBody = document.getElementById('my-timetable-body');
+    const timetableMessage = document.getElementById('timetable-message');
+    const rosterSortBtn = document.getElementById('roster-sort-btn');
+    const mainSortBtn = document.getElementById('main-sort-btn');
+	const timetableLink = document.getElementById('sys-link-timetable');
+    
+    const reloadCacheBtn = document.getElementById('reload-cache-btn');
+
+    const saveRecordBtn = document.getElementById('save-record-btn');
+    const btnCancelEdit = document.getElementById('btn-cancel-edit');
+    const recordPointsInput = document.getElementById('record-points');
+    const recordTextInput = document.getElementById('record-text');
+
+    const scorePlusBtn = document.getElementById('score-plus-btn');
+    const scoreMinusBtn = document.getElementById('score-minus-btn');
+    const recordCountDisplay = document.getElementById('record-count-display');
+    const recordTotalScoreDisplay = document.getElementById('record-total-score-display');
+    const passwordResetForm = document.getElementById('password-reset-form');
+    const changePasswordForm = document.getElementById('change-password-form');
+    const cpErrorMessage = document.getElementById('cp-error-message');
+    const addRecordForm = document.getElementById('add-record-form');
+    const rosterSortDownArrow = document.getElementById('roster-sort-down-arrow');
+    const rosterSortUpArrow = document.getElementById('roster-sort-up-arrow');
+    const mainSortDownArrow = document.getElementById('main-sort-down-arrow');
+    const mainSortUpArrow = document.getElementById('main-sort-up-arrow');
+    const rosterClickArea = document.getElementById('roster-click-area');
+    const studentRosterModal = document.getElementById('student-roster-modal');
+    const rosterClassName = document.getElementById('roster-class-name');
+    const studentGridContainer = document.getElementById('student-grid-container');
+    const selectAllVisibleClasses = document.getElementById('select-all-visible-classes');
+    const classSettingsList = document.getElementById('class-settings-list');
+    const saveClassSettingsBtn = document.getElementById('save-class-settings-btn');
+    const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
+	const TRANSFER_KEY = 'initialActiveChanges';
+	const CACHE_LIFETIME = 45 * 60 * 1000; 
+	
+	function checkAndTriggerDirectEntry() {
+		// 檢查設定是否開啟
+		if (localStorage.getItem(DIRECT_ENTRY_KEY) !== 'true') return false;
+
+		// 取得當前節次與星期
+		const currentPeriodIndex = getCurrentPeriodIndex();
+		if (currentPeriodIndex === -1) return false; // 非上課時間
+
+		const now = new Date();
+		const dayOfWeek = now.getDay(); // 0-6
+		if (dayOfWeek < 1 || dayOfWeek > 5) return false; // 非平日
+
+		const dayIndex = dayOfWeek - 1;
+		const highlightWeekStart = getMonday(new Date()); 
+		const derivedSchedule = getDerivedCurrentUserSchedule(highlightWeekStart);
+		const periods = derivedSchedule.periods;
+		const periodData = periods[currentPeriodIndex];
+
+		if (periodData && periodData[dayIndex]) {
+			let classCode = null;
+			let cellContent = periodData[dayIndex];
+
+			// 解析課表內容 (包含異動處理)
+			if (typeof cellContent === 'string') {
+				const parts = cellContent.split(/\s+/);
+				classCode = parts[0];
+			} else if (cellContent.class) {
+				// 如果是調出/換出/代出，就不跳轉
+				if (cellContent.isSwappedIn || cellContent.isExchangedIn || cellContent.isSubstitutedIn) {
+					 classCode = cellContent.class;
+				} else if (!cellContent.isSwappedOut && !cellContent.isExchangedOut && !cellContent.isSubstitutedOut) {
+					 classCode = cellContent.class;
+				}
+			}
+
+			// 如果找到了班級代碼，且該班級在 allClassList 中 (避免資料錯誤)
+			if (classCode && allClassList.includes(classCode)) {
+				console.log(`⚡ 直進上課班級觸發：正在開啟 ${classCode} 班的紀錄視窗...`);
+				
+				// 延遲一點點確保 DOM 渲染完畢，視覺上也比較平滑
+				setTimeout(() => {
+					openStudentRosterModal(classCode, 'main');
+				}, 300);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// 3. 新增按鈕的事件監聽與初始化文字 (放在 DOMContentLoaded 尾端)
+	if (toggleDirectEntryBtn) {
+		const updateBtnText = () => {
+			const isEnabled = localStorage.getItem(DIRECT_ENTRY_KEY) === 'true';
+			toggleDirectEntryBtn.textContent = isEnabled ? '⚡ 直進上課班級 (已開啟)' : '⚡ 直進上課班級 (已關閉)';
+			toggleDirectEntryBtn.style.color = isEnabled ? 'var(--primary-color)' : '#333';
+			toggleDirectEntryBtn.style.fontWeight = isEnabled ? 'bold' : 'normal';
+		};
+
+		toggleDirectEntryBtn.addEventListener('click', (e) => {
+			e.stopPropagation(); // 防止選單關閉
+			const currentState = localStorage.getItem(DIRECT_ENTRY_KEY) === 'true';
+			const newState = !currentState;
+			localStorage.setItem(DIRECT_ENTRY_KEY, newState);
+			updateBtnText();
+			alert(newState ? '已開啟！登入時若遇上課時間，將直接進入該班級紀錄頁面。' : '已關閉直進功能。');
+		});
+
+		// 初始化按鈕文字
+		updateBtnText();
+	}
+
+	function navigateToTimetable() {
+		try {
+			if (activeChanges && activeChanges.length > 0) {
+				sessionStorage.setItem(TRANSFER_KEY, JSON.stringify(activeChanges));
+			}
+			const staticData = {
+				PERIOD_TIMES: PERIOD_TIMES
+			};
+			sessionStorage.setItem(STATIC_CACHE_KEY, JSON.stringify(staticData));
+		} catch(e) {
+			console.error("無法傳遞 activeChanges 數據:", e);
+		}
+		window.location.href = 'timetable.html';
+	}
+	
+    function getClassBlockColor(totalScore) {
+        if (totalScore < 0) {
+            return '#D9E2E9';
+        } else if (totalScore < 10) {
+            return '#D4EDDA';
+        } else if (totalScore < 20) {
+            return '#FFFACD';
+        } else {
+            return '#F8D7DA';
+        }
+    }
+
+    function getMonday(d) {
+        d = new Date(d);
+        d.setHours(0, 0, 0, 0);
+        const day = d.getDay(),
+            diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+    }
+
+    function formatDate(date, format = 'MM/DD') {
+        if (!date) return '';
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        if (format === 'YYYY-MM-DD') {
+            return `${date.getFullYear()}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+        return `${month}/${day}`;
+    }
+
+	async function loadActiveChanges(force = false) {
+        if (!currentUser || !currentUser.uid) return;
+        
+        if (!force){
+            const cachedChanges = sessionStorage.getItem(TRANSFER_KEY);
+            if (cachedChanges) {
+                try {
+                    activeChanges = JSON.parse(cachedChanges);
+                    allScheduleChanges = activeChanges; 
+                    console.log('✅ 快取命中：課表異動 Session，無需重新讀取 Firestore！');
+                    return; 
+                } catch (e) {
+                    console.error('❌ 解析 Session 快取失敗，將檢查本地快取。', e);
+                }
+            }
+            if (allScheduleChanges && allScheduleChanges.length > 0) {
+                activeChanges = allScheduleChanges;
+                console.log('✅ 快取命中：課表異動 LocalStorage，無需重新讀取 Firestore！');
+                return; 
+            }
+        }
+        
+        try {
+            const involvedQuery = db.collection('classChanges')
+                                    .where('involvedTeacherIds', 'array-contains', currentUser.uid)
+                                    .where('status', '==', 'active');
+
+            const snapshot = await involvedQuery.get();
+			console.log('載入課表異動資料...');
+
+            const newActiveChanges = [];
+            snapshot.forEach(doc => {
+                newActiveChanges.push({ id: doc.id, ...doc.data() });
+            });
+            
+            activeChanges = newActiveChanges;       
+            allScheduleChanges = newActiveChanges;  
+            
+            sessionStorage.removeItem(TRANSFER_KEY); 
+			cloudDataUpdatedDynamic = true;
+			lastSchUpdFetch = new Date().getTime(); 
+            
+        } catch (error) {
+            console.error("載入課程異動時發生錯誤:", error);
+        }
+     }
+	
+    function getDerivedCurrentUserSchedule(weekStart = null) {
+        if (!teacherTimetableData || !teacherTimetableData.periods) {
+            return { periods: {} };
+        }
+
+        const derivedSchedule = JSON.parse(JSON.stringify(teacherTimetableData));
+        const teacherName = currentUserData.displayName;
+		const targetWeekStart = weekStart || currentWeekStart;
+
+        activeChanges.forEach(change => {
+
+            if (change.type === 'swap') {
+                const infoA = change.originalClassInfo;
+                const infoB = change.targetClassInfo;
+
+                const weekA = getMonday(new Date(infoA.date));
+                const weekB = getMonday(new Date(infoB.date));
+
+				if (weekA.getTime() === targetWeekStart.getTime() && weekB.getTime() === targetWeekStart.getTime()) {
+                    if (infoA.teacher === teacherName) {
+                        derivedSchedule.periods[infoA.period][infoA.day] = { ...infoB, class: infoA.class, isSwappedIn: true, changeId: change.id };
+                        derivedSchedule.periods[infoB.period][infoB.day] = { ...infoA, isSwappedOut: true, changeId: change.id };
+                    } else if (infoB.teacher === teacherName) {
+                        derivedSchedule.periods[infoB.period][infoB.day] = { ...infoA, class: infoB.class, isSwappedIn: true, changeId: change.id };
+                        derivedSchedule.periods[infoA.period][infoA.day] = { ...infoB, isSwappedOut: true, changeId: change.id };
+                    }
+                }
+            }
+            else if (change.type === 'substitution') {
+                const changeDate = new Date(change.date);
+                const changeWeekStart = getMonday(changeDate);
+
+                if (changeWeekStart.getTime() !== targetWeekStart.getTime()) return;
+
+                const lessonInfo = change.lessonInfo;
+                const dayIndex = changeDate.getDay() - 1;
+
+                if (dayIndex >= 0 && dayIndex < 5) {
+                    if (change.originalTeacherName === teacherName) {
+                        derivedSchedule.periods[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedOut: true, substituteTeacherName: change.substituteTeacherName, reason: change.reason, changeId: change.id };
+                    } else if (change.substituteTeacherName === teacherName) {
+                        derivedSchedule.periods[lessonInfo.period][dayIndex] = { ...lessonInfo, isSubstitutedIn: true, originalTeacherName: change.originalTeacherName, reason: change.reason, changeId: change.id };
+                    }
+                }
+            }
+            else if (change.type === 'exchange') {
+                const infoA = change.originalLessonInfo;
+                const infoB = change.exchangeLessonInfo;
+
+                const weekA = getMonday(new Date(infoA.date));
+				if (weekA.getTime() === targetWeekStart.getTime()) {
+                    const dayA = new Date(infoA.date).getDay() - 1;
+                    if (dayA >= 0 && dayA < 5) {
+                        if (infoA.teacher === teacherName) {
+                            derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedOut: true, targetTeacher: infoB.teacher, originalTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
+                        } else if (infoB.teacher === teacherName) {
+                            derivedSchedule.periods[infoA.period][dayA] = { ...infoA, isExchangedIn: true, targetTeacher: infoA.teacher, originalTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
+                        }
+                    }
+                }
+
+                const weekB = getMonday(new Date(infoB.date));
+                if (weekB.getTime() === targetWeekStart.getTime()) {
+                    const dayB = new Date(infoB.date).getDay() - 1;
+                    if (dayB >= 0 && dayB < 5) {
+                         if (infoB.teacher === teacherName) {
+                            derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedOut: true, targetTeacher: infoB.teacher, originalTeacher: infoA.teacher, changeId: change.id, reason: change.reason };
+                        } else if (infoA.teacher === teacherName) {
+                            derivedSchedule.periods[infoB.period][dayB] = { ...infoB, isExchangedIn: true, targetTeacher: infoA.teacher, originalTeacher: infoB.teacher, changeId: change.id, reason: change.reason };
+                        }
+                    }
+                }
+            }
+        });
+
+        return derivedSchedule;
+    }
+
+	function runMainApp() {
+        /* 🟢 修改 start: 加入逾時檢查與更詳細的狀態顯示 */
+        // 設定一個計時器，如果 Auth 超過 5 秒沒反應，提示使用者
+        const authTimeout = setTimeout(() => {
+            const container = document.getElementById('app-container');
+            if (container && container.innerHTML.includes('正在載入您的資料')) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding:20px;">
+                        <h2>連線回應較慢...</h2>
+                        <p>系統正在嘗試連接身分驗證伺服器。</p>
+                        <p>若持續停留在此畫面，請嘗試 <a href="javascript:window.location.reload()">重新整理</a>。</p>
+                    </div>`;
+            }
+        }, 8000); // 8秒後提示
+
+		auth.onAuthStateChanged(async (user) => {
+            clearTimeout(authTimeout); // Auth 有反應了，清除計時器
+
+			if (user) {
+                // 立即更新 UI，讓使用者知道 JS 有在跑
+                document.getElementById('app-container').innerHTML = '<h2>🔄 身分驗證成功，正在讀取設定...</h2>';
+
+				if (currentUser && currentUser.uid === user.uid) return;
+				currentUser = user;
+				
+				let userDocData = null;
+				try {
+					const cachedAuth = localStorage.getItem(USER_AUTH_KEY);
+					if (cachedAuth) {
+						const parsedCache = JSON.parse(cachedAuth);
+                        // 這裡配合您之前的修改，已移除時間判斷
+						if (parsedCache.uid === user.uid) {
+							userDocData = parsedCache.userData;
+							console.log('✅ 快取命中：讀取到用戶角色資料。');
+						} else {
+							console.log('❌ ID 不符，移除快取！');
+							localStorage.removeItem(USER_AUTH_KEY);
+						}
+					}
+				} catch (e) {
+					 console.error('❌ 解析 AUTH 快取失敗:', e);
+					 localStorage.removeItem(USER_AUTH_KEY);
+				}
+				
+				if (!userDocData) {
+                    // 增加讀取 Firestore 的逾時保護 (防止網路卡住)
+                    try {
+                        document.getElementById('app-container').innerHTML = '<h2>☁️ 正在從雲端下載使用者資料...</h2>';
+                        
+                        const fetchUserPromise = db.collection('users').doc(user.uid).get();
+                        const timeoutPromise = new Promise((_, reject) => 
+                            setTimeout(() => reject(new Error("讀取逾時")), 10000)
+                        );
+
+                        const userDoc = await Promise.race([fetchUserPromise, timeoutPromise]);
+                        
+                        console.log('載入user資料...'); 
+                        if (userDoc.exists) {
+                            userDocData = userDoc.data();
+                            localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
+                                uid: user.uid,
+                                userData: userDocData,
+                                lastUpdated: new Date().getTime()
+                            }));
+                        }
+                    } catch (err) {
+                        console.error("讀取使用者資料失敗:", err);
+                        document.getElementById('app-container').innerHTML = `
+                            <h2>⚠️ 讀取資料失敗</h2>
+                            <p>請檢查您的網路連線。</p>
+                            <button onclick="window.location.reload()" style="padding:10px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer;">重新整理</button>
+                        `;
+                        return;
+                    }
+				}
+
+				if (userDocData && (userDocData.role === 'teacher' || userDocData.role === 'school_admin' || userDocData.role === 'admin')) {
+					
+                    // 🛠️ 【修改開始】手機版/書籤直連的預設系統跳轉修正
+                    // 如果使用者略過 login.html 直接進入，且設定了其他系統為首頁，需在此處補執行跳轉
+                    const directEntryEnabled = localStorage.getItem('pref_direct_class_entry') === 'true';
+                    const defaultPage = localStorage.getItem('defaultSystemPage');
+                    
+                    // 邏輯：沒開直進班級 + 有設定預設頁 + 預設頁不是 teacher.html
+                    if (!directEntryEnabled && defaultPage && defaultPage !== 'teacher.html' && defaultPage !== 'teacher.html#') {
+                        
+                        // 關鍵檢查：判斷是否是「手動」從其他系統切換過來的
+                        // 如果 document.referrer 包含 timetable.html，代表使用者剛從課表點擊連結過來，我們就不該踢他回去
+                        const referrer = document.referrer || "";
+                        const cameFromOtherSystem = referrer.includes('timetable.html') || referrer.includes('worksheet_manager.html');
+
+                        if (!cameFromOtherSystem) {
+                            console.log(`📱 (Mobile/Direct) 偵測到預設首頁設定為 ${defaultPage}，執行補救跳轉...`);
+                            window.location.href = defaultPage;
+                            return; // 中斷 teacher.js 的後續載入
+                        }
+                    }
+                    // 🛠️ 【修改結束】
+
+                    currentUserData = userDocData; 
+					
+					document.getElementById('user-email').textContent = currentUserData.displayName || user.email;
+					
+					if (currentUserData.passwordNeedsReset === true) {
+						showPasswordResetUI();
+					} else {
+						await initialize(currentUserData, false); 
+					}
+				} else {
+					window.location.href = `login.html?from=teacher`;
+				}
+			} else {
+				window.location.href = `login.html`;
+			}
+		});
+        /* 🟢 修改 end */
+	}
+	
+	window.addEventListener('pageshow', async (event) => {
+		const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
+		
+		if (event.persisted && localStorage.getItem(REFRESH_FLAG_KEY) === 'true' && currentUser) {
+			console.log('🔄 從 bfcache 恢復，偵測到課表異動旗標，執行強制重新載入！');
+			await initialize(currentUserData, false, 1); 
+		} else if (event.persisted) {
+			highlightCurrentClass();
+		}
+	});
+
+    const shouldShowWelcome = document.getElementById('welcome-modal') &&
+                              localStorage.getItem('hideLoginWelcome') !== 'true' &&
+                              sessionStorage.getItem('welcomeShownForSession') !== 'true';
+
+    if (shouldShowWelcome) {
+        sessionStorage.setItem('welcomeShownForSession', 'true');
+
+        const closeWelcome = () => {
+            if (document.getElementById('dont-show-again-login').checked) {
+                localStorage.setItem('hideLoginWelcome', 'true');
+            }
+            document.getElementById('welcome-modal').style.display = 'none';
+            runMainApp();
+        };
+
+        document.getElementById('close-welcome-btn').onclick = closeWelcome;
+        document.getElementById('welcome-modal').querySelector('.close-btn').onclick = closeWelcome;
+
+        document.getElementById('welcome-modal').style.display = 'flex';
+    } else {
+        runMainApp();
+    }
+
+    if (timetableLink) {
+         timetableLink.href = `./timetable.html?v=${Date.now()}`;
+    }
+
+    function showPasswordResetUI() {
+        document.querySelector('header').style.display = 'none';
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('password-reset-overlay').style.display = 'flex';
+    }
+
+    function getCurrentPeriodIndex() {
+        if (PERIOD_TIMES.length === 0) return -1;
+
+        const now = new Date();
+        const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+
+        for (let i = 0; i < PERIOD_TIMES.length; i++) {
+            const period = PERIOD_TIMES[i];
+
+            const [startH, startM] = period.start.split(':').map(Number);
+
+            let startTimeMinutes = startH * 60 + startM;
+            let endTimeMinutes = startTimeMinutes + period.duration;
+
+            const bufferMinutes = 5;
+            startTimeMinutes = startTimeMinutes - bufferMinutes;
+            endTimeMinutes = endTimeMinutes + bufferMinutes;
+
+            if (currentTimeMinutes >= startTimeMinutes && currentTimeMinutes < endTimeMinutes) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+	function highlightCurrentClass() {
+        if (PERIOD_TIMES.length === 0 || !scheduleDataLoaded) return;
+
+        document.querySelectorAll('.class-block').forEach(el => {
+            el.classList.remove('current-class-highlight');
+        });
+
+        const now = new Date();
+        const dayOfWeek = now.getDay();
+
+        if (dayOfWeek < 1 || dayOfWeek > 5) return;
+
+        const dayIndex = dayOfWeek - 1;
+
+        const currentPeriodIndex = getCurrentPeriodIndex();
+
+        if (currentPeriodIndex === -1) return;
+
+        const highlightWeekStart = getMonday(new Date()); 
+        
+        const derivedSchedule = getDerivedCurrentUserSchedule(highlightWeekStart);
+        const periods = derivedSchedule.periods;
+        const periodData = periods[currentPeriodIndex];
+		
+        if (periodData && periodData[dayIndex]) {
+
+            let cellContent = periodData[dayIndex];
+            let classCode = null;
+            
+            if (typeof cellContent === 'string') {
+                 // 原始課表內容: "班級代碼 課程名稱"
+                 const parts = cellContent.split(/\s+/);
+                 classCode = parts[0];
+            } else if (cellContent.class) {
+                // 異動後課表內容: { class: "班級代碼", ... }
+                // 檢查是否是「調出/換出/代出」的情況，如果是則不應高亮
+                if (cellContent.isSwappedIn || cellContent.isExchangedOut || cellContent.isSubstitutedOut) {
+                    return; 
+                }
+                classCode = cellContent.class; 
+            } else {
+                 return; // 無效的課表內容
+            }
+
+            if (classCode) {
+                const targetCard = document.querySelector(`.class-block[data-class-id="${classCode}"]`);
+                if (targetCard) {
+                    targetCard.classList.add('current-class-highlight');
+                }
+            }
+        }
+    }
+
+    async function loadPeriodTimes(schoolId, useCache) {
+        if (!schoolId) return;
+        
+        if (useCache && PERIOD_TIMES.length > 0) {
+            PERIOD_TIMES = CACHE_DATA_STATIC.PERIOD_TIMES;
+            return;
+        }
+
+        try {
+            const periodsDoc = await db.collection('schools').doc(schoolId)
+                                       .collection('periods').doc('current').get();
+			console.log('載入節次資料...');
+			cloudDataUpdatedStatic = true;
+            if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
+                PERIOD_TIMES = periodsDoc.data().times.map(item => ({
+                    period: item.period,
+                    start: item.start,
+                    duration: item.duration || 50
+                }));
+                PERIOD_TIMES.sort((a, b) => a.period - b.period);
+            } else {
+                console.warn("警告: 學校尚未設定課程時間表。使用預設值。");
+                PERIOD_TIMES = [
+                    { period: 1, start: '08:10', duration: 50 },
+                    { period: 2, start: '09:10', duration: 50 },
+                    { period: 3, start: '10:10', duration: 50 },
+                    { period: 4, start: '11:10', duration: 50 },
+                    { period: 5, start: '13:10', duration: 50 },
+                    { period: 6, start: '14:10', duration: 50 },
+                    { period: 7, start: '15:10', duration: 50 },
+                    { period: 8, start: '16:10', duration: 50 }
+                ];
+            }
+        } catch (error) {
+            console.error("載入課程時間表時發生錯誤:", error);
+            PERIOD_TIMES = [
+                    { period: 1, start: '08:10', duration: 50 },
+                    { period: 2, start: '09:10', duration: 50 },
+                    { period: 3, start: '10:10', duration: 50 },
+                    { period: 4, start: '11:10', duration: 50 },
+                    { period: 5, start: '13:10', duration: 50 },
+                    { period: 6, start: '14:10', duration: 50 },
+                    { period: 7, start: '15:10', duration: 50 },
+                    { period: 8, start: '16:10', duration: 50 }
+                ];
+        }
+    }
+
+	async function fetchScheduleData(teacherName, schoolId, useCache) {
+        scheduleDataLoaded = false;
+        teacherTimetableData = { periods: {} };
+        
+        if (useCache && allClassList.length > 0) {
+            teacherTimetableData = CACHE_DATA_STATIC.teacherTimetableData;
+            scheduleDataLoaded = true;
+            return;
+        }
+        
+        try {
+            const schoolRef = db.collection('schools').doc(schoolId);
+            const scheduleDoc = await schoolRef.collection('timetables').doc(teacherName).get();
+			console.log('載入課表資料...');
+			cloudDataUpdatedStatic = true;
+            if (scheduleDoc.exists) {
+                teacherTimetableData = scheduleDoc.data();
+                scheduleDataLoaded = true;
+            } else {
+                teacherTimetableData = { periods: {} };
+            }
+        } catch (error) {
+            console.error("載入課表資料失敗:", error);
+            teacherTimetableData = { periods: {} };
+        }
+    }
+
+    async function fetchRosterData(schoolId, useCache) {
+        
+        if (useCache && studentsData.length > 0) {
+            studentsData = CACHE_DATA_STATIC.rosterData;
+            allClassList = CACHE_DATA_STATIC.allClassList;
+            return;
+        }
+
+        const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
+		console.log('載入學生名單資料...');
+		cloudDataUpdatedStatic = true;
+        if (!rosterDoc.exists) {
+             throw new Error('找不到學校名冊');
+        }
+        studentsData = rosterDoc.data().students;
+        allClassList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort(); 
+    }
+
+	async function fetchAllScores(force=false) { 
+        
+        let records = allPerformanceRecords; 
+        let loadedFromCache = records.length > 0;
+
+        if (loadedFromCache && !force) {
+             console.log('✅ 快取命中：學生紀錄，跳過 Firestore 載入。');
+        } else {
+            try {
+                const snapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+				console.log('載入學生紀錄資料...');
+				lastPerformanceFetch = new Date().getTime()
+				cloudDataUpdatedDynamic = true;
+                records = []; 
+                snapshot.forEach(doc => {
+                    const r = doc.data();
+                    r.id = doc.id;
+                    records.push(r);
+                });
+                
+                allPerformanceRecords = records; 
+            } catch (error) {
+                console.error("載入紀錄失敗:", error);
+                return; 
+            }
+        }
+        
+        allPerformanceScores = {};
+        classTotalScores = {};
+        studentLatestRecords = {}; 
+        
+        records.forEach(r => { 
+            const p = r.points || 0;
+            const type = r.entityType || 'student';
+            const id = r.entityId || r.studentId;
+            if (!id) return;
+
+            if (type === 'student') {
+                const studentId = id;
+                if (!allPerformanceScores[studentId]) allPerformanceScores[studentId] = 0;
+                allPerformanceScores[studentId] += p;
+            }
+            else if (type === 'class') {
+                const classId = id;
+                if (!classTotalScores[classId]) classTotalScores[classId] = 0;
+                classTotalScores[classId] += p;
+            }
+        });
+
+        studentsData.forEach(student => {
+            const studentId = student.id;
+            const className = studentId.substring(0, 3);
+            const score = allPerformanceScores[studentId] || 0;
+
+            classTotalScores[className] = (classTotalScores[className] || 0) + score;
+        });
+          
+        studentsData.forEach(student => {
+            const studentRecords = records.filter(r => 
+                 (r.entityId === student.id || r.studentId === student.id) && (r.entityType === 'student' || !r.entityType)
+            ).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)); 
+            
+            studentLatestRecords[student.id] = null; 
+
+            for (const record of studentRecords) {
+                const hasText = record.text && record.text.trim() !== '';
+                const hasNoPoints = (record.points === undefined || record.points === null || record.points === 0);
+                
+                if (hasText) {
+                    studentLatestRecords[student.id] = {
+                        latestComment: record.text,
+                        needsHighlight: hasNoPoints 
+                    };
+                    break; 
+                }
+            }
+        });
+          
+        renderLayout();
+        highlightCurrentClass();
+
+        if (modal.style.display === 'flex' && currentEntity) {
+            renderModalRecords(currentEntity.id, currentEntity.type);
+        } else if (studentRosterModal.style.display === 'flex' && currentRosterClassId) {
+            renderStudentRoster(currentRosterClassId);
+        }
+    }
+	
+	function saveCacheStatic() {
+		try {
+			const cacheData = {
+				rosterData: studentsData,
+				allClassList: allClassList,
+				teacherTimetableData: teacherTimetableData,
+				PERIOD_TIMES: PERIOD_TIMES,
+				lastUpdated: new Date().getTime(),
+                uid: currentUser.uid 
+			};
+			localStorage.setItem(STATIC_CACHE_KEY, JSON.stringify(cacheData));
+		} catch (e) {
+			console.error('❌ STATIC 快取寫入錯誤:', e);
+		}
+	}
+	
+	function saveCacheDynamic() {
+		try {
+			const cacheData = {
+				scheduleChanges: allScheduleChanges, 
+				performanceRecords: allPerformanceRecords, 
+				lastSchUpdFetch: lastSchUpdFetch,
+				lastPerformanceFetch: lastPerformanceFetch,
+                uid: currentUser.uid
+			};
+			localStorage.setItem(DYNAMIC_CACHE_KEY, JSON.stringify(cacheData));
+		} catch (e) {
+			console.error('❌ DYNAMIC 快取寫入錯誤:', e);
+		}
+	}
+
+	
+	// 🛠️ 【修改開始】teacher.js - initialize 函式完整覆蓋
+	async function initialize(userData, forceReload = false, forceItem = 0) {
+		if (isInitializing) {
+            console.warn("初始化程序已在運行中，忽略重複調用。");
+            return;
+        }
+        isInitializing = true;
+        cloudDataUpdatedStatic = false;
+        cloudDataUpdatedDynamic = false;
+        const schoolId = userData.schoolId;
+        const teacherName = userData.displayName;
+        appContainer.innerHTML = '<h2>載入中...</h2>';
+        
+        let useCacheStatic = false;
+        let useCacheDynamic = false;
+       
+        if (!forceReload) {
+            try {
+                const cachedStatic = JSON.parse(localStorage.getItem(STATIC_CACHE_KEY));
+                if (cachedStatic && cachedStatic.uid === currentUser.uid) { 
+                    CACHE_DATA_STATIC = cachedStatic;
+                    useCacheStatic = true;
+                    studentsData = CACHE_DATA_STATIC.rosterData || [];
+                    allClassList = CACHE_DATA_STATIC.allClassList || [];
+                    teacherTimetableData = CACHE_DATA_STATIC.teacherTimetableData || { periods: {} };
+                    PERIOD_TIMES = CACHE_DATA_STATIC.PERIOD_TIMES || [];
+                    scheduleDataLoaded = CACHE_DATA_STATIC.teacherTimetableData ? true : false;
+                    console.log('✅ 快取命中：靜態資料(學生名單、班級、教師課表、節次時間)，加速載入資料...');
+                } else if (cachedStatic) {
+					console.log('❌ 無靜態資料快取！');
+                    localStorage.removeItem(STATIC_CACHE_KEY);
+                }
+            } catch (e) {
+                console.error('❌ STATIC 快取讀取錯誤或損壞:', e);
+                localStorage.removeItem(STATIC_CACHE_KEY); 
+                forceReload = true; 
+                useCacheStatic = false;
+            }
+            try {
+                const cachedDynamic = JSON.parse(localStorage.getItem(DYNAMIC_CACHE_KEY));
+                if (cachedDynamic && cachedDynamic.uid === currentUser.uid) { 
+                    CACHE_DATA_DYNAMIC = cachedDynamic;
+                    useCacheDynamic = true;
+                    allScheduleChanges = CACHE_DATA_DYNAMIC.scheduleChanges || []; 
+                    allPerformanceRecords = CACHE_DATA_DYNAMIC.performanceRecords || []; 
+					lastSchUpdFetch = CACHE_DATA_DYNAMIC.lastSchUpdFetch;
+					lastPerformanceFetch = CACHE_DATA_DYNAMIC.lastPerformanceFetch;
+                    console.log('✅ 快取命中：動態資料(課務異動、學生紀錄)，加速載入資料...');
+                } else if (cachedDynamic) {
+					console.log('❌ 無動態資料快取！');
+                    localStorage.removeItem(DYNAMIC_CACHE_KEY);
+                }
+            } catch (e) {
+                console.error('❌ DYNAMIC 快取讀取錯誤或損壞:', e);
+                localStorage.removeItem(DYNAMIC_CACHE_KEY); 
+                forceReload = true; 
+                useCacheDynamic = false;
+            }
+       }
+
+
+        try {
+            
+            if (!useCacheStatic && !useCacheDynamic) {
+                currentUserData = userData; 
+            }
+            
+            visibleClassList = currentUserData.visibleClasses || [];
+            
+            const periodsPromise = loadPeriodTimes(schoolId, useCacheStatic);
+            const rosterPromise = fetchRosterData(schoolId, useCacheStatic);
+            const schedulePromise = fetchScheduleData(teacherName, schoolId, useCacheStatic);
+
+            await Promise.all([periodsPromise, rosterPromise, schedulePromise]);
+            
+            if (visibleClassList.length === 0 && allClassList.length > 0) {
+                const taughtClasses = new Set();
+                if (teacherTimetableData && teacherTimetableData.periods) {
+                    Object.values(teacherTimetableData.periods).forEach(dayArray => {
+                        dayArray.forEach(cellContent => {
+                            if (typeof cellContent === 'string' && cellContent.trim() !== '') {
+                                const classCode = cellContent.split(/\s+/)[0]; 
+                                if (classCode && allClassList.includes(classCode)) {
+                                    taughtClasses.add(classCode);
+                                }
+                            }
+                        });
+                    });
+                }
+                visibleClassList = Array.from(taughtClasses).sort();
+            } 
+			
+			const needsRefresh = localStorage.getItem(REFRESH_FLAG_KEY) === 'true';
+			const needsRefreshSchUpd = false; 
+			const needsRefreshPerformance =  false; 
+			
+			if (forceReload || needsRefresh || (forceItem==1) || needsRefreshSchUpd) {
+				await loadActiveChanges(true); 
+			    localStorage.removeItem(REFRESH_FLAG_KEY); 					
+			} else 
+				await loadActiveChanges(false);
+
+			if (forceReload || needsRefreshPerformance)
+				await fetchAllScores(true);
+            else 
+				await fetchAllScores(false);            
+            
+            setInterval(highlightCurrentClass, 30000); 
+
+            highlightCurrentClass();
+
+			const preference = localStorage.getItem('homepagePreference');
+			if (preference === 'timetable') {
+				setTimeout(() => {
+					myTimetableIconBtn.click();
+				}, 100);
+			}
+
+            // 🟢 修改：加入 clear-text-btn 到替換清單與監聽器
+            const listenersToReplace = [rosterSortBtn, mainSortBtn, reloadCacheBtn, saveRecordBtn, recordsList, btnCancelEdit];
+            const clearTextBtnRef = document.getElementById('clear-text-btn');
+            if (clearTextBtnRef) listenersToReplace.push(clearTextBtnRef);
+
+            listenersToReplace.forEach(originalEl => {
+                if (originalEl && originalEl.parentNode) {
+                    const newEl = originalEl.cloneNode(true);
+                    originalEl.parentNode.replaceChild(newEl, originalEl);
+                } 
+            });
+
+            const finalRosterSortBtn = document.getElementById('roster-sort-btn');
+            const finalMainSortBtn = document.getElementById('main-sort-btn');
+            const finalReloadCacheBtn = document.getElementById('reload-cache-btn');
+            const finalSaveRecordBtn = document.getElementById('save-record-btn');
+            const finalRecordsList = document.getElementById('records-list');
+            const finalBtnCancelEdit = document.getElementById('btn-cancel-edit');
+            const finalClearTextBtn = document.getElementById('clear-text-btn'); // 🟢 新增參考
+
+            finalRosterSortBtn.addEventListener('click', toggleRosterSort);
+            finalMainSortBtn.addEventListener('click', toggleClassSort);
+            finalReloadCacheBtn.addEventListener('click', () => initialize(currentUserData, true)); 
+
+            finalSaveRecordBtn.addEventListener('click', handleAddRecord);
+            
+            // 🟢 修改：將列表點擊事件改為新的 handleRecordListClick
+            finalRecordsList.addEventListener('click', handleRecordListClick);
+            
+            finalBtnCancelEdit.addEventListener('click', resetPerformanceForm);
+
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    highlightCurrentClass();
+                }
+            });               
+            if (!useCacheStatic || cloudDataUpdatedStatic) saveCacheStatic();
+			if (!useCacheDynamic || cloudDataUpdatedDynamic) saveCacheDynamic();
+            
+            // 🟢 新增：綁定清除按鈕事件
+            if (finalClearTextBtn) {
+                finalClearTextBtn.addEventListener('click', () => {
+                    const input = document.getElementById('record-text');
+                    input.value = '';
+                    input.focus(); // 聚焦以觸發 datalist 顯示
+                });
+            }
+
+
+        } catch (error) {
+            console.error("❌ 初始化失敗:", error);
+            document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
+        } finally {
+            isInitializing = false;
+			// 檢查是否需要直進班級
+			checkAndTriggerDirectEntry();
+        }
+    }
+	// 🛠️ 【修改結束】
+	
+    function renderLayout() {
+        appContainer.innerHTML = '';
+        let classesToRender = allClassList.filter(className => visibleClassList.includes(className));
+
+        if (classSortState === 1) {
+             classesToRender.sort((a, b) => (classTotalScores[b] || 0) - (classTotalScores[a] || 0) || a.localeCompare(b));
+        } else if (classSortState === 2) {
+             classesToRender.sort((a, b) => (classTotalScores[a] || 0) - (classTotalScores[b] || 0) || a.localeCompare(b));
+        } else {
+             classesToRender.sort((a, b) => a.localeCompare(b));
+        }
+
+
+        if (classesToRender.length === 0 && allClassList.length > 0) {
+            appContainer.innerHTML = '<h3>沒有設定要顯示的班級。請點擊下拉選單中的「班級顯示設定」。</h3>';
+            return;
+        }
+
+        classesToRender.forEach(className => {
+
+            const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
+            const backgroundColor = getClassBlockColor(totalScore);
+
+            const classBlock = document.createElement('div');
+            classBlock.className = 'class-block';
+            classBlock.style.backgroundColor = backgroundColor;
+            classBlock.dataset.classId = className;
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'class-block-title';
+            titleDiv.textContent = `${className} 班`;
+            titleDiv.title = '點擊以紀錄班級共同事件';
+            titleDiv.addEventListener('click', () => openModal(className, 'class', 'main'));
+
+            const scoreDiv = document.createElement('div');
+            scoreDiv.className = 'class-total-score';
+            scoreDiv.textContent = `總分: ${totalScore.toFixed(1)}`;
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'class-block-actions';
+
+            const studentBtn = document.createElement('button');
+            studentBtn.innerHTML = '🧑‍🎓';
+            studentBtn.title = '開啟學生名單';
+	        studentBtn.addEventListener('click', () => openStudentRosterModal(className, 'main'));
+
+            const gradesLink = document.createElement('a');
+            gradesLink.href = `./grades.html?class=${className}`;
+            gradesLink.innerHTML = '📋';
+            gradesLink.title = '前往成績登錄';
+
+            actionsDiv.appendChild(studentBtn);
+            actionsDiv.appendChild(gradesLink);
+
+            classBlock.appendChild(titleDiv);
+            classBlock.appendChild(scoreDiv);
+            classBlock.appendChild(actionsDiv);
+
+            appContainer.appendChild(classBlock);
+        });
+    }
+
+    function updateSortButtonDisplay(state, downArrowEl, upArrowEl, activeColor, type) {
+
+		if (state === 0) {
+            downArrowEl.classList.remove('active');
+            upArrowEl.classList.remove('active');
+            downArrowEl.style.color = type === 'main' ? 'white' : '#999';
+            upArrowEl.style.color = type === 'main' ? 'white' : '#999';
+        } else if (state === 1) {
+            downArrowEl.classList.add('active');
+            upArrowEl.classList.remove('active');
+            downArrowEl.style.color = activeColor;
+            upArrowEl.style.color = type === 'main' ? 'white' : '#999';
+        } else if (state === 2) {
+            upArrowEl.classList.add('active');
+            downArrowEl.classList.remove('active');
+            downArrowEl.style.color = type === 'main' ? 'white' : '#999';
+            upArrowEl.style.color = activeColor;
+        }
+    }
+
+    function toggleRosterSort() {
+        const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+
+        rosterSortState = (rosterSortState + 1) % 3;
+        updateSortButtonDisplay(rosterSortState, rosterSortDownArrow, rosterSortUpArrow, activeColor, 'roster');
+
+        if (document.getElementById('student-roster-modal').style.display === 'flex' && currentRosterClassId) {
+            renderStudentRoster(currentRosterClassId);
+        }
+    }
+
+    function toggleClassSort() {
+        classSortState = (classSortState + 1) % 3;
+        updateSortButtonDisplay(classSortState, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
+
+        renderLayout();
+
+        highlightCurrentClass();
+    }
+
+	function openStudentRosterModal(className, origin = 'main') {
+		rosterModalOrigin = origin;
+		document.body.classList.add('modal-open');
+
+        currentRosterClassId = className;
+
+        if (origin !== 'timetable') {
+            rosterSortState = 0;
+        }
+
+        updateSortButtonDisplay(rosterSortState, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
+
+        const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
+
+        rosterClassName.textContent = `${className} 班 學生名單`;
+        document.getElementById('roster-total-score-display').textContent = `(累積總分: ${totalScore.toFixed(1)})`;
+
+		rosterClickArea.title = '點擊以紀錄班級共同事件';
+		rosterClickArea.onclick = (e) => {
+            if (!e.target.closest('#roster-sort-btn')) {
+                document.getElementById('student-roster-modal').style.display = 'none';
+                openModal(className, 'class', 'roster');
+            }
+		};
+
+        renderStudentRoster(className);
+		document.getElementById('student-roster-modal').style.display = 'flex';
+	}
+
+    function renderStudentRoster(className) {
+        studentGridContainer.innerHTML = '';
+
+        let studentsToRender = studentsData
+			.filter(s => s.id.startsWith(className));
+
+        if (rosterSortState === 1) {
+             studentsToRender.sort((a, b) => (allPerformanceScores[b.id] || 0) - (allPerformanceScores[a.id] || 0) || a.id.localeCompare(b.id));
+        } else if (rosterSortState === 2) {
+             studentsToRender.sort((a, b) => (allPerformanceScores[a.id] || 0) - (allPerformanceScores[b.id] || 0) || a.id.localeCompare(b.id));
+        } else {
+             studentsToRender.sort((a, b) => a.id.localeCompare(b.id));
+        }
+
+
+		if (studentsToRender.length === 0) {
+			studentGridContainer.innerHTML = '<p>此班級查無學生。</p>';
+		} else {
+			studentsToRender.forEach(student => {
+				const studentBlock = document.createElement('div');
+				studentBlock.title = `點擊以紀錄 ${student.name} 的表現`;
+
+				const score = allPerformanceScores[student.id] || 0;
+				let scoreClass = '';
+				if (score < 0) {
+					scoreClass = 'score-negative';
+				} else if (score > 0 && score < 5) {
+					scoreClass = 'score-positive-low';
+				} else if (score >= 5) {
+					scoreClass = 'score-positive-high';
+				}
+				studentBlock.className = 'student-block ' + scoreClass;
+
+				const latestRecordInfo = studentLatestRecords[student.id];
+                let latestCommentHtml = '';
+
+                if (latestRecordInfo) {
+                    if (latestRecordInfo.needsHighlight) {
+                        studentBlock.classList.add('highlight-no-score');
+                    }
+                    if (latestRecordInfo.needsHighlight && latestRecordInfo.latestComment.trim() !== '') {
+                        latestCommentHtml = `<div class="student-record-text">(${latestRecordInfo.latestComment})</div>`;
+                    }
+                }
+				
+				studentBlock.innerHTML = `
+					<div class="student-block-info">
+						${student.id.substring(3)} <span class="score">(${score.toFixed(1)}分)</span>
+					</div>
+					<div class="student-block-name">${student.name}</div>
+					${latestCommentHtml}`;
+
+				studentBlock.addEventListener('click', () => {
+					document.getElementById('student-roster-modal').style.display = 'none';
+					openModal(student.id, 'student', 'roster');
+				});
+
+				studentGridContainer.appendChild(studentBlock);
+			});
+		}
+    }
+
+    function closeModal(id = 'modal') {
+		document.getElementById(id).style.display = 'none';
+		document.getElementById('add-record-form').reset();
+
+        const refreshAndClose = () => {
+            const originalEntityId = currentEntity ? currentEntity.id : null;
+            const originalType = currentEntity ? currentEntity.type : null;
+            currentEntity = null;
+
+            resetPerformanceForm();
+
+            if (modalOrigin === 'roster' && originalEntityId) {
+                const className = originalType === 'student' ? originalEntityId.substring(0, 3) : originalEntityId;
+
+                if (rosterModalOrigin === 'timetable') {
+                    rosterModalOrigin = null;
+                    openStudentRosterModal(className, 'timetable');
+                } else {
+                    openStudentRosterModal(className);
+                }
+            } else {
+                renderLayout();
+                highlightCurrentClass();
+                document.body.classList.remove('modal-open');
+            }
+            modalOrigin = null;
+        };
+
+        refreshAndClose();
+	}
+
+    function closeStudentRosterModal() {
+		document.getElementById('student-roster-modal').style.display = 'none';
+        currentRosterClassId = null;
+        document.body.classList.remove('modal-open');
+
+		if (rosterModalOrigin === 'timetable') {
+			document.getElementById('my-timetable-modal').style.display = 'flex';
+		} else {
+            renderLayout();
+            highlightCurrentClass();
+		}
+		rosterModalOrigin = null;
+	}
+
+	async function handleAddRecord(e) {
+        e.preventDefault();
+
+        const t = recordTextInput.value.trim();
+        const sid = currentEntity;
+        const docRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
+
+        let data = {
+            entityId: sid.id,
+            entityType: sid.type,
+            text: t,
+            teacherId: currentUser.uid,
+            studentId: sid.type === 'student' ? sid.id : null
+        };
+
+        try {
+			if (editingRecordId) {
+                const originalRecord = allPerformanceRecords.find(r => r.id === editingRecordId);
+                if (!originalRecord) {
+                     alert('更新紀錄失敗: 找不到原始記錄');
+                     return;
+                }
+
+                data.points = originalRecord.points;
+
+                if (t === '') {
+                    alert('更新紀錄時，文字描述不可為空！');
+                    return;
+                }
+
+                await docRef.doc(editingRecordId).set(data, { merge: true });
+                alert('紀錄已更新！');
+
+			} else {
+                const rawPoints = parseFloat(recordPointsInput.value) || 0;
+
+                const p = Math.round(rawPoints * 10) / 10;
+
+                if (p === 0 && t === '') return;
+
+                data.points = p;
+                data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+                await docRef.add(data);
+                alert('紀錄已新增！');
+			}
+
+            allPerformanceRecords = []; 
+            await fetchAllScores(true); 
+            saveCacheDynamic(); 
+            
+			closeModal(); 
+        } catch (err) {
+            console.error(err);
+            alert((editingRecordId ? '更新' : '新增') + '紀錄失敗: ' + err.message);
+        }
+    }
+	
+	// 🛠️ 【修改開始】teacher.js - 新增 handleRecordListClick 與修改 handleDeleteRecord
+
+	// 🟢 新增：統一處理紀錄列表點擊 (複製/編輯/刪除)
+    async function handleRecordListClick(e) {
+        // 1. 刪除
+        if (e.target.classList.contains('delete-btn')) {
+            const rid = e.target.dataset.id;
+            await handleDeleteRecord(rid);
+            return;
+        }
+
+        // 2. 複製文字 (點擊文字區域)
+        const copyTrigger = e.target.closest('.copy-trigger');
+        if (copyTrigger) {
+            const textToCopy = copyTrigger.dataset.text;
+            if (textToCopy) {
+                const input = document.getElementById('record-text');
+                input.value = textToCopy;
+                // 視覺回饋：聚焦輸入框
+                input.focus();
+                
+                // (選用) 閃爍效果提示使用者已複製
+                input.style.backgroundColor = '#fff3cd';
+                setTimeout(() => input.style.backgroundColor = '', 300);
+            }
+            return;
+        }
+
+        // 3. 編輯分數 (點擊分數區域)
+        const editTrigger = e.target.closest('.edit-trigger');
+        if (editTrigger) {
+            editRecord(editTrigger.dataset.id);
+            return;
+        }
+    }
+
+    // 🟢 修改：handleDeleteRecord 改為直接接收 ID，不再依賴 event 物件
+	async function handleDeleteRecord(rid) {
+        if (confirm('確定刪除？')) {
+            try {
+                await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
+                
+                if (editingRecordId === rid) {
+                    resetPerformanceForm();
+                }
+                
+                allPerformanceRecords = []; 
+                await fetchAllScores(true);
+                saveCacheDynamic(); 
+                closeModal(); 
+            } catch (err) {
+                console.error(err);
+                alert('刪除失敗');
+            }
+        }
+	}
+	// 🛠️ 【修改結束】
+
+    function resetPerformanceForm() {
+        editingRecordId = null;
+        recordPointsInput.value = '1';
+        recordTextInput.value = '';
+
+        recordPointsInput.disabled = false;
+        if (window.innerWidth > 768) {
+             recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)';
+        }
+        scorePlusBtn.style.display = window.innerWidth <= 768 ? 'inline-block' : 'none';
+        scoreMinusBtn.style.display = window.innerWidth <= 768 ? 'inline-block' : 'none';
+
+
+        saveRecordBtn.textContent = '新增';
+        saveRecordBtn.classList.remove('update-mode');
+        saveRecordBtn.style.backgroundColor = 'var(--success-color)';
+		btnCancelEdit.textContent = '取消';
+        btnCancelEdit.style.display = 'none';
+    }
+
+    function editRecord(recordId) {
+        const record = allPerformanceRecords.find(r => r.id === recordId);
+        if (!record) return;
+
+        editingRecordId = recordId;
+        saveRecordBtn.textContent = '更新';
+        saveRecordBtn.classList.add('update-mode');
+		btnCancelEdit.textContent = '取消';
+        btnCancelEdit.style.display = 'inline-block';
+
+        recordPointsInput.value = record.points || 0;
+        recordPointsInput.disabled = true;
+        scorePlusBtn.style.display = 'none';
+        scoreMinusBtn.style.display = 'none';
+
+        recordTextInput.value = record.text || '';
+
+        modalTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+
+    function openModal(id, type = 'student', origin = 'main') {
+		modalOrigin = origin;
+        document.body.classList.add('modal-open');
+        currentEntity = { id, type };
+
+        resetPerformanceForm();
+
+        let titleText = '';
+        if (type === 'student') {
+            const student = studentsData.find(s => s.id === id);
+            const displayId = student ? `${student.id.substring(0,3)}${student.id.substring(3)}` : 'N/A';
+            titleText = student ? `${student.name} (${displayId}) 的紀錄` : `學生紀錄 (${id})`;
+        } else {
+            titleText = `班級事件紀錄 (${id} 班)`;
+        }
+
+        document.getElementById('modal-title').textContent = titleText;
+
+        renderModalRecords(id, type);
+		loadRecentTexts();
+        document.getElementById('modal').style.display = 'flex';
+    }
+
+	// 🛠️ 【修改開始】teacher.js - renderModalRecords 函式完整覆蓋
+	function renderModalRecords(id, type) {
+        const recordsList = document.getElementById('records-list');
+        
+        if (!recordsList) {
+            console.error("錯誤: 找不到 id='records-list' 的 HTML 元素。");
+            return;
+        }
+        
+        recordsList.innerHTML = '載入中...';
+        const countDisplay = document.getElementById('record-count-display');
+        const scoreDisplay = document.getElementById('record-total-score-display');
+        
+        const allRecords = allPerformanceRecords.filter(r => {
+            if (r.entityType === 'class' && type === 'student') return false; 
+            if (type === 'student' && (r.entityType === 'student' || !r.entityType)) {
+                return r.entityId === id || r.studentId === id;
+            }
+            if (type === 'class' && r.entityType === 'class') {
+                return r.entityId === id; 
+            }
+            return false;
+        }).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+        let totalCalculatedScore = 0;
+        allRecords.forEach(record => {
+            totalCalculatedScore += record.points || 0;
+        });
+        const recordScore = totalCalculatedScore; 
+        const recordCount = allRecords.length; 
+
+        if (countDisplay) {
+            countDisplay.textContent = `事件數: ${recordCount}`; 
+        } 
+        if (scoreDisplay) {
+            scoreDisplay.textContent = `總分: ${recordScore.toFixed(1)}`;
+        }
+
+        recordsList.innerHTML = '';
+        if (allRecords.length === 0) { 
+            recordsList.innerHTML = '尚無紀錄。'; 
+            return; 
+        }
+
+        // 🟢 修改重點：生成 HTML 時，將分數與文字分開，分別賦予 edit-trigger 與 copy-trigger
+        allRecords.forEach(record => {
+            try {
+                const recordItem = document.createElement('div');
+                recordItem.className = 'record-item';
+                
+                const pClass = (record.points || 0) > 0 ? 'positive' : ((record.points || 0) < 0 ? 'negative' : '');
+                let timestamp = '日期不明';
+                if (record.timestamp) {
+                     const dateObj = record.timestamp.seconds ? new Date(record.timestamp.seconds * 1000) : new Date(record.timestamp);
+                     timestamp = dateObj.toLocaleString('zh-TW', { hour12: false, year:'numeric', month:'numeric', day:'numeric', hour: '2-digit', minute:'2-digit' });
+                }
+                
+                // 處理文字，避免引號導致 dataset 錯誤
+                const rawText = record.text || '';
+                const escapedText = rawText.replace(/"/g, '&quot;');
+                const displayText = rawText || '無文字註記';
+
+                recordItem.innerHTML = `
+                    <div class="record-content">
+                        <span class="record-points record-points-area edit-trigger ${pClass}" data-id="${record.id}" title="點擊修改此紀錄">${record.points || 0}分</span>
+                        
+                        <span class="record-text record-text-area copy-trigger" data-text="${escapedText}" title="點擊複製文字到輸入框">${displayText}</span>
+                    </div>
+                    <div class="record-timestamp">${timestamp}</div>
+                    <button class="delete-btn" data-id="${record.id}" title="刪除紀錄">🗑️</button>
+                `;
+                recordsList.appendChild(recordItem); 
+
+            } catch (e) {
+                console.error("❌ 渲染單筆紀錄時發生錯誤:", e, "紀錄 ID:", record.id);
+            }
+        });
+    }
+	// 🛠️ 【修改結束】
+
+	async function loadRecentTexts() {
+        const datalist = document.getElementById('recent-texts-list');
+    	const recordTextInput = document.getElementById('record-text'); 
+		
+        datalist.innerHTML = ''; 
+    	recordTextInput.value = ''; 
+
+        const sortedRecords = allPerformanceRecords.slice().sort((a, b) => 
+            (b.timestamp?.seconds || b.timestamp?.toMillis() / 1000 || 0) - (a.timestamp?.seconds || a.timestamp?.toMillis() / 1000 || 0)
+        );
+
+        for (const doc of sortedRecords) {
+            const text = doc.text;
+            if (text && text.trim() !== '') {
+                recordTextInput.value = text; 
+                break;
+            }
+        }
+        
+        const recentTexts = new Set();
+        sortedRecords.forEach(doc => { 
+            const text = doc.text;
+            if (text && text.trim() !== '') { 
+                const trimmedText = text.trim();
+                recentTexts.add(trimmedText);
+            }
+        });
+        
+        Array.from(recentTexts).slice(0, 10).forEach(text => { 
+            const option = document.createElement('option');
+            option.value = text;
+            datalist.appendChild(option);
+        });
+	}
+
+	document.getElementById('logout-btn').addEventListener('click', () => { 
+		console.log('❌ 登出，移除使用者資料！');
+        localStorage.removeItem(USER_AUTH_KEY); 
+        auth.signOut().then(() => { window.location.href = 'login.html'; }); 
+    });
+
+    document.querySelectorAll('.close-btn').forEach(btn => {
+         btn.onclick = (e) => {
+            const modalId = e.target.dataset.modal;
+            if(modalId === 'modal') {
+                closeModal();
+            } else if (modalId === 'student-roster-modal') {
+                closeStudentRosterModal();
+            }
+            else if (modalId) {
+                document.getElementById(modalId).style.display = 'none';
+                document.body.classList.remove('modal-open');
+            }
+         };
+    });
+
+    btnCancelEdit.addEventListener('click', resetPerformanceForm);
+
+
+    document.getElementById('record-points').addEventListener('blur', function() {
+        const value = this.value;
+        if (value !== '' && !isNaN(value)) {
+            const roundedValue = Math.round(parseFloat(value) * 10) / 10;
+            this.value = roundedValue;
+        }
+    });
+
+    const adjustScore = (amount) => {
+        if (window.innerWidth > 768) return;
+        if (recordPointsInput.disabled) return;
+
+        let currentValue = parseFloat(document.getElementById('record-points').value) || 0;
+        let newValue = currentValue + amount;
+
+        document.getElementById('record-points').value = (Math.round(newValue * 10) / 10).toFixed(1);
+    };
+
+    scorePlusBtn.addEventListener('click', () => adjustScore(1));
+    scoreMinusBtn.addEventListener('click', () => adjustScore(-1));
+
+
+    passwordResetForm.addEventListener('submit', async (e) => { e.preventDefault(); const p1 = document.getElementById('new-password').value; const p2 = document.getElementById('confirm-password').value; document.getElementById('password-error-message').textContent = ''; if (p1.length < 6) { document.getElementById('password-error-message').textContent = '密碼至少6字元'; return; } if (p1 !== p2) { document.getElementById('password-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(p1); await db.collection('users').doc(currentUser.uid).update({ passwordNeedsReset: false }); alert('密碼修改成功，請重新登入'); auth.signOut(); } catch (err) { document.getElementById('password-error-message').textContent = '更新失敗: ' + err.message; } });
+    document.getElementById('force-logout-btn').addEventListener('click', () => {
+		auth.signOut();
+	});
+
+    changePasswordBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); document.getElementById('dropdown-menu').classList.remove('show'); document.getElementById('change-password-modal').style.display = 'flex'; });
+    document.getElementById('change-password-modal').querySelector('.close-btn').addEventListener('click', () => { document.body.classList.remove('modal-open'); document.getElementById('change-password-modal').style.display = 'none'; document.getElementById('change-password-form').reset(); document.getElementById('cp-error-message').textContent = ''; });
+    document.getElementById('change-password-form').addEventListener('submit', async (e) => { e.preventDefault(); const newPassword = document.getElementById('cp-new-password').value; const confirmPassword = document.getElementById('cp-confirm-password').value; document.getElementById('cp-error-message').textContent = ''; if (newPassword.length < 6) { document.getElementById('cp-error-message').textContent = '密碼至少6字元'; return; } if (newPassword !== confirmPassword) { document.getElementById('cp-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(newPassword); alert('密碼更新成功！'); document.getElementById('change-password-modal').querySelector('.close-btn').click(); } catch (error) { if (error.code === 'auth/requires-recent-login') { document.getElementById('cp-error-message').textContent = '此為敏感操作，請先登出再重新登入後再試。'; } else { document.getElementById('cp-error-message').textContent = '更新失敗：' + error.message; } } });
+
+    classSettingsBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); document.getElementById('dropdown-menu').classList.remove('show'); classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item';
+        itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${className} 班</label>`;
+        classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; document.getElementById('class-settings-modal').style.display = 'flex'; });
+    selectAllVisibleClasses.addEventListener('change', (e) => { document.querySelectorAll('.visible-class-checkbox').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
+    document.getElementById('class-settings-modal').querySelector('.close-btn').addEventListener('click', () => { document.body.classList.remove('modal-open'); document.getElementById('class-settings-modal').style.display = 'none'; });
+    saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); document.getElementById('class-settings-modal').querySelector('.close-btn').click(); alert('設定已儲存！'); } catch(error) { console.error("儲存設定失敗:", error); alert("儲存失敗"); } });
+
+    function openInfoModal() {
+        document.body.classList.add('modal-open');
+        document.getElementById('info-modal').style.display = 'flex';
+    }
+    function closeInfoModal() {
+        document.body.classList.remove('modal-open');
+        document.getElementById('info-modal').style.display = 'none';
+    }
+    document.getElementById('info-modal').querySelector('.close-btn').addEventListener('click', closeInfoModal);
+
+	resetWelcomePrefsBtn.addEventListener('click', () => {
+        localStorage.removeItem('hideLoginWelcome');
+        localStorage.removeItem('hideTimetableWelcome');
+        sessionStorage.removeItem('welcomeShownForSession');
+        alert('歡迎訊息的顯示偏好已重設！');
+        closeInfoModal();
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            const modalId = e.target.id;
+            if(modalId === 'modal') {
+                closeModal();
+            } else if (modalId === 'change-password-modal') {
+                document.getElementById('change-password-modal').querySelector('.close-btn').click();
+            } else if (modalId === 'class-settings-modal') {
+                document.getElementById('class-settings-modal').querySelector('.close-btn').click();
+            } else if (modalId === 'info-modal') {
+                closeInfoModal();
+            } else if (modalId === 'welcome-modal') {
+                document.getElementById('close-welcome-btn').onclick();
+            } else if (modalId === 'my-timetable-modal') {
+                e.target.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                if (timetableIntervalId) {
+                     clearInterval(timetableIntervalId);
+                     timetableIntervalId = null;
+                 }
+            } else if (modalId === 'homepage-settings-modal') {
+                closeHomepageSettingsModal();
+            } else if (modalId === 'student-roster-modal') {
+                closeStudentRosterModal();
+            }
+        }
+    });
+
+    const dropdownBtn = document.getElementById('dropdown-btn');
+    const dropdownMenu = document.getElementById('dropdown-menu');
+	const newInfoBtn = document.getElementById('info-btn-new');
+
+    dropdownBtn.addEventListener('click', function(event) {
+        event.stopPropagation();
+        dropdownMenu.classList.toggle('show');
+    });
+
+    window.addEventListener('click', function(event) {
+        if (!event.target.matches('#dropdown-btn') && !event.target.matches('#user-email')) {
+            if (dropdownMenu.classList.contains('show')) {
+                dropdownMenu.classList.remove('show');
+            }
+        }
+    });
+	
+	const autoOpenHomepageChk = document.getElementById('auto-open-homepage-chk');
+    if (autoOpenHomepageChk) {
+        autoOpenHomepageChk.addEventListener('change', (e) => {
+            const value = e.target.checked ? 'timetable' : 'classGrid';
+            localStorage.setItem('homepagePreference', value);
+        });
+    }
+	
+	// 🟢 系統切換選單邏輯
+	/* 請替換 teacher.js 中原本的「系統切換選單邏輯」 */
+
+	const sysSwitchBtn = document.getElementById('sys-switch-btn');
+	const sysSwitchMenu = document.getElementById('sys-switch-menu');
+
+	// 1. 切換選單顯示
+	if (sysSwitchBtn) {
+		sysSwitchBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			// 關閉其他可能開啟的選單
+			const userDropdown = document.getElementById('dropdown-menu');
+			if (userDropdown) userDropdown.classList.remove('show');
+			
+			sysSwitchMenu.classList.toggle('show');
+			updateHomeIcons(); // 🔥 打開時立刻檢查誰是首頁
+		});
+	}
+
+	// 2. 點擊外部關閉選單
+	window.addEventListener('click', (e) => {
+		if (sysSwitchMenu && !e.target.closest('.system-switcher-container')) {
+			sysSwitchMenu.classList.remove('show');
+		}
+	});
+
+	// 3. 設定預設首頁
+	window.setDefaultSystem = function(pageName, sysName) {
+		const current = localStorage.getItem('defaultSystemPage');
+		
+		// 如果點擊的是當前設定的，則取消預設
+		if (current === pageName && pageName !== 'teacher.html') {
+			localStorage.removeItem('defaultSystemPage');
+			alert('已取消預設，登入後將回到「綜合紀錄系統」。'); // 嫌煩可以註解掉
+		} else {
+			localStorage.setItem('defaultSystemPage', pageName);
+			alert(`設定成功，下次登入會直接進入 "${sysName}" !`); // 嫌煩可以註解掉
+		}
+		updateHomeIcons(); // 設定完馬上更新 UI
+	};
+
+	// 4. 更新圖示狀態 (核心邏輯)
+	function updateHomeIcons() {
+		// 預設值就是 teacher.html，如果 localStorage 沒東西，那 teacher.html 就是預設
+		const currentDefault = localStorage.getItem('defaultSystemPage') || 'teacher.html';
+		const items = document.querySelectorAll('.sys-item');
+		
+		items.forEach(item => {
+			// 直接讀取我們在 HTML 加上的 data-target 屬性，最準確
+			const targetPage = item.dataset.target;
+			
+			if (targetPage === currentDefault) {
+				item.classList.add('is-default'); // 加上這個 class，CSS 就會變色+顯示文字
+				item.querySelector('.sys-home-icon').title = "目前是預設首頁 (點擊可取消)";
+			} else {
+				item.classList.remove('is-default');
+				item.querySelector('.sys-home-icon').title = "設為登入後首頁";
+			}
+		});
+	}
+
+	myTimetableIconBtn.addEventListener('click', async () => {
+        document.getElementById('dropdown-menu').classList.remove('show');
+
+        // 初始化 Checkbox 狀態
+        if (autoOpenHomepageChk) {
+            const currentPref = localStorage.getItem('homepagePreference');
+            // 如果設定是 'timetable' 則勾選，否則不勾選
+            autoOpenHomepageChk.checked = (currentPref === 'timetable');
+        }
+
+        if (!scheduleDataLoaded) {
+             timetableMessage.textContent = '課表數據正在載入中...';
+        }
+
+        // (以下邏輯保持不變)
+        myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
+
+        if (PERIOD_TIMES.length === 0) {
+             myTimetableBody.innerHTML = '<p style="text-align: center; color: var(--danger-color);">錯誤：未載入課程時間表數據，無法計算節次時間。</p>';
+             timetableMessage.textContent = '資料錯誤';
+        }
+        else if (!teacherTimetableData || Object.keys(teacherTimetableData.periods).length === 0) {
+             myTimetableBody.innerHTML = '<p style="text-align: center;">找不到您的課表資料，請聯繫管理員上傳。</p>';
+             timetableMessage.textContent = '資料錯誤';
+        } else {
+             currentWeekStart = getMonday(new Date());
+
+             await renderDerivedMyTimetable(10);
+             timetableMessage.textContent = '';
+        }
+
+		document.body.classList.add('modal-open');
+        myTimetableModal.style.display = 'flex';
+
+        // (以下按鈕監聽器保持不變)
+        document.getElementById('prev-week-btn').onclick = () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+            renderDerivedMyTimetable(-1);
+        };
+        document.getElementById('next-week-btn').onclick = () => {
+            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+            renderDerivedMyTimetable(1);
+        };
+        document.getElementById('today-btn').onclick = () => {
+            currentWeekStart = getMonday(new Date());
+            renderDerivedMyTimetable(0);
+        };
+        
+        document.getElementById('prev-change-week-btn').onclick = () => {
+            const targetWeek = findNextChangeWeek(-1);
+            if (targetWeek) {
+                currentWeekStart = targetWeek;
+                renderDerivedMyTimetable(-1);
+            } else {
+                alert('沒有找到更早的異動週次了。');
+            }
+        };
+        
+        document.getElementById('next-change-week-btn').onclick = () => {
+            const targetWeek = findNextChangeWeek(1);
+            if (targetWeek) {
+                currentWeekStart = targetWeek;
+                renderDerivedMyTimetable(1);
+            } else {
+                alert('沒有找到更晚的異動週次了。');
+            }
+        };
+
+        if (timetableIntervalId) clearInterval(timetableIntervalId);
+        timetableIntervalId = setInterval(() => renderDerivedMyTimetable(10), 30000);
+    });
+
+    document.getElementById('my-timetable-modal').querySelector('.close-btn').addEventListener('click', () => {
+        document.getElementById('my-timetable-modal').style.display = 'none';
+        document.body.classList.remove('modal-open');
+        if (timetableIntervalId) {
+             clearInterval(timetableIntervalId);
+             timetableIntervalId = null;
+        }
+        document.getElementById('prev-week-btn').onclick = null;
+        document.getElementById('next-week-btn').onclick = null;
+        document.getElementById('today-btn').onclick = null;
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            if (e.target.id === 'my-timetable-modal') {
+                 e.target.style.display = 'none';
+                 document.body.classList.remove('modal-open');
+                 if (timetableIntervalId) {
+                     clearInterval(timetableIntervalId);
+                     timetableIntervalId = null;
+                 }
+            }
+        }
+    });
+
+	function renderMyTimetableTable(derivedSchedule, parentElement = null) {
+		const myTimetableBody = document.getElementById('my-timetable-body');
+		const targetElement = parentElement || myTimetableBody; 
+
+		if (!derivedSchedule || !derivedSchedule.periods || PERIOD_TIMES.length === 0) {
+			 targetElement.innerHTML = '<p style="text-align: center;">課表資料錯誤或未載入。</p>';
+			 return;
+		}
+
+		const days = ['一', '二', '三', '四', '五'];
+		const periods = derivedSchedule.periods;
+		const currentPeriodIndex = getCurrentPeriodIndex();
+		const currentDayIndex = new Date().getDay() - 1;
+		const todayWeekStart = getMonday(new Date());
+		const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
+
+		let tableHtml = '<table class="schedule-table"><thead><tr><th>節次</th>';
+
+		const weekDates = [];
+		for (let i = 0; i < 5; i++) {
+			const date = new Date(currentWeekStart);
+			date.setDate(currentWeekStart.getDate() + i);
+			weekDates.push(date);
+			tableHtml += `<th>星期${days[i]}<br><span class="date-span" style="color: #6c757d; font-size: 0.9em; font-weight:normal;">(${formatDate(date)})</span></th>`;
+		}
+		tableHtml += '</tr></thead><tbody>';
+
+		PERIOD_TIMES.forEach((periodItem, periodIndex) => {
+			const isCurrentPeriod = isCurrentWeek && periodIndex === currentPeriodIndex;
+
+			const [startH, startM] = periodItem.start.split(':').map(Number);
+			const endH = Math.floor((startH * 60 + startM + periodItem.duration) / 60) % 24;
+			const endM = (startH * 60 + startM + periodItem.duration) % 60;
+			const pad = (n) => String(n).padStart(2, '0');
+			const timeRange = `${periodItem.start}~${pad(endH)}:${pad(endM)}`;
+
+			tableHtml += `<tr><td class="period-header">${periodItem.period}<br><small style="font-weight:normal; font-size: 0.75em;">${timeRange}</small></td>`;
+
+			for (let d = 0; d < 5; d++) {
+				const cellContent = periods[periodIndex] ? periods[periodIndex][d] : null;
+				let cellClass = '';
+				let content = '';
+				let dataAttrs = `data-period="${periodIndex}" data-day="${d}" data-date="${formatDate(weekDates[d], 'YYYY-MM-DD')}"`;
+
+				if (isCurrentPeriod && d === currentDayIndex) {
+					cellClass = 'current-timetable-cell';
+				}
+
+				if (cellContent) {
+					if (cellContent.isSwappedIn || cellContent.isSwappedOut || cellContent.isExchangedIn || cellContent.isExchangedOut || cellContent.isSubstitutedIn || cellContent.isSubstitutedOut) {
+
+						if (cellContent.isSwappedIn || cellContent.isSwappedOut) {
+							cellClass += ' swapped-cell swapped-cell-pulse';
+						} else if (cellContent.isExchangedIn || cellContent.isExchangedOut) {
+							cellClass += ' exchanged-cell exchanged-cell-pulse';
+						} else {
+							cellClass += ' substituted-cell substituted-cell-pulse';								
+						}
+
+						dataAttrs += ` data-change-id="${cellContent.changeId}"`;
+
+						if (cellContent.reason && cellContent.reason.trim() !== '') {
+							const escapedReason = cellContent.reason.replace(/"/g, '&quot;');
+							dataAttrs += ` title="${escapedReason}"`;
+						}
+
+						if (cellContent.isSubstitutedOut) {
+							content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+							content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.substituteTeacherName || '不明'}(代)</span>`;
+						} else if (cellContent.isSubstitutedIn) {
+							content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+							content += `<span style="font-size: 0.8em; color: #007bff; display: block;">(${cellContent.originalTeacherName || '不明'}(代)</span>`;
+						} else if (cellContent.isExchangedOut || cellContent.isExchangedIn) {
+							content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class || ''}</span>`;
+							content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.targetTeacher || '不明'}(換)</span>`;
+						} else {
+							content = `<span class="subject">${cellContent.subject}</span><span class="details">${cellContent.class}</span>`;
+							content += `<span style="font-size: 0.8em; color: #000000; display: block; font-weight: bold;">${cellContent.teacher}(調)</span>`;
+						}
+					} else {
+						const [className, ...subjectParts] = cellContent.split(/\s+/);
+						const subjectName = subjectParts.join(' ');
+
+						content = `<span class="subject">${subjectName || ''}</span><span class="class-detail">${className || ''}</span>`;
+					}
+					tableHtml += `<td class="timetable-clickable-cell ${cellClass}" ${dataAttrs}>${content}</td>`;
+				} else {
+					tableHtml += `<td class="timetable-empty-cell ${cellClass}" ${dataAttrs}></td>`;
+				}
+			}
+			tableHtml += '</tr>';
+		});
+
+		tableHtml += '</tbody></table>';
+		
+		targetElement.innerHTML = tableHtml;
+
+		const scheduleTable = targetElement.querySelector('.schedule-table');
+		if (isCurrentWeek) {
+			scheduleTable.querySelector('thead').classList.add('current-week');
+		}
+
+		targetElement.querySelectorAll('.timetable-clickable-cell').forEach(cell => {
+			cell.addEventListener('click', (e) => {
+				const period = parseInt(e.currentTarget.dataset.period);
+				const day = parseInt(e.currentTarget.dataset.day);
+
+				const cellData = periods[period] ? periods[period][day] : null;
+				
+				if (cellData) {
+					let derivedData;
+					if (typeof cellData === 'string') {
+						const [className, ...subjectParts] = cellData.split(/\s+/);
+						derivedData = { class: className, subject: subjectParts.join(' ') };
+					} else {
+						derivedData = cellData;
+					}
+
+					if (derivedData && derivedData.class) {
+						const classCode = derivedData.class;
+						document.getElementById('my-timetable-modal').style.display = 'none';
+						openStudentRosterModal(classCode, 'timetable');
+					}
+				}
+			});
+		});
+	}
+
+	async function renderDerivedMyTimetable(direction = 0) {
+
+		const derivedSchedule = getDerivedCurrentUserSchedule();
+
+		const myTimetableBody = document.getElementById('my-timetable-body');
+		const oldTable = myTimetableBody.querySelector('.schedule-table');
+		const todayWeekStart = getMonday(new Date());
+		const isReturningToCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
+
+		if (!oldTable || direction === 10) { 
+			const tempContainer = document.createElement('div');
+			renderMyTimetableTable(derivedSchedule, tempContainer);
+			const newTable = tempContainer.querySelector('.schedule-table');
+			
+			if (newTable && oldTable) {
+			    oldTable.replaceWith(newTable);
+			} else if (newTable) {
+			    myTimetableBody.appendChild(newTable);
+			}
+			
+			myTimetableBody.querySelectorAll('.schedule-table').forEach(table => {
+				table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+			});
+			return;
+		}
+		myTimetableBody.style.position = 'relative';
+		myTimetableBody.style.overflow = 'hidden';
+
+		const newTableContainer = document.createElement('div');
+		newTableContainer.style.position = 'absolute';
+		newTableContainer.style.top = '0';
+		newTableContainer.style.left = '0';
+		newTableContainer.style.width = '100%';
+		newTableContainer.style.height = '100%';
+		newTableContainer.style.overflow = 'hidden';
+
+		myTimetableBody.appendChild(newTableContainer);
+		renderMyTimetableTable(derivedSchedule, newTableContainer);
+
+		const newTable = newTableContainer.querySelector('.schedule-table');
+
+		oldTable.style.zIndex = 10;
+		oldTable.style.position = 'relative';
+
+		let slideOutClass, slideInClass;
+
+	
+		if (direction === 1) { 
+			slideOutClass = 'slide-out-left';
+			slideInClass = 'slide-in-right';
+		} else if (direction === -1) { 
+			slideOutClass = 'slide-out-right';
+			slideInClass = 'slide-in-left';
+		} else if (direction === 0) { 
+			slideOutClass = 'slide-out-up';
+			slideInClass = 'slide-in-down';
+		} else {
+			myTimetableBody.innerHTML = newTableContainer.innerHTML;
+			myTimetableBody.style.overflow = ''; 
+			return;
+		}
+
+		oldTable.classList.add(slideOutClass);
+		newTable.classList.add(slideInClass);
+
+		setTimeout(() => {
+			const finalTable = newTableContainer.querySelector('.schedule-table');
+			
+			oldTable.remove();
+
+			if (finalTable) {
+				newTableContainer.replaceWith(finalTable);
+				
+				finalTable.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
+			} else {
+				myTimetableBody.innerHTML = '';
+			}
+
+			myTimetableBody.style.overflow = '';
+		}, 200); 
+	}
+	
+    function findNextChangeWeek(direction) {
+        if (activeChanges.length === 0) {
+            return null;
+        }
+
+        const currentWeekStartTS = currentWeekStart.getTime();
+        const changeWeeksTS = new Set();
+        
+        activeChanges.forEach(change => {
+            let dateStr;
+            if (change.type === 'swap') {
+                dateStr = change.originalClassInfo.date;
+                const dateBStr = change.targetClassInfo.date;
+                changeWeeksTS.add(getMonday(new Date(dateBStr)).getTime());
+            } else if (change.type === 'substitution') {
+                dateStr = change.date;
+            } else if (change.type === 'exchange') {
+                dateStr = change.originalLessonInfo.date;
+                const dateBStr = change.exchangeLessonInfo.date;
+                changeWeeksTS.add(getMonday(new Date(dateBStr)).getTime());
+            } else {
+                return;
+            }
+            changeWeeksTS.add(getMonday(new Date(dateStr)).getTime());
+        });
+
+        const sortedChangeWeeks = Array.from(changeWeeksTS).sort((a, b) => a - b);
+        
+        let targetWeekTS = null;
+
+        if (direction === 1) { 
+            for (const ts of sortedChangeWeeks) {
+                if (ts > currentWeekStartTS) {
+                    targetWeekTS = ts;
+                    break;
+                }
+            }
+        } else if (direction === -1) { 
+            for (let i = sortedChangeWeeks.length - 1; i >= 0; i--) {
+                const ts = sortedChangeWeeks[i];
+                if (ts < currentWeekStartTS) {
+                    targetWeekTS = ts;
+                    break;
+                }
+            }
+        }
+
+        return targetWeekTS ? new Date(targetWeekTS) : null;
+    }
+
+	newInfoBtn.addEventListener('click', () => {
+		document.getElementById('dropdown-menu').classList.remove('show');
+		openInfoModal();
+	});
+	document.getElementById('tutorial-btn').addEventListener('click', () => {
+		document.getElementById('dropdown-menu').classList.remove('show');
+		document.body.classList.add('modal-open');
+		document.getElementById('tutorial-modal').style.display = 'flex';
+	});
+
+	document.getElementById('tutorial-modal').querySelector('.close-btn').addEventListener('click', () => {
+		document.body.classList.remove('modal-open');
+		document.getElementById('tutorial-modal').style.display = 'none';
+	});
+	
+	document.querySelectorAll('.toggle-password').forEach(toggle => {
+		toggle.addEventListener('click', () => {
+			const targetId = toggle.dataset.target;
+			const passwordInput = document.getElementById(targetId);
+			if (passwordInput.type === 'password') {
+				passwordInput.type = 'text';
+				toggle.textContent = '🙈';
+			} else {
+				passwordInput.type = 'password';
+				toggle.textContent = '👁️';
+			}
+		});
+	});
+
+    const timetableBody = document.getElementById('my-timetable-body');
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const swipeThreshold = 50; 
+
+    timetableBody.addEventListener('touchstart', (event) => {
+        if (event.touches.length === 1) {
+            touchStartX = event.touches[0].clientX;
+            touchEndX = 0; 
+        }
+    }, { passive: true }); 
+
+    timetableBody.addEventListener('touchmove', (event) => {
+        if (event.touches.length > 1) {
+            touchStartX = 0; 
+            return;
+        }
+    }, { passive: true }); 
+
+    timetableBody.addEventListener('touchend', (event) => {
+        if (event.changedTouches.length === 1 && touchStartX !== 0) {
+            touchEndX = event.changedTouches[0].clientX;
+            const deltaX = touchEndX - touchStartX;
+
+            if (Math.abs(deltaX) > swipeThreshold && myTimetableModal.style.display === 'flex') {
+                if (deltaX < 0) {
+                    document.getElementById('next-week-btn').click();
+                } else {
+                    document.getElementById('prev-week-btn').click();
+                }
+            }
+        }
+        touchStartX = 0;
+    });
+	if (timetableLink) {
+		timetableLink.addEventListener('click', (e) => {
+			e.preventDefault(); // 阻止 span 的預設行為(雖然 span 沒預設行為，但這是好習慣)
+			navigateToTimetable(); // 執行這個函式才能正確儲存資料並跳轉
+		});
+	} else {
+		// 這裡原本會報錯，現在 ID 對上後就不會了
+		console.log("已成功綁定課表系統連結");
+	}
+
+});
+</script>
  </body>
 </html>
