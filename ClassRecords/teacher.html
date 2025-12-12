@@ -1989,11 +1989,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     const directEntryEnabled = localStorage.getItem('pref_direct_class_entry') === 'true';
                     const defaultPage = localStorage.getItem('defaultSystemPage');
 					
-					alert(directEntryEnabled);
-					alert(defaultPage);
+					//alert(directEntryEnabled);
+					//alert(defaultPage);
                     
                     // 邏輯：沒開直進班級 + 有設定預設頁 + 預設頁不是 teacher.html
-                    if (!directEntryEnabled && defaultPage && defaultPage !== 'teacher.html' && defaultPage !== 'teacher.html#') {
+                    if (directEntryEnabled && defaultPage && defaultPage !== 'teacher.html' && defaultPage !== 'teacher.html#') {
 					
                         // 關鍵檢查：判斷是否是「手動」從其他系統切換過來的
                         // 如果 document.referrer 包含 timetable.html，代表使用者剛從課表點擊連結過來，我們就不該踢他回去
