@@ -969,11 +969,31 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('app-container').innerHTML = `<h2>載入資料失敗: ${error.message || '請檢查網路連線。'}</h2>`;
         } finally {
             isInitializing = false;
-			// 檢查是否需要直進班級
-			checkAndTriggerDirectEntry();
+
+			// 🟢 修改處：接收回傳值，判斷是否真正觸發了直進
+			const hasDirectEntered = checkAndTriggerDirectEntry();
+            
+            // 🟢 修改處：新增直進失敗（例如非上課時間）後的補救跳轉機制
+            const directEntryEnabled = localStorage.getItem('pref_direct_class_entry') === 'true';
+            const defaultPage = localStorage.getItem('defaultSystemPage');
+
+            // 邏輯：雖然「有開直進」(在開頭跳過了檢查)，但「剛才沒觸發」(因非上課時間)，且「有設定預設頁」
+            // 這種情況下，應該要補執行跳轉
+            if (directEntryEnabled && !hasDirectEntered && defaultPage && defaultPage !== 'teacher.html' && defaultPage !== 'teacher.html#') {
+                
+                // 檢查是否是手動切換過來的
+                const referrer = document.referrer || "";
+                const cameFromOtherSystem = referrer.includes('timetable.html') || referrer.includes('worksheet_manager.html');
+
+                if (!cameFromOtherSystem) {
+                    console.log(`📱 (Fallback) 直進模式開啟但未命中時段，轉為執行預設首頁跳轉至 ${defaultPage}...`);
+                    window.location.href = defaultPage;
+                }
+            }
         }
     }
 	// 🛠️ 【修改結束】
+
 	
     function renderLayout() {
         appContainer.innerHTML = '';
