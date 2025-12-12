@@ -161,6 +161,19 @@
 		.worksheet-readonly-file-link:hover {
 			background-color: #dbeafe;
 		}
+		/* --- 視覺化編輯器專用樣式 (新增) --- */
+		#visual-editor-modal { z-index: 10050; } /* 層級要高過其他視窗 */
+		.ve-sidebar { background: #2c3e50; color: white; display: flex; flex-direction: column; }
+		.ve-main { background: #ecf0f1; position: relative; display: flex; flex-direction: column; overflow: hidden; }
+		.ve-canvas-wrapper { position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.2); background: white; align-self: center; margin-top: 20px; margin-bottom: 20px; }
+		.ve-marker { position: absolute; border: 2px solid #e74c3c; background: rgba(231, 76, 60, 0.2); display: flex; align-items: center; justify-content: center; cursor: grab; resize: both; overflow: hidden; z-index: 10; }
+		.ve-marker:hover { background: rgba(231, 76, 60, 0.4); border-color: red; }
+		.ve-marker span { background: rgba(255,255,255,0.9); padding: 1px 4px; font-size: 11px; border-radius: 2px; color: #c0392b; font-weight: bold; pointer-events: none; }
+		.ve-marker .del { position: absolute; top:0; right:0; background:red; color:white; width:20px; height:20px; font-size:12px; text-align:center; line-height:20px; cursor:pointer; display:none; }
+		.ve-marker:hover .del { display: block; }
+		#ve-popup { position: absolute; display: none; background: white; border: 1px solid #ccc; box-shadow: 0 5px 15px rgba(0,0,0,0.3); padding: 10px; z-index: 100; border-radius: 5px; width: 280px; }
+		.ve-btn-upload { position: relative; overflow: hidden; cursor: pointer; }
+		.ve-btn-upload input[type="file"] { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }		
     </style>
 </head>
 <body class="bg-gray-100">
@@ -227,6 +240,12 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="md:col-span-1 bg-white p-6 rounded shadow h-fit">
                     <h2 class="text-lg font-bold mb-4 border-b pb-2">➕ 新增學習單</h2>
+					<div class="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+						<button onclick="openVisualEditor()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow transition flex items-center justify-center gap-2">
+							🖌️ 開啟視覺化編輯器
+						</button>
+						<p class="text-xs text-gray-500 mt-2">上傳圖片 -> 框選題目 -> 自動產生 HTML</p>
+					</div>
                     <label class="block text-sm font-bold mb-2">標題</label>
                     <input type="text" id="ws-title" class="w-full border p-2 rounded mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
                     <label class="block text-sm font-bold mb-2">HTML 原始碼</label>
@@ -295,48 +314,72 @@
             </div>
         </div>
 		<div id="tab-storage" class="app-section-panel hidden">
-            <div class="bg-white p-6 rounded shadow max-w-5xl mx-auto border-t-4 border-purple-500">
-                <div class="flex justify-between items-center mb-6">
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">☁️ 雲端檔案儲存管理</h2>
-                        <p class="text-sm text-gray-500">管理學生上傳的作業附件，清理已刪除任務的殘留檔案 (幽靈檔案)。</p>
-                    </div>
-                    <button onclick="loadStorageAnalysis()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow flex items-center gap-2 hover:shadow-lg transition">
-                        🔄 掃描/重新整理
-                    </button>
-                </div>
+			<div class="bg-white p-6 rounded shadow max-w-5xl mx-auto border-t-4 border-purple-500">
+				<div class="flex justify-between items-center mb-6">
+					<div>
+						<h2 class="text-lg font-bold text-gray-800">☁️ 雲端檔案總管</h2>
+						<p class="text-sm text-gray-500">管理學生作業檔案與您上傳的教學素材圖片。</p>
+					</div>
+					<button onclick="loadStorageAnalysis()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow flex items-center gap-2 hover:shadow-lg transition">
+						🔄 全面掃描
+					</button>
+				</div>
 
-                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm text-yellow-700">
-                                <strong>功能說明：</strong> 此功能會掃描雲端硬碟 <code>uploads/</code> 資料夾中的所有子資料夾 (即任務 ID)。
-                                <br>系統會比對資料庫，若該任務已不存在，會標示為「👻 幽靈檔案」。
-                                <br><strong>注意：</strong> 刪除動作無法復原，執行清理前請確認。
-                            </p>
-                        </div>
-                    </div>
-                </div>
+				<h3 class="font-bold text-gray-700 mb-2 flex items-center gap-2 text-lg">
+					📂 學生作業繳交區 <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">資料夾模式</span>
+				</h3>
+				<div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 text-sm text-yellow-800">
+					<strong>說明：</strong> 掃描 <code>uploads/</code>。若任務已刪除，對應的作業資料夾即為幽靈檔案。
+				</div>
+				<div class="overflow-x-auto rounded border border-gray-200 mb-10">
+					<table class="min-w-full text-left border-collapse">
+						<thead>
+							<tr class="bg-gray-100 border-b border-gray-300 text-gray-700">
+								<th class="p-3 font-bold w-1/3">任務 ID (資料夾)</th>
+								<th class="p-3 font-bold w-1/3">狀態</th>
+								<th class="p-3 font-bold w-1/3 text-center">操作</th>
+							</tr>
+						</thead>
+						<tbody id="storage-uploads-body" class="text-sm bg-white divide-y divide-gray-100">
+							<tr><td colspan="3" class="p-6 text-center text-gray-400">請點擊掃描按鈕...</td></tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="flex justify-between items-end mb-2 mt-8 border-b pb-2">
+					<div class="flex items-center gap-2">
+						<h3 class="font-bold text-gray-700 text-lg">
+							🖼️ 教師素材圖庫 <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">視覺化編輯器上傳</span>
+						</h3>
+					</div>
+					<button id="res-batch-del-btn" onclick="deleteSelectedResources()" class="hidden bg-red-500 hover:bg-red-600 text-white text-xs font-bold py-1.5 px-4 rounded shadow transition flex items-center gap-1">
+						🗑️ 刪除選取項目 (<span id="res-sel-count">0</span>)
+					</button>
+				</div>
 
-                <div class="overflow-x-auto rounded border border-gray-200">
-                    <table class="min-w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100 border-b border-gray-300 text-gray-700">
-                                <th class="p-4 font-bold w-1/3">資料夾名稱 (任務 ID)</th>
-                                <th class="p-4 font-bold w-1/3">狀態檢查</th>
-                                <th class="p-4 font-bold w-1/3 text-center">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="storage-list-body" class="text-sm bg-white divide-y divide-gray-100">
-                            <tr><td colspan="3" class="p-10 text-center text-gray-400">請點擊上方「🔄 掃描」按鈕開始分析</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+				<div class="bg-blue-50 border-l-4 border-blue-400 p-2 mb-2 text-xs text-blue-800">
+					<strong>說明：</strong> 系統會自動比對學習單 HTML。若圖片未被引用，將標示為「幽靈圖片」並允許勾選刪除。
+				</div>
+
+				<div class="overflow-x-auto rounded border border-gray-200 max-h-[500px] overflow-y-auto">
+					<table class="min-w-full text-left border-collapse relative">
+						<thead class="sticky top-0 bg-gray-100 z-10 shadow-sm">
+							<tr class="text-gray-700 text-xs uppercase">
+								<th class="p-2 w-10 text-center border-b border-gray-300">
+									<input type="checkbox" id="res-master-chk" onchange="toggleAllResources(this)" class="cursor-pointer align-middle">
+								</th>
+								<th class="p-2 w-2/5 border-b border-gray-300">圖片預覽 / 檔名</th>
+								<th class="p-2 w-2/5 border-b border-gray-300">引用檢查</th>
+								<th class="p-2 w-20 text-center border-b border-gray-300">操作</th>
+							</tr>
+						</thead>
+						<tbody id="storage-resources-body" class="text-xs bg-white divide-y divide-gray-100">
+							<tr><td colspan="4" class="p-6 text-center text-gray-400">請點擊上方「全面掃描」按鈕...</td></tr>
+						</tbody>
+					</table>
+				</div>				
+
+			</div>
+		</div>
 
     </div>
 
@@ -578,6 +621,101 @@
 			<div class="p-2 border-t bg-gray-50 text-right shrink-0">
 				<button onclick="closeResultSummaryModal()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-4 rounded shadow transition text-sm">關閉</button>
 			</div>
+		</div>
+	</div>
+	<div id="grading-exit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-[60]">
+		<div class="bg-white rounded-lg shadow-xl w-96 p-6">
+			<h3 class="text-xl font-bold text-gray-800 mb-4">⚠️ 尚未送出成績</h3>
+			<p class="text-gray-600 mb-6">您正在批改這份作業，尚未送出到雲端。請問要如何處理？</p>        
+			<div class="flex flex-col gap-3">
+				<button onclick="saveDraftAndExit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition flex items-center justify-center gap-2">
+					💾 暫存並退出 <span class="text-xs font-normal opacity-80">(下次載入)</span>
+				</button>
+				<button onclick="discardAndExit()" class="w-full bg-red-100 hover:bg-red-200 text-red-600 font-bold py-2 px-4 rounded transition">
+					🚪 直接退出 <span class="text-xs font-normal opacity-70">(不儲存)</span>
+				</button>
+				<button onclick="document.getElementById('grading-exit-modal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition">
+					↩️ 回到批改
+				</button>
+			</div>
+		</div>
+	</div>	
+	<div id="visual-editor-modal" class="fixed inset-0 bg-gray-900 hidden flex flex-row overflow-hidden">
+		<div class="ve-sidebar w-80 p-4 shadow-lg overflow-y-auto z-20">
+			<h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">🖼️ 視覺化編輯器</h2>
+			
+			<div class="mb-4">
+				<label class="block text-xs text-gray-400 mb-1">步驟 1: 上傳圖片 (可多選)</label>
+				<button class="ve-btn-upload w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-sm font-bold flex items-center justify-center gap-2">
+					☁️ 上傳圖片到 Firebase
+					<input type="file" id="ve-file-upload" multiple accept="image/*" onchange="veUploadImages(this.files)">
+				</button>
+				<button onclick="veOpenLibraryModal()" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-bold flex items-center justify-center gap-2">
+					📂 從圖庫引用 (舊檔案)
+				</button>
+				<div id="ve-upload-status" class="text-xs mt-1 text-yellow-400 min-h-[16px]"></div>
+			</div>
+
+			<div class="mb-4">
+				<label class="block text-xs text-gray-400 mb-1">圖片網址列表 (自動填入)</label>
+				<textarea id="ve-url-input" class="w-full h-20 bg-gray-700 border border-gray-600 text-white text-xs p-2 rounded" placeholder="http://..."></textarea>
+			</div>
+
+			<div class="mb-4">
+				<label class="block text-xs text-gray-400 mb-1">步驟 2: 題目 JSON (設定題號/答案)</label>
+				<textarea id="ve-json-input" class="w-full h-32 bg-gray-700 border border-gray-600 text-white text-xs p-2 rounded font-mono" placeholder='{"q1": {"label": "第一題", "answer": "A", "points":10}}'></textarea>
+				<button onclick="veLoadProject()" class="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white py-1 rounded text-sm font-bold">🔄 載入設定 & 圖片</button>
+			</div>
+
+			<div class="mt-auto pt-4 border-t border-gray-600">
+				<button onclick="veExport()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded font-bold text-lg shadow mb-2">✅ 完成並匯入</button>
+				<button onclick="closeVisualEditor()" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded">❌ 取消關閉</button>
+			</div>
+		</div>
+
+		<div class="ve-main flex-1 flex flex-col h-full relative bg-gray-200">
+			
+			<div class="h-14 bg-white border-b flex items-center justify-center gap-4 px-4 shadow-md z-30 flex-shrink-0">
+				<button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded font-bold shadow transition" onclick="vePrevPage()">◀ 上一頁</button>
+				<span id="ve-page-indicator" class="font-bold text-gray-700 w-32 text-center text-lg">Page 0 / 0</span>
+				<button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-1.5 rounded font-bold shadow transition" onclick="veNextPage()">下一頁 ▶</button>
+			</div>
+			
+			<div id="ve-scroll-container" class="flex-1 overflow-auto flex justify-center p-10 relative">
+				
+				<div id="ve-canvas-wrapper" class="ve-canvas-wrapper relative shadow-2xl bg-white self-start">
+					<img id="ve-current-img" class="block max-w-none select-none pointer-events-none" style="min-width: 600px;">
+				</div>
+
+			</div>
+		</div>
+
+		<div id="ve-popup">
+			<label class="block text-sm font-bold mb-1">選擇題目:</label>
+			<select id="ve-q-select" class="w-full border p-1 mb-2"></select>
+			<div class="flex gap-2">
+				<button onclick="veAddMarker()" class="bg-green-500 text-white px-3 py-1 rounded text-sm flex-1">確定</button>
+				<button onclick="document.getElementById('ve-popup').style.display='none'" class="bg-gray-400 text-white px-3 py-1 rounded text-sm flex-1">取消</button>
+			</div>
+		</div>
+	</div>
+	<div id="ve-library-modal" class="fixed inset-0 bg-gray-900 bg-opacity-90 hidden flex items-center justify-center z-[20000]">
+		<div class="bg-white rounded-lg shadow-xl w-11/12 md:w-3/4 h-[80vh] flex flex-col">
+			<div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+				<h3 class="text-lg font-bold text-gray-800">📂 選擇圖片引用</h3>
+				<div class="flex gap-2">
+                    <button onclick="veConfirmLibrarySelection()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded font-bold shadow">確認選取 (<span id="lib-sel-count">0</span>)</button>
+					<button onclick="document.getElementById('ve-library-modal').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+				</div>
+			</div>
+			<div class="p-4 overflow-y-auto flex-grow bg-gray-100">
+                <div id="ve-library-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    <p class="col-span-full text-center text-gray-500 py-10">載入中...</p>
+                </div>
+            </div>
+            <div class="p-2 bg-yellow-50 text-xs text-yellow-800 text-center border-t">
+                圖片已依照「上傳時間」排序，建議依照頁碼順序勾選。
+            </div>
 		</div>
 	</div>
 	<script>
@@ -896,10 +1034,12 @@
 
 			try {
 				if (editingWorksheetId) {
+					// 1. 更新模式 (Update)
 					await db.collection('worksheets').doc(editingWorksheetId).update({
 						title: title,
 						html_content: html,
 						answer_key: answerKey,
+						project_state: currentEditingProjectState || null, // ★ 新增這一行
 						updated_at: firebase.firestore.FieldValue.serverTimestamp()
 					});
 					alert('更新成功！');
@@ -915,14 +1055,21 @@
 							btn.disabled = false; return;
 						}
 						const oldId = dupSnap.docs[0].id;
+						// 2. 覆蓋模式 (Overwrite)
 						await db.collection('worksheets').doc(oldId).update({
-							html_content: html, answer_key: answerKey,
+							html_content: html, 
+							answer_key: answerKey,
+							project_state: currentEditingProjectState || null, // ★ 新增這一行
 							created_at: firebase.firestore.FieldValue.serverTimestamp()
 						});
 					} else {
+						// 3. 新增模式 (Create)
 						await db.collection('worksheets').add({
-							title, html_content: html, answer_key: answerKey,
+							title, 
+							html_content: html, 
+							answer_key: answerKey,
 							creator_id: currentUser.uid, 
+							project_state: currentEditingProjectState || null, // ★ 新增這一行
 							created_at: firebase.firestore.FieldValue.serverTimestamp()
 						});
 					}
@@ -956,6 +1103,7 @@
 						title: d.title,
 						html_content: d.html_content,
 						answer_key: d.answer_key,
+						project_state: d.project_state,
 						created_at_iso: d.created_at ? d.created_at.toDate().toISOString() : new Date().toISOString()
 					});
 				});
@@ -995,6 +1143,8 @@
 			const data = worksheetsCache[id];
 			if (!data) return alert('找不到快取資料，請嘗試重新整理頁面');
 
+			currentEditingProjectState = data.project_state || null;
+			
 			document.getElementById('ws-title').value = data.title;
 			document.getElementById('ws-html').value = data.html_content;
 			
@@ -2521,7 +2671,7 @@
 			if (wd.html_content) {
 				const parser = new DOMParser();
 				const doc = parser.parseFromString(wd.html_content, 'text/html');
-				divs = doc.querySelectorAll('div[id][title]');
+				const divs = doc.querySelectorAll('div[id][title]');
 				divs.forEach(div => unitMap[div.id] = div.getAttribute('title'));
 			}
 
@@ -2687,75 +2837,160 @@
 			tbody.innerHTML = html;
 		}
 		
-		/* ✨【修改開始】新增：檔案管理相關函式 */
+
+		/* 🛠️ 修改 JS：強化版檔案管理分析 */
 		async function loadStorageAnalysis() {
-			const tbody = document.getElementById('storage-list-body');
-			tbody.innerHTML = '<tr><td colspan="3" class="p-10 text-center"><div class="animate-spin inline-block w-8 h-8 border-4 border-purple-500 rounded-full border-t-transparent"></div><div class="mt-3 text-gray-600 font-bold">正在掃描雲端硬碟與資料庫比對中...</div><div class="text-xs text-gray-400 mt-1">若檔案較多請稍候</div></td></tr>';
+			// 1. 初始化介面
+			const tbodyUploads = document.getElementById('storage-uploads-body');
+			const tbodyResources = document.getElementById('storage-resources-body');
+			
+			const loadingHtml = '<tr><td colspan="3" class="p-8 text-center"><div class="animate-spin inline-block w-6 h-6 border-4 border-purple-500 rounded-full border-t-transparent"></div><span class="ml-2 text-gray-500 font-bold">掃描分析中...</span></td></tr>';
+			tbodyUploads.innerHTML = loadingHtml;
+			tbodyResources.innerHTML = loadingHtml;
 
 			try {
-				// 1. 取得 Storage 中 uploads/ 下的所有資料夾 (即 Assignment ID)
-				const uploadsRef = storage.ref().child('uploads');
-				const listRes = await uploadsRef.listAll();
-				const storageFolders = listRes.prefixes; // 這些是資料夾參照
-
-				if (storageFolders.length === 0) {
-					tbody.innerHTML = '<tr><td colspan="3" class="p-8 text-center text-gray-500">雲端硬碟目前是空的 (uploads/ 目錄下無資料)</td></tr>';
-					return;
-				}
-
-				// 2. 取得 Firestore 中所有有效的 Assignment ID
-				// (讀取 assignments 集合的所有文件 ID，不讀取內容以節省流量)
-				const assignmentsSnap = await db.collection('assignments').get();
-				const activeAssignmentIds = new Set();
-				assignmentsSnap.forEach(doc => activeAssignmentIds.add(doc.id));
-
-				// 3. 比對並產生列表
-				tbody.innerHTML = '';
-				let ghostCount = 0;
-
-				for (const folderRef of storageFolders) {
-					const folderId = folderRef.name;
-					// 只要資料庫裡找不到這個 ID，就視為幽靈檔案
-					// (假設所有老師的任務都在 assignments 集合中，若為多租戶系統需斟酌)
-					const isActive = activeAssignmentIds.has(folderId);
+				// ===========================================
+				// 任務 A: 學生作業資料夾分析 (uploads/)
+				// ===========================================
+				const uploadsPromise = (async () => {
+					const listRes = await storage.ref().child('uploads').listAll();
+					const folders = listRes.prefixes;
 					
-					const tr = document.createElement('tr');
-					tr.className = 'hover:bg-purple-50 transition';
-					
-					let statusHtml = '';
-					let actionHtml = '';
-					let rowClass = '';
+					// 取得所有有效 Assignment ID
+					const assignSnap = await db.collection('assignments').get();
+					const activeIds = new Set();
+					assignSnap.forEach(doc => activeIds.add(doc.id));
 
-					if (isActive) {
-						statusHtml = `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800 border border-green-200">✅ 關聯中 (有效)</span>`;
-						actionHtml = `<span class="text-gray-400 text-xs italic">不可刪除</span>`;
+					let html = '';
+					if (folders.length === 0) {
+						html = '<tr><td colspan="3" class="p-4 text-center text-gray-400">無學生作業檔案</td></tr>';
 					} else {
-						ghostCount++;
-						rowClass = 'bg-red-50'; // 強調幽靈列
-						statusHtml = `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">👻 幽靈檔案 (任務已刪)</span>`;
-						// 傳遞完整路徑以便刪除
-						actionHtml = `<button onclick="deleteStorageFolder('${folderRef.fullPath}', this)" class="bg-white border border-red-300 text-red-600 hover:bg-red-600 hover:text-white px-4 py-2 rounded shadow-sm text-xs font-bold transition flex items-center gap-1 mx-auto">🗑️ 清理釋放空間</button>`;
+						folders.forEach(folderRef => {
+							const fid = folderRef.name;
+							const isActive = activeIds.has(fid);
+							const statusBadge = isActive 
+								? '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 border border-green-200">✅ 正常使用</span>'
+								: '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700 border border-red-200">👻 幽靈資料夾</span>';
+							
+							const actionBtn = isActive
+								? '<span class="text-gray-300 text-xs">--</span>'
+								: `<button onclick="deleteStorageFolder('${folderRef.fullPath}', this)" class="text-red-600 hover:bg-red-50 border border-red-200 px-3 py-1 rounded text-xs transition">🗑️ 刪除</button>`;
+
+							html += `<tr class="hover:bg-gray-50">
+								<td class="p-3 font-mono text-gray-600">${fid}</td>
+								<td class="p-3">${statusBadge}</td>
+								<td class="p-3 text-center">${actionBtn}</td>
+							</tr>`;
+						});
 					}
+					return html;
+				})();
+
+				// ===========================================
+				// 任務 B: 教師素材圖片分析 (resource_images/)
+				// ===========================================
+				const resourcesPromise = (async () => {
+					// 重置批量按鈕狀態
+					updateBatchBtnUI(0);
+					if(document.getElementById('res-master-chk')) document.getElementById('res-master-chk').checked = false;
+
+					// B-1. 取得所有 HTML
+					const wsSnap = await db.collection('worksheets').where('creator_id', '==', currentUser.uid).get();
+					let allHtmlContent = "";
+					wsSnap.forEach(doc => { allHtmlContent += (doc.data().html_content || ""); });
+
+					// B-2. 列出 storage
+					const resRef = storage.ref().child(`resource_images/${currentUser.uid}`);
+					let resList;
+					try { resList = await resRef.listAll(); } catch(e) { return '<tr><td colspan="4" class="p-4 text-center text-gray-400">尚無上傳的素材圖片</td></tr>'; }
+
+					if (resList.items.length === 0) return '<tr><td colspan="4" class="p-4 text-center text-gray-400">目前沒有素材圖片</td></tr>';
+
+					// B-3. 比對與產生列表 (緊湊版)
+					let html = '';
 					
-					if(rowClass) tr.className += ' ' + rowClass;
+					// 依時間排序 (新到舊) - 雖然 storage list 不保證順序，但我們盡量依檔名排序
+					resList.items.sort((a, b) => b.name.localeCompare(a.name));
 
-					tr.innerHTML = `
-						<td class="p-4 font-mono text-gray-600 font-bold">${folderId}</td>
-						<td class="p-4">${statusHtml}</td>
-						<td class="p-4 text-center">${actionHtml}</td>
-					`;
-					tbody.appendChild(tr);
-				}
+					for (const itemRef of resList.items) {
+						const filename = itemRef.name;
+						const isUsed = allHtmlContent.includes(encodeURIComponent(filename)) || allHtmlContent.includes(filename);
+						
+						// 狀態標籤 (更小)
+						const statusBadge = isUsed
+							? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">✅ 引用中</span>'
+							: '<span class="px-1.5 py-0.5 rounded text-[10px] bg-red-50 text-red-600 border border-red-200 font-bold whitespace-nowrap">👻 幽靈</span>';
 
-				if (ghostCount === 0 && storageFolders.length > 0) {
-					const tr = document.createElement('tr');
-					tr.innerHTML = '<td colspan="3" class="p-8 text-center text-green-600 font-bold text-lg bg-green-50">🎉 太棒了！目前沒有任何幽靈檔案，系統很乾淨。</td>';
-					tbody.appendChild(tr);
-				}
+						// Checkbox: 只有「幽靈圖片」才顯示 Checkbox，避免誤刪
+						const checkboxHtml = !isUsed 
+							? `<input type="checkbox" class="res-chk cursor-pointer" value="${itemRef.fullPath}" onchange="updateBatchBtnUI()">`
+							: `<input type="checkbox" disabled class="opacity-20 cursor-not-allowed">`;
+
+						// 操作按鈕 (單一刪除)
+						const actionBtn = isUsed
+							? `<button onclick="previewResourceImage('${itemRef.fullPath}')" class="text-blue-600 hover:text-blue-800">🔍</button>`
+							: `<div class="flex items-center justify-center gap-3">
+								<button onclick="previewResourceImage('${itemRef.fullPath}')" class="text-blue-500 hover:text-blue-700" title="預覽">🔍</button>
+								<button onclick="deleteResourceFile('${itemRef.fullPath}', this)" class="text-red-500 hover:text-red-700 font-bold" title="刪除">✕</button>
+							   </div>`;
+
+						// 🌟 這裡控制行高：使用 py-2 (原本是 p-3)
+						html += `<tr class="hover:bg-gray-50 transition group border-b border-gray-50">
+							<td class="py-2 px-2 text-center bg-gray-50/50">${checkboxHtml}</td>
+							<td class="py-2 px-2">
+								<div class="flex items-center gap-2 overflow-hidden">
+									<span class="text-gray-600 font-medium truncate w-64" title="${filename}">${filename}</span>
+								</div>
+							</td>
+							<td class="py-2 px-2 text-gray-500">${statusBadge}</td>
+							<td class="py-2 px-2 text-center">${actionBtn}</td>
+						</tr>`;
+					}
+					return html;
+				})();
+
+				// 等待兩邊都完成
+				const [uploadsHtml, resourcesHtml] = await Promise.all([uploadsPromise, resourcesPromise]);
+
+				tbodyUploads.innerHTML = uploadsHtml;
+				tbodyResources.innerHTML = resourcesHtml;
 
 			} catch (e) {
 				console.error(e);
-				tbody.innerHTML = `<tr><td colspan="3" class="p-8 text-center text-red-500 font-bold">掃描失敗: ${e.message}<br><span class="text-xs text-gray-400">請確認 Storage 權限設定是否允許 list 操作</span></td></tr>`;
+				const errHtml = `<tr><td colspan="3" class="p-4 text-center text-red-500">掃描失敗: ${e.message}</td></tr>`;
+				tbodyUploads.innerHTML = errHtml;
+				tbodyResources.innerHTML = errHtml;
+			}
+		}
+
+		// 刪除單一檔案 (用於素材圖片)
+		async function deleteResourceFile(fullPath, btn) {
+			if(!confirm('⚠️ 確定要刪除這張圖片嗎？\n此動作無法復原。')) return;
+			
+			const originalText = btn.textContent;
+			btn.textContent = '...';
+			btn.disabled = true;
+
+			try {
+				await storage.ref(fullPath).delete();
+				// 刪除該行
+				const row = btn.closest('tr');
+				row.style.opacity = '0';
+				setTimeout(() => row.remove(), 300);
+			} catch (e) {
+				alert('刪除失敗: ' + e.message);
+				btn.textContent = originalText;
+				btn.disabled = false;
+			}
+		}
+
+		// 預覽圖片 (在新分頁開啟)
+		async function previewResourceImage(fullPath) {
+			try {
+				const url = await storage.ref(fullPath).getDownloadURL();
+				window.open(url, '_blank');
+			} catch(e) {
+				alert('無法取得預覽連結');
 			}
 		}
 
@@ -2803,24 +3038,542 @@
 		}
 		/* ✨【修改結束】 */
 
-	</script>
+		// ==========================================
+		// ★★★ 視覺化編輯器 (Visual Editor) 邏輯 ★★★
+		// ==========================================
+		let vePages = []; let veJsonData = {}; let veMarkersData = {}; 
+		let veCurrentPage = 0; let veClickPos = {x:0, y:0};
+		let currentEditingProjectState = null; // 儲存專案狀態
 
-	<div id="grading-exit-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-[60]">
-		<div class="bg-white rounded-lg shadow-xl w-96 p-6">
-			<h3 class="text-xl font-bold text-gray-800 mb-4">⚠️ 尚未送出成績</h3>
-			<p class="text-gray-600 mb-6">您正在批改這份作業，尚未送出到雲端。請問要如何處理？</p>        
-			<div class="flex flex-col gap-3">
-				<button onclick="saveDraftAndExit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition flex items-center justify-center gap-2">
-					💾 暫存並退出 <span class="text-xs font-normal opacity-80">(下次載入)</span>
-				</button>
-				<button onclick="discardAndExit()" class="w-full bg-red-100 hover:bg-red-200 text-red-600 font-bold py-2 px-4 rounded transition">
-					🚪 直接退出 <span class="text-xs font-normal opacity-70">(不儲存)</span>
-				</button>
-				<button onclick="document.getElementById('grading-exit-modal').classList.add('hidden')" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded transition">
-					↩️ 回到批改
-				</button>
-			</div>
-		</div>
-	</div>	
+		function openVisualEditor() {
+			const modal = document.getElementById('visual-editor-modal');
+			if (!modal) { alert("錯誤：找不到視窗元素"); return; }
+
+			// 1. 強制搬家與樣式設定 (這部分保持上次修正的樣子)
+			if (modal.parentElement !== document.body) { document.body.appendChild(modal); }
+			modal.removeAttribute('style');
+			modal.classList.remove('hidden');
+			
+			// 強制全螢幕樣式
+			modal.style.setProperty('display', 'flex', 'important');
+			modal.style.setProperty('flex-direction', 'row', 'important');
+			modal.style.setProperty('position', 'fixed', 'important');
+			modal.style.setProperty('top', '0', 'important');
+			modal.style.setProperty('left', '0', 'important');
+			modal.style.setProperty('width', '100vw', 'important');
+			modal.style.setProperty('height', '100vh', 'important');
+			modal.style.setProperty('z-index', '2147483647', 'important');
+			modal.style.setProperty('background-color', '#111827', 'important');
+			modal.style.setProperty('overflow', 'hidden', 'important');
+
+			// ============================================================
+			// 🧠 智慧判斷邏輯 (解決您提到的問題)
+			// ============================================================
+			
+			// 檢查 1: 如果現在正在編輯某個學習單 (從列表點擊「編輯」)，優先載入該學習單的進度
+			if (typeof currentEditingProjectState !== 'undefined' && currentEditingProjectState) {
+				// ... (原本的自動載入邏輯) ...
+				try {
+					document.getElementById('ve-url-input').value = currentEditingProjectState.urls.join('\n');
+					const mainJson = document.getElementById('ws-json').value;
+					document.getElementById('ve-json-input').value = mainJson || JSON.stringify(currentEditingProjectState.jsonData, null, 4);
+					veMarkersData = JSON.parse(JSON.stringify(currentEditingProjectState.markers));
+					veLoadProject(true); // 載入並重繪
+				} catch(e) { console.warn("載入失敗", e); }
+				
+			} else {
+				// 檢查 2: 如果不是編輯舊檔，檢查「記憶體中」是否已經有圖片資料？ (即剛剛按取消離開的情況)
+				if (vePages && vePages.length > 0) {
+					console.log("🔄 偵測到上次未完成的編輯階段，自動恢復...");
+					// 不需要做任何事，畫面會維持上次關閉前的樣子
+					// 但為了保險起見，我們重新渲染一次頁面
+					veRenderPage();
+				} else {
+					// 這是全新的開啟，清空介面 (選擇性)
+					// document.getElementById('ve-url-input').value = ''; 
+					// document.getElementById('ve-json-input').value = '';
+				}
+			}
+		}
+
+		function closeVisualEditor() {
+			const modal = document.getElementById('visual-editor-modal');
+			if (modal) {
+				// 1. 加回隱藏類別 (Tailwind)
+				modal.classList.add('hidden');
+				
+				// 2. 【關鍵修復】移除所有強制加上去的樣式
+				// 因為開啟時我們用了 !important，如果不移除，視窗會一直卡在顯示狀態
+				modal.removeAttribute('style'); 
+				
+				console.log("✅ 視覺化編輯器已關閉");
+			}
+		}
+
+		async function veUploadImages(files) {
+			if (!files.length) return;
+			const statusDiv = document.getElementById('ve-upload-status');
+			const urlArea = document.getElementById('ve-url-input');
+			statusDiv.innerText = `準備上傳 ${files.length} 個檔案...`;
+
+			for (let i = 0; i < files.length; i++) {
+				const file = files[i];
+				statusDiv.innerText = `上傳中 (${i+1}/${files.length}): ${file.name}`;
+				try {
+					// 需確保 storage 已初始化
+					const ref = firebase.storage().ref().child(`resource_images/${currentUser.uid}/${Date.now()}_${file.name}`);
+					await ref.put(file);
+					const url = await ref.getDownloadURL();
+					urlArea.value += (urlArea.value ? '\n' : '') + url;
+				} catch (e) { console.error(e); statusDiv.innerText = "上傳失敗: " + e.message; }
+			}
+			statusDiv.innerText = "✅ 上傳完成";
+			statusDiv.className = "text-xs mt-1 text-green-400";
+		}
+
+		function veLoadProject(preserveMarkers = false) {
+			const urlText = document.getElementById('ve-url-input').value.trim();
+			const jsonText = document.getElementById('ve-json-input').value.trim();
+			if(!urlText) return alert("請輸入圖片網址");
+
+			vePages = urlText.split('\n').filter(l => l.trim()!=='');
+			try { veJsonData = jsonText ? JSON.parse(jsonText) : {}; } catch(e) { return alert("JSON 格式錯誤"); }
+
+			if (!preserveMarkers) {
+				veMarkersData = {};
+				vePages.forEach((_, i) => veMarkersData[i] = []);
+			} else {
+				vePages.forEach((_, i) => { if(!veMarkersData[i]) veMarkersData[i] = []; });
+			}
+			veCurrentPage = 0;
+			veRenderPage();
+		}
+
+		function veRenderPage() {
+			if(vePages.length === 0) return;
+			document.getElementById('ve-current-img').src = vePages[veCurrentPage];
+			document.getElementById('ve-page-indicator').innerText = `Page ${veCurrentPage+1} / ${vePages.length}`;
+			document.querySelectorAll('.ve-marker').forEach(el => el.remove());
+			const saved = veMarkersData[veCurrentPage] || [];
+			saved.forEach(m => veCreateMarkerDOM(m.id, m.left, m.top, m.w, m.h));
+		}
+
+		function veSaveCurrentPage() {
+			const domMarkers = document.querySelectorAll('.ve-marker');
+			const newData = [];
+			domMarkers.forEach(el => {
+				newData.push({
+					id: el.dataset.id, left: el.style.left, top: el.style.top,
+					w: el.style.width, h: el.style.height
+				});
+			});
+			veMarkersData[veCurrentPage] = newData;
+		}
+
+		function vePrevPage() { if(veCurrentPage > 0) { veSaveCurrentPage(); veCurrentPage--; veRenderPage(); } }
+		function veNextPage() { if(veCurrentPage < vePages.length-1) { veSaveCurrentPage(); veCurrentPage++; veRenderPage(); } }
+
+		// ==========================================
+		// 修改部分 A：過濾已選題目 & 點擊畫布邏輯
+		// ==========================================
+
+		// 輔助函式：取得目前所有頁面已經被放置的題目 ID
+		function veGetUsedIds() {
+			const used = new Set();
+			
+			// 1. 檢查「非當前頁面」的儲存資料
+			Object.keys(veMarkersData).forEach(p => {
+				if (parseInt(p) !== veCurrentPage) {
+					(veMarkersData[p] || []).forEach(m => used.add(m.id));
+				}
+			});
+
+			// 2. 檢查「當前頁面」的 DOM 元素 (因為當前頁面可能還沒存入 veMarkersData)
+			document.querySelectorAll('.ve-marker').forEach(el => {
+				if (el.dataset.id) used.add(el.dataset.id);
+			});
+
+			return used;
+		}
+
+		const veWrapper = document.getElementById('ve-canvas-wrapper');
+		if (veWrapper) {
+			veWrapper.addEventListener('click', (e) => {
+				// 如果點到的是標記本身(包含拖曳中)，不要觸發新增視窗
+				if(e.target.closest('.ve-marker')) return;
+				
+				if(vePages.length === 0) return;
+
+				const rect = veWrapper.getBoundingClientRect();
+				veClickPos.x = ((e.clientX - rect.left) / rect.width * 100).toFixed(2);
+				veClickPos.y = ((e.clientY - rect.top) / rect.height * 100).toFixed(2);
+				
+				const select = document.getElementById('ve-q-select');
+				select.innerHTML = '';
+
+				// ★★★ 核心修改：取得已使用的 ID ★★★
+				const usedIds = veGetUsedIds();
+				let availableCount = 0;
+
+				Object.keys(veJsonData).forEach(k => {
+					// 如果已經用過，就跳過不顯示
+					if (usedIds.has(k)) return;
+
+					const opt = document.createElement('option');
+					opt.value = k;
+					opt.text = `${k} (${veJsonData[k].label || ''})`;
+					select.appendChild(opt);
+					availableCount++;
+				});
+
+				if(availableCount === 0) { 
+					const opt = document.createElement('option'); 
+					opt.text = "無剩餘題目 (或未設定 JSON)"; 
+					select.appendChild(opt); 
+				}
+
+				const p = document.getElementById('ve-popup');
+				p.style.display = 'block'; 
+				p.style.left = e.pageX + 'px'; 
+				p.style.top = e.pageY + 'px';
+			});
+		} else {
+			console.warn("找不到 ve-canvas-wrapper 元素");
+		}
+		
+		function veAddMarker() {
+			const qId = document.getElementById('ve-q-select').value;
+			if(!qId || qId === "請先設定 JSON") return;
+			veCreateMarkerDOM(qId, veClickPos.x + '%', veClickPos.y + '%', '10%', '5%');
+			document.getElementById('ve-popup').style.display = 'none';
+		}
+
+		// ==========================================
+		// 修改部分 B：建立可拖曳 (Draggable) 的標記
+		// ==========================================
+		function veCreateMarkerDOM(id, l, t, w, h) {
+			const div = document.createElement('div');
+			div.className = 've-marker';
+			// 加入 cursor: move 讓使用者知道可以拖
+			div.style.left = l; div.style.top = t; div.style.width = w; div.style.height = h;
+			div.style.cursor = 'move'; 
+			div.dataset.id = id;
+			
+			// 內容 HTML (加入防止選取文字的樣式)
+			div.innerHTML = `<span style="pointer-events:none; user-select:none;">${id}</span><div class="del" onclick="this.parentElement.remove()">X</div>`;
+			
+			// ★★★ 核心修改：實作拖曳邏輯 ★★★
+			div.onmousedown = function(e) {
+				// 如果點到的是刪除鈕，或是調整大小的把手(右下角)，就不觸發拖曳
+				if (e.target.classList.contains('del')) return;
+				
+				// 檢查是否點擊到右下角區域 (Resize 把手區域通常在右下 10x10)
+				const rect = div.getBoundingClientRect();
+				if (e.clientX > rect.right - 15 && e.clientY > rect.bottom - 15) {
+					return; // 讓原生的 resize 生效，不執行 drag
+				}
+
+				e.preventDefault(); // 防止選取文字
+				e.stopPropagation(); // 防止觸發背景的新增視窗
+
+				const startX = e.clientX;
+				const startY = e.clientY;
+				const initialLeft = div.offsetLeft;
+				const initialTop = div.offsetTop;
+				const containerRect = veWrapper.getBoundingClientRect();
+
+				function onMove(moveEvent) {
+					const dx = moveEvent.clientX - startX;
+					const dy = moveEvent.clientY - startY;
+
+					// 先暫時用 px 移動，比較順暢
+					let newLeft = initialLeft + dx;
+					let newTop = initialTop + dy;
+
+					// 邊界檢查 (可選，防止拖出框外)
+					if (newLeft < 0) newLeft = 0;
+					if (newTop < 0) newTop = 0;
+					if (newLeft + div.offsetWidth > containerRect.width) newLeft = containerRect.width - div.offsetWidth;
+					if (newTop + div.offsetHeight > containerRect.height) newTop = containerRect.height - div.offsetHeight;
+
+					div.style.left = newLeft + 'px';
+					div.style.top = newTop + 'px';
+				}
+
+				function onUp() {
+					document.removeEventListener('mousemove', onMove);
+					document.removeEventListener('mouseup', onUp);
+
+					// ★ 拖曳結束：將 px 轉回 % (因為系統依賴 % 做 RWD)
+					const finalLeftPct = (div.offsetLeft / containerRect.width * 100).toFixed(2) + '%';
+					const finalTopPct = (div.offsetTop / containerRect.height * 100).toFixed(2) + '%';
+					
+					div.style.left = finalLeftPct;
+					div.style.top = finalTopPct;
+				}
+
+				document.addEventListener('mousemove', onMove);
+				document.addEventListener('mouseup', onUp);
+			};
+
+			veWrapper.appendChild(div);
+		}
+
+		/* 🛠️ [修改開始] 視覺化編輯器匯出函式 (支援多種題型) */
+		function veExport() {
+			veSaveCurrentPage(); // 確保當前頁面標記已儲存
+
+			let fullHtml = "";
+
+			// 遍歷每一頁
+			vePages.forEach((url, i) => {
+				const markers = veMarkersData[i] || [];
+				let inputs = "";
+
+				// 遍歷該頁的所有標記
+				markers.forEach(m => {
+					// 取得該題目的 JSON 設定資料
+					const qData = veJsonData[m.id] || {};
+					const qType = qData.type || 'text'; // 預設為文字題
+					
+					// 共同樣式 (絕對定位)
+					// 注意：加入了 pointer-events: auto 確保元素可被點擊
+					// 文字顏色設為 blue 方便辨識，背景半透明白
+					const commonStyle = `position:absolute; left:${m.left}; top:${m.top}; width:${m.w}; height:${m.h}; background:rgba(255,255,255,0.9); border:1px solid #bfdbfe; font-size:14px; color:#1d4ed8; outline:none; z-index:10; margin:0; padding:4px; box-sizing:border-box;`;
+					
+					// 🛠️ [新增邏輯] 依據 type 產生不同 HTML 標籤
+					if (qType === 'choice') {
+						// --- 處理選擇題 (生成 <select>) ---
+						let optionsHtml = `<option value="">請選擇</option>`;
+						
+						// 解析 choiceNo 字串，例如 "(A) (B) (C)" 或 "(A) 本尊 (B) 分身"
+						if (qData.choiceNo) {
+							// 使用正則表達式抓取 (X) 及其後的文字
+							// 格式說明：尋找括號內的字元作為 value，括號後的內容作為 label
+							const regex = /\(([^)]+)\)([^(\r\n]*)/g;
+							let match;
+							while ((match = regex.exec(qData.choiceNo)) !== null) {
+								const val = match[1].trim(); // 例如 "A"
+								let label = match[2].trim(); // 例如 "本尊"
+								if(!label) label = val; // 如果沒有額外文字，就顯示 "A"
+								else label = `${val}. ${label}`; // 如果有文字，顯示 "A. 本尊"
+								
+								optionsHtml += `<option value="${val}">${label}</option>`;
+							}
+						} else {
+							// 如果沒有提供 choiceNo，預設給 A, B, C, D
+							['A', 'B', 'C', 'D'].forEach(opt => {
+								optionsHtml += `<option value="${opt}">${opt}</option>`;
+							});
+						}
+
+						inputs += `    <select name="${m.id}" class="worksheet-input" style="${commonStyle}">
+							${optionsHtml}
+						</select>\n`;
+
+					} else if (qType === 'checkbox') {
+						 // --- 處理勾選題 (生成 <input type="checkbox">) ---
+						 // 勾選題通常只需要一個小方框，這裡將 checkbox 置中
+						 inputs += `    <div style="${commonStyle}; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.5); border:none;">
+							<input type="checkbox" name="${m.id}" value="true" style="width:20px; height:20px; cursor:pointer;">
+						 </div>\n`;
+
+					} else {
+						// --- 處理文字題 (預設 <input type="text">) ---
+						// 對齊方式改為 center 比較好看
+						inputs += `    <input type="text" name="${m.id}" class="worksheet-input" 
+							style="${commonStyle} text-align: center;" 
+							placeholder="(${m.id})">\n`;
+					}
+				});
+
+				// 組合該頁 HTML
+				fullHtml += `<div class="sheet-page relative w-full max-w-[800px] mx-auto mb-5 shadow bg-white">
+					<img src="${url}" style="width:100%; display:block;">
+					${inputs}
+				</div>\n`;
+			});
+
+			// 回填到編輯區
+			document.getElementById('ws-html').value = fullHtml;
+			// JSON 也一併更新 (雖然通常這時候 JSON 已經在 input 裡了，但為了確保同步)
+			document.getElementById('ws-json').value = JSON.stringify(veJsonData, null, 4);
+			
+			// 更新全域狀態
+			currentEditingProjectState = { urls: vePages, jsonData: veJsonData, markers: veMarkersData };
+			closeVisualEditor();
+			
+			alert("✅ 已依據 JSON 題型生成對應的 HTML 元素！\n\n(選擇題已轉為下拉選單、文字題維持輸入框)\n請記得按「儲存到題庫」。");
+		}
+		/* 🛠️ [修改結束] */
+
+		console.log("【檢查點 C】JavaScript 腳本已完整載入至結尾");
+
+		const veWrapperCheck = document.getElementById('ve-canvas-wrapper');
+		console.log("【檢查點 D】視覺化畫布區塊 (ve-canvas-wrapper) 是否存在？", veWrapperCheck);
+
+		// 如果這裡是 null，代表 HTML 結構有缺，或者腳本跑太快
+		if (!veWrapperCheck) {
+			console.error("❌ 嚴重錯誤：找不到 ve-canvas-wrapper，這會導致下方事件綁定失敗");
+		}
+
+		// 1. 全選/全取消
+		window.toggleAllResources = (master) => {
+			document.querySelectorAll('.res-chk').forEach(cb => cb.checked = master.checked);
+			updateBatchBtnUI();
+		};
+
+		// 2. 更新批量按鈕狀態 (顯示/隱藏)
+		window.updateBatchBtnUI = () => {
+			const count = document.querySelectorAll('.res-chk:checked').length;
+			const btn = document.getElementById('res-batch-del-btn');
+			const countSpan = document.getElementById('res-sel-count');
+			
+			if (count > 0) {
+				btn.classList.remove('hidden');
+				countSpan.textContent = count;
+			} else {
+				btn.classList.add('hidden');
+			}
+		};
+
+		// 3. 執行批量刪除
+		window.deleteSelectedResources = async () => {
+			const checked = document.querySelectorAll('.res-chk:checked');
+			const count = checked.length;
+			if (count === 0) return;
+
+			if (!confirm(`⚠️ 確定要一次刪除這 ${count} 個幽靈檔案嗎？\n\n注意：此動作無法復原！`)) return;
+
+			const btn = document.getElementById('res-batch-del-btn');
+			const originalText = btn.innerHTML;
+			btn.textContent = '刪除中...';
+			btn.disabled = true;
+
+			let successCount = 0;
+			const promises = Array.from(checked).map(async (cb) => {
+				try {
+					await storage.ref(cb.value).delete();
+					// 視覺上移除該行
+					const row = cb.closest('tr');
+					row.style.opacity = '0';
+					setTimeout(() => row.remove(), 300);
+					successCount++;
+				} catch (e) {
+					console.error("刪除失敗", e);
+				}
+			});
+
+			await Promise.all(promises);
+
+			btn.innerHTML = originalText;
+			btn.disabled = false;
+			updateBatchBtnUI(); // 重新計算 (應該會隱藏)
+			
+			// 檢查是否還有剩餘檔案，若無則顯示空訊息
+			setTimeout(() => {
+				const tbody = document.getElementById('storage-resources-body');
+				if (tbody.children.length === 0) {
+					tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">目前沒有素材圖片</td></tr>';
+				}
+			}, 500);
+
+			alert(`✅ 已成功清理 ${successCount} 個檔案！`);
+		};		
+		
+		// ==========================================
+        // 新增功能：視覺化編輯器 - 圖庫引用
+        // ==========================================
+        async function veOpenLibraryModal() {
+            const modal = document.getElementById('ve-library-modal');
+            const grid = document.getElementById('ve-library-grid');
+            const countSpan = document.getElementById('lib-sel-count');
+            
+            modal.classList.remove('hidden');
+            grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-10 flex items-center justify-center gap-2"><span class="animate-spin text-2xl">↻</span> 正在讀取雲端圖庫...</p>';
+            countSpan.textContent = '0';
+
+            try {
+                // 讀取該老師目錄下的所有圖片
+                const res = await storage.ref(`resource_images/${currentUser.uid}`).listAll();
+                
+                if (res.items.length === 0) {
+                    grid.innerHTML = '<p class="col-span-full text-center text-gray-400 py-10">圖庫是空的，請先上傳圖片。</p>';
+                    return;
+                }
+
+                // ★ 關鍵：依照檔名排序 (因為檔名開頭是 timestamp，所以這等於依照時間排序)
+                // 檔名格式: 1634567890123_filename.png
+                res.items.sort((a, b) => a.name.localeCompare(b.name));
+
+                grid.innerHTML = ''; // 清空 loading
+
+                // 平行讀取所有下載連結 (Download URL)
+                const promises = res.items.map(async (itemRef) => {
+                    const url = await itemRef.getDownloadURL();
+                    return { ref: itemRef, url: url };
+                });
+
+                const files = await Promise.all(promises);
+
+                files.forEach(f => {
+                    const div = document.createElement('div');
+                    div.className = "relative group bg-white p-2 rounded shadow hover:shadow-lg transition cursor-pointer border border-transparent hover:border-blue-400";
+                    div.onclick = (e) => {
+                        // 點擊卡片切換 checkbox
+                        if(e.target.type !== 'checkbox') {
+                            const chk = div.querySelector('input[type="checkbox"]');
+                            chk.checked = !chk.checked;
+                            updateLibCount();
+                        }
+                    };
+
+                    div.innerHTML = `
+                        <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded bg-gray-200 mb-2 relative" style="height: 120px;">
+                            <img src="${f.url}" class="w-full h-full object-contain pointer-events-none">
+                            <div class="absolute top-1 left-1">
+                                <input type="checkbox" class="lib-chk form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 shadow bg-white" value="${f.url}" onchange="updateLibCount()">
+                            </div>
+                        </div>
+                        <div class="text-[10px] text-gray-500 truncate font-mono" title="${f.ref.name}">
+                            ${f.ref.name.split('_').slice(1).join('_')}
+                        </div>
+                    `;
+                    grid.appendChild(div);
+                });
+
+            } catch(e) {
+                console.error(e);
+                grid.innerHTML = `<p class="col-span-full text-center text-red-500 py-10">載入失敗: ${e.message}</p>`;
+            }
+        }
+
+        function updateLibCount() {
+            const cnt = document.querySelectorAll('.lib-chk:checked').length;
+            document.getElementById('lib-sel-count').textContent = cnt;
+        }
+
+        function veConfirmLibrarySelection() {
+            const checked = document.querySelectorAll('.lib-chk:checked');
+            if (checked.length === 0) return alert("請至少選擇一張圖片");
+
+            const urlInput = document.getElementById('ve-url-input');
+            const selectedUrls = Array.from(checked).map(cb => cb.value);
+            
+            // 將網址追加到文字框
+            const currentVal = urlInput.value.trim();
+            urlInput.value = (currentVal ? currentVal + '\n' : '') + selectedUrls.join('\n');
+
+            // 關閉視窗
+            document.getElementById('ve-library-modal').classList.add('hidden');
+            
+            // 自動觸發「載入設定」
+            veLoadProject();
+            
+            alert(`✅ 已引用 ${checked.length} 張圖片！\n圖片已加入編輯器列表。`);
+        }
+		
+	</script>
+	
 </body>
 </html>
