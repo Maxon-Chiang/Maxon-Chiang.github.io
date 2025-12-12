@@ -24,33 +24,36 @@
         .worksheet-content { background: white; padding: 20px; border-radius: 8px; border: 1px solid #e5e7eb; }
         
         .worksheet-input {
-            border: 2px solid #e2e8f0;
-            padding: 8px;
-            border-radius: 6px;
-            margin-top: 5px;
-            margin-bottom: 15px;
+            border: 2px solid #e2e8f0; /* 邊框顏色 */
+            padding: 4px 6px;          /* 縮小內距，讓文字不會太擁擠但也不會撐大格子 */
+            border-radius: 4px;
+            margin: 0 !important;      /* ★關鍵：歸零，避免位置偏移 */
+            box-sizing: border-box;    /* ★關鍵：確保內距不會撐大設定好的寬高 */
             transition: border-color 0.2s;
+            background-color: rgba(255, 255, 255, 0.9); /* 稍微不透明，避免跟底圖混在一起 */
+            line-height: 1.2;          /* 修正文字垂直位置 */
         }
+        
         .worksheet-input:focus {
             border-color: #3b82f6;
             outline: none;
+            background-color: #fff;
+            z-index: 20; /* 點擊時浮到最上層 */
         }
 
+        /* 針對文字框與下拉選單，只需確保 display 正確，不要強制 width: 100% */
         textarea.worksheet-input,
         select.worksheet-input,
         input[type="text"].worksheet-input,
         input[type="number"].worksheet-input,
         input[type="date"].worksheet-input {
-            width: 100%;
-            display: block; 
+
         }
 
+        /* 修正 Checkbox 的對齊 */
         input[type="radio"].worksheet-input,
         input[type="checkbox"].worksheet-input {
-            width: auto;
-            margin-right: 8px;
-            display: inline-block;
-            vertical-align: middle;
+            margin: 0;
             cursor: pointer;
         }
         
@@ -72,6 +75,40 @@
         .grading-status-text { font-weight: bold; display: flex; align-items: center; gap: 5px; }
         .text-correct { color: #166534; }
         .text-incorrect { color: #991b1b; }
+		
+		/* --- 新增：學生端微調功能樣式 --- */
+        .move-mode-active .worksheet-input {
+            /* 預設游標為移動 */
+            cursor: move; 
+            /* 邊框變橘色虛線，更明顯 */
+            border: 2px dashed #f97316 !important; 
+            box-shadow: 0 4px 6px rgba(249, 115, 22, 0.2);
+            user-select: none;
+            /* 關鍵：讓元素可以用滑鼠調整大小的 CSS 屬性 (對 textarea 有效，對 input 需靠 JS 輔助) */
+            touch-action: none; /* 防止手機瀏覽器預設的滾動行為干擾拖曳 */
+        }
+        
+        /* 當滑鼠移到右下角時，改變游標形狀 (這只是視覺輔助，實際邏輯在 JS) */
+        /* 由於 CSS 無法直接選取 input 的角落，我們用 JS 動態控制 cursor 或者單純依靠使用直覺 */
+        .move-mode-active .worksheet-input:hover {
+            background-color: rgba(255, 247, 237, 0.9);
+        }
+
+        #adjust-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9999; /* 層級拉高 */
+            background: white;
+            padding: 8px 16px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid #e5e7eb;
+        }
+		
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -168,6 +205,14 @@
                 </div>
             </div>
         </div>
+		<div id="adjust-controls" class="hidden">
+			<button id="toggle-move-btn" onclick="toggleStudentMoveMode()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-full font-bold text-sm shadow transition flex items-center gap-2">
+				🔓 解鎖調整位置
+			</button>
+			<button onclick="resetStudentPositions()" class="bg-red-100 hover:bg-red-200 text-red-600 px-3 py-2 rounded-full font-bold text-xs shadow transition hidden" id="reset-pos-btn" title="重置回預設位置">
+				🔄 重置
+			</button>
+		</div>
     </div>
 
     <script>
@@ -420,6 +465,7 @@
             document.getElementById('todo-count').textContent = todoCount;
         }
         
+		
  
         // -----------------------------------------------------------
         // 4. 學習單邏輯 (開啟、填答、三按鈕功能)
@@ -507,6 +553,7 @@
             }
 
             modal.classList.remove('hidden');
+			loadStudentPositions(); // ★ 加入這一行
         }
 
         // 填寫表單輔助函式 (修改版)
@@ -748,6 +795,272 @@
                 btn.innerHTML = '<span>✅ 完成繳交</span>';
             }
         });
+		
+
+		// ==========================================
+        // 學生端位置與大小微調功能 (進階版)
+        // ==========================================
+        let isStudentMoveMode = false;
+
+        function toggleStudentMoveMode() {
+            isStudentMoveMode = !isStudentMoveMode;
+            const btn = document.getElementById('toggle-move-btn');
+            const form = document.getElementById('worksheet-form');
+            const inputs = form.querySelectorAll('.worksheet-input');
+            const resetBtn = document.getElementById('reset-pos-btn');
+
+            if (isStudentMoveMode) {
+                // --- 開啟編輯模式 ---
+                btn.innerHTML = '💾 鎖定並儲存';
+                btn.className = 'bg-orange-600 hover:bg-orange-700 text-white px-5 py-2 rounded-full font-bold text-sm shadow transition flex items-center gap-2';
+                resetBtn.classList.remove('hidden');
+                
+                form.classList.add('move-mode-active');
+                
+                inputs.forEach(el => {
+                    el.setAttribute('readonly', 'true'); // 禁止輸入文字
+                    
+                    // 針對 radio/checkbox 的特殊處理 (因為它們通常被包在 div 裡)
+                    if(el.type === 'checkbox' || el.type === 'radio') {
+                         el.style.pointerEvents = 'none'; // 讓點擊事件穿透到父層 div (如果有)
+                         // 如果是 checkbox，我們通常拖曳的是它的容器，如果是直接 input，則直接拖曳 input
+                         if(el.parentElement.tagName === 'DIV' && el.parentElement.style.position === 'absolute') {
+                             enableDragAndResize(el.parentElement);
+                             el.parentElement.classList.add('worksheet-input'); // 確保樣式吃到
+                         } else {
+                             enableDragAndResize(el);
+                         }
+                    } else {
+                        enableDragAndResize(el);
+                    }
+                });
+                
+                alert('進入調整模式：\n1. 拖曳「中間」可移動位置\n2. 拖曳「右下角」可調整大小');
+
+            } else {
+                // --- 關閉並儲存 ---
+                btn.innerHTML = '🔓 解鎖調整位置/大小';
+                btn.className = 'bg-gray-700 hover:bg-gray-800 text-white px-5 py-2 rounded-full font-bold text-sm shadow transition flex items-center gap-2';
+                resetBtn.classList.add('hidden');
+                
+                form.classList.remove('move-mode-active');
+
+                inputs.forEach(el => {
+                    el.removeAttribute('readonly');
+                    if(el.type === 'checkbox' || el.type === 'radio') {
+                         el.style.pointerEvents = 'auto'; 
+                    }
+                    // 清除事件監聽，釋放記憶體
+                    el.onmousedown = null;
+                    el.ontouchstart = null;
+                    
+                    // 針對 checkbox 容器的清理
+                    if(el.parentElement.tagName === 'DIV' && el.parentElement.classList.contains('worksheet-input')) {
+                        el.parentElement.onmousedown = null;
+                        el.parentElement.ontouchstart = null;
+                        el.parentElement.classList.remove('worksheet-input'); // 移除臨時樣式
+                    }
+                });
+                
+                // 儲存設定到 LocalStorage
+                saveStudentPositions();
+            }
+        }
+
+        function enableDragAndResize(elmnt) {
+            let startX = 0, startY = 0, startWidth = 0, startHeight = 0, startLeft = 0, startTop = 0;
+            let mode = ''; // 'MOVE' or 'RESIZE'
+            
+            // 綁定事件
+            elmnt.onmousedown = dragMouseDown;
+            elmnt.ontouchstart = dragTouchStart;
+            
+            // 視覺優化：滑鼠移動時改變游標，提示使用者右下角可縮放
+            elmnt.onmousemove = function(e) {
+                if (!isStudentMoveMode) return;
+                const rect = elmnt.getBoundingClientRect();
+                const isCorner = (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20);
+                elmnt.style.cursor = isCorner ? 'nwse-resize' : 'move';
+            };
+
+            function dragMouseDown(e) {
+                e.preventDefault();
+                e.stopPropagation(); // 防止觸發底層事件
+                initDrag(e.clientX, e.clientY);
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+            }
+
+            function dragTouchStart(e) {
+                // e.preventDefault(); // 註解掉，避免某些裝置無法縮放頁面，但在這裡需要防止滾動
+                if(e.touches.length > 1) return; // 忽略多指觸控
+                const touch = e.touches[0];
+                initDrag(touch.clientX, touch.clientY);
+                document.ontouchend = closeDragElement;
+                document.ontouchmove = elementDragTouch;
+            }
+
+            function initDrag(clientX, clientY) {
+                const rect = elmnt.getBoundingClientRect();
+                // 判定：點擊位置是否在右下角 20x20 區域內
+                const isCorner = (clientX > rect.right - 20 && clientY > rect.bottom - 20);
+                
+                mode = isCorner ? 'RESIZE' : 'MOVE';
+                
+                startX = clientX;
+                startY = clientY;
+                
+                // 紀錄初始狀態 (px)
+                startWidth = parseFloat(getComputedStyle(elmnt).width);
+                startHeight = parseFloat(getComputedStyle(elmnt).height);
+                startLeft = elmnt.offsetLeft;
+                startTop = elmnt.offsetTop;
+            }
+
+            function elementDrag(e) {
+                e.preventDefault();
+                performAction(e.clientX, e.clientY);
+            }
+
+            function elementDragTouch(e) {
+                // e.preventDefault(); // 防止手機畫面跟著捲動
+                const touch = e.touches[0];
+                performAction(touch.clientX, touch.clientY);
+            }
+
+            function performAction(currentX, currentY) {
+                const dx = currentX - startX;
+                const dy = currentY - startY;
+
+                if (mode === 'MOVE') {
+                    elmnt.style.left = (startLeft + dx) + "px";
+                    elmnt.style.top = (startTop + dy) + "px";
+                } else if (mode === 'RESIZE') {
+                    // 限制最小尺寸，避免拉到消失
+                    const newW = Math.max(20, startWidth + dx);
+                    const newH = Math.max(20, startHeight + dy);
+                    elmnt.style.width = newW + "px";
+                    elmnt.style.height = newH + "px";
+                }
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                document.ontouchend = null;
+                document.ontouchmove = null;
+
+                // ★ 關鍵：動作結束後，將 px 轉換回 % (Responsive Design)
+                // 這樣在不同螢幕尺寸下，相對位置和大小才會正確
+                const parent = elmnt.offsetParent || document.getElementById('worksheet-form'); // Fallback
+                if (parent) {
+                    const parentW = parent.offsetWidth;
+                    const parentH = parent.offsetHeight;
+
+                    const pctLeft = (elmnt.offsetLeft / parentW * 100).toFixed(4) + '%';
+                    const pctTop = (elmnt.offsetTop / parentH * 100).toFixed(4) + '%';
+                    const pctW = (elmnt.offsetWidth / parentW * 100).toFixed(4) + '%';
+                    const pctH = (elmnt.offsetHeight / parentH * 100).toFixed(4) + '%';
+
+                    elmnt.style.left = pctLeft;
+                    elmnt.style.top = pctTop;
+                    
+                    // 只有在 Resize 模式或是寬度確實被改變時才寫入 width/height
+                    // 避免只是移動卻導致寬度因為小數點誤差而跑掉
+                    if (mode === 'RESIZE') {
+                        elmnt.style.width = pctW;
+                        elmnt.style.height = pctH;
+                    }
+                }
+            }
+        }
+
+        // 儲存微調位置與大小
+        function saveStudentPositions() {
+            if(!currentAssignmentId) return;
+            const settings = {};
+            const form = document.getElementById('worksheet-form');
+            
+            // 儲存一般輸入框
+            form.querySelectorAll('.worksheet-input').forEach(el => {
+                // 略過沒有 name 的裝飾元素，且排除 checkbox 內部的 input (因為我們要存的是外層 div)
+                if(el.name && el.type !== 'checkbox' && el.type !== 'radio') {
+                    settings[el.name] = { 
+                        l: el.style.left, 
+                        t: el.style.top,
+                        w: el.style.width,
+                        h: el.style.height
+                    };
+                }
+            });
+
+            // 特別處理 Checkbox/Radio 的容器 (因為它們包在 div 裡)
+            form.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el => {
+                if(el.name && el.parentElement.tagName === 'DIV' && el.parentElement.style.position === 'absolute') {
+                     settings['container_' + el.name] = {
+                        l: el.parentElement.style.left, 
+                        t: el.parentElement.style.top,
+                        w: el.parentElement.style.width,
+                        h: el.parentElement.style.height
+                     };
+                }
+            });
+
+            const key = `ws_layout_${currentUser.uid}_${currentAssignmentId}`;
+            localStorage.setItem(key, JSON.stringify(settings));
+            alert('✅ 版面設定已儲存 (本機)');
+        }
+
+        // 載入微調位置與大小
+        function loadStudentPositions() {
+            if(!currentAssignmentId) return;
+            const key = `ws_layout_${currentUser.uid}_${currentAssignmentId}`;
+            const saved = localStorage.getItem(key);
+            
+            // 顯示調整按鈕
+            document.getElementById('adjust-controls').classList.remove('hidden');
+
+            if(saved) {
+                try {
+                    const settings = JSON.parse(saved);
+                    const form = document.getElementById('worksheet-form');
+
+                    // 恢復一般輸入框
+                    Object.keys(settings).forEach(name => {
+                        if(name.startsWith('container_')) {
+                            // 恢復 checkbox/radio 容器
+                            const realName = name.replace('container_', '');
+                            const input = form.querySelector(`input[name="${realName}"]`);
+                            if(input && input.parentElement) {
+                                const s = settings[name];
+                                if(s.l) input.parentElement.style.left = s.l;
+                                if(s.t) input.parentElement.style.top = s.t;
+                                if(s.w) input.parentElement.style.width = s.w;
+                                if(s.h) input.parentElement.style.height = s.h;
+                            }
+                        } else {
+                            // 恢復一般輸入框
+                            const el = form.querySelector(`[name="${name}"]`);
+                            if(el) {
+                                const s = settings[name];
+                                if(s.l) el.style.left = s.l;
+                                if(s.t) el.style.top = s.t;
+                                if(s.w) el.style.width = s.w;
+                                if(s.h) el.style.height = s.h;
+                            }
+                        }
+                    });
+                    console.log('已載入自訂版面配置');
+                } catch(e) { console.error('版面載入失敗', e); }
+            }
+        }
+
+        function resetStudentPositions() {
+            if(!confirm('確定要重置回老師預設的版面嗎？\n(您自訂的位置與大小將被清除)')) return;
+            const key = `ws_layout_${currentUser.uid}_${currentAssignmentId}`;
+            localStorage.removeItem(key);
+            location.reload(); 
+        }
 
     </script>
 </body>
