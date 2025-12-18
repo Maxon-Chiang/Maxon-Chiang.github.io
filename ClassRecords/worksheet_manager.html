@@ -641,12 +641,21 @@
                         <div class="flex gap-2 mt-2"><button onclick="insertComment('做得很好！')" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">做得很好</button><button onclick="insertComment('請檢查錯字')" class="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded">檢查錯字</button></div>
                     </div>
                 </div>
-                <div class="p-4 border-t bg-gray-50 space-y-2 z-10">
-                    <button id="submit-grade-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow transition">✅ 送出成績</button>
-                    <div class="grid grid-cols-2 gap-2"><button id="return-correction-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition">↩️ 退回訂正</button>
-					<button onclick="confirmGradingExit()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-lg text-sm transition">取消</button>
-                </div>
-            </div>
+				<div class="p-4 border-t bg-gray-50 space-y-2 z-10">
+					<button id="submit-grade-btn" onclick="doGrade('graded')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow transition">
+						✅ 送出成績
+					</button>
+					
+					<div class="grid grid-cols-2 gap-2">
+						<button id="return-correction-btn" onclick="doGrade('needs_correction')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition">
+							↩️ 退回訂正
+						</button>
+						
+						<button onclick="confirmGradingExit()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded-lg text-sm transition">
+							取消
+						</button>
+					</div>
+				</div>
         </div>
     </div>
 	<div id="result-summary-modal" style="z-index: 9999;" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center">
@@ -675,7 +684,7 @@
 							<tr class="text-sm bg-gray-50">
 								<th class="p-2 w-12 text-center border-b">題號</th>
 								<th class="p-2 border-b">題目名稱</th>
-								<th class="p-2 w-16 text-center border-b">狀態</th>
+								<th class="p-2 w-16 text-center border-b">對錯</th>
 								<th class="p-2 w-1/4 border-b text-green-700">正確答案</th>
 								<th class="p-2 w-1/3 border-b">學生作答內容</th>
 							</tr>
@@ -2495,9 +2504,8 @@ HTML 生成規則：
 			});
 		}
 		
-		// ==========================================
-		// 10. Grading Modal Logic
-		// ==========================================
+
+		// 🛠️ [修正版] openGradingModal
 		window.openGradingModal = async (rid, wid, sname, mode = 'edit') => {
 			currentGradingResponseId = rid; 
 			currentGradingWorksheetId = wid;
@@ -2522,7 +2530,13 @@ HTML 生成規則：
 
 			view.innerHTML = '<p class="p-4 text-center">載入中...</p>';
 			scoreIn.value = ''; commIn.value = '';
+
+			// 🟢 1. 層級修復：強制移到 Body 並設定最高層級，解決按鈕點不到的問題
+			if (modal.parentElement !== document.body) {
+				document.body.appendChild(modal);
+			}
 			modal.classList.remove('hidden');
+			modal.style.setProperty('z-index', '2147483647', 'important'); // 確保在最上層
 
 			if (mode === 'view') {
 				leftPanel.classList.remove('w-2/3'); leftPanel.classList.add('w-full');
@@ -2576,7 +2590,6 @@ HTML 生成規則：
 					// 1. 填入學生答案
 					if(ans[n] !== undefined) {
 						if (inp.type === 'file') {
-							// 若是檔案類型，不能設定 value，改為插入下載連結
 							const fileUrl = ans[n];
 							if (fileUrl && fileUrl.toString().startsWith('http')) {
 								const link = document.createElement('a');
@@ -2584,7 +2597,6 @@ HTML 生成規則：
 								link.target = '_blank';
 								link.className = 'inline-flex items-center gap-1 text-blue-600 underline font-bold text-sm ml-2 hover:text-blue-800';
 								link.innerHTML = '📂 下載/查看上傳檔案';
-								// 插入連結到 input 後面
 								if(inp.nextSibling) inp.parentNode.insertBefore(link, inp.nextSibling);
 								else inp.parentNode.appendChild(link);
 							}
@@ -2605,14 +2617,19 @@ HTML 生成規則：
 						let isCor = null, isInc = null, fb = '';
 						let points = 0; 
 						let autoResult = null; 
+						let correctAnswerText = null; // 🟢 準備變數
 
 						if (wd.answer_key && wd.answer_key[n]) {
 							const key = wd.answer_key[n];
 							points = parseInt(key.points) || 0; 
 							if(key.note) fb = key.note;
 							
+							// 🟢 取得正確答案
+							if (key.answer !== undefined && key.answer !== null && String(key.answer).trim() !== '') {
+								correctAnswerText = key.answer;
+							}
+
 							const stdAns = ans[n];
-							// 注意：檔案類型通常無法自動批改比對，除非老師設定的正確答案也是網址且完全相同
 							if (key.answer !== null && key.answer !== undefined && stdAns !== undefined) {
 								const valStudent = String(stdAns).trim();
 								const valAnswer = String(key.answer).trim();
@@ -2651,9 +2668,20 @@ HTML 生成規則：
 						panel.setAttribute('data-status', currentStatus);
 
 						const pointsBadge = points > 0 ? `<span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded ml-2">配分: ${points}</span>` : '';
+						
+						// 🟢 產生正確答案 HTML 區塊
+						let correctHtml = '';
+						if (correctAnswerText) {
+							correctHtml = `
+								<div class="mb-2 text-xs text-green-800 bg-green-100 border border-green-200 p-1.5 rounded flex items-start gap-1">
+									<span class="font-bold shrink-0">🎯 正解：</span>
+									<span class="font-mono font-bold break-all">${correctAnswerText}</span>
+								</div>
+							`;
+						}
 
 						panel.innerHTML = `
-							<div class="flex items-center justify-between mb-2">
+							${correctHtml} <div class="flex items-center justify-between mb-2">
 								<div class="flex gap-2 items-center">
 									<label class="grading-radio-label">
 										<input type="radio" name="gs_${n}" value="c" data-points="${points}" ${isCor?'checked':''} onchange="updPanel(this)">
@@ -2692,7 +2720,7 @@ HTML 生成規則：
 
 			} catch(e) { console.error(e); alert(e.message); modal.classList.add('hidden'); }
 		};
-		
+				
 		window.updPanel = (r) => { 
 			const p = r.closest('.grading-panel'); 
 			const oldStatus = p.getAttribute('data-status') || ''; 
@@ -3557,7 +3585,7 @@ HTML 生成規則：
 			}
 		};
 
-		/* ✨ 最終修正版 openResultSummaryModal：依據「有無配分」自動切換模式 */
+		/* 🛠️ [修正版] openResultSummaryModal */
 		window.openResultSummaryModal = async function(rid, wid, sname, wsTitle) {
 			console.log("🚀 開啟作業檢視:", wsTitle);
 
@@ -3565,7 +3593,6 @@ HTML 生成規則：
 			if (modal && modal.parentNode !== document.body) document.body.appendChild(modal);
 
 			try {
-				// 1. 綁定介面元素
 				const titleEl = document.getElementById('res-modal-title');
 				const nameEl = document.getElementById('res-student-name');
 				const scoreEl = document.getElementById('res-total-score');
@@ -3574,7 +3601,11 @@ HTML 生成規則：
 				const tableViewContainer = document.getElementById('res-table-container');
 				const systemTabs = document.getElementById('res-tabs-area');
 
-				// 2. 初始化介面
+				// ❌ 移除這裡的 scrollTop = 0，因為此時元素可能是隱藏的，設定無效
+
+				// 強制隱藏 Tab (雙重保險)
+				if (systemTabs) systemTabs.classList.add('hidden');
+
 				if (titleEl) titleEl.textContent = wsTitle;
 				if (nameEl) nameEl.textContent = sname;
 				if (scoreEl) scoreEl.textContent = '...';
@@ -3582,13 +3613,12 @@ HTML 生成規則：
 				modal.classList.remove('hidden');
 				modal.style.display = 'flex';
 				
-				// 顯示載入中動畫，先隱藏所有內容區塊
 				htmlView.innerHTML = '<div class="text-center p-10"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 rounded-full border-t-transparent"></div><p class="mt-2 text-gray-500">載入作答內容...</p></div>';
+				
+				// 初始狀態
 				htmlView.classList.remove('hidden');
 				tableViewContainer.classList.add('hidden');
-				systemTabs.classList.add('hidden');
 
-				// 3. 讀取資料
 				const [rDoc, wd] = await Promise.all([
 					db.collection('responses').doc(rid).get(), 
 					getSmartWorksheetData(wid)
@@ -3601,70 +3631,50 @@ HTML 生成規則：
 				const studentAns = rd.answers || {};
 				const ansKey = wd.answer_key || {};
 
-				// 更新總分顯示
 				if (scoreEl) scoreEl.textContent = (rd.score !== undefined && rd.score !== "") ? rd.score : '--';
 
-				// ============================================================
-				// 🟢 核心判斷：計算這份作業的「總配分」
-				// ============================================================
 				let totalMaxPoints = 0;
-				Object.values(ansKey).forEach(q => {
-					totalMaxPoints += (parseInt(q.points) || 0);
-				});
-
-				console.log(`📊 判斷模式中... 總配分: ${totalMaxPoints}`);
+				Object.values(ansKey).forEach(q => { totalMaxPoints += (parseInt(q.points) || 0); });
 
 				if (totalMaxPoints > 0) {
-					// 👉 情況 A: 有配分 -> 測驗模式 (Quiz Mode)
-					// 行為：顯示表格、顯示對錯、顯示題號
-					console.log("✅ 偵測到配分，切換為 [條列式測驗模式]");
-
-					htmlView.classList.add('hidden');           // 隱藏原始 HTML
-					tableViewContainer.classList.remove('hidden'); // 顯示表格
-					systemTabs.classList.remove('hidden');      // 顯示表格的分頁籤
+					// 👉 A: 測驗模式 (表格)
+					htmlView.classList.add('hidden');
 					
-					// 呼叫原本的表格產生邏輯
+					// 🟢 1. 先讓容器顯示出來
+					tableViewContainer.classList.remove('hidden');
+					
+					// 🟢 2. 顯示後立即歸零捲軸，這樣才有效
+					tableViewContainer.scrollTop = 0; 
+					
 					await processTableModeLogic(wd, rd, studentAns, ansKey);
 
 				} else {
-					// 👉 情況 B: 無配分 -> 專題/學習單模式 (Worksheet Mode)
-					// 行為：顯示原始 HTML、隱藏表格、回填答案
-					console.log("🎨 無配分，切換為 [原始排版模式]");
+					// 👉 B: 學習單模式 (HTML)
+					// 🟢 1. 先讓容器顯示出來
+					htmlView.classList.remove('hidden');
+					tableViewContainer.classList.add('hidden');
+					
+					// 🟢 2. 顯示後立即歸零捲軸
+					htmlView.scrollTop = 0; 
 
-					htmlView.classList.remove('hidden');        // 顯示原始 HTML
-					tableViewContainer.classList.add('hidden');    // 隱藏表格
-					systemTabs.classList.add('hidden');         // 隱藏表格的分頁籤 (避免混淆)
-
-					// 1. 注入 HTML
 					htmlView.innerHTML = wd.html_content;
-
-					// 2. 執行腳本 (讓原本學習單內的 Tab 功能生效)
 					await executeEmbeddedScripts(htmlView);
 
-					// 3. 資料回填 (Data Hydration)
+					// ... (原本的資料回填邏輯保持不變) ...
 					htmlView.querySelectorAll('input, select, textarea').forEach(input => {
 						const fieldName = input.getAttribute('name');
 						if (!fieldName) return;
-
 						const studentValue = studentAns[fieldName];
 
-						// 檔案類型處理
 						if (input.type === 'file') {
 							input.style.display = 'none';
 							if (studentValue) {
 								const linkContainer = document.createElement('div');
 								linkContainer.className = "mt-1";
 								if (studentValue.match(/\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i)) {
-									 linkContainer.innerHTML = `
-										<a href="${studentValue}" target="_blank" class="block border rounded p-1 bg-gray-50 w-fit hover:border-blue-500 transition">
-											<img src="${studentValue}" class="h-32 w-auto object-contain rounded" title="點擊查看大圖">
-											<span class="block text-xs text-center text-blue-600 mt-1">🖼️ 查看大圖</span>
-										</a>`;
+									 linkContainer.innerHTML = `<a href="${studentValue}" target="_blank" class="block border rounded p-1 bg-gray-50 w-fit hover:border-blue-500 transition"><img src="${studentValue}" class="h-32 w-auto object-contain rounded"><span class="block text-xs text-center text-blue-600 mt-1">🖼️ 查看大圖</span></a>`;
 								} else {
-									 linkContainer.innerHTML = `
-										<a href="${studentValue}" target="_blank" class="worksheet-readonly-file-link">
-											📂 下載學生上傳檔案
-										</a>`;
+									 linkContainer.innerHTML = `<a href="${studentValue}" target="_blank" class="worksheet-readonly-file-link">📂 下載學生上傳檔案</a>`;
 								}
 								input.parentNode.insertBefore(linkContainer, input.nextSibling);
 							} else {
@@ -3673,18 +3683,13 @@ HTML 生成規則：
 								span.textContent = '(未上傳)';
 								input.parentNode.insertBefore(span, input.nextSibling);
 							}
-						} 
-						// 選項處理
-						else if (input.type === 'radio' || input.type === 'checkbox') {
+						} else if (input.type === 'radio' || input.type === 'checkbox') {
 							if (studentValue === input.value) input.checked = true;
 							input.disabled = true;
-						} 
-						// 文字處理
-						else {
+						} else {
 							if (studentValue !== undefined) input.value = studentValue;
 							input.classList.add('worksheet-readonly-input');
 							input.setAttribute('readonly', true);
-							
 							if (input.tagName === 'TEXTAREA') {
 								 input.style.height = 'auto';
 								 input.style.height = (input.scrollHeight + 5) + 'px';
@@ -3757,11 +3762,35 @@ HTML 生成規則：
 
 				// 判定狀態
 				let statusIcon = '<span class="text-gray-300 font-bold text-sm">?</span>'; 
-				
-				if (details[qid]?.is_correct === true || (qData.answer && String(studentAns[qid]) === String(qData.answer))) {
+
+				// 1. 準備比對資料 (轉成字串並去除空白，避免格式問題)
+				const valStd = (qData.answer !== undefined && qData.answer !== null) ? String(qData.answer).trim() : '';
+				const valStu = (studentAns[qid] !== undefined && studentAns[qid] !== null) ? String(studentAns[qid]).trim() : '';
+				const hasStdAns = valStd !== ''; // 是否有標準答案
+				const hasStuAns = valStu !== ''; // 學生是否有作答
+
+				// 2. 優先讀取「人工批改紀錄」
+				// details[qid]?.is_correct 若為 undefined 代表沒改過
+				const manualStatus = details[qid]?.is_correct; 
+
+				if (manualStatus === true) {
+					// A. 老師手動改：對
 					statusIcon = '<span class="text-green-600 font-bold text-lg">⭕</span>';
-				} else if (details[qid]?.is_correct === false) {
-					 statusIcon = '<span class="text-red-500 font-bold text-lg">❌</span>';
+				} else if (manualStatus === false) {
+					// B. 老師手動改：錯
+					statusIcon = '<span class="text-red-500 font-bold text-lg">❌</span>';
+				} else {
+					// C. 沒手動改，進入「自動判定」邏輯
+					if (hasStdAns && hasStuAns) {
+						if (valStd === valStu) {
+							// 自動判定：對
+							statusIcon = '<span class="text-green-600 font-bold text-lg">⭕</span>';
+						} else {
+							// ✨【修正關鍵】：自動判定：錯 (原本漏掉這段)
+							// 有標準答案，學生也有寫，但不一樣 -> 給 X
+							statusIcon = '<span class="text-red-500 font-bold text-lg">❌</span>';
+						}
+					}
 				}
 
 				units[unitId].questions.push({
@@ -3776,8 +3805,11 @@ HTML 生成規則：
 			});
 			
 			// 存入全域變數並渲染
+			//window.currentResultData = { units, keys: Object.keys(units).sort() };
+			//renderResultTabs(Object.keys(units)[0]); 
+			
 			window.currentResultData = { units, keys: Object.keys(units).sort() };
-			renderResultTabs(Object.keys(units)[0]); 
+			renderResultTable(); // 直接渲染列表，不要經過 Tab 函式
 		}		
 
 		function renderResultTabs(activeKey) {
