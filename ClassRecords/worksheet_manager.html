@@ -8,6 +8,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
     <script>
 	  window.MathJax = {
@@ -17,8 +19,24 @@
 	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    
+	<script type="importmap">
+	  {
+		"imports": {
+		  "@google/generative-ai": "https://esm.run/@google/generative-ai"
+		}
+	  }
+	</script>
+	<script type="module">
+	  import { GoogleGenerativeAI } from "@google/generative-ai";
+	  // 將 SDK 掛載到全域變數，讓下方的舊版 script 可以呼叫
+	  window.GenAI = GoogleGenerativeAI;
+	</script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+    <script>
+        // 設定 PDF.js Worker (使用相同版本的官方來源)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    </script>
 
     <style>
         body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f3f4f6; }
@@ -236,38 +254,87 @@
             </div>
         </div>
 
-        <div id="tab-library" class="app-section-panel hidden">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="md:col-span-1 bg-white p-6 rounded shadow h-fit">
-                    <h2 class="text-lg font-bold mb-4 border-b pb-2">➕ 新增學習單</h2>
-					<div class="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
-						<button onclick="openVisualEditor()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded shadow transition flex items-center justify-center gap-2">
-							🖌️ 開啟視覺化編輯器
-						</button>
-						<p class="text-xs text-gray-500 mt-2">上傳圖片 -> 框選題目 -> 自動產生 HTML</p>
+		<div id="tab-library" class="app-section-panel hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+				<div class="lg:col-span-5 bg-white p-6 rounded shadow h-fit space-y-4">
+					<h2 class="text-xl font-bold mb-4 border-b pb-2 flex items-center gap-2">
+						➕ 新增 / 編輯學習單
+					</h2>
+
+					<div>
+						<label class="block text-sm font-bold mb-2 text-gray-700">學習單標題</label>
+						<input type="text" id="ws-title" class="w-full border p-2 rounded mb-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="例如：CH2 電腦硬體單元測驗">
+						
+						<div class="flex gap-2">
+							<button id="preview-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded text-sm font-bold shadow transition">
+								👇 預覽畫面
+							</button>
+							<button id="save-ws-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow transition">
+								💾 儲存到題庫
+							</button>
+						</div>
 					</div>
-                    <label class="block text-sm font-bold mb-2">標題</label>
-                    <input type="text" id="ws-title" class="w-full border p-2 rounded mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-                    <label class="block text-sm font-bold mb-2">HTML 原始碼</label>
-                    <textarea id="ws-html" class="w-full border p-2 rounded h-40 font-mono text-xs mb-4 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="<div>...</div>"></textarea>
-                    <label class="block text-sm font-bold mb-2 text-blue-600">答案卷資料 (JSON) <span class="text-xs font-normal text-gray-500">(自動批改用)</span></label>
-                    <textarea id="ws-json" class="w-full border p-2 rounded h-32 font-mono text-xs mb-4 focus:ring-2 focus:ring-blue-500 outline-none" placeholder='{"q1": {"answer": "A", "note": "..."}}'></textarea>
-                    <button id="preview-btn" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm mb-4 w-full">👇 預覽 HTML</button>
-                    <button id="save-ws-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow transition">儲存到題庫</button>
-                </div>
-                <div class="md:col-span-2 space-y-6">
+
+					<div class="text-right">
+						<button onclick="toggleSourceCodeArea()" class="text-xs text-blue-500 underline hover:text-blue-700">
+							👁️ 顯示 / 隱藏 原始碼 (HTML & JSON)
+						</button>
+					</div>
+
+					<div id="source-code-area" class="hidden p-3 bg-gray-50 border rounded-lg border-gray-200 transition-all">
+						<p class="text-xs text-red-500 mb-2 font-bold">※ 此區由 AI 自動填入，通常不需手動修改。</p>
+						
+						<label class="block text-xs font-bold mb-1 text-gray-700">HTML 網頁原始碼</label>
+						<textarea id="ws-html" class="w-full border p-2 rounded h-32 font-mono text-[10px] mb-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-600"></textarea>
+						
+						<label class="block text-xs font-bold mb-1 text-blue-600">JSON 答案卷資料</label>
+						<textarea id="ws-json" class="w-full border p-2 rounded h-24 font-mono text-[10px] mb-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-600"></textarea>
+					</div>
+
+					<hr class="border-gray-200 my-4">
+
+					<div class="border-2 border-indigo-100 rounded-xl p-4 bg-indigo-50/50 hover:bg-indigo-50 transition relative overflow-hidden group">
+						<div class="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] px-2 py-1 rounded-bl font-bold">模式 1</div>
+						<h3 class="font-bold text-indigo-700 text-lg mb-1">✨ AI 創意生成</h3>
+						<p class="text-xs text-gray-500 mb-3">適合無講義，由 Gemini/ChatGPT 直接生成完整題目與網頁排版。</p>
+						<button onclick="openMode1PromptModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded shadow text-sm flex items-center justify-center gap-2 transition">
+							🧙‍♂️ 開啟學習單生成器
+						</button>
+					</div>
+
+					<div class="border-2 border-orange-100 rounded-xl p-4 bg-orange-50/50 hover:bg-orange-50 transition relative overflow-hidden group">
+						<div class="absolute top-0 right-0 bg-orange-500 text-white text-[10px] px-2 py-1 rounded-bl font-bold">模式 2</div>
+						<h3 class="font-bold text-orange-700 text-lg mb-1">📂 檔案題目上雲端</h3>
+						<p class="text-xs text-gray-500 mb-3">上傳 PDF 習作，AI 自動分析題目、裁切頁面並生成互動網頁。</p>
+						<div class="flex gap-2">
+							<button onclick="openAIImportModal()" class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-2 px-2 rounded shadow text-xs flex items-center justify-center gap-2 transition transform hover:scale-[1.02]">
+								🪄 開啟 AI 自動匯入精靈
+							</button>
+						</div>
+					</div>
+				</div>                
+
+                <div class="lg:col-span-7 space-y-6">
                     <div id="preview-area" class="hidden">
-                        <h3 class="text-sm font-bold text-gray-500 mb-1">預覽結果：</h3>
-                        <div id="preview-content" class="worksheet-preview"></div>
+                        <div class="flex justify-between items-end mb-1">
+                            <h3 class="text-sm font-bold text-gray-500">預覽結果：</h3>
+                            <button onclick="document.getElementById('preview-area').classList.add('hidden')" class="text-xs text-red-400 hover:text-red-600">關閉預覽</button>
+                        </div>
+                        <div id="preview-content" class="worksheet-preview shadow-inner"></div>
                     </div>
-                    <div class="bg-white p-6 rounded shadow">
-                        <h2 class="text-lg font-bold mb-4">📜 已建立的學習單</h2>
+                    
+                    <div class="bg-white p-6 rounded shadow min-h-[500px]">
+                        <div class="flex justify-between items-center mb-4 border-b pb-2">
+                            <h2 class="text-lg font-bold text-gray-800">📜 已建立的學習單</h2>
+                            <button onclick="loadWorksheets(true)" class="text-xs text-blue-500 hover:underline">🔄 重新整理列表</button>
+                        </div>
                         <div id="ws-list" class="space-y-3"><p class="text-center text-gray-500 py-4">載入中...</p></div>
                     </div>
                 </div>
             </div>
         </div>
-
+		
         <div id="tab-assign" class="app-section-panel hidden">
             <div class="bg-white p-6 rounded shadow max-w-4xl mx-auto border-t-4 border-blue-500">
                 <h2 class="text-lg font-bold mb-6 pb-2 border-b">🚀 派發作業</h2>
@@ -329,7 +396,7 @@
 					📂 學生作業繳交區 <span class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">資料夾模式</span>
 				</h3>
 				<div class="bg-yellow-50 border-l-4 border-yellow-400 p-3 mb-4 text-sm text-yellow-800">
-					<strong>說明：</strong> 掃描 <code>uploads/</code>。若任務已刪除，對應的作業資料夾即為幽靈檔案。
+					<strong>說明：</strong> 掃描 <code>uploads/</code>。若任務已刪除，對應的作業資料夾即為<strong>未關聯檔案 (Orphaned)</strong>。
 				</div>
 				<div class="overflow-x-auto rounded border border-gray-200 mb-10">
 					<table class="min-w-full text-left border-collapse">
@@ -357,7 +424,7 @@
 				</div>
 
 				<div class="bg-blue-50 border-l-4 border-blue-400 p-2 mb-2 text-xs text-blue-800">
-					<strong>說明：</strong> 系統會自動比對學習單 HTML。若圖片未被引用，將標示為「幽靈圖片」並允許勾選刪除。
+					<strong>說明：</strong> 系統會自動比對學習單 HTML。若圖片未被引用，將標示為「<strong>未使用素材</strong>」並允許勾選刪除。
 				</div>
 
 				<div class="overflow-x-auto rounded border border-gray-200 max-h-[500px] overflow-y-auto">
@@ -609,6 +676,7 @@
 								<th class="p-2 w-12 text-center border-b">題號</th>
 								<th class="p-2 border-b">題目名稱</th>
 								<th class="p-2 w-16 text-center border-b">狀態</th>
+								<th class="p-2 w-1/4 border-b text-green-700">正確答案</th>
 								<th class="p-2 w-1/3 border-b">學生作答內容</th>
 							</tr>
 						</thead>
@@ -641,35 +709,37 @@
 		</div>
 	</div>	
 	<div id="visual-editor-modal" class="fixed inset-0 bg-gray-900 hidden flex flex-row overflow-hidden">
-		<div class="ve-sidebar w-80 p-4 shadow-lg overflow-y-auto z-20">
-			<h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2">🖼️ 視覺化編輯器</h2>
+		<div class="ve-sidebar w-80 p-4 shadow-lg overflow-y-auto z-20 bg-gray-900 text-white flex flex-col">
+			<h2 class="text-xl font-bold mb-4 border-b border-gray-600 pb-2 flex items-center gap-2">
+				🖼️ 視覺化編輯器
+			</h2>
 			
-			<div class="mb-4">
-				<label class="block text-xs text-gray-400 mb-1">步驟 1: 上傳圖片 (可多選)</label>
-				<button class="ve-btn-upload w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-sm font-bold flex items-center justify-center gap-2">
-					☁️ 上傳圖片到 Firebase
-					<input type="file" id="ve-file-upload" multiple accept="image/*" onchange="veUploadImages(this.files)">
+			<div class="mb-6 text-gray-300 text-sm space-y-3">
+				<div class="bg-blue-900/50 p-3 rounded border border-blue-800">
+					<p class="font-bold text-blue-300 mb-1">ℹ️ 操作說明</p>
+					<p>此內容由 AI 自動生成。</p>
+					<ul class="list-disc pl-4 mt-2 space-y-1 text-xs text-gray-400">
+						<li>請檢查並拖曳 <span class="text-red-400 font-bold">紅框</span> 至正確位置。</li>
+						<li>拖曳右下角可調整大小。</li>
+						<li>點擊紅框右上角 X 可刪除。</li>
+						<li>點擊圖片空白處可新增框。</li>
+					</ul>
+				</div>
+			</div>
+
+			<div class="hidden">
+				<textarea id="ve-url-input"></textarea>
+				<textarea id="ve-json-input"></textarea>
+				<input type="file" id="ve-file-upload">
+				</div>
+
+			<div class="mt-auto pt-4 border-t border-gray-600 space-y-3">
+				<button onclick="veExport()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold text-lg shadow-lg transition transform hover:scale-[1.02] flex items-center justify-center gap-2">
+					✅ 完成並匯入
 				</button>
-				<button onclick="veOpenLibraryModal()" class="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm font-bold flex items-center justify-center gap-2">
-					📂 從圖庫引用 (舊檔案)
+				<button onclick="closeVisualEditor()" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-bold transition flex items-center justify-center gap-2">
+					❌ 取消關閉
 				</button>
-				<div id="ve-upload-status" class="text-xs mt-1 text-yellow-400 min-h-[16px]"></div>
-			</div>
-
-			<div class="mb-4">
-				<label class="block text-xs text-gray-400 mb-1">圖片網址列表 (自動填入)</label>
-				<textarea id="ve-url-input" class="w-full h-20 bg-gray-700 border border-gray-600 text-white text-xs p-2 rounded" placeholder="http://..."></textarea>
-			</div>
-
-			<div class="mb-4">
-				<label class="block text-xs text-gray-400 mb-1">步驟 2: 題目 JSON (設定題號/答案)</label>
-				<textarea id="ve-json-input" class="w-full h-32 bg-gray-700 border border-gray-600 text-white text-xs p-2 rounded font-mono" placeholder='{"q1": {"label": "第一題", "answer": "A", "points":10}}'></textarea>
-				<button onclick="veLoadProject()" class="mt-2 w-full bg-orange-600 hover:bg-orange-700 text-white py-1 rounded text-sm font-bold">🔄 載入設定 & 圖片</button>
-			</div>
-
-			<div class="mt-auto pt-4 border-t border-gray-600">
-				<button onclick="veExport()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded font-bold text-lg shadow mb-2">✅ 完成並匯入</button>
-				<button onclick="closeVisualEditor()" class="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 rounded">❌ 取消關閉</button>
 			</div>
 		</div>
 
@@ -718,6 +788,357 @@
             </div>
 		</div>
 	</div>
+	<div id="ai-import-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-[70]">
+		<div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+			<div class="p-4 border-b flex justify-between items-center bg-indigo-600 rounded-t-xl text-white">
+				<h3 class="text-lg font-bold flex items-center gap-2">
+					🤖 Gemini 智慧分析精靈
+					<span class="text-xs bg-indigo-500 px-2 py-0.5 rounded border border-indigo-400">Powered by Gemini 2.5</span>
+				</h3>
+				<button onclick="closeAIImportModal()" class="text-indigo-200 hover:text-white text-2xl">&times;</button>
+			</div>
+			
+			<div class="p-6 overflow-y-auto flex-grow space-y-6">
+				
+				<div class="bg-indigo-50 border-2 border-indigo-100 rounded-xl p-5 relative overflow-hidden">
+					<div class="absolute top-0 right-0 bg-indigo-500 text-white text-[10px] px-2 py-1 rounded-bl font-bold">New!</div>
+					<div class="flex items-center gap-2 mb-3">
+						<span class="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">1</span>
+						<label class="font-bold text-indigo-900 text-lg">上傳習作檔案 (PDF / 圖片)</label>
+					</div>
+					
+					<div class="flex gap-4 items-start">
+						<div class="flex-grow">
+							<label class="flex flex-col items-center justify-center w-full h-32 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-indigo-50 transition group">
+								<div class="flex flex-col items-center justify-center pt-5 pb-6">
+									<p class="mb-2 text-2xl group-hover:scale-110 transition">📄</p>
+									<p class="text-sm text-gray-500 font-bold">點擊選擇檔案 (PDF, JPG, PNG)</p>
+									<p class="text-xs text-gray-400 mt-1">支援手寫識別與題目定位</p>
+								</div>
+								<input type="file" id="gemini-upload-file" class="hidden" accept="image/*,.pdf" onchange="previewUploadFile()">
+							</label>
+							<div id="file-info-display" class="text-xs text-center mt-2 font-bold text-indigo-600 h-4"></div>
+						</div>
+
+						<button id="btn-run-gemini" onclick="runGeminiAnalysis()" disabled class="h-32 w-32 bg-gray-300 text-white rounded-lg font-bold flex flex-col items-center justify-center gap-2 shadow-inner transition disabled:cursor-not-allowed">
+							<span class="text-2xl">✨</span>
+							<span>開始分析</span>
+						</button>
+					</div>
+					<p id="gemini-status" class="text-xs text-center mt-2 text-gray-500 min-h-[1.5em]"></p>
+				</div>
+
+				<div class="opacity-75 hover:opacity-100 transition">
+					<div class="flex items-center gap-2 mb-2">
+						<span class="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">2</span>
+						<label class="font-bold text-gray-700">分析結果 (JSON 資料)</label>
+					</div>
+					<textarea id="ai-json-input" class="w-full border-2 border-gray-200 p-3 rounded h-32 font-mono text-xs focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="等待 AI 分析中... (您也可以手動貼上)"></textarea>
+					<div class="text-right mt-1">
+						<button onclick="parseAIJsonInput()" class="text-xs bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded font-bold text-gray-700">👇 讀取 JSON 並設定底圖 (下一步)</button>
+					</div>
+				</div>
+
+				<div id="ai-image-mapping-area" class="hidden border-t pt-4">
+					<div class="flex items-center gap-2 mb-2">
+						<span class="bg-indigo-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">3</span>
+						<label class="font-bold text-gray-700">設定底圖來源</label>
+					</div>
+					<p class="text-xs text-gray-500 mb-3">AI 偵測到以下頁面，請為每一頁提供圖片網址。</p>
+					<div id="ai-pages-list" class="space-y-3"></div>
+				</div>
+			</div>
+
+			<div class="p-4 border-t bg-gray-50 text-right rounded-b-xl">
+				<button onclick="generateFromAI()" id="btn-generate-ai" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
+					🚀 合成並填入編輯器
+				</button>
+			</div>
+		</div>
+	</div>
+	
+	<div id="mode1-prompt-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-[80]">
+		<div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]">
+			
+			<div class="bg-indigo-600 p-4 rounded-t-xl text-white flex justify-between items-center shrink-0">
+				<h3 class="font-bold text-lg flex items-center gap-2">
+					✨ Mode 1: AI 創意生成
+					<span class="text-xs bg-indigo-500 border border-indigo-400 px-2 py-0.5 rounded">讀取教材 -> 自動出題</span>
+				</h3>
+				<button onclick="closeMode1Modal()" class="text-2xl hover:text-indigo-200">&times;</button>
+			</div>
+
+			<div class="p-6 overflow-y-auto space-y-5">
+				
+				<div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+					<label class="block text-indigo-900 font-bold mb-3 text-sm">1. 請提供教材內容 (AI 將根據此內容出題)</label>
+					
+					<div class="flex border-b border-indigo-200 mb-3">
+						<button onclick="switchMode1Tab('pdf')" id="btn-m1-tab-pdf" class="px-4 py-2 text-sm font-bold text-indigo-700 border-b-2 border-indigo-600 transition">📄 上傳教材</button>
+						<button onclick="switchMode1Tab('text')" id="btn-m1-tab-text" class="px-4 py-2 text-sm font-bold text-gray-500 hover:text-indigo-600 border-b-2 border-transparent transition">📝 純文字補充</button>
+					</div>
+
+					<div id="m1-content-pdf">
+						<label class="flex flex-col items-center justify-center w-full h-24 border-2 border-indigo-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-indigo-50 transition group">
+							<div class="flex flex-col items-center justify-center pt-2 pb-3">
+								<p class="mb-1 text-2xl group-hover:scale-110 transition">📂</p>
+								<p class="text-xs text-gray-500 font-bold"><span id="m1-file-name">點擊選擇 PDF / Word / PPT 教材</span></p>
+								<p class="text-[10px] text-gray-400 mt-1">支援 .pdf, .docx, .pptx</p>
+							</div>
+							<input type="file" id="m1-upload-pdf" class="hidden" 
+								   accept=".pdf,.docx,.pptx" 
+								   onchange="document.getElementById('m1-file-name').textContent = this.files[0].name">
+						</label>
+					</div>
+
+					<div id="m1-content-text" class="hidden">
+						<textarea id="m1-text-input" class="w-full h-24 border p-2 rounded text-xs focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="請貼上課文、講義內容或任何教學文字..."></textarea>
+					</div>
+				</div>
+
+				<div>
+					<div class="flex flex-wrap items-center justify-between mb-2">
+						<div class="flex items-center gap-2">
+							<label class="text-gray-700 font-bold text-sm">2. 設定題型與題數</label>
+							<span id="m1-total-display" class="text-blue-600 font-bold text-sm bg-blue-50 px-2 py-0.5 rounded border border-blue-100">(目前總分: 0)</span>
+						</div>
+						<div class="flex gap-3 text-xs bg-gray-100 p-1 rounded">
+							<label class="flex items-center gap-1 cursor-pointer px-2 py-0.5 hover:bg-white rounded transition">
+								<input type="radio" name="m1-calc-mode" value="total" checked onchange="toggleM1CalcMode()">
+								<span class="font-bold text-gray-700">題數與總分</span>
+							</label>
+							<label class="flex items-center gap-1 cursor-pointer px-2 py-0.5 hover:bg-white rounded transition">
+								<input type="radio" name="m1-calc-mode" value="per_q" onchange="toggleM1CalcMode()">
+								<span class="font-bold text-gray-700">題數與每題分數</span>
+							</label>
+						</div>
+					</div>
+
+					<div class="grid grid-cols-3 gap-4 bg-gray-50 p-3 rounded border">
+						
+						<div class="bg-white p-2 rounded border border-gray-200 shadow-sm">
+							<div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-1">
+								<span class="text-xs text-gray-800 font-bold">選擇題</span>
+								<div class="flex items-center gap-1">
+									<span class="text-[10px] text-gray-400">(總分)</span>
+									<input type="number" id="m1-choice-total-input" step="5" min="0" class="w-12 border p-0.5 rounded text-center text-xs font-bold text-blue-600 focus:ring-1 focus:ring-indigo-500" oninput="onM1InputChanged()">
+									<span id="m1-choice-total-text" class="hidden w-12 text-center text-xs font-bold text-blue-600 bg-gray-100 rounded px-1">0</span>
+								</div>
+							</div>
+							
+							<div class="flex gap-2 items-center">
+								<div class="flex-1">
+									<label class="block text-[10px] text-gray-400 text-center mb-0.5">題數</label>
+									<input type="number" id="m1-choice-count" class="w-full border p-1 rounded text-center text-sm focus:ring-1 focus:ring-indigo-500" oninput="onM1InputChanged()">
+								</div>
+								<div class="flex-1" id="m1-choice-per-wrapper">
+									<label class="block text-[10px] text-gray-400 text-center mb-0.5">每題分</label>
+									<input type="number" id="m1-choice-per-input" class="w-full border p-1 rounded text-center text-sm font-bold text-gray-700 focus:ring-1 focus:ring-indigo-500" oninput="onM1InputChanged()">
+								</div>
+							</div>
+						</div>
+
+						<div class="bg-white p-2 rounded border border-gray-200 shadow-sm">
+							<div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-1">
+								<span class="text-xs text-gray-800 font-bold">簡答/填充</span>
+								<div class="flex items-center gap-1">
+									<span class="text-[10px] text-gray-400">(總分)</span>
+									<input type="number" id="m1-text-total-input" class="w-12 border p-0.5 rounded text-center text-xs font-bold text-blue-600 focus:ring-1 focus:ring-indigo-500" oninput="onM1InputChanged()">
+									<span id="m1-text-total-text" class="hidden w-12 text-center text-xs font-bold text-blue-600 bg-gray-100 rounded px-1">0</span>
+								</div>
+							</div>
+							
+							<div class="flex gap-2 items-center">
+								<div class="flex-1">
+									<label class="block text-[10px] text-gray-400 text-center mb-0.5">題數</label>
+									<input type="number" id="m1-text-count" class="w-full border p-1 rounded text-center text-sm focus:ring-1 focus:ring-indigo-500" oninput="onM1InputChanged()">
+								</div>
+								<div class="flex-1" id="m1-text-per-wrapper">
+									<label class="block text-[10px] text-gray-400 text-center mb-0.5">每題分</label>
+									<input type="number" id="m1-text-per-input" class="w-full border p-1 rounded text-center text-sm font-bold text-gray-700 focus:ring-1 focus:ring-indigo-500" oninput="onM1InputChanged()">
+								</div>
+							</div>
+						</div>
+
+						<div class="bg-blue-50 p-2 rounded border border-blue-200 shadow-sm">
+							<div class="flex justify-between items-center mb-2 border-b border-blue-200 pb-1">
+								<span class="text-xs text-blue-800 font-bold">實作上傳</span>
+								<div class="flex items-center gap-1">
+									<span class="text-[10px] text-blue-400">(總分)</span>
+									<input type="number" id="m1-file-total-input" class="w-12 border p-0.5 rounded text-center text-xs font-bold text-blue-700 focus:ring-1 focus:ring-blue-500 bg-white" oninput="onM1InputChanged()">
+									<span id="m1-file-total-text" class="hidden w-12 text-center text-xs font-bold text-blue-700 bg-white/50 rounded px-1">0</span>
+								</div>
+							</div>
+							
+							<div class="flex gap-2 items-center">
+								<div class="flex-1">
+									<label class="block text-[10px] text-blue-400 text-center mb-0.5">題數</label>
+									<input type="number" id="m1-file-count" class="w-full border p-1 rounded text-center text-sm focus:ring-1 focus:ring-blue-500" oninput="onM1InputChanged()">
+								</div>
+								<div class="flex-1" id="m1-file-per-wrapper">
+									<label class="block text-[10px] text-blue-400 text-center mb-0.5">每題分</label>
+									<input type="number" id="m1-file-per-input" class="w-full border p-1 rounded text-center text-sm font-bold text-blue-800 bg-white focus:ring-1 focus:ring-blue-500" oninput="onM1InputChanged()">
+								</div>
+							</div>
+						</div>
+
+					</div>
+					<div class="bg-green-50 p-3 rounded-b border border-green-200 flex items-center gap-3">
+						<div class="bg-green-100 p-2 rounded-full text-lg">🌟</div>
+						<div class="flex-grow">
+							<h4 class="text-sm font-bold text-green-800">素養導向題型設定</h4>
+							<p class="text-[10px] text-green-600">系統將從上述的「選擇題」或「填充題」中，將指定數量的題目轉化為長題幹的情境素養題。</p>
+						</div>
+						<div class="flex items-center gap-2 bg-white px-3 py-1 rounded border border-green-200">
+							<label class="text-xs font-bold text-gray-700 whitespace-nowrap">內含題數:</label>
+							<input type="number" id="m1-lite-count" value="1" min="0" class="w-12 border-b-2 border-green-500 text-center font-bold outline-none text-green-700 text-sm">
+							<span class="text-xs text-gray-400">題</span>
+						</div>
+					</div>
+
+					<div class="mt-2 flex gap-4 items-center flex-wrap">
+						 <label class="flex items-center gap-2 cursor-pointer">
+							<input type="radio" name="m1-type" value="quiz" checked class="form-radio text-indigo-600" onchange="toggleM1ScoreMode('quiz')">
+							<span class="text-xs font-bold text-gray-700">測驗模式 (自動配分)</span>
+						</label>
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input type="radio" name="m1-type" value="record" class="form-radio text-indigo-600" onchange="toggleM1ScoreMode('record')">
+							<span class="text-xs font-bold text-gray-700">學習單模式 (不計分)</span>
+						</label>
+						
+						<div class="w-px h-4 bg-gray-300 mx-2"></div>
+						<label class="flex items-center gap-2 cursor-pointer">
+							<input type="checkbox" id="m1-enable-hint" class="form-checkbox text-orange-500">
+							<span class="text-xs font-bold text-orange-700">💡 生成解題提示 (Hint)</span>
+						</label>
+						
+						<div class="w-px h-4 bg-gray-300 mx-2"></div>
+						<label class="flex items-center gap-2 cursor-pointer" title="勾選後，系統將分析題目並自動生成配圖 (會增加處理時間)">
+							<input type="checkbox" id="m1-auto-image" class="form-checkbox text-pink-500">
+							<span class="text-xs font-bold text-pink-700">🎨 自動生成配圖 (Beta)</span>
+						</label>
+					</div>
+				</div>
+
+				<div id="m1-status-msg" class="text-center text-xs font-bold text-gray-400 min-h-[20px]"></div>
+
+			</div>
+
+			<div class="p-4 bg-gray-50 rounded-b-xl text-right flex justify-end gap-2 border-t">
+				<button onclick="closeMode1Modal()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded font-bold text-sm transition">取消</button>
+				<button id="btn-run-mode1" onclick="runMode1AI()" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-2 rounded font-bold text-sm shadow flex items-center gap-2 transition transform hover:scale-105">
+					<span>🚀</span> AI 立即生成學習單
+				</button>
+			</div>
+		</div>
+	</div>
+
+    <div id="mode2-guide-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden flex items-center justify-center z-[80]">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 flex flex-col max-h-[90vh]">
+            <div class="bg-orange-500 p-4 rounded-t-xl text-white flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-lg">📂 模式二：檔案數位化流程</h3>
+                <button onclick="document.getElementById('mode2-guide-modal').classList.add('hidden')" class="text-2xl hover:text-orange-200">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto space-y-6">
+                
+                <div class="bg-orange-50 p-4 rounded border-l-4 border-orange-400 text-sm space-y-2">
+                    <p class="font-bold text-orange-800">Step 1: AI 解析 (PDF/圖片)</p>
+                    <ul class="list-disc pl-5 text-orange-700 space-y-1">
+                        <li>複製下方的「專用提示語」。</li>
+                        <li>前往 <strong>Gemini / ChatGPT</strong>。</li>
+                        <li>上傳您的 <strong>PDF 習作檔或圖片</strong>，貼上提示語並發送。</li>
+                    </ul>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded border-l-4 border-blue-400 text-sm space-y-2">
+                    <p class="font-bold text-blue-800">Step 2: 格式轉換 (重要！)</p>
+                    <ul class="list-disc pl-5 text-blue-700 space-y-1">
+                        <li>AI 處理完後，請將您的 PDF 檔 <strong>轉存為圖片 (JPG/PNG)</strong>。</li>
+                        <li>(因為網頁系統背景需要圖片格式，無法直接顯示 PDF)</li>
+                        <li>小撇步：可用截圖工具或線上轉檔服務。</li>
+                    </ul>
+                </div>
+
+                <div class="bg-green-50 p-4 rounded border-l-4 border-green-400 text-sm space-y-2">
+                    <p class="font-bold text-green-800">Step 3: 匯入系統</p>
+                    <ul class="list-disc pl-5 text-green-700 space-y-1">
+                        <li>回到本系統，點擊 <strong>「🪄 開啟 AI 匯入精靈」</strong>。</li>
+                        <li>貼上 AI 給您的 JSON。</li>
+                        <li>上傳 Step 2 準備好的圖片。</li>
+                        <li>系統將自動合成學習單。</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-end mb-1">
+                        <label class="font-bold text-gray-700">👇 解析專用提示語 (含手寫/座標識別)</label>
+                        <button onclick="copyToClipboard('m2-prompt-text', this)" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded text-gray-700 transition">📋 複製</button>
+                    </div>
+                    <textarea id="m2-prompt-text" class="w-full h-32 border border-gray-300 rounded p-3 text-xs font-mono bg-gray-50 focus:ring-2 focus:ring-orange-500 outline-none" readonly>
+# 角色
+你是一位資深的資訊科學教師與前端工程師，擅長從 PDF 習作中提取評量內容，並將其轉換為「資料（JSON）」與「視覺層（HTML）」整合的格式。
+
+# 任務
+請分析上傳的 PDF 習作頁面，識別「選擇題」、「填充題」、「是非/勾選題」以及「手寫/繪圖/計算題」。
+你需要做兩件事：
+1. **資料提取**：解析題目內容與答案，轉為 JSON。
+2. **視覺佈局**：估測該題目在頁面上的「作答區域位置」，並生成對應的 HTML 標籤。
+
+# 擷取規則
+1. **題目拆解**：
+   - 含小題的題目（如 1. (1)）需拆分為獨立 Entry。
+   - 是非/勾選題若有多個選項，每個選項視為獨立的 True/False 題目。
+
+2. **題型判斷 (關鍵)**：
+   - 若題目出現「畫出」、「繪製」、「寫出計算過程」、「詳解」、「證明」、「上傳截圖」等關鍵字，請歸類為 **手寫/繪圖題 (handwriting)**。
+
+3. **ID 命名 (Strict)**：
+   - 格式：`p{頁碼}_q{大題號}_{子題號}`
+   - 例如：`p1_q2_1`。此 ID 必須同時用於 JSON Key 與 HTML 的 id 屬性。
+
+4. **位置估算 (Critical)**：
+   - 請觀察 PDF 圖像，估算該題「作答格/括號/空白處」在該頁面的**相對位置**（Top% 與 Left%）。
+   - 若是填充題，位置應為底線或括號的起始點。
+   - 若是手寫/繪圖題，位置應為該題預留空白作答區的左上角。
+
+# 輸出格式 (JSON 結構)
+請輸出一個包含兩個主要欄位的 JSON 物件：
+1. `"questions"`: 題庫資料物件。
+2. `"pages_html"`: 每一頁對應的 HTML 疊加層字串。
+
+## 1. questions 欄位規範
+Key 為 ID，Value 包含：
+- **unitId**: "page1", "page2"...
+- **label**: 題號+題目簡述。
+- **answer**: 標準答案 (若為開放式繪圖題，可填 "略" 或 "請參閱詳解")。
+- **points**: 配分 (預設 選擇4, 填充5, 是非2, 手寫/繪圖 10)。
+- **type**: "choice", "text", "true_false", "checkbox", "handwriting"。
+- **choiceNo**: 選擇題選項字串 (非選擇題留空)。
+
+## 2. pages_html 欄位規範
+Key 為 "page1", "page2"...，Value 為該頁面的 HTML 字串。
+HTML 生成規則：
+- 必須是 **純 HTML 標籤** (不含 html/head/body)。
+- 針對每個題目生成輸入元件，外層用 `&lt;div class='input-wrapper'>` 包覆。
+- **Style 屬性**：必須包含 `position: absolute; top: {Y}%; left: {X}%;` (根據你的視覺估算)。
+- **元件類型對應**：
+  - **choice (選擇題)**: 生成 `&lt;select id="...">` 包含選項 A,B,C,D...
+  - **text (填充題)**: 生成 `&lt;input type="text" id="...">`。
+  - **true_false/checkbox**: 生成 `&lt;input type="checkbox" id="...">`。
+  - **handwriting (手寫/繪圖)**: 
+    必須生成 **兩個** 元素在同一個 div 內：
+    1. `&lt;textarea id="{ID}" class="ans-input" placeholder="可輸入文字說明...">&lt;/textarea>`
+    2. `&lt;label class="file-upload-btn">📷 上傳照片&lt;input type="file" id="{ID}_file" name="{ID}_file" accept="image/*" style="display:none;">&lt;/label>`
+       *(註：請確保 file input 的 name 為 原ID + "_file"，以便系統識別為補充檔案)*
+                    </textarea>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 rounded-b-xl text-right">
+                <button onclick="document.getElementById('mode2-guide-modal').classList.add('hidden')" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded font-bold text-sm">我知道了</button>
+            </div>
+        </div>
+    </div>
+	
 	<script>
 		// ==========================================
 		// 1. MathJax & Helper Functions
@@ -1139,6 +1560,7 @@
 			});
 		}
 		
+		// 🛠️ [修改開始] editWorksheet: 編輯時展開原始碼
 		window.editWorksheet = (id) => {
 			const data = worksheetsCache[id];
 			if (!data) return alert('找不到快取資料，請嘗試重新整理頁面');
@@ -1153,6 +1575,9 @@
 
 			editingWorksheetId = id;
 
+			// ✨ 新增：編輯模式下，自動展開原始碼區塊以便查看
+			document.getElementById('source-code-area').classList.remove('hidden');
+
 			const saveBtn = document.getElementById('save-ws-btn');
 			saveBtn.textContent = '💾 更新學習單 (編輯中)';
 			saveBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
@@ -1161,6 +1586,7 @@
 			document.getElementById('tab-library').scrollIntoView({ behavior: 'smooth' });
 			alert('已載入內容！\n\n請在上方編輯區修改 HTML 或 JSON，\n完成後按橘色的「更新學習單」按鈕。');
 		};
+		// 🛠️ [修改結束]
 
 		function resetEditMode() {
 			editingWorksheetId = null;
@@ -2389,6 +2815,618 @@
 			});
 		};
 		
+		/* ============================================================
+		   🛠️ [Mode 1 重構] 全新 AI 出題邏輯整合包 (開始)
+		   包含：原始碼切換、分頁控制、視窗管理、Gemini API 串接
+		   ============================================================ */
+
+		// 1. 新增：切換原始碼顯示 (用於新增/編輯學習單頁面，隱藏/顯示 HTML & JSON)
+		window.toggleSourceCodeArea = function() {
+			const area = document.getElementById('source-code-area');
+			if (area.classList.contains('hidden')) {
+				area.classList.remove('hidden');
+			} else {
+				area.classList.add('hidden');
+			}
+		};
+
+		// 2. 新增：Mode 1 分頁切換 (切換「上傳 PDF」與「純文字貼上」)
+		window.switchMode1Tab = function(tab) {
+			const btnPdf = document.getElementById('btn-m1-tab-pdf');
+			const btnText = document.getElementById('btn-m1-tab-text');
+			const divPdf = document.getElementById('m1-content-pdf');
+			const divText = document.getElementById('m1-content-text');
+
+			if (tab === 'pdf') {
+				btnPdf.classList.add('text-indigo-700', 'border-indigo-600');
+				btnPdf.classList.remove('text-gray-500', 'border-transparent');
+				btnText.classList.add('text-gray-500', 'border-transparent');
+				btnText.classList.remove('text-indigo-700', 'border-indigo-600');
+				divPdf.classList.remove('hidden');
+				divText.classList.add('hidden');
+			} else {
+				btnText.classList.add('text-indigo-700', 'border-indigo-600');
+				btnText.classList.remove('text-gray-500', 'border-transparent');
+				btnPdf.classList.add('text-gray-500', 'border-transparent');
+				btnPdf.classList.remove('text-indigo-700', 'border-indigo-600');
+				divText.classList.remove('hidden');
+				divPdf.classList.add('hidden');
+			}
+		};
+
+		// 3. 輔助：Mode 1 切換計分模式 (測驗卷 vs 學習紀錄)
+		window.toggleM1ScoreMode = function(mode) {
+			const isQuiz = (mode === 'quiz');
+			// 鎖定或解鎖所有配分相關欄位
+			const fields = [
+				'm1-choice-total-input', 'm1-choice-per-input',
+				'm1-text-total-input', 'm1-text-per-input',
+				'm1-file-total-input', 'm1-file-per-input'
+			];
+			
+			fields.forEach(function(id) {
+				var el = document.getElementById(id);
+				if (el) {
+					el.disabled = !isQuiz;
+					if (!isQuiz) {
+						el.style.backgroundColor = '#f3f4f6'; // 灰色
+						el.style.color = '#9ca3af'; 
+						el.value = 0; // 學習單模式分數歸零
+					} else {
+						el.style.backgroundColor = ''; 
+						el.style.color = ''; 
+					}
+				}
+			});
+			// 觸發一次計算以更新總分顯示
+			if(!isQuiz) onM1InputChanged();
+		};
+
+		// ==========================================
+		// 🛠️ Mode 1: 新增配分邏輯與快取功能
+		// ==========================================
+
+		const M1_CACHE_KEY = 'm1_settings_cache_v3'; // 版本升級
+
+		// 1. 關閉視窗 (含儲存設定)
+		window.closeMode1Modal = function() {
+			saveM1Cache();
+			const modal = document.getElementById('mode1-prompt-modal');
+			modal.classList.add('hidden');
+			modal.style.removeProperty('display');
+			modal.style.removeProperty('z-index');
+		};
+
+		// 2. 開啟視窗 (含載入設定)
+		window.openMode1PromptModal = function() {
+			var modal = document.getElementById('mode1-prompt-modal');
+			if (!modal) return;
+
+			const fileIn = document.getElementById('m1-upload-pdf');
+			if(fileIn) fileIn.value = '';
+			const fileName = document.getElementById('m1-file-name');
+			if(fileName) fileName.textContent = '點擊選擇教材檔案';
+			const statusEl = document.getElementById('m1-status-msg');
+			if(statusEl) statusEl.textContent = '';
+			const runBtn = document.getElementById('btn-run-mode1');
+			if(runBtn) { runBtn.disabled = false; runBtn.innerHTML = '<span>🚀</span> AI 立即生成學習單'; }
+			
+			// 載入設定
+			loadM1Cache();
+
+			if (modal.parentElement !== document.body) { document.body.appendChild(modal); }
+			modal.classList.remove('hidden');
+			modal.style.setProperty('display', 'flex', 'important');
+			modal.style.setProperty('z-index', '2147483647', 'important');
+		};
+
+		// 3. 切換計算模式 (題數與總分 vs 題數與每題分數)
+		window.toggleM1CalcMode = function() {
+			const mode = document.querySelector('input[name="m1-calc-mode"]:checked').value;
+			const categories = ['choice', 'text', 'file'];
+			
+			categories.forEach(type => {
+				const totalInput = document.getElementById(`m1-${type}-total-input`);
+				const totalText = document.getElementById(`m1-${type}-total-text`);
+				const perWrapper = document.getElementById(`m1-${type}-per-wrapper`);
+				
+				if (mode === 'total') {
+					// 模式 A: 題數與總分
+					// 顯示標題旁的總分輸入框，隱藏下方每題分
+					if(totalInput) totalInput.classList.remove('hidden');
+					if(totalText) totalText.classList.add('hidden');
+					if(perWrapper) perWrapper.classList.add('hidden'); // 下方只剩題數
+				} else {
+					// 模式 B: 題數與每題分數
+					// 隱藏標題旁的輸入框，改顯示唯讀文字，顯示下方每題分
+					if(totalInput) totalInput.classList.add('hidden');
+					if(totalText) totalText.classList.remove('hidden');
+					if(perWrapper) perWrapper.classList.remove('hidden');
+				}
+			});
+			
+			// 重新計算 (因為切換模式可能需要重算總分或重置欄位)
+			onM1InputChanged();
+		};
+
+		// 4. 輸入變更事件 (連動計算)
+		window.onM1InputChanged = function() {
+			const mode = document.querySelector('input[name="m1-calc-mode"]:checked').value;
+			const isQuiz = document.querySelector('input[name="m1-type"][value="quiz"]').checked;
+			const categories = ['choice', 'text', 'file'];
+			let grandTotal = 0;
+
+			categories.forEach(type => {
+				const countEl = document.getElementById(`m1-${type}-count`);
+				const totalInputEl = document.getElementById(`m1-${type}-total-input`);
+				const totalTextEl = document.getElementById(`m1-${type}-total-text`);
+				const perInputEl = document.getElementById(`m1-${type}-per-input`);
+				
+				let count = parseInt(countEl.value) || 0;
+				if (count < 0) { count = 0; countEl.value = 0; }
+
+				let subTotal = 0;
+
+				if (mode === 'total') {
+					// 模式 A: 讀取總分輸入框
+					// 需求：如果用總分出題，當大題題數變為0時，大題總分要自動變成0
+					subTotal = parseInt(totalInputEl.value) || 0;
+					if (subTotal < 0) { subTotal = 0; totalInputEl.value = 0; }
+					
+					if (count === 0 && subTotal > 0) {
+						subTotal = 0;
+						totalInputEl.value = 0;
+					}
+				} else {
+					// 模式 B: 讀取每題分，計算總分
+					let per = parseInt(perInputEl.value) || 0;
+					if (per < 0) { per = 0; perInputEl.value = 0; }
+					
+					subTotal = count * per;
+					// 更新顯示文字
+					if(totalTextEl) totalTextEl.textContent = subTotal;
+				}
+
+				if (isQuiz) {
+					grandTotal += subTotal;
+				}
+			});
+
+			document.getElementById('m1-total-display').textContent = `(目前總分: ${grandTotal})`;
+			saveM1Cache();
+		};
+
+		// 5. 儲存設定 (加入 liteCnt)
+		function saveM1Cache() {
+			const settings = {
+				mode: document.querySelector('input[name="m1-calc-mode"]:checked').value,
+				
+				choiceCnt: document.getElementById('m1-choice-count').value,
+				choiceTotal: document.getElementById('m1-choice-total-input').value,
+				choicePer: document.getElementById('m1-choice-per-input').value,
+				
+				textCnt: document.getElementById('m1-text-count').value,
+				textTotal: document.getElementById('m1-text-total-input').value,
+				textPer: document.getElementById('m1-text-per-input').value,
+				
+				// ✨ 素養題數 (內含)
+				liteCnt: document.getElementById('m1-lite-count').value,
+				
+				fileCnt: document.getElementById('m1-file-count').value,
+				fileTotal: document.getElementById('m1-file-total-input').value,
+				filePer: document.getElementById('m1-file-per-input').value,
+				
+				enableHint: document.getElementById('m1-enable-hint').checked,
+				scoreType: document.querySelector('input[name="m1-type"]:checked').value
+			};
+			localStorage.setItem(M1_CACHE_KEY, JSON.stringify(settings));
+		}
+
+		// 6. 載入設定 (加入 liteCnt 預設值)
+		function loadM1Cache() {
+			const cache = localStorage.getItem(M1_CACHE_KEY);
+			
+			// 預設值
+			let s = {
+				mode: 'per_q',
+				choiceCnt: 10, choiceTotal: 50, choicePer: 5,
+				textCnt: 8, textTotal: 40, textPer: 5,
+				liteCnt: 1, // ✨ 預設 1 題素養題
+				fileCnt: 0, fileTotal: 0, filePer: 10,
+				enableHint: false, scoreType: 'quiz'
+			};
+
+			if (cache) {
+				try { s = { ...s, ...JSON.parse(cache) }; } catch(e) {}
+			}
+
+			// 回填 UI
+			const modeRadio = document.querySelector(`input[name="m1-calc-mode"][value="${s.mode}"]`);
+			if (modeRadio) modeRadio.checked = true;
+			
+			document.getElementById('m1-choice-count').value = s.choiceCnt;
+			document.getElementById('m1-choice-total-input').value = s.choiceTotal;
+			document.getElementById('m1-choice-per-input').value = s.choicePer;
+
+			document.getElementById('m1-text-count').value = s.textCnt;
+			document.getElementById('m1-text-total-input').value = s.textTotal;
+			document.getElementById('m1-text-per-input').value = s.textPer;
+
+			// ✨ 回填素養題數
+			if(document.getElementById('m1-lite-count')) {
+				document.getElementById('m1-lite-count').value = s.liteCnt;
+			}
+
+			document.getElementById('m1-file-count').value = s.fileCnt;
+			document.getElementById('m1-file-total-input').value = s.fileTotal;
+			document.getElementById('m1-file-per-input').value = s.filePer;
+
+			document.getElementById('m1-enable-hint').checked = s.enableHint;
+			
+			const typeRadio = document.querySelector(`input[name="m1-type"][value="${s.scoreType}"]`);
+			if (typeRadio) typeRadio.checked = true;
+
+			// 這裡我們不需要改 toggleM1CalcMode，因為我們沒有新增欄位，只是新增一個屬性輸入框
+			toggleM1CalcMode();
+			toggleM1ScoreMode(s.scoreType);
+			onM1InputChanged();
+		}
+
+		// 🛠️ [修正版] runMode1AI: 修正圖片尺寸 (1/4) 與 素描風格 (黑白線條)
+		window.runMode1AI = async function() {
+			if (!window.GenAI) return alert("錯誤：Gemini SDK 未載入");
+			
+			saveM1Cache(); 
+
+			// A. 取得設定參數
+			const scoreMode = document.querySelector('input[name="m1-type"]:checked').value;
+			const calcMode = document.querySelector('input[name="m1-calc-mode"]:checked').value;
+			const enableHint = document.getElementById('m1-enable-hint').checked;
+			const enableAutoImage = document.getElementById('m1-auto-image').checked;
+			
+			// ... (取得題數與配分變數，維持原樣) ...
+			const choiceCnt = parseInt(document.getElementById('m1-choice-count').value) || 0;
+			const textCnt = parseInt(document.getElementById('m1-text-count').value) || 0;
+			const fileCnt = parseInt(document.getElementById('m1-file-count').value) || 0;
+			
+			// ✨ 取得素養題數
+			const liteCnt = parseInt(document.getElementById('m1-lite-count').value) || 0;
+			
+			const choiceTotalVal = parseInt(document.getElementById('m1-choice-total-input').value) || 0;
+			const choicePerVal   = parseInt(document.getElementById('m1-choice-per-input').value) || 0;
+			const textTotalVal   = parseInt(document.getElementById('m1-text-total-input').value) || 0;
+			const textPerVal     = parseInt(document.getElementById('m1-text-per-input').value) || 0;
+			const fileTotalVal   = parseInt(document.getElementById('m1-file-total-input').value) || 0;
+			const filePerVal     = parseInt(document.getElementById('m1-file-per-input').value) || 0;
+
+			// B. 組裝配分描述
+			let descChoice = "", descText = "", descFile = "";
+			if (scoreMode === 'record') {
+				descChoice = "不計分"; descText = "不計分"; descFile = "不計分";
+			} else {
+				if (calcMode === 'total') {
+					descChoice = `總配分 ${choiceTotalVal} 分`; descText = `總配分 ${textTotalVal} 分`; descFile = `總配分 ${fileTotalVal} 分`;
+				} else {
+					descChoice = `每題 ${choicePerVal} 分`; descText = `每題 ${textPerVal} 分`; descFile = `每題 ${filePerVal} 分`;
+				}
+			}
+
+			let aiParts = [];
+			const statusEl = document.getElementById('m1-status-msg');
+			const runBtn = document.getElementById('btn-run-mode1');
+			const originalBtnHtml = runBtn.innerHTML;
+
+			runBtn.disabled = true;
+			runBtn.innerHTML = '<span class="animate-spin text-lg">↻</span> AI 正在設計題目...';
+
+			try {
+				// C. 準備教材內容 (維持原樣)
+				const isFileMode = !document.getElementById('m1-content-pdf').classList.contains('hidden');
+				if (isFileMode) {
+					const fileInput = document.getElementById('m1-upload-pdf');
+					if (fileInput.files.length === 0) throw new Error("請先上傳教材檔案");
+					const file = fileInput.files[0];
+					const lowerName = file.name.toLowerCase();
+					const arrayBuffer = await file.arrayBuffer();
+					statusEl.textContent = `📖 正在讀取檔案: ${file.name}...`;
+
+					if (lowerName.endsWith('.pdf')) {
+						const base64Data = await fileToBase64(file);
+						aiParts.push({ inlineData: { data: base64Data, mimeType: "application/pdf" } });
+					} else if (lowerName.endsWith('.docx')) {
+						const text = await extractTextFromDocx(arrayBuffer);
+						aiParts.push({ text: "教材(Word)：\n" + text });
+					} else if (lowerName.endsWith('.pptx')) {
+						const text = await extractTextFromPptx(arrayBuffer);
+						aiParts.push({ text: "教材(PPT)：\n" + text });
+					}
+				} else {
+					const textVal = document.getElementById('m1-text-input').value.trim();
+					aiParts.push({ text: "教材內容：\n" + textVal });
+				}
+
+				statusEl.textContent = "🧠 AI 正在構思題目與視覺畫面...";
+				
+				const hintInstruction = enableHint 
+					? `- [重要] 每個題目必須包含 "hint" 欄位。HTML 中生成提示按鈕。`
+					: `- 不要在 HTML 中生成提示按鈕。`;
+
+				const forceImageInstruction = enableAutoImage 
+					? `\n⚠️⚠️【強制配圖指令】使用者已開啟「自動配圖模式」。請務必將30%以上題目設計為「看圖回答」。請在 JSON 生成 "image_prompt" 並在 HTML 插入 img 標籤。⚠️⚠️\n`
+					: "";
+
+				// 🟢🟢🟢 修改 System Prompt：縮小尺寸 + 素描風格 🟢🟢🟢
+				let systemPrompt = `
+					你是一位專業教師。請根據教材設計 HTML5 互動學習單。
+
+					【出題與配分】
+					1. 選擇題：${choiceCnt} 題，${descChoice}。
+					2. 簡答/填充：${textCnt} 題，${descText}。
+					3. 實作上傳：${fileCnt} 題，${descFile}。
+					${scoreMode==='quiz' ? '' : '(練習模式，分數設為 0)。'}
+					${forceImageInstruction}
+
+					【🌟 素養題指令 (重要)】
+					**在上述 ${choiceCnt + textCnt} 題選擇與填充題中，請務必將其中 ${liteCnt} 題設計為「素養導向試題」。**
+					- **分佈**：請隨機挑選題號（可為選擇題或簡答題），將其改寫為素養題。
+					- **內容**：必須包含真實情境、數據判讀、跨領域應用或解決問題的過程。避免單純的名詞解釋。
+					- **標示**：請在該題目的 \`label\` 開頭加上 \`[素養]\` 標籤 (例如："[素養] 小明在實驗中發現...")。
+		
+					【✨ 排版規範 (保留)】
+					1. 選擇題選項編號用括弧括起來，內容依序為 radio button+編號粗體+留白+選項文字
+					2. 大題文字放大粗體、編號(一、二)、不分頁。
+					3. 題目與選項間距配置，不使用自動編號。
+					4. 題目後緊接括弧顯示分數。
+					5. ** 填充題空格位置直接使用HTML輸入元素並加框線，不要顯示底線留空。 **
+					6. 選項與題目間不空行，選項後加三個中文空白, 各選項相連，不要跳行
+					7. 各題間要空一行
+					8. 識別教材中的圖片/圖表並設計入題。
+					9. 不用生成顯示學習單標題，從大題開始顯示即可
+					10. **素養題**若題幹較長，請適當使用 \`<br>\` 換行，使其易於閱讀。
+					11. 絕對不能使用簡體字
+					12. 圖形題的圖形要置於題目下方，而且在圖的右邊要顯示圖的編號，例如圖(一)，而且在題目內參考圖的時候要將圖的編號也寫出來，例如：見下圖(一)
+
+					【✨ 圖片與繪圖規範 (CRITICAL UPDATE)】
+					1. **SVG (首選)**：簡單幾何/圖表請直接寫 <svg>。
+					2. **AI 生成圖 (Image Generation)**：
+					   - 若需要情境圖，請在 HTML 插入：
+						 \`<img id="img_{ID}" src="https://placehold.co/300x300?text=Generating..." class="ai-generated-img block mx-auto my-2 rounded shadow" style="max-width: 250px; width: auto;">\`
+					   - **(重點 1: 尺寸)** style 必須包含 \`max-width: 250px;\` (約版面 1/4)，避免圖片過大。
+					   - **(重點 2: 風格)** 在 JSON 的 \`"image_prompt"\` 欄位中，描述必須包含：
+						 "black and white line art sketch, simple clean lines, pure white background"
+						 (黑色線條、標示清楚、純白背景、無複雜陰影、教科書插圖風格)。
+
+					【輸出格式規範】
+					分開輸出 HTML 與 JSON。
+
+					\`\`\`html
+					<div class="p-4 space-y-4">
+					   <div>
+						  <img id="img_u1_q1" src="..." style="max-width: 250px; display:block; margin: 10px auto;">
+						  1. 請觀察上圖... (4分)
+					   </div>
+					</div>
+					\`\`\`
+
+					\`\`\`json
+					{
+					   "u1_q1": {
+						   "label": "1. ...",
+						   "answer": "A",
+						   "points": 4,
+						   "type": "choice",
+						   "image_prompt": "A simple black and white line art sketch of a microscope, pure white background." 
+					   }
+					}
+					\`\`\`
+					${hintInstruction}
+				`;
+
+				aiParts.push({ text: systemPrompt });
+
+				// E. 呼叫 Gemini
+				const genAI = new window.GenAI(GEMINI_API_KEY);
+				const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+				const result = await model.generateContent(aiParts);
+				const text = await result.response.text();
+
+				// F. 解析
+				let htmlContent = "", jsonContent = "{}";
+				const htmlMatch = text.match(/```html\s*([\s\S]*?)\s*```/i);
+				if (htmlMatch) htmlContent = htmlMatch[1].trim();
+				else if (text.includes("<div")) htmlContent = text.substring(text.indexOf("<div"), text.lastIndexOf("</div>")+6);
+
+				const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/i);
+				if (jsonMatch) jsonContent = jsonMatch[1].trim();
+				else { const s = text.indexOf('{'), e = text.lastIndexOf('}'); if(s!==-1 && e!==-1) jsonContent = text.substring(s, e+1); }
+
+				let answerKey = {};
+				try { answerKey = JSON.parse(jsonContent); } catch (e) { console.error(e); }
+				if (!htmlContent) throw new Error("AI 未回傳 HTML");
+
+				// G. 圖片生成迴圈
+				const questionsWithImg = Object.entries(answerKey).filter(([_, data]) => data.image_prompt);
+				const totalImages = questionsWithImg.length;
+				
+				if (totalImages > 0) {
+					statusEl.textContent = `🎨 準備繪製 ${totalImages} 張插圖...`;
+					const tempDiv = document.createElement('div');
+					tempDiv.innerHTML = htmlContent;
+					let completedCount = 0;
+
+					const imgPromises = questionsWithImg.map(async ([qId, data]) => {
+						try {
+							// 呼叫 API (會強制疊加素描 Prompt)
+							const imageUrl = await realGenerateImageAPI(data.image_prompt);
+							
+							completedCount++;
+							statusEl.textContent = `🎨 正在繪製第 ${completedCount} / ${totalImages} 張...`;
+							
+							const imgTag = tempDiv.querySelector(`img[id="img_${qId}"]`);
+							if (imgTag) {
+								imgTag.src = imageUrl;
+								// 強制確保尺寸樣式 (以防 AI 忘記寫 style)
+								imgTag.style.maxWidth = '250px';
+								imgTag.style.display = 'block';
+								imgTag.style.margin = '10px auto';
+								data.generated_image = imageUrl;
+							}
+						} catch (err) {
+							console.error(`圖片生成失敗 (${qId}):`, err);
+							completedCount++;
+						}
+					});
+
+					await Promise.all(imgPromises);
+					htmlContent = tempDiv.innerHTML;
+				}
+
+				// H. 填入結果
+				document.getElementById('ws-html').value = htmlContent;
+				document.getElementById('ws-json').value = JSON.stringify(answerKey, null, 4);
+				
+				let fileName = "AI 生成學習單";
+				if(isFileMode && document.getElementById('m1-upload-pdf').files[0]) 
+					 fileName = document.getElementById('m1-upload-pdf').files[0].name.split('.')[0];
+				document.getElementById('ws-title').value = fileName;
+				document.getElementById('source-code-area').classList.remove('hidden');
+				closeMode1Modal();
+				document.getElementById('preview-btn').click();
+				
+				if (window.MathJax) window.MathJax.typesetPromise([document.getElementById('preview-content')]);
+				
+				let msg = `🎉 完成！共 ${Object.keys(answerKey).length} 題。`;
+				if (totalImages > 0) msg += `\n(已生成 ${totalImages} 張素描配圖)`;
+				alert(msg);
+
+			} catch (e) {
+				console.error(e);
+				statusEl.textContent = "❌ 錯誤: " + e.message;
+				alert("生成失敗: " + e.message);
+			} finally {
+				runBtn.disabled = false;
+				runBtn.innerHTML = originalBtnHtml;
+			}
+		};
+
+		// 🛠️ [微調版] realGenerateImageAPI: 強制疊加素描風格 Prompt
+		async function realGenerateImageAPI(prompt) {
+			const API_KEY = "AIzaSyApaFU-uDxigWjDzGEJ5cY5qsJ5oFtXxaE";
+			const MODEL_NAME = "imagen-4.0-generate-preview-06-06";
+			const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:predict?key=${API_KEY}`;
+
+			// 🟢 強制添加風格關鍵字，確保一定是黑白素描
+			const styleSuffix = ", black and white pencil sketch, line art, pure white background, minimal style, high contrast, no colors";
+			const finalPrompt = prompt + styleSuffix;
+
+			const payload = {
+				instances: [{ prompt: finalPrompt }],
+				parameters: { sampleCount: 1, aspectRatio: "1:1", outputFormat: "image/png" }
+			};
+
+			try {
+				console.log(`🚀 繪圖 Prompt: ${finalPrompt}`);
+				const response = await fetch(url, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(payload)
+				});
+
+				if (!response.ok) throw new Error(`API 錯誤 (${response.status})`);
+				const result = await response.json();
+
+				if (result.predictions && result.predictions.length > 0) {
+					const b64Image = result.predictions[0].bytesBase64Encoded;
+					return `data:image/png;base64,${b64Image}`;
+				} else {
+					throw new Error("No image data");
+				}
+			} catch (error) {
+				console.error("圖片生成失敗:", error);
+				return `https://placehold.co/250x250?text=Error`;
+			}
+		}
+			
+		// 1. 輔助：解析 DOCX 文字 (Mammoth) - 因為 API 不吃 DOCX，所以必須轉
+		async function extractTextFromDocx(arrayBuffer) {
+			if (!window.mammoth) throw new Error("Mammoth library not loaded");
+			const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+			return result.value; 
+		}
+
+		// 2. 輔助：解析 PPTX 文字 (JSZip) - 因為 API 不吃 PPTX，所以必須轉
+		async function extractTextFromPptx(arrayBuffer) {
+			if (!window.JSZip) throw new Error("JSZip library not loaded");
+			const zip = await JSZip.loadAsync(arrayBuffer);
+			const slideFiles = Object.keys(zip.files).filter(name => name.match(/^ppt\/slides\/slide\d+\.xml$/));
+			
+			// 排序投影片
+			slideFiles.sort((a, b) => {
+				const numA = parseInt(a.match(/slide(\d+)\.xml/)[1]);
+				const numB = parseInt(b.match(/slide(\d+)\.xml/)[1]);
+				return numA - numB;
+			});
+
+			let fullText = "";
+			for (const filename of slideFiles) {
+				const str = await zip.file(filename).async("string");
+				const parser = new DOMParser();
+				const xmlDoc = parser.parseFromString(str, "text/xml");
+				const texts = xmlDoc.getElementsByTagName("a:t");
+				let slideText = "";
+				for (let i = 0; i < texts.length; i++) {
+					slideText += texts[i].textContent + " ";
+				}
+				if (slideText.trim()) fullText += slideText + "\n";
+			}
+			return fullText;
+		}
+
+		// 3. 輔助：檔案轉 Base64 (給 PDF 用)
+		function fileToBase64(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result.split(',')[1]);
+				reader.onerror = error => reject(error);
+				reader.readAsDataURL(file);
+			});
+		}
+
+		window.openMode2GuideModal = function() {
+			var modal = document.getElementById('mode2-guide-modal');
+			if (!modal) return;
+
+			// 1. 強制移到 Body 最尾端
+			if (modal.parentElement !== document.body) {
+				document.body.appendChild(modal);
+			}
+
+			// 2. 強制顯示並設定最高層級
+			modal.classList.remove('hidden');
+			modal.style.setProperty('display', 'flex', 'important');
+			modal.style.setProperty('z-index', '2147483647', 'important');
+
+			// 定義共用的關閉動作 (移除強制樣式)
+			var closeModal = function() {
+				modal.classList.add('hidden');
+				modal.style.removeProperty('display');
+				modal.style.removeProperty('z-index');
+			};
+
+			// 3. 重新綁定「右上角 X」按鈕
+			var closeBtn = modal.querySelector('button.text-2xl');
+			if (closeBtn) {
+				closeBtn.onclick = closeModal;
+			}
+
+			// 4. [新增] 重新綁定底部「我知道了」按鈕
+			// 透過其父容器的 class (.rounded-b-xl) 來精準找到它
+			var okBtn = modal.querySelector('.rounded-b-xl button');
+			if (okBtn) {
+				okBtn.onclick = closeModal;
+			}
+		};
+		
 		window.confirmGradingExit = () => {
 			const rightPanel = document.getElementById('grading-right-panel');
 			if (rightPanel.classList.contains('hidden')) {
@@ -2731,6 +3769,7 @@
 					label: qData.label || qid,
 					statusHtml: statusIcon,
 					answerRaw: studentAns[qid],
+					correctAnswer: qData.answer,
 					displayNum: qCounter++, // 這裡的數字會依照上面的 sortedQIDs 順序產生
 					sortNum: 999 
 				});
@@ -2813,6 +3852,15 @@
 						
 						// 對錯 Icon
 						html += `<td class="p-2 text-center">${q.statusHtml}</td>`;
+
+						let correctDisp = q.correctAnswer;
+						if (correctDisp === undefined || correctDisp === null || String(correctDisp).trim() === '') {
+							correctDisp = '<span class="text-gray-300 text-xs">-</span>'; // 若無標準答案顯示橫線
+						} else {
+							// 簡單處理：若是長文字或特殊格式，可視需求調整樣式
+							correctDisp = `<span class="text-green-700 font-bold font-mono bg-green-50 px-1 rounded">${correctDisp}</span>`;
+						}
+						html += `<td class="p-2 text-sm border-l border-dashed border-gray-200">${correctDisp}</td>`;
 						
 						let displayAns = q.answerRaw;
 						if (displayAns === undefined || displayAns === null || displayAns === '') {
@@ -2838,13 +3886,13 @@
 		}
 		
 
-		/* 🛠️ 修改 JS：強化版檔案管理分析 */
+		// 🛠️ 修改 JS：強化版檔案管理分析 (新增：幽靈檔案排在最上方)
 		async function loadStorageAnalysis() {
 			// 1. 初始化介面
 			const tbodyUploads = document.getElementById('storage-uploads-body');
 			const tbodyResources = document.getElementById('storage-resources-body');
 			
-			const loadingHtml = '<tr><td colspan="3" class="p-8 text-center"><div class="animate-spin inline-block w-6 h-6 border-4 border-purple-500 rounded-full border-t-transparent"></div><span class="ml-2 text-gray-500 font-bold">掃描分析中...</span></td></tr>';
+			const loadingHtml = '<tr><td colspan="4" class="p-8 text-center"><div class="animate-spin inline-block w-6 h-6 border-4 border-purple-500 rounded-full border-t-transparent"></div><span class="ml-2 text-gray-500 font-bold">掃描並排序中...</span></td></tr>';
 			tbodyUploads.innerHTML = loadingHtml;
 			tbodyResources.innerHTML = loadingHtml;
 
@@ -2861,28 +3909,47 @@
 					const activeIds = new Set();
 					assignSnap.forEach(doc => activeIds.add(doc.id));
 
-					let html = '';
 					if (folders.length === 0) {
-						html = '<tr><td colspan="3" class="p-4 text-center text-gray-400">無學生作業檔案</td></tr>';
-					} else {
-						folders.forEach(folderRef => {
-							const fid = folderRef.name;
-							const isActive = activeIds.has(fid);
-							const statusBadge = isActive 
-								? '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 border border-green-200">✅ 正常使用</span>'
-								: '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700 border border-red-200">👻 幽靈資料夾</span>';
-							
-							const actionBtn = isActive
-								? '<span class="text-gray-300 text-xs">--</span>'
-								: `<button onclick="deleteStorageFolder('${folderRef.fullPath}', this)" class="text-red-600 hover:bg-red-50 border border-red-200 px-3 py-1 rounded text-xs transition">🗑️ 刪除</button>`;
-
-							html += `<tr class="hover:bg-gray-50">
-								<td class="p-3 font-mono text-gray-600">${fid}</td>
-								<td class="p-3">${statusBadge}</td>
-								<td class="p-3 text-center">${actionBtn}</td>
-							</tr>`;
-						});
+						return '<tr><td colspan="3" class="p-4 text-center text-gray-400">無學生作業檔案</td></tr>';
 					}
+
+					// 1. 建立資料陣列
+					const folderData = folders.map(folderRef => {
+						const fid = folderRef.name;
+						const isActive = activeIds.has(fid);
+						return { folderRef, fid, isActive };
+					});
+
+					// 2. 排序：幽靈檔案 (isActive=false) 排前面，同類別則依 ID 排序
+					folderData.sort((a, b) => {
+						if (a.isActive !== b.isActive) {
+							return a.isActive ? 1 : -1; // isActive=true (1) 排在後，false (-1) 排在前
+						}
+						return a.fid.localeCompare(b.fid);
+					});
+
+					// 3. 產生 HTML
+					let html = '';
+					folderData.forEach(item => {
+						const { folderRef, fid, isActive } = item;
+						
+						const statusBadge = isActive 
+							? '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700 border border-green-200">✅ 正常使用</span>'
+							: '<span class="px-2 py-0.5 rounded text-xs bg-orange-100 text-orange-700 border border-orange-200 font-bold">⚠️ 未關連資料夾</span>';						// 幽靈資料夾顯示淡紅色背景，更明顯
+						//const rowClass = isActive ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100';
+						const rowClass = isActive ? 'hover:bg-gray-50' : 'bg-orange-50 hover:bg-orange-100';
+
+						const actionBtn = isActive
+							? '<span class="text-gray-300 text-xs">--</span>'
+							: `<button onclick="deleteStorageFolder('${folderRef.fullPath}', this)" class="text-red-600 hover:bg-red-50 border border-red-200 px-3 py-1 rounded text-xs transition bg-white shadow-sm font-bold">🗑️ 刪除</button>`;
+
+						html += `<tr class="${rowClass} transition border-b border-gray-100">
+							<td class="p-3 font-mono text-gray-600">${fid}</td>
+							<td class="p-3">${statusBadge}</td>
+							<td class="p-3 text-center">${actionBtn}</td>
+						</tr>`;
+					});
+					
 					return html;
 				})();
 
@@ -2891,7 +3958,7 @@
 				// ===========================================
 				const resourcesPromise = (async () => {
 					// 重置批量按鈕狀態
-					updateBatchBtnUI(0);
+					if(window.updateBatchBtnUI) updateBatchBtnUI(0);
 					if(document.getElementById('res-master-chk')) document.getElementById('res-master-chk').checked = false;
 
 					// B-1. 取得所有 HTML
@@ -2906,37 +3973,52 @@
 
 					if (resList.items.length === 0) return '<tr><td colspan="4" class="p-4 text-center text-gray-400">目前沒有素材圖片</td></tr>';
 
-					// B-3. 比對與產生列表 (緊湊版)
+					// B-3. 建立資料陣列並計算狀態
+					const resourceData = resList.items.map(itemRef => {
+						const filename = itemRef.name;
+						// 檢查是否被引用
+						const isUsed = allHtmlContent.includes(encodeURIComponent(filename)) || allHtmlContent.includes(filename);
+						return { itemRef, filename, isUsed };
+					});
+
+					// B-4. 排序：幽靈檔案 (isUsed=false) 排前面，同類別則依時間(檔名)倒序
+					resourceData.sort((a, b) => {
+						if (a.isUsed !== b.isUsed) {
+							return a.isUsed ? 1 : -1; // isUsed=true (1) 排在後，false (-1) 排在前
+						}
+						// 如果狀態相同，依檔名(時間)倒序，新的在上面
+						return b.filename.localeCompare(a.filename);
+					});
+
+					// B-5. 產生列表
 					let html = '';
 					
-					// 依時間排序 (新到舊) - 雖然 storage list 不保證順序，但我們盡量依檔名排序
-					resList.items.sort((a, b) => b.name.localeCompare(a.name));
-
-					for (const itemRef of resList.items) {
-						const filename = itemRef.name;
-						const isUsed = allHtmlContent.includes(encodeURIComponent(filename)) || allHtmlContent.includes(filename);
+					resourceData.forEach(item => {
+						const { itemRef, filename, isUsed } = item;
 						
-						// 狀態標籤 (更小)
+						// 狀態標籤
 						const statusBadge = isUsed
 							? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-green-50 text-green-700 border border-green-200 whitespace-nowrap">✅ 引用中</span>'
-							: '<span class="px-1.5 py-0.5 rounded text-[10px] bg-red-50 text-red-600 border border-red-200 font-bold whitespace-nowrap">👻 幽靈</span>';
-
-						// Checkbox: 只有「幽靈圖片」才顯示 Checkbox，避免誤刪
+							: '<span class="px-1.5 py-0.5 rounded text-[10px] bg-gray-100 text-gray-500 border border-gray-300 font-bold whitespace-nowrap">⛔ 未使用</span>';
+						// Checkbox: 只有「幽靈圖片」才顯示 Checkbox
 						const checkboxHtml = !isUsed 
 							? `<input type="checkbox" class="res-chk cursor-pointer" value="${itemRef.fullPath}" onchange="updateBatchBtnUI()">`
 							: `<input type="checkbox" disabled class="opacity-20 cursor-not-allowed">`;
 
-						// 操作按鈕 (單一刪除)
+						// 操作按鈕
 						const actionBtn = isUsed
 							? `<button onclick="previewResourceImage('${itemRef.fullPath}')" class="text-blue-600 hover:text-blue-800">🔍</button>`
 							: `<div class="flex items-center justify-center gap-3">
 								<button onclick="previewResourceImage('${itemRef.fullPath}')" class="text-blue-500 hover:text-blue-700" title="預覽">🔍</button>
 								<button onclick="deleteResourceFile('${itemRef.fullPath}', this)" class="text-red-500 hover:text-red-700 font-bold" title="刪除">✕</button>
 							   </div>`;
+						
+						// 幽靈檔案給予淡紅色背景，方便辨識
+						// const rowClass = isUsed ? 'hover:bg-gray-50' : 'bg-red-50 hover:bg-red-100';
+						const rowClass = isUsed ? 'hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100';
 
-						// 🌟 這裡控制行高：使用 py-2 (原本是 p-3)
-						html += `<tr class="hover:bg-gray-50 transition group border-b border-gray-50">
-							<td class="py-2 px-2 text-center bg-gray-50/50">${checkboxHtml}</td>
+						html += `<tr class="${rowClass} transition group border-b border-gray-50">
+							<td class="py-2 px-2 text-center">${checkboxHtml}</td>
 							<td class="py-2 px-2">
 								<div class="flex items-center gap-2 overflow-hidden">
 									<span class="text-gray-600 font-medium truncate w-64" title="${filename}">${filename}</span>
@@ -2945,7 +4027,8 @@
 							<td class="py-2 px-2 text-gray-500">${statusBadge}</td>
 							<td class="py-2 px-2 text-center">${actionBtn}</td>
 						</tr>`;
-					}
+					});
+					
 					return html;
 				})();
 
@@ -2957,7 +4040,7 @@
 
 			} catch (e) {
 				console.error(e);
-				const errHtml = `<tr><td colspan="3" class="p-4 text-center text-red-500">掃描失敗: ${e.message}</td></tr>`;
+				const errHtml = `<tr><td colspan="4" class="p-4 text-center text-red-500">掃描失敗: ${e.message}</td></tr>`;
 				tbodyUploads.innerHTML = errHtml;
 				tbodyResources.innerHTML = errHtml;
 			}
@@ -3045,16 +4128,17 @@
 		let veCurrentPage = 0; let veClickPos = {x:0, y:0};
 		let currentEditingProjectState = null; // 儲存專案狀態
 
+		// 修正版：開啟視覺化編輯器 (強化資料載入)
 		function openVisualEditor() {
 			const modal = document.getElementById('visual-editor-modal');
 			if (!modal) { alert("錯誤：找不到視窗元素"); return; }
 
-			// 1. 強制搬家與樣式設定 (這部分保持上次修正的樣子)
+			// 1. 顯示視窗 (樣式設定)
 			if (modal.parentElement !== document.body) { document.body.appendChild(modal); }
 			modal.removeAttribute('style');
 			modal.classList.remove('hidden');
 			
-			// 強制全螢幕樣式
+			// 強制設定樣式確保可見
 			modal.style.setProperty('display', 'flex', 'important');
 			modal.style.setProperty('flex-direction', 'row', 'important');
 			modal.style.setProperty('position', 'fixed', 'important');
@@ -3062,37 +4146,44 @@
 			modal.style.setProperty('left', '0', 'important');
 			modal.style.setProperty('width', '100vw', 'important');
 			modal.style.setProperty('height', '100vh', 'important');
-			modal.style.setProperty('z-index', '2147483647', 'important');
+			modal.style.setProperty('z-index', '10000000', 'important');
 			modal.style.setProperty('background-color', '#111827', 'important');
-			modal.style.setProperty('overflow', 'hidden', 'important');
-
-			// ============================================================
-			// 🧠 智慧判斷邏輯 (解決您提到的問題)
-			// ============================================================
 			
-			// 檢查 1: 如果現在正在編輯某個學習單 (從列表點擊「編輯」)，優先載入該學習單的進度
+			// 2. 核心修正：檢查並強制注入資料
+			// 如果全域變數 currentEditingProjectState 有資料 (來自 AI 或編輯模式)
 			if (typeof currentEditingProjectState !== 'undefined' && currentEditingProjectState) {
-				// ... (原本的自動載入邏輯) ...
+				console.log("🔄 [VisualEditor] 偵測到專案資料，正在載入...", currentEditingProjectState);
+
 				try {
-					document.getElementById('ve-url-input').value = currentEditingProjectState.urls.join('\n');
-					const mainJson = document.getElementById('ws-json').value;
-					document.getElementById('ve-json-input').value = mainJson || JSON.stringify(currentEditingProjectState.jsonData, null, 4);
-					veMarkersData = JSON.parse(JSON.stringify(currentEditingProjectState.markers));
-					veLoadProject(true); // 載入並重繪
-				} catch(e) { console.warn("載入失敗", e); }
-				
-			} else {
-				// 檢查 2: 如果不是編輯舊檔，檢查「記憶體中」是否已經有圖片資料？ (即剛剛按取消離開的情況)
-				if (vePages && vePages.length > 0) {
-					console.log("🔄 偵測到上次未完成的編輯階段，自動恢復...");
-					// 不需要做任何事，畫面會維持上次關閉前的樣子
-					// 但為了保險起見，我們重新渲染一次頁面
-					veRenderPage();
-				} else {
-					// 這是全新的開啟，清空介面 (選擇性)
-					// document.getElementById('ve-url-input').value = ''; 
-					// document.getElementById('ve-json-input').value = '';
+					// A. 同步全域變數
+					vePages = currentEditingProjectState.urls || [];
+					veJsonData = currentEditingProjectState.jsonData || {};
+					// 深拷貝 markers
+					veMarkersData = JSON.parse(JSON.stringify(currentEditingProjectState.markers || {}));
+
+					// B. ★關鍵：強制把資料填回左側的 Input 欄位 (這樣你就看得到網址跟JSON了)
+					const urlInput = document.getElementById('ve-url-input');
+					const jsonInput = document.getElementById('ve-json-input');
+					
+					if (urlInput) urlInput.value = vePages.join('\n');
+					if (jsonInput) jsonInput.value = JSON.stringify(veJsonData, null, 4);
+
+					// C. 渲染第一頁
+					veCurrentPage = 0;
+					// 延遲一點點執行渲染，確保 DOM 已經顯示
+					setTimeout(() => {
+						veRenderPage();
+						console.log("✅ [VisualEditor] 畫面渲染完成");
+					}, 50);
+
+				} catch(e) { 
+					console.error("載入失敗", e); 
+					alert("載入專案發生錯誤：" + e.message);
 				}
+				
+			} else if (typeof vePages !== 'undefined' && vePages.length > 0) {
+				// 恢復舊進度
+				veRenderPage();
 			}
 		}
 
@@ -3319,9 +4410,10 @@
 			veWrapper.appendChild(div);
 		}
 
-		/* 🛠️ [修改開始] 視覺化編輯器匯出函式 (支援多種題型) */
+
+		// 🛠️ [修改開始] veExport: 匯出後展開原始碼並自動預覽
 		function veExport() {
-			veSaveCurrentPage(); // 確保當前頁面標記已儲存
+			veSaveCurrentPage(); 
 
 			let fullHtml = "";
 
@@ -3332,36 +4424,26 @@
 
 				// 遍歷該頁的所有標記
 				markers.forEach(m => {
-					// 取得該題目的 JSON 設定資料
 					const qData = veJsonData[m.id] || {};
-					const qType = qData.type || 'text'; // 預設為文字題
+					const qType = qData.type || 'text'; 
 					
-					// 共同樣式 (絕對定位)
-					// 注意：加入了 pointer-events: auto 確保元素可被點擊
-					// 文字顏色設為 blue 方便辨識，背景半透明白
 					const commonStyle = `position:absolute; left:${m.left}; top:${m.top}; width:${m.w}; height:${m.h}; background:rgba(255,255,255,0.9); border:1px solid #bfdbfe; font-size:14px; color:#1d4ed8; outline:none; z-index:10; margin:0; padding:4px; box-sizing:border-box;`;
 					
-					// 🛠️ [新增邏輯] 依據 type 產生不同 HTML 標籤
 					if (qType === 'choice') {
-						// --- 處理選擇題 (生成 <select>) ---
 						let optionsHtml = `<option value="">請選擇</option>`;
 						
-						// 解析 choiceNo 字串，例如 "(A) (B) (C)" 或 "(A) 本尊 (B) 分身"
 						if (qData.choiceNo) {
-							// 使用正則表達式抓取 (X) 及其後的文字
-							// 格式說明：尋找括號內的字元作為 value，括號後的內容作為 label
 							const regex = /\(([^)]+)\)([^(\r\n]*)/g;
 							let match;
 							while ((match = regex.exec(qData.choiceNo)) !== null) {
-								const val = match[1].trim(); // 例如 "A"
-								let label = match[2].trim(); // 例如 "本尊"
-								if(!label) label = val; // 如果沒有額外文字，就顯示 "A"
-								else label = `${val}. ${label}`; // 如果有文字，顯示 "A. 本尊"
+								const val = match[1].trim(); 
+								let label = match[2].trim(); 
+								if(!label) label = val; 
+								else label = `${val}. ${label}`; 
 								
 								optionsHtml += `<option value="${val}">${label}</option>`;
 							}
 						} else {
-							// 如果沒有提供 choiceNo，預設給 A, B, C, D
 							['A', 'B', 'C', 'D'].forEach(opt => {
 								optionsHtml += `<option value="${opt}">${opt}</option>`;
 							});
@@ -3372,40 +4454,38 @@
 						</select>\n`;
 
 					} else if (qType === 'checkbox') {
-						 // --- 處理勾選題 (生成 <input type="checkbox">) ---
-						 // 勾選題通常只需要一個小方框，這裡將 checkbox 置中
 						 inputs += `    <div style="${commonStyle}; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,0.5); border:none;">
 							<input type="checkbox" name="${m.id}" value="true" style="width:20px; height:20px; cursor:pointer;">
 						 </div>\n`;
 
 					} else {
-						// --- 處理文字題 (預設 <input type="text">) ---
-						// 對齊方式改為 center 比較好看
 						inputs += `    <input type="text" name="${m.id}" class="worksheet-input" 
 							style="${commonStyle} text-align: center;" 
 							placeholder="(${m.id})">\n`;
 					}
 				});
 
-				// 組合該頁 HTML
 				fullHtml += `<div class="sheet-page relative w-full max-w-[800px] mx-auto mb-5 shadow bg-white">
 					<img src="${url}" style="width:100%; display:block;">
 					${inputs}
 				</div>\n`;
 			});
 
-			// 回填到編輯區
 			document.getElementById('ws-html').value = fullHtml;
-			// JSON 也一併更新 (雖然通常這時候 JSON 已經在 input 裡了，但為了確保同步)
 			document.getElementById('ws-json').value = JSON.stringify(veJsonData, null, 4);
 			
-			// 更新全域狀態
+			// 1. 匯出完畢後，自動展開原始碼區塊
+			document.getElementById('source-code-area').classList.remove('hidden');
+
+			// ✨ 2. [新增] 自動點擊預覽按鈕，強制刷新預覽畫面
+			document.getElementById('preview-btn').click();
+
 			currentEditingProjectState = { urls: vePages, jsonData: veJsonData, markers: veMarkersData };
 			closeVisualEditor();
 			
 			alert("✅ 已依據 JSON 題型生成對應的 HTML 元素！\n\n(選擇題已轉為下拉選單、文字題維持輸入框)\n請記得按「儲存到題庫」。");
 		}
-		/* 🛠️ [修改結束] */
+		// 🛠️ [修改結束]
 
 		console.log("【檢查點 C】JavaScript 腳本已完整載入至結尾");
 
@@ -3425,39 +4505,55 @@
 
 		// 2. 更新批量按鈕狀態 (顯示/隱藏)
 		window.updateBatchBtnUI = () => {
+			// 取得所有被勾選的 checkbox
 			const count = document.querySelectorAll('.res-chk:checked').length;
 			const btn = document.getElementById('res-batch-del-btn');
 			const countSpan = document.getElementById('res-sel-count');
 			
+			// 防呆：如果按鈕本身不存在，就結束
+			if (!btn) return;
+
 			if (count > 0) {
 				btn.classList.remove('hidden');
-				countSpan.textContent = count;
+				// 防呆：確認 span 存在才更新數字，避免報錯
+				if (countSpan) {
+					countSpan.textContent = count;
+				}
 			} else {
 				btn.classList.add('hidden');
 			}
 		};
 
-		// 3. 執行批量刪除
+		// 🛠️ [修改開始] deleteSelectedResources: 刪除後立即重置按鈕狀態
 		window.deleteSelectedResources = async () => {
 			const checked = document.querySelectorAll('.res-chk:checked');
 			const count = checked.length;
 			if (count === 0) return;
 
-			if (!confirm(`⚠️ 確定要一次刪除這 ${count} 個幽靈檔案嗎？\n\n注意：此動作無法復原！`)) return;
+			if (!confirm(`⚠️ 確定要一次刪除這 ${count} 個未使用素材嗎？\n\n注意：此動作無法復原！`)) return;
 
 			const btn = document.getElementById('res-batch-del-btn');
-			const originalText = btn.innerHTML;
+			
 			btn.textContent = '刪除中...';
 			btn.disabled = true;
 
 			let successCount = 0;
+			
+			// 使用 Promise.all 平行處理刪除
 			const promises = Array.from(checked).map(async (cb) => {
 				try {
 					await storage.ref(cb.value).delete();
-					// 視覺上移除該行
+					
+					// ★關鍵修正：立即取消勾選，這樣 updateBatchBtnUI 計算時就不會算到它
+					cb.checked = false; 
+
 					const row = cb.closest('tr');
-					row.style.opacity = '0';
-					setTimeout(() => row.remove(), 300);
+					if (row) {
+						row.style.transition = 'opacity 0.3s'; // 確保有過渡效果
+						row.style.opacity = '0';
+						// 等待動畫結束後移除 DOM
+						setTimeout(() => row.remove(), 300);
+					}
 					successCount++;
 				} catch (e) {
 					console.error("刪除失敗", e);
@@ -3466,35 +4562,74 @@
 
 			await Promise.all(promises);
 
-			btn.innerHTML = originalText;
-			btn.disabled = false;
-			updateBatchBtnUI(); // 重新計算 (應該會隱藏)
+			// --- 狀態重置區 ---
 			
-			// 檢查是否還有剩餘檔案，若無則顯示空訊息
+			// 1. 取消「全選」核取方塊
+			const masterChk = document.getElementById('res-master-chk');
+			if (masterChk) masterChk.checked = false;
+
+			// 2. 恢復按鈕預設文字 (雖然馬上會隱藏，但重置是好習慣)
+			btn.innerHTML = '🗑️ 刪除選取項目 (<span id="res-sel-count">0</span>)';
+			btn.disabled = false;
+
+			// 3. 強制更新 UI
+			// 因為上面已經把 cb.checked 設為 false 了，這裡算出來的 count 會是 0
+			// 按鈕就會自動隱藏
+			if (typeof updateBatchBtnUI === 'function') {
+				updateBatchBtnUI(); 
+			}
+			
+			// 4. 檢查是否清空，顯示「無素材」提示
 			setTimeout(() => {
 				const tbody = document.getElementById('storage-resources-body');
-				if (tbody.children.length === 0) {
+				// 檢查 tbody 內是否還有可見的 row (排除正在移除的)
+				if (tbody && tbody.children.length === 0) {
 					tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-400">目前沒有素材圖片</td></tr>';
 				}
-			}, 500);
+			}, 500); // 比移除動畫稍慢一點執行
 
 			alert(`✅ 已成功清理 ${successCount} 個檔案！`);
-		};		
-		
+		};
+		// 🛠️ [修改結束]
+				
 		// ==========================================
         // 新增功能：視覺化編輯器 - 圖庫引用
         // ==========================================
-        async function veOpenLibraryModal() {
+        
+		/* 🛠️ [修改開始] 圖庫開啟函式：加入圖片預覽按鈕 */
+        window.veOpenLibraryModal = async function() {
+            console.log("正在開啟圖庫視窗 (含預覽功能)..."); 
+            
             const modal = document.getElementById('ve-library-modal');
             const grid = document.getElementById('ve-library-grid');
             const countSpan = document.getElementById('lib-sel-count');
+
+            if (!modal) return;
             
+            // 1. 強制移到 Body 最尾端
+            if (modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+
+            // 2. 顯示視窗
             modal.classList.remove('hidden');
+            modal.style.setProperty('display', 'flex', 'important'); 
+            modal.style.setProperty('z-index', '2147483647', 'important'); 
+
+            // 重新綁定右上角的 X 按鈕 (維持上一版的修復)
+            const closeBtn = modal.querySelector('button.text-2xl');
+            if (closeBtn) {
+                closeBtn.onclick = function() {
+                    modal.classList.add('hidden');
+                    modal.style.removeProperty('display');
+                    modal.style.removeProperty('z-index');
+                };
+            }
+
             grid.innerHTML = '<p class="col-span-full text-center text-gray-500 py-10 flex items-center justify-center gap-2"><span class="animate-spin text-2xl">↻</span> 正在讀取雲端圖庫...</p>';
             countSpan.textContent = '0';
 
             try {
-                // 讀取該老師目錄下的所有圖片
                 const res = await storage.ref(`resource_images/${currentUser.uid}`).listAll();
                 
                 if (res.items.length === 0) {
@@ -3502,13 +4637,10 @@
                     return;
                 }
 
-                // ★ 關鍵：依照檔名排序 (因為檔名開頭是 timestamp，所以這等於依照時間排序)
-                // 檔名格式: 1634567890123_filename.png
                 res.items.sort((a, b) => a.name.localeCompare(b.name));
 
-                grid.innerHTML = ''; // 清空 loading
+                grid.innerHTML = ''; 
 
-                // 平行讀取所有下載連結 (Download URL)
                 const promises = res.items.map(async (itemRef) => {
                     const url = await itemRef.getDownloadURL();
                     return { ref: itemRef, url: url };
@@ -3518,10 +4650,13 @@
 
                 files.forEach(f => {
                     const div = document.createElement('div');
+                    // 增加 group 屬性以便做 hover 效果
                     div.className = "relative group bg-white p-2 rounded shadow hover:shadow-lg transition cursor-pointer border border-transparent hover:border-blue-400";
+                    
+                    // 點擊卡片本體：切換選取狀態
                     div.onclick = (e) => {
-                        // 點擊卡片切換 checkbox
-                        if(e.target.type !== 'checkbox') {
+                        // 如果點擊的不是 checkbox 也不是放大鏡按鈕(防止冒泡)，才觸發選取
+                        if(e.target.type !== 'checkbox' && !e.target.closest('.preview-btn')) {
                             const chk = div.querySelector('input[type="checkbox"]');
                             chk.checked = !chk.checked;
                             updateLibCount();
@@ -3531,8 +4666,15 @@
                     div.innerHTML = `
                         <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded bg-gray-200 mb-2 relative" style="height: 120px;">
                             <img src="${f.url}" class="w-full h-full object-contain pointer-events-none">
-                            <div class="absolute top-1 left-1">
+                            
+                            <div class="absolute top-1 left-1 z-10">
                                 <input type="checkbox" class="lib-chk form-checkbox h-5 w-5 text-blue-600 rounded border-gray-300 shadow bg-white" value="${f.url}" onchange="updateLibCount()">
+                            </div>
+
+                            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
+                                <button onclick="event.stopPropagation(); vePreviewLargeImage('${f.url}')" class="preview-btn opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all bg-white text-blue-600 rounded-full p-2 shadow-lg hover:bg-blue-50" title="點擊放大預覽">
+                                    🔍
+                                </button>
                             </div>
                         </div>
                         <div class="text-[10px] text-gray-500 truncate font-mono" title="${f.ref.name}">
@@ -3546,33 +4688,894 @@
                 console.error(e);
                 grid.innerHTML = `<p class="col-span-full text-center text-red-500 py-10">載入失敗: ${e.message}</p>`;
             }
-        }
+        };
+        /* 🛠️ [修改結束] */
+		
+		/* 🛠️ [新增] 圖片放大預覽功能 */
+        window.vePreviewLargeImage = function(url) {
+            // 檢查是否已經有預覽視窗，沒有就建立一個
+            let previewModal = document.getElementById('ve-img-preview-modal');
+            if (!previewModal) {
+                previewModal = document.createElement('div');
+                previewModal.id = 've-img-preview-modal';
+                // 設定極高的層級，並使用 flex 置中
+                previewModal.className = "fixed inset-0 bg-black bg-opacity-90 hidden flex items-center justify-center";
+                previewModal.style.setProperty('z-index', '2147483650', 'important'); // 確保比圖庫更高
+                previewModal.onclick = function() {
+                    this.classList.add('hidden'); // 點擊背景關閉
+                };
+                
+                // 圖片容器
+                previewModal.innerHTML = `<img id="ve-preview-img-target" class="max-w-[95vw] max-h-[95vh] object-contain shadow-2xl rounded cursor-zoom-out">`;
+                document.body.appendChild(previewModal);
+            }
 
+            // 設定圖片並顯示
+            const img = document.getElementById('ve-preview-img-target');
+            img.src = url;
+            
+            // 確保視窗在最上層 (DOM 順序)
+            document.body.appendChild(previewModal); 
+            
+            previewModal.classList.remove('hidden');
+        };
+		
         function updateLibCount() {
             const cnt = document.querySelectorAll('.lib-chk:checked').length;
             document.getElementById('lib-sel-count').textContent = cnt;
         }
 
-        function veConfirmLibrarySelection() {
-            const checked = document.querySelectorAll('.lib-chk:checked');
-            if (checked.length === 0) return alert("請至少選擇一張圖片");
 
-            const urlInput = document.getElementById('ve-url-input');
-            const selectedUrls = Array.from(checked).map(cb => cb.value);
-            
-            // 將網址追加到文字框
-            const currentVal = urlInput.value.trim();
-            urlInput.value = (currentVal ? currentVal + '\n' : '') + selectedUrls.join('\n');
+		/* 🟢 [修改開始] AI 匯入精靈相關函式 (穩健版：仿照圖庫功能) */
 
-            // 關閉視窗
-            document.getElementById('ve-library-modal').classList.add('hidden');
-            
-            // 自動觸發「載入設定」
-            veLoadProject();
-            
-            alert(`✅ 已引用 ${checked.length} 張圖片！\n圖片已加入編輯器列表。`);
-        }
+		// 使用 var 避免重複宣告錯誤
+		var parsedAiData = null;
+		var currentAIInputId = null;
+
+		window.closeAIImportModal = function() {
+			var modal = document.getElementById('ai-import-modal');
+			if (modal) {
+				modal.classList.add('hidden');
+				// 關鍵：移除強制寫入的 style，避免下次打不開或關不掉
+				modal.style.removeProperty('display');
+				modal.style.removeProperty('z-index');
+			}
+			currentAIInputId = null; // 重置圖庫目標
+		};
+
+		window.openAIImportModal = function() {
+			console.log("正在開啟 AI 匯入精靈..."); 
+
+			var modal = document.getElementById('ai-import-modal');
+			if (!modal) {
+				alert('錯誤：找不到視窗元素 (id="ai-import-modal")');
+				return;
+			}
+
+			var inputEl = document.getElementById('ai-json-input');
+			var mappingArea = document.getElementById('ai-image-mapping-area');
+			var listDiv = document.getElementById('ai-pages-list');
+			var genBtn = document.getElementById('btn-generate-ai'); // 取得合成按鈕
+
+			if (inputEl) inputEl.value = '';
+			if (mappingArea) mappingArea.classList.add('hidden');
+			if (listDiv) listDiv.innerHTML = '';
+			
+			// 重置：隱藏合成按鈕
+			if (genBtn) genBtn.classList.add('hidden');
+
+			parsedAiData = null;
+
+			// ... (以下維持原本的置頂與顯示邏輯) ...
+			if (modal.parentElement !== document.body) {
+				document.body.appendChild(modal);
+			}
+			modal.classList.remove('hidden');
+			modal.style.setProperty('display', 'flex', 'important');
+			modal.style.setProperty('z-index', '2147483647', 'important');
+		};
 		
+		// 2. 解析 JSON
+		window.parseAIJsonInput = function() {
+			var inputEl = document.getElementById('ai-json-input');
+			var input = inputEl ? inputEl.value.trim() : '';
+			
+			if (!input) return alert('請先貼上 JSON 資料');
+
+			try {
+				var data = JSON.parse(input);
+				if (!data.questions) throw new Error('JSON 格式不符：缺少 questions 欄位');
+				if (!data.pages_html) data.pages_html = {}; 
+				
+				// 儲存解析後的資料供後續使用
+				window.parsedAiData = data;
+				
+				// ★★★ 修正 3：智慧排序 (讓 page2 排在 page10 前面) ★★★
+				var pageKeys = Object.keys(data.pages_html).sort(function(a, b) {
+					return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+				});
+				
+				var listDiv = document.getElementById('ai-pages-list');
+				if(listDiv) {
+					listDiv.innerHTML = '';
+					var pdfSection = document.createElement('div');
+					pdfSection.className = 'mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg flex flex-col md:flex-row items-center justify-between gap-3';
+					pdfSection.innerHTML = `
+						<div class="flex items-center gap-3">
+							<div class="bg-orange-100 p-2 rounded-full text-2xl">📄</div>
+							<div>
+								<h4 class="font-bold text-orange-900 text-sm">懶人包：直接上傳 PDF</h4>
+								<p class="text-xs text-orange-700">系統將自動把 PDF 每一頁轉成圖片，上傳並填入下方欄位。</p>
+							</div>
+						</div>
+						<label class="cursor-pointer bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded shadow text-xs flex items-center gap-2 transition">
+							⚡ 選擇 PDF 自動轉檔
+							<input type="file" class="hidden" accept="application/pdf" onchange="aiBatchPdfUpload(this)">
+						</label>
+					`;
+					listDiv.appendChild(pdfSection);
+					pageKeys.forEach(function(pageKey, index) {
+						var uniqueId = 'ai-img-' + pageKey; // 產生唯一 ID
+						var row = document.createElement('div');
+						row.className = 'flex flex-col md:flex-row md:items-center gap-2 bg-white p-3 border rounded shadow-sm';
+						
+						// ★★★ 修正 1：整合上傳與圖庫按鈕 ★★★
+						row.innerHTML = `
+							<div class="flex items-center gap-2 min-w-[100px]">
+								<span class="font-mono text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded w-full text-center">${pageKey}</span>
+							</div>
+							
+							<div class="flex-grow flex items-center gap-2">
+								<input type="text" id="${uniqueId}" 
+									   class="ai-bg-url-input flex-grow border p-2 rounded text-sm outline-none focus:border-indigo-500 bg-gray-50" 
+									   placeholder="圖片網址..." data-page="${pageKey}">
+							</div>
+
+							<div class="flex items-center gap-2 flex-shrink-0">
+								<label class="cursor-pointer bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1 transition">
+									☁️ 上傳
+									<input type="file" class="hidden" accept="image/*" onchange="aiUploadSingleImage(this, '${uniqueId}')">
+								</label>
+
+								<button onclick="aiOpenLibrary('${uniqueId}')" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded text-xs font-bold flex items-center gap-1 transition">
+									📂 圖庫
+								</button>
+							</div>
+						`;
+						listDiv.appendChild(row);
+					});
+					document.getElementById('ai-image-mapping-area').classList.remove('hidden');
+					var genBtn = document.getElementById('btn-generate-ai');
+					if (genBtn) genBtn.classList.remove('hidden');
+				}
+
+			} catch (e) {
+				alert('解析失敗：' + e.message);
+				console.error(e);
+			}
+		};
+
+		// 3. 生成並導入視覺化編輯器 (修正版：針對 input-wrapper 結構優化)
+		window.generateFromAI = function() {
+			if (!parsedAiData) return;
+			
+			console.log("🚀 開始執行 AI 資料轉換 (Wrapper 模式)...");
+
+			// 1. 收集圖片網址 (建立 Pages)
+			var inputs = document.querySelectorAll('.ai-bg-url-input');
+			var bgMap = {};
+			var allFilled = true;
+			
+			// 按照頁面順序排序
+			var sortedInputs = Array.from(inputs).sort(function(a, b) {
+				return a.dataset.page.localeCompare(b.dataset.page, undefined, { numeric: true, sensitivity: 'base' });
+			});
+
+			var newVePages = [];
+			
+			sortedInputs.forEach(function(inp) {
+				var url = inp.value.trim();
+				if (!url) allFilled = false;
+				bgMap[inp.dataset.page] = url;
+				newVePages.push(url);
+			});
+
+			if (!allFilled) {
+				if (!confirm('部分頁面未填寫圖片網址，這些頁面將顯示空白背景。確定繼續？')) return;
+			}
+
+			// 2. 準備資料容器
+			// 深拷貝題目設定 (保留題型、配分等資訊)
+			var newVeJsonData = JSON.parse(JSON.stringify(parsedAiData.questions));
+			var newVeMarkersData = {};
+			
+			// 3. 解析 AI 的 HTML 字串，提取座標
+			var pageKeys = Object.keys(parsedAiData.pages_html).sort(function(a, b) {
+				return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+			});
+
+			var parser = new DOMParser();
+			var markerCount = 0;
+
+			pageKeys.forEach(function(pageKey, index) {
+				newVeMarkersData[index] = []; // 初始化該頁陣列
+				
+				var htmlContent = parsedAiData.pages_html[pageKey];
+				if (!htmlContent) return;
+
+				// 轉為 DOM
+				var doc = parser.parseFromString(htmlContent, 'text/html');
+				
+				// ★ 關鍵修正：針對您的 JSON 結構 (.input-wrapper 包裹輸入框)
+				// 先抓外層 Wrapper，因為座標 (Top/Left) 在這裡
+				var wrappers = doc.querySelectorAll('.input-wrapper');
+				
+				wrappers.forEach(function(div) {
+					// 找出內部的輸入元件 (input, select, textarea) 以取得 ID
+					var inputEl = div.querySelector('input, select, textarea');
+					if (!inputEl) return;
+
+					// 優先取 ID，如果沒 ID 才取 Name
+					var qId = inputEl.id || inputEl.getAttribute('name');
+					if (!qId) return;
+
+					// 1. 座標：從外層 div 取得 (因為 style="position:absolute; top:..; left:.." 在這)
+					var left = div.style.left || '0%';
+					var top = div.style.top || '0%';
+
+					// 2. 大小：優先看 input 本身有沒有設寬高，沒有的話看 div，再沒有就給預設值
+					// JSON 中的 select 通常沒有寬度，給個預設值
+					// JSON 中的 text/textarea 通常有 style="width:..."
+					var width = inputEl.style.width || div.style.width || '15%'; 
+					var height = inputEl.style.height || div.style.height || '30px';
+					
+					// 特別處理 textarea 高度，因為 JSON 裡有設 height: 150px
+					if (inputEl.tagName.toLowerCase() === 'textarea') {
+						 if (!inputEl.style.height) height = '100px';
+						 if (!inputEl.style.width) width = '80%';
+					}
+					
+					// 特別處理 select (選擇題)，寬度給小一點比較好看，或者固定
+					if (inputEl.tagName.toLowerCase() === 'select') {
+						if (!inputEl.style.width) width = '12%'; // 給選擇題一個預設寬度
+					}
+
+					// 建立標記物件
+					newVeMarkersData[index].push({
+						id: qId,
+						left: left,
+						top: top,
+						w: width,
+						h: height
+					});
+					markerCount++;
+				});
+				
+				// ★ 備案：如果沒有用 wrapper，嘗試直接抓 input (相容舊格式)
+				if (wrappers.length === 0) {
+					var elements = doc.querySelectorAll('input[style*="position"], select[style*="position"], textarea[style*="position"]');
+					elements.forEach(function(el) {
+						var qId = el.id || el.getAttribute('name');
+						if(qId) {
+							 newVeMarkersData[index].push({
+								id: qId,
+								left: el.style.left || '0', top: el.style.top || '0',
+								w: el.style.width || '10%', h: el.style.height || '30px'
+							});
+							markerCount++;
+						}
+					});
+				}
+			});
+
+			console.log(`✅ 解析完成：共 ${newVePages.length} 頁，${markerCount} 個題目標記`);
+
+			// 4. 更新全域變數
+			vePages = newVePages;
+			veJsonData = newVeJsonData;
+			veMarkersData = newVeMarkersData;
+			
+			// 設定專案狀態
+			currentEditingProjectState = {
+				urls: vePages,
+				jsonData: veJsonData,
+				markers: veMarkersData
+			};
+			
+			// 填入側邊欄
+			var urlInput = document.getElementById('ve-url-input');
+			var jsonInput = document.getElementById('ve-json-input');
+			if(urlInput) urlInput.value = vePages.join('\n');
+			if(jsonInput) jsonInput.value = JSON.stringify(veJsonData, null, 4);
+
+			// 5. 執行切換
+			closeAIImportModal();
+
+			setTimeout(function() {
+				if (typeof openVisualEditor === 'function') {
+					openVisualEditor();
+					
+					// 強制重置到第一頁並渲染
+					veCurrentPage = 0;
+					if (typeof veRenderPage === 'function') {
+						veRenderPage(); 
+					}
+					
+					alert(`🎉 匯入成功！\n\n已辨識出 ${markerCount} 個作答框。\n您現在可以拖曳調整它們的位置了。`);
+				} else {
+					alert('錯誤：找不到 Visual Editor 啟動函式。');
+				}
+			}, 200);
+		};
+
+		// 3. AI 模式專用的單張圖片上傳
+		window.aiUploadSingleImage = async function(input, targetId) {
+			if (!input.files || input.files.length === 0) return;
+			
+			var file = input.files[0];
+			var targetInput = document.getElementById(targetId);
+			var originalPlaceholder = targetInput.placeholder;
+			
+			targetInput.value = '';
+			targetInput.placeholder = '⏳ 上傳中...';
+			targetInput.disabled = true;
+
+			try {
+				// 使用與原本相同的路徑結構
+				var ref = firebase.storage().ref().child(`resource_images/${currentUser.uid}/${Date.now()}_${file.name}`);
+				await ref.put(file);
+				var url = await ref.getDownloadURL();
+				
+				targetInput.value = url;
+				targetInput.classList.add('bg-green-50', 'text-green-700'); // 成功視覺回饋
+			} catch (e) {
+				alert('上傳失敗: ' + e.message);
+			} finally {
+				targetInput.placeholder = originalPlaceholder;
+				targetInput.disabled = false;
+				input.value = ''; // 清空 file input 以便重複上傳
+			}
+		};
+
+		// 4. AI 模式開啟圖庫
+		window.aiOpenLibrary = function(targetId) {
+			currentAIInputId = targetId; // 記錄是由哪一格呼叫的
+			if (window.veOpenLibraryModal) {
+				window.veOpenLibraryModal(); // 呼叫原本的圖庫開啟函式
+			} else {
+				alert('錯誤：找不到圖庫函式');
+			}
+		};
+
+		// ==========================================
+		// 修改原有的 veConfirmLibrarySelection
+		// 讓它能支援 AI 匯入模式
+		// ==========================================
+		// 請找到原本的 veConfirmLibrarySelection 並替換成這個版本
+		window.veConfirmLibrarySelection = function() {
+			const modal = document.getElementById('ve-library-modal');
+			const checked = document.querySelectorAll('.lib-chk:checked');
+			
+			if (checked.length === 0) return alert("請至少選擇一張圖片");
+
+			// ★★★ 判斷模式 ★★★
+			if (currentAIInputId) {
+				// [模式 A] AI 匯入精靈模式 (只取第一張)
+				const selectedUrl = checked[0].value;
+				const targetInput = document.getElementById(currentAIInputId);
+				if (targetInput) {
+					targetInput.value = selectedUrl;
+					targetInput.classList.add('bg-blue-50', 'text-blue-700');
+				}
+				
+				if (checked.length > 1) {
+					alert(`已選取第一張圖片填入 "${currentAIInputId}" 欄位。`);
+				}
+				currentAIInputId = null; // 重置
+
+			} else {
+				// [模式 B] 原本的視覺化編輯器模式
+				const urlInput = document.getElementById('ve-url-input');
+				const selectedUrls = Array.from(checked).map(cb => cb.value);
+				const currentVal = urlInput.value.trim();
+				urlInput.value = (currentVal ? currentVal + '\n' : '') + selectedUrls.join('\n');
+				
+				// 自動載入
+				if(window.veLoadProject) window.veLoadProject();
+				alert(`✅ 已引用 ${checked.length} 張圖片！`);
+			}
+
+			// 關閉圖庫視窗
+			modal.classList.add('hidden');
+			modal.style.removeProperty('display'); 
+			modal.style.removeProperty('z-index');
+			
+			// 清空勾選
+			checked.forEach(cb => cb.checked = false);
+			if(document.getElementById('lib-sel-count')) document.getElementById('lib-sel-count').textContent = '0';
+		};
+		
+		window.aiBatchPdfUpload = async function(input) {
+            if (!input.files || input.files.length === 0) return;
+            const file = input.files[0];
+            
+            // 取得目前畫面上所有的輸入框，並依照 pageKey 排序
+            const inputs = Array.from(document.querySelectorAll('.ai-bg-url-input')).sort((a, b) => {
+                return a.dataset.page.localeCompare(b.dataset.page, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
+            if (inputs.length === 0) return alert("請先解析 JSON 以產生頁面欄位");
+
+            const btnLabel = input.parentElement;
+            const originalText = btnLabel.textContent; // "⚡ 選擇 PDF 自動轉檔"
+            
+            // 鎖定按鈕避免重複按
+            input.disabled = true;
+            btnLabel.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                btnLabel.innerText = "⏳ 讀取 PDF 中...";
+                
+                // 1. 讀取 PDF
+				const arrayBuffer = await file.arrayBuffer();
+                
+                // ★★★ 關鍵修正：直接在這裡指定 CMaps 路徑，比全域設定更有效 ★★★
+                const loadingTask = pdfjsLib.getDocument({
+                    data: arrayBuffer,
+                    // 使用官方標準結構的 CMaps 路徑
+                    cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+                    cMapPacked: true,
+                    // 嘗試載入標準字型資料 (有助於某些特殊英數字型)
+                    standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/'
+                });
+
+                const pdf = await loadingTask.promise;
+                
+                const totalPages = pdf.numPages;
+                const processCount = Math.min(totalPages, inputs.length); // 取 PDF 頁數與 JSON 頁數的最小值
+
+                if (totalPages !== inputs.length) {
+                    if(!confirm(`⚠️ 注意：\nPDF 共有 ${totalPages} 頁，但 JSON 需要 ${inputs.length} 頁。\n\n系統將會依序處理前 ${processCount} 頁，確定繼續嗎？`)) {
+                        throw new Error("使用者取消");
+                    }
+                }
+
+                // 2. 逐頁處理
+                for (let i = 0; i < processCount; i++) {
+                    const pageNum = i + 1;
+                    const targetInput = inputs[i];
+
+                    // UI 更新狀態
+                    btnLabel.innerText = `⏳ 處理第 ${pageNum}/${processCount} 頁...`;
+                    targetInput.placeholder = "🔄 轉檔上傳中...";
+                    targetInput.classList.add('bg-yellow-50');
+
+                    // 取得頁面
+                    const page = await pdf.getPage(pageNum);
+                    
+                    // 設定縮放比例 (2.0 = 清晰度較高)
+                    const viewport = page.getViewport({ scale: 2.0 });
+                    
+                    // 建立 Canvas
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    // 渲染 PDF 到 Canvas
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    // Canvas 轉 Blob (JPEG, 0.8 品質)
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+                    
+                    // 上傳 Firebase
+                    const filename = `pdf_import_${Date.now()}_p${pageNum}.jpg`;
+                    const ref = firebase.storage().ref().child(`resource_images/${currentUser.uid}/${filename}`);
+                    
+                    btnLabel.innerText = `☁️ 上傳第 ${pageNum}/${processCount} 頁...`;
+                    await ref.put(blob);
+                    const url = await ref.getDownloadURL();
+
+                    // 填入網址
+                    targetInput.value = url;
+                    targetInput.classList.remove('bg-yellow-50');
+                    targetInput.classList.add('bg-green-50', 'text-green-700'); // 成功標示
+                }
+
+                alert("🎉 PDF 轉檔並上傳完成！");
+
+            } catch (e) {
+                if (e.message !== "使用者取消") {
+                    console.error(e);
+                    alert("處理失敗: " + e.message);
+                }
+            } finally {
+                // 復原按鈕狀態
+                input.value = ''; // 清空以允許再次選擇
+                input.disabled = false;
+                btnLabel.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnLabel.innerHTML = `⚡ 選擇 PDF 自動轉檔 <input type="file" class="hidden" accept="application/pdf" onchange="aiBatchPdfUpload(this)">`;
+            }
+        };
+				
+		/* ==========================================
+		   🤖 Gemini API 整合邏輯 (Client-Side)
+		   ========================================== */
+		const GEMINI_API_KEY = "AIzaSyApaFU-uDxigWjDzGEJ5cY5qsJ5oFtXxaE"; // 您的 API Key
+		const GEMINI_MODEL_NAME = "gemini-2.5-flash"; // 使用最新模型
+
+		// 1. 檔案預覽與按鈕狀態更新
+		function previewUploadFile() {
+			const fileInput = document.getElementById('gemini-upload-file');
+			const infoDisplay = document.getElementById('file-info-display');
+			const runBtn = document.getElementById('btn-run-gemini');
+
+			if (fileInput.files.length > 0) {
+				const file = fileInput.files[0];
+				infoDisplay.textContent = `已選擇: ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+				
+				// 啟用按鈕，變色
+				runBtn.disabled = false;
+				runBtn.classList.remove('bg-gray-300', 'text-white');
+				runBtn.classList.add('bg-indigo-600', 'text-white', 'hover:bg-indigo-700', 'shadow-lg');
+			} else {
+				infoDisplay.textContent = "";
+				runBtn.disabled = true;
+				runBtn.classList.add('bg-gray-300');
+				runBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'shadow-lg');
+			}
+		}
+
+		/* ==========================================
+		   🚀 全自動 AI 處理核心邏輯 (Gemini + PDF.js + Firebase)
+		   ========================================== */
+
+		// 1. 執行分析 (進入點) - 修正版：使用正確的完整提示語
+		async function runGeminiAnalysis() {
+			if (!window.GenAI) {
+				alert("錯誤：Gemini SDK 尚未載入，請檢查網路連線。");
+				return;
+			}
+
+			const fileInput = document.getElementById('gemini-upload-file');
+			const statusEl = document.getElementById('gemini-status');
+			const runBtn = document.getElementById('btn-run-gemini');
+
+			if (fileInput.files.length === 0) return;
+			const file = fileInput.files[0];
+
+			// 鎖定介面
+			const originalBtnContent = runBtn.innerHTML;
+			runBtn.disabled = true;
+			runBtn.innerHTML = `<span class="animate-spin text-2xl">↻</span><span>AI 思考中...</span>`;
+			
+			// 狀態 1: 呼叫 Gemini
+			statusEl.className = "text-xs text-center mt-2 text-indigo-600 font-bold animate-pulse";
+			statusEl.textContent = "🚀 正在傳送給 Gemini 分析題目結構 (Step 1/3)...";
+
+			try {
+				// A. 準備 Prompt (這裡必須用真正的 < > 符號，且規則要完整)
+				const promptText = `
+		# 角色
+		你是一位資深的資訊科學教師與前端工程師，擅長從 PDF 習作中提取評量內容，並將其轉換為「資料（JSON）」與「視覺層（HTML）」整合的格式。
+
+		# 任務
+		請分析上傳的 PDF 習作頁面，識別「選擇題」、「填充題」、「是非/勾選題」以及「手寫/繪圖/計算題」。
+		你需要做兩件事：
+		1. **資料提取**：解析題目內容與答案，轉為 JSON。
+		2. **視覺佈局**：估測該題目在頁面上的「作答區域位置」，並生成對應的 HTML 標籤。
+
+		# 擷取規則
+		1. **題目拆解**：
+		   - 含小題的題目（如 1. (1)）需拆分為獨立 Entry。
+		   - 是非/勾選題若有多個選項，每個選項視為獨立的 True/False 題目。
+
+		2. **題型判斷 (關鍵)**：
+		   - 若題目出現「畫出」、「繪製」、「寫出計算過程」、「詳解」、「證明」、「上傳截圖」等關鍵字，請歸類為 **手寫/繪圖題 (handwriting)**。
+
+		3. **ID 命名 (Strict)**：
+		   - 格式：p{頁碼}_q{大題號}_{子題號}
+		   - 例如：p1_q2_1。此 ID 必須同時用於 JSON Key 與 HTML 的 id 屬性。
+
+		4. **位置估算 (Critical)**：
+		   - 請觀察 PDF 圖像，估算該題「作答格/括號/空白處」在該頁面的**相對位置**（Top% 與 Left%）。
+		   - 若是填充題，位置應為底線或括號的起始點。
+		   - 若是手寫/繪圖題，位置應為該題預留空白作答區的左上角。
+
+		# 輸出格式 (JSON 結構)
+		請輸出一個包含三個主要欄位的 JSON 物件：
+		1. "worksheet_title": "學習單標題 (請從內容識別)"
+		2. "questions": 題庫資料物件。
+		3. "pages_html": 每一頁對應的 HTML 疊加層字串。
+
+		## 1. questions 欄位規範
+		Key 為 ID，Value 包含：
+		- unitId: "page1", "page2"...
+		- label: 題號+題目簡述。
+		- answer: 標準答案 (若為開放式繪圖題，可填 "略" 或 "請參閱詳解")。
+		- points: 配分 (預設 選擇4, 填充5, 是非2, 手寫/繪圖 10)。
+		- type: "choice", "text", "true_false", "checkbox", "handwriting"。
+		- choiceNo: 選擇題選項字串 (非選擇題留空)。
+
+		## 2. pages_html 欄位規範
+		Key 為 "page1", "page2"...，Value 為該頁面的 HTML 字串。
+		HTML 生成規則：
+		- 必須是 **純 HTML 標籤** (不含 html/head/body)。
+		- 針對每個題目生成輸入元件，外層用 <div class='input-wrapper'> 包覆。
+		- **Style 屬性**：必須包含 position: absolute; top: {Y}%; left: {X}%; (根據你的視覺估算)。
+		- **元件類型對應**：
+		  - **choice (選擇題)**: 生成 <select id="..."> 包含選項 A,B,C,D...
+		  - **text (填充題)**: 生成 <input type="text" id="...">。
+		  - **true_false/checkbox**: 生成 <input type="checkbox" id="...">。
+		  - **handwriting (手寫/繪圖)**: 
+			必須生成 **兩個** 元素在同一個 div 內：
+			1. <textarea id="{ID}" class="ans-input" placeholder="可輸入文字說明..."></textarea>
+			2. <label class="file-upload-btn">📷 上傳照片<input type="file" id="{ID}_file" name="{ID}_file" accept="image/*" style="display:none;"></label>
+			   (註：請確保 file input 的 name 為 ID + "_file"，以便系統識別為補充檔案)
+		`;
+
+				// B. 檔案轉 Base64 並呼叫 API
+				const base64Data = await fileToGenerativePart(file);
+				const genAI = new window.GenAI(GEMINI_API_KEY);
+				const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+
+				const result = await model.generateContent([ promptText, base64Data ]);
+				const response = await result.response;
+				const text = response.text();
+
+				// C. 解析 JSON
+				let cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+				
+				// ★★★ 修正：強制抓取 JSON 物件範圍 (忽略 AI 的開場白與結尾) ★★★
+				const firstBrace = cleanJson.indexOf('{');
+				const lastBrace = cleanJson.lastIndexOf('}');
+				
+				if (firstBrace !== -1 && lastBrace !== -1) {
+					// 只保留 { ... } 中間的部分
+					cleanJson = cleanJson.substring(firstBrace, lastBrace + 1);
+				} else {
+					throw new Error("AI 回傳的內容找不到有效的 JSON 物件 ({ ... })");
+				}
+
+				let jsonData;
+				try {
+					jsonData = JSON.parse(cleanJson);
+				} catch (e) {
+					console.error("JSON Parse Error:", e);
+					console.log("Raw Text:", text); // 方便除錯
+					throw new Error("JSON 格式損毀，請重試 (SyntaxError)");
+				}
+
+				// D. 進入自動化第二階段：PDF 處理
+				statusEl.textContent = "🔄 Gemini 分析完成！正在處理 PDF 頁面轉檔與上傳 (Step 2/3)...";
+				statusEl.className = "text-xs text-center mt-2 text-orange-600 font-bold animate-pulse";
+				
+				// 呼叫自動處理函式 (這部分維持原本邏輯)
+				await autoProcessPDFAndSynthesize(file, jsonData, statusEl);
+
+				// E. 完成
+				statusEl.className = "text-xs text-center mt-2 text-green-600 font-bold";
+				statusEl.textContent = "✅ 全數完成！已填入編輯器。";
+				closeAIImportModal(); // 自動關閉視窗
+				
+				// 如果有抓到標題，自動填入
+				if(jsonData.worksheet_title) {
+					document.getElementById('ws-title').value = jsonData.worksheet_title;
+				}
+
+			} catch (error) {
+				console.error("Auto Process Error:", error);
+				statusEl.className = "text-xs text-center mt-2 text-red-500 font-bold";
+				statusEl.textContent = `❌ 發生錯誤: ${error.message}`;
+				alert("處理過程中發生錯誤，請檢查 Console (F12)。可能原因：JSON 格式錯誤或網路逾時。");
+			} finally {
+				runBtn.disabled = false;
+				runBtn.innerHTML = originalBtnContent;
+			}
+		}
+
+		// 2. 自動 PDF 轉檔、上傳、合成 (最終修正版：暴力注入 DOM 確保資料顯示)
+		async function autoProcessPDFAndSynthesize(file, jsonData, statusEl) {
+			// 檢查檔案類型
+			if (file.type !== 'application/pdf') {
+				throw new Error("自動模式目前僅支援 PDF 檔案完整流程。");
+			}
+
+			// ==========================================
+			// A. 讀取 PDF
+			// ==========================================
+			const arrayBuffer = await file.arrayBuffer();
+			const loadingTask = pdfjsLib.getDocument({
+				data: arrayBuffer,
+				cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+				cMapPacked: true
+			});
+			const pdf = await loadingTask.promise;
+			const totalPages = pdf.numPages;
+
+			// ==========================================
+			// B. 準備 JSON Key 排序
+			// ==========================================
+			if (!jsonData.pages_html) jsonData.pages_html = {};
+			const sortedPageKeys = Object.keys(jsonData.pages_html).sort((a, b) => {
+				return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+			});
+
+			const processedPages = [];
+			
+			// ==========================================
+			// C. 逐頁轉檔與上傳 (Firebase)
+			// ==========================================
+			for (let i = 0; i < totalPages; i++) {
+				const pageNum = i + 1;
+				statusEl.textContent = `🔄 正在處理第 ${pageNum}/${totalPages} 頁 (轉檔並上傳雲端)...`;
+				
+				// Render Page
+				const page = await pdf.getPage(pageNum);
+				const viewport = page.getViewport({ scale: 2.0 });
+				const canvas = document.createElement('canvas');
+				const context = canvas.getContext('2d');
+				canvas.height = viewport.height;
+				canvas.width = viewport.width;
+				await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+				// Upload
+				const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+				const filename = `auto_ai_${Date.now()}_p${pageNum}.jpg`;
+				const ref = firebase.storage().ref().child(`resource_images/${currentUser.uid}/${filename}`);
+				await ref.put(blob);
+				const url = await ref.getDownloadURL();
+
+				processedPages.push(url);
+			}
+
+			// ==========================================
+			// D. 合成 HTML (Mapping) 與 座標計算
+			// ==========================================
+			statusEl.textContent = "✨ 正在合成最終學習單 (Step 3/3)...";
+			
+			let fullHtml = "";
+			let parser = new DOMParser();
+			let newVeMarkersData = {}; // 這是 AI 算出來的座標
+			let newVeJsonData = jsonData.questions || {};
+
+			for (let i = 0; i < processedPages.length; i++) {
+				const bgUrl = processedPages[i];
+				let inputsHtml = "";
+				
+				// 初始化該頁陣列
+				newVeMarkersData[i] = []; 
+
+				if (i < sortedPageKeys.length) {
+					const key = sortedPageKeys[i];
+					const rawHtml = jsonData.pages_html[key];
+					const doc = parser.parseFromString(rawHtml, 'text/html');
+					
+					// 解析策略：找 .input-wrapper 或 帶有 position 的 input
+					let wrappers = doc.querySelectorAll('.input-wrapper');
+					
+					if (wrappers.length === 0) {
+						// Fallback: 直接找 input
+						const rawElements = doc.querySelectorAll('input[style*="position"], select[style*="position"], textarea[style*="position"]');
+						rawElements.forEach(el => {
+							const qId = el.id || el.getAttribute('name');
+							if (qId) {
+								const left = el.style.left || '0%';
+								const top = el.style.top || '0%';
+								const width = el.style.width || '15%';
+								const height = el.style.height || '30px';
+								// 存入座標數據
+								newVeMarkersData[i].push({ id: qId, left, top, w: width, h: height });
+								inputsHtml += el.outerHTML + "\n";
+							}
+						});
+					} else {
+						// Standard: .input-wrapper
+						wrappers.forEach(div => {
+							const inputEl = div.querySelector('input, select, textarea');
+							if (!inputEl) return;
+							const qId = inputEl.id || inputEl.getAttribute('name');
+							if (!qId) return;
+
+							const left = div.style.left || '0%';
+							const top = div.style.top || '0%';
+							let width = inputEl.style.width || div.style.width || '15%';
+							let height = inputEl.style.height || div.style.height || '30px';
+							
+							// 根據題型微調顯示 HTML
+							const qType = (newVeJsonData[qId] && newVeJsonData[qId].type) ? newVeJsonData[qId].type : 'text';
+							const commonStyle = `position:absolute; left:${left}; top:${top}; width:${width}; height:${height}; z-index:10;`;
+							
+							if (qType === 'choice') {
+								let options = '<option value="">請選擇</option>';
+								['A','B','C','D'].forEach(o => options += `<option value="${o}">${o}</option>`);
+								inputsHtml += `<select name="${qId}" class="worksheet-input" style="${commonStyle} background:rgba(255,255,255,0.9); border:1px solid #bfdbfe; color:#1d4ed8;">${options}</select>\n`;
+							} else if (qType === 'checkbox') {
+								inputsHtml += `<div style="${commonStyle} display:flex; align-items:center; justify-content:center;"><input type="checkbox" name="${qId}" value="true" style="width:20px; height:20px;"></div>\n`;
+							} else {
+								inputsHtml += `<input type="text" name="${qId}" class="worksheet-input" style="${commonStyle} background:rgba(255,255,255,0.9); border:1px solid #bfdbfe; text-align:center;" placeholder="(${qId})">\n`;
+							}
+							
+							// 存入座標數據
+							newVeMarkersData[i].push({ id: qId, left, top, w: width, h: height });
+						});
+					}
+				}
+
+				fullHtml += `<div class="sheet-page relative w-full max-w-[800px] mx-auto mb-5 shadow bg-white">
+					<img src="${bgUrl}" style="width:100%; display:block;">
+					${inputsHtml}
+				</div>\n`;
+			}
+
+			// ==========================================
+			// E. 寫入資料庫格式 (Hidden Inputs)
+			// ==========================================
+			document.getElementById('ws-html').value = fullHtml;
+			document.getElementById('ws-json').value = JSON.stringify(newVeJsonData, null, 4);
+
+			// ==========================================
+			// F. 【關鍵修正】強制啟動視覺化編輯器流程
+			// ==========================================
+			
+			// 1. 關閉匯入視窗
+			closeAIImportModal(); 
+
+			// 2. 開啟視覺化編輯器
+			if (typeof openVisualEditor === 'function') {
+				openVisualEditor();
+
+				// 3. 【暴力注入】直接操作編輯器的 DOM，不依賴全域變數傳遞
+				// 這是確保左側欄位一定有資料的唯一方法
+				setTimeout(() => {
+					const veUrlInput = document.getElementById('ve-url-input');
+					const veJsonInput = document.getElementById('ve-json-input');
+					
+					// 將我們處理好的資料直接塞進去
+					if (veUrlInput) veUrlInput.value = processedPages.join('\n');
+					if (veJsonInput) veJsonInput.value = JSON.stringify(newVeJsonData, null, 4);
+
+					// 4. 強制更新全域狀態變數 (確保編輯器內部邏輯同步)
+					if (typeof vePages !== 'undefined') vePages = processedPages;
+					if (typeof veJsonData !== 'undefined') veJsonData = newVeJsonData;
+					
+					// 5. 【關鍵步驟】覆蓋 Marker 資料
+					// 因為 veLoadProject 或是 openVisualEditor 可能會重置 marker
+					// 我們這裡強制把 AI 算好的 marker 蓋回去
+					if (typeof veMarkersData !== 'undefined') {
+						veMarkersData = newVeMarkersData;
+					}
+
+					// 6. 強制渲染第一頁
+					if (typeof veCurrentPage !== 'undefined') veCurrentPage = 0;
+					if (typeof veRenderPage === 'function') {
+						veRenderPage();
+						console.log("✅ 強制渲染完成 (Page 0)");
+					}
+
+					alert("🎉 AI 分析完成！\n\n系統已自動填入圖片與座標。\n請檢查紅框位置是否正確。");
+					
+				}, 300); // 延遲 300ms 確保視窗已完全打開
+
+			} else {
+				alert('錯誤：找不到 Visual Editor 啟動函式。');
+			}
+		}
+		
+		// 輔助：檔案轉 Base64 供 SDK 使用
+		async function fileToGenerativePart(file) {
+			const base64EncodedDataPromise = new Promise((resolve) => {
+				const reader = new FileReader();
+				reader.onloadend = () => resolve(reader.result.split(',')[1]);
+				reader.readAsDataURL(file);
+			});
+			return {
+				inlineData: {
+					data: await base64EncodedDataPromise,
+					mimeType: file.type,
+				},
+			};
+		}
 	</script>
 	
 </body>
