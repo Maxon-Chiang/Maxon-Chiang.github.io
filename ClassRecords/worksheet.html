@@ -642,12 +642,16 @@
             return await snapshot.ref.getDownloadURL();
         }
 
-        // ☁️【新增】非同步收集答案並處理上傳
+		// ☁️【新增】非同步收集答案並處理上傳
         async function collectAnswersAndUpload() {
             const form = document.getElementById('worksheet-form');
             // 複製一份目前的答案，作為基底 (保留未修改的舊檔案連結)
             const answers = { ...currentLoadedAnswers }; 
             
+            // [MOD START] ★ 新增：用來記錄哪些 checkbox 群組已經被初始化(清空舊值)過
+            const processedCheckboxGroups = new Set();
+            // [MOD END]
+
             const inputs = form.querySelectorAll('.worksheet-input');
             
             for (const input of inputs) {
@@ -670,7 +674,25 @@
                     if (input.checked) answers[input.name] = input.value; 
                 } 
                 else if (input.type === 'checkbox') { 
-                    if (input.checked) answers[input.name] = input.value; 
+                    // [MOD START] 🛠️ 修改處：複選題邏輯修正 (累積多選值)
+                    
+                    // 1. 遇到該題目的第一個選項時，先移除舊資料(來自currentLoadedAnswers)，避免混雜到舊的勾選
+                    if (!processedCheckboxGroups.has(input.name)) {
+                        delete answers[input.name]; // 清空該欄位
+                        processedCheckboxGroups.add(input.name); // 標記已處理過初始化
+                    }
+
+                    // 2. 如果該選項被勾選，則進行「字串串接」
+                    if (input.checked) { 
+                        if (answers[input.name]) {
+                            // 如果裡面已經有值 (代表前面有其他選項被勾選了)，加上逗號
+                            answers[input.name] += ',' + input.value;
+                        } else {
+                            // 第一個被勾選的值
+                            answers[input.name] = input.value;
+                        }
+                    }
+                    // [MOD END] 🛠️ 修改結束
                 }
                 else {
                     answers[input.name] = input.value;
@@ -680,7 +702,7 @@
             currentLoadedAnswers = answers;
             return answers;
         }
-
+		
         // ==========================================
         //  三按鈕邏輯實作 (更新)
         // ==========================================
