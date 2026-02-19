@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數學公式繪圖編輯器</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "@google/generative-ai": "https://esm.run/@google/generative-ai"
+            }
+        }
+    </script>
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+        window.GoogleGenerativeAI = GoogleGenerativeAI;
+    </script>
+    <script>
+        window.MathJax = {
+            loader: { load: ['input/asciimath', 'output/svg'] },
+            asciimath: { delimiters: [['`','`']] }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/startup.js"></script>
+</head>
+<body>
+    <div id="app-loading-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #ffffff; z-index: 100000; display: flex; flex-direction: column; justify-content: center; align-items: center; font-family: 'Segoe UI', sans-serif;">
+        <div class="loading-spinner" style="width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #2980b9; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <div style="margin-top: 20px; color: #2c3e50; font-weight: bold; font-size: 18px;">數學編輯器載入中...</div>
+        <div id="loading-subtext" style="margin-top: 10px; color: #7f8c8d; font-size: 14px;">正在初始化幾何引擎與資料庫</div>
+    </div>
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <header>
+        <div style="font-weight:bold; font-size:18px;">數學公式繪圖編輯器</div>
+        <div class="header-controls" style="display: flex; flex-direction: row; align-items: center; gap: 8px;">
+            <input type="file" id="file-input" style="display: none" accept=".json,.svg,.png,.jpg,.jpeg">
+            <button class="tool-btn" onclick="isImportMode=false; document.getElementById('file-input').click()" title="開啟專案 (會清空目前畫布)" style="width: auto; padding: 0px 10px 3px 10px;">
+                <span style="font-size: 0.8em;">📂 開啟</span>
+            </button>
+            <button class="tool-btn" onclick="isImportMode=true; document.getElementById('file-input').click()" title="匯入專案 (疊加到目前畫布)" style="width: auto; padding: 0px 10px 3px 10px; margin-left:5px;">
+                <span style="font-size: 0.8em;">📥 匯入</span>
+            </button>
+            <button class="tool-btn btn-save" onclick="saveProject()" title="儲存為可編輯專案檔" style="width: auto; padding: 0px 10px 3px 10px;">
+                <span style="font-size: 0.8em;">💾 儲存專案</span>
+            </button>
+            <button class="tool-btn" onclick="copyImageToClipboard()" title="複製透明 PNG 到剪貼簿" style="width: auto; padding: 0px 10px 3px 10px; background-color: #3498db; color: white; margin-left: 5px;">
+                <span style="font-size: 0.8em;">📋 剪貼簿複製</span>
+            </button>
+            <button class="tool-btn" onclick="pasteFromClipboard()" title="從剪貼簿貼上圖片或文字" style="width: auto; padding: 0px 10px 3px 10px; background-color: #2ecc71; color: white; margin-left: 5px;">
+                <span style="font-size: 0.8em;">📥 剪貼簿貼上</span>
+            </button>
+            <div style="position: relative;">
+                <button class="tool-btn" onclick="startExportProcess(false)" title="將目前畫布匯出為圖片檔" style="width: auto; padding: 0px 10px 3px 10px; background-color: #e67e22; color: white;">
+                    <span style="font-size: 0.8em;">📤 匯出...</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <div class="toolbar">
+        <div class="tool-group">
+            <button class="tool-btn btn-labeled" id="btn-freehand" onclick="setShape('freehand')" title="手繪 (Freehand)">✏️ 手繪</button>
+            <button class="tool-btn btn-labeled" id="btn-text" onclick="setMode('draw', 'text')" title="插入文字 (T)">T 文字</button>
+            <button class="tool-btn btn-labeled math-mode-btn" id="btn-math" onclick="setMode('draw', 'math')" title="插入 Math 公式 (∑)">∑ 數學式</button>
+            <div style="display:flex; align-items:center; gap:2px; margin-right:5px;">
+                <button class="tool-btn btn-labeled" onclick="drawRealGrid()" title="繪製實體方格">▦ 方格圖</button>
+                <button class="tool-btn" onclick="clearRealBackground()" title="清除方格" style="width:30px; color:#c0392b; font-size:14px;">🗑️</button>
+            </div>
+            <button class="tool-btn btn-labeled" onclick="drawSmartAxes()" title="繪製智能座標">┼ 座標圖</button>
+        </div>
+        <div class="group-separator"></div>
+        <div class="tool-group">
+            <select id="stroke-color-select" class="tool-btn" title="線條顏色" onchange="updateColorSelect(this); onStyleChange('stroke')" onclick="onStyleChange('stroke')" style="font-weight: bold; color: #000000;">
+                <option value="#FFFFFF" style="color:#000000; background-color:#ecf0f1; font-weight:bold;">⬜ 白色線</option>
+                <option value="#000000" selected style="color:#000000; font-weight:bold;">━━ 黑色線</option>
+                <option value="#c0392b" style="color:#c0392b; font-weight:bold;">━━ 紅色線</option>
+                <option value="#2980b9" style="color:#2980b9; font-weight:bold;">━━ 藍色線</option>
+                <option value="#27ae60" style="color:#27ae60; font-weight:bold;">━━ 綠色線</option>
+                <option value="#f39c12" style="color:#f39c12; font-weight:bold;">━━ 橘色線</option>
+                <option value="#8e44ad" style="color:#8e44ad; font-weight:bold;">━━ 紫色線</option>
+                <option value="#7f8c8d" style="color:#7f8c8d; font-weight:bold;">━━ 灰色線</option>
+            </select>
+            <select id="line-style-select" class="tool-btn" title="線條樣式" onchange="onStyleChange('line-style')" onclick="onStyleChange('line-style')">
+                <option value="solid" selected>──── 實線</option>
+                <option value="dashed">-------- 虛線</option>
+                <option value="dotted">.......... 點線</option>
+                <option value="dash-dot">-.-.-.-.- 鏈線</option>
+            </select>
+            <div class="tool-btn-wrapper">
+                <input type="hidden" id="stroke-width-select" value="2">
+                <button id="btn-stroke-width" class="tool-btn" onclick="toggleStrokeWidthMenu()" title="線條粗細" style="min-width: 100px; justify-content: space-between; padding: 0 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div id="stroke-width-preview" style="width: 40px; height: 2px; background: #000;"></div>
+                        <span id="stroke-width-label" class="btn-text" style="font-size: 12px;">細</span>
+                    </div>
+                    <span style="font-size: 10px; color: #555;">▼</span>
+                </button>
+                <div id="menu-stroke-width" class="popup-menu" style="width: 120px;">
+                    <div class="popup-item" onclick="selectStrokeWidth(1, '極細')"><div style="width: 40px; height: 1px; background: #000;"></div>(極細)</div>
+                    <div class="popup-item" onclick="selectStrokeWidth(2, '細')"><div style="width: 40px; height: 2px; background: #000;"></div>(細)</div>
+                    <div class="popup-item" onclick="selectStrokeWidth(3, '中')"><div style="width: 40px; height: 3px; background: #000;"></div>(中)</div>
+                    <div class="popup-item" onclick="selectStrokeWidth(4, '粗')"><div style="width: 40px; height: 4px; background: #000;"></div>(粗)</div>
+                    <div class="popup-item" onclick="selectStrokeWidth(6, '特粗')"><div style="width: 40px; height: 6px; background: #000;"></div>(特粗)</div>
+                    <div class="popup-item" onclick="selectStrokeWidth(8, '極粗')"><div style="width: 40px; height: 8px; background: #000;"></div>(極粗)</div>
+                </div>
+            </div>
+            <select id="fill-color-select" class="tool-btn" title="填滿顏色" onchange="onStyleChange('fill')" onclick="onStyleChange('fill')">
+                <option value="none" selected>🔲 無填滿</option>
+                <option value="rgba(192, 57, 43, 0.2)">🟥 紅色(淡)</option>
+                <option value="rgba(41, 128, 185, 0.2)">🟦 藍色(淡)</option>
+                <option value="rgba(39, 174, 96, 0.2)">🟩 綠色(淡)</option>
+                <option value="rgba(241, 196, 15, 0.3)">🟨 黃色(淡)</option>
+                <option value="rgba(142, 68, 173, 0.2)">🟪 紫色(淡)</option>
+                <option value="#c0392b">🟥 紅色(實)</option>
+                <option value="#2980b9">🟦 藍色(實)</option>
+                <option value="#27ae60">🟩 綠色(實)</option>
+                <option value="#f1c40f">🟨 黃色(實)</option>
+                <option value="#7f8c8d">⬜ 灰色</option>
+                <option value="#000000">⬛ 黑色</option>
+            </select>
+            <select id="fill-style-select" class="tool-btn" title="填滿樣式" onchange="onStyleChange('fill-style')" onclick="onStyleChange('fill-style')" style="width: 110px;">
+                <option value="solid" selected>⬛ 單色填滿</option>
+                <option value="pat-slash">▨ 右斜線</option>
+                <option value="pat-backslash">▧ 左斜線</option>
+                <option value="pat-grid">▦ 交叉網格</option>
+                <option value="pat-dot">⁙ 點點</option>
+                <option value="pat-h-line">☰ 橫線</option>
+                <option value="pat-v-line">||| 直線</option>
+                <option value="pat-diag-cross">▩ 斜線交叉</option>
+            </select>
+        </div>
+        <div class="group-separator"></div>
+        <div class="tool-group right-aligned">
+            <button class="tool-btn btn-labeled" onclick="copySelection()" title="複製 (Ctrl+C)"><span class="btn-icon">&#10697;</span></button>
+            <button class="tool-btn btn-labeled" onclick="selectAllShapes()" title="全選 (Ctrl+A)"><span class="btn-icon">All</span></button>
+            <button class="tool-btn btn-labeled" onclick="cutSelection()" title="剪下 (Ctrl+X)"><span class="btn-icon">&#9986;</span></button>
+            <button class="tool-btn btn-labeled" onclick="pasteSelection()" title="貼上 (Ctrl+V)"><span class="btn-icon">&#10063;</span></button>
+            <div class="group-separator"></div>
+            <button class="tool-btn btn-undo btn-labeled" onclick="undo()" title="復原 (Ctrl+Z)"><span class="btn-icon">↶</span></button>
+            <button class="tool-btn btn-undo btn-labeled" onclick="redo()" title="重做 (Ctrl+Y)"><span class="btn-icon">↷</span></button>
+        </div>
+    </div>
+    <div id="editor-container">
+        <div class="right-sidebar">
+            <div class="sidebar-row">
+                <button class="tool-btn btn-select" id="btn-select" onclick="setMode('select')" title="選取模式 (V)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#f39c12" stroke="#e67e22" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path></svg>
+                    <span class="btn-text">選取</span>
+                </button>
+                <button class="tool-btn" id="btn-toggle-grid" onclick="toggleGrid()" title="顯示/隱藏輔助格線">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line></svg>
+                    <span class="btn-text">輔助格線</span>
+                </button>
+            </div>
+            <div class="group-separator"></div>
+            <div class="sidebar-row">
+                <button class="tool-btn" onclick="zOrder('front')" title="移至最上層">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 11 12 6 7 11"></polyline><polyline points="17 18 12 13 7 18"></polyline></svg>
+                    <span class="btn-text">上移</span>
+                </button>
+                <button class="tool-btn" onclick="zOrder('back')" title="移至最下層">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2980b9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 6 12 11 17 6"></polyline><polyline points="7 13 12 18 17 13"></polyline></svg>
+                    <span class="btn-text">下移</span>
+                </button>
+            </div>
+            <div class="sidebar-row">
+                <button id="btn-group-action" class="tool-btn" onclick="groupSelected()" title="群組 (Ctrl+G)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7 H 7 A 5 5 0 0 0 7 17 H 9"></path><path d="M15 17 H 17 A 5 5 0 0 0 17 7 H 15"></path><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                    <span class="btn-text">群組</span>
+                </button>
+                <button class="tool-btn" onclick="ungroupSelected()" title="取消群組 (Ctrl+Shift+G)">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9b59b6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="11" rx="2" ry="2"></rect><path d="M8 11 V 7 A 4 4 0 0 1 12 3"></path></svg>
+                    <span class="btn-text">解群</span>
+                </button>
+            </div>
+            <div class="group-separator"></div>
+            <div class="sidebar-row">
+                <div class="tool-btn-wrapper">
+                    <button id="btn-align" class="tool-btn" onclick="toggleAlignMenu()" title="對齊工具">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d35400" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" y1="10" x2="3" y2="10"></line><line x1="21" y1="6" x2="3" y2="6"></line><line x1="21" y1="14" x2="3" y2="14"></line><line x1="21" y1="18" x2="3" y2="18"></line></svg>
+                        <span class="btn-text">對齊</span>
+                    </button>
+                    <div id="menu-align" class="popup-menu" style="width: 120px;">
+                        <div style="padding:5px 8px; border-bottom:1px solid #eee; margin-bottom:2px;"><label style="font-size:12px; cursor:pointer; display:flex; align-items:center;"><input type="checkbox" id="chk-align-canvas" style="margin-right:5px;"> 相對畫布</label></div>
+                        <div class="popup-item" onclick="executeAlign('left')"><span>╞</span> 靠左</div>
+                        <div class="popup-item" onclick="executeAlign('center-x')"><span>│</span> 水平中</div>
+                        <div class="popup-item" onclick="executeAlign('right')"><span>╡</span> 靠右</div>
+                        <div class="popup-item" onclick="executeAlign('top')"><span>╥</span> 靠上</div>
+                        <div class="popup-item" onclick="executeAlign('center-y')"><span>─</span> 垂直中</div>
+                        <div class="popup-item" onclick="executeAlign('bottom')"><span>╨</span> 靠下</div>
+                        <div class="popup-item" onclick="executeAlign('dist-h')"><span>↔</span> 水平均分</div>
+                        <div class="popup-item" onclick="executeAlign('dist-v')"><span>↕</span> 垂直均分</div>
+                    </div>
+                </div>
+                <button class="tool-btn" onclick="openFunctionModal()" title="繪製函數圖形 (y=f(x))">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="#bdc3c7"></rect><path d="M3 15c2-4 5-8 9-3s5 8 9 3" stroke="#8e44ad"></path></svg>
+                    <span class="btn-text">函數</span>
+                </button>
+            </div>
+            <button id="btn-snap-intersection" class="tool-btn" onclick="toggleIntersectionSnapping()" title="交點吸附">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /><path d="M3 3l18 18M3 21l18-18" /></svg>
+                <span class="btn-text">交點吸附</span>
+            </button>
+            <div class="group-separator"></div>
+            <div class="sidebar-row">
+                <button class="tool-btn" onclick="mirrorSelected()" title="左右鏡像"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12l5-5v10l-5-5zM22 12l-5-5v10l5-5z"/></svg><span class="btn-text">左右鏡像</span></button>
+                <button id="btn-symmetry" class="tool-btn" onclick="toggleSymmetryMode()" title="對稱作圖"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22" stroke-dasharray="4,2"></line><path d="M7 8 L3 16 H10 Z" fill="rgba(44, 62, 80, 0.2)"></path><path d="M17 8 L21 16 H14 Z"></path><path d="M10 12 L14 12" stroke-width="1" marker-end="url(#arrow-end)"></path></svg><span class="btn-text">對稱作圖</span></button>
+            </div>
+            <div class="group-separator"></div>
+            <div class="sidebar-row">
+                <div class="tool-btn-wrapper">
+                    <button id="btn-mark-edge" class="tool-btn" onclick="toggleEdgeMenu()" title="邊長標記"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="20" y2="12" /><line x1="9" y1="16" x2="11" y2="8" /><line x1="13" y1="16" x2="15" y2="8" /></svg><span class="btn-text">線標</span></button>
+                    <div id="menu-edge" class="popup-menu">
+                        <div class="popup-item" onclick="selectEdgeStyle('1', '|')"><span>|</span> 等長 (1)</div>
+                        <div class="popup-item" onclick="selectEdgeStyle('2', '||')"><span>||</span> 等長 (2)</div>
+                        <div class="popup-item" onclick="selectEdgeStyle('3', '|||')"><span>|||</span> 等長 (3)</div>
+                        <div class="popup-item" onclick="selectEdgeStyle('tick', '⊥')"><span>⊥</span> 短劃</div>
+                        <div class="popup-item" onclick="selectEdgeStyle('x', '✕')"><span>✕</span> 叉號</div>
+                        <div class="popup-item" onclick="selectEdgeStyle('o', '○')"><span>○</span> 圓圈</div>
+                        <div class="popup-item" onclick="selectEdgeStyle('parallel', '➤')"><span>➤</span> 平行</div>
+                        <div style="border-top: 1px solid #eee; margin: 2px 0;"></div>
+                        <div class="popup-item" onclick="selectEdgeStyle('text', 'T')"><span>T</span> 自訂文字</div>
+                        <div class="popup-item" onclick="selectEdgeStyle('dimension', '📏')"><span>📏</span> 尺寸標註</div>
+                    </div>
+                </div>
+                <div class="tool-btn-wrapper">
+                    <button id="btn-mark-angle" class="tool-btn" onclick="toggleAngleMenu()" title="角度標記"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21 L21 21" /><path d="M3 21 L16 5" /><path d="M10 21 A 7 7 0 0 0 7 14" /></svg><span class="btn-text">角標</span></button>
+                    <div id="menu-angle" class="popup-menu">
+                        <div class="popup-item" onclick="selectAngleStyle('arc')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 14 A 8 8 0 0 0 19 14" /></svg>單弧</div>
+                        <div class="popup-item" onclick="selectAngleStyle('double-arc')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 14 A 5 5 0 0 0 17 14" /><path d="M4 14 A 8 8 0 0 0 20 14" /></svg>雙弧</div>
+                        <div class="popup-item" onclick="selectAngleStyle('right')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 20 L 6 12 L 14 12" /></svg>直角</div>
+                        <div class="popup-item" onclick="selectAngleStyle('text')"><span style="font-weight:bold; font-size:16px; width:24px; text-align:center;">Tx</span>文字/度數</div>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-row">
+                <div class="tool-btn-wrapper">
+                    <button id="btn-construct" class="tool-btn" onclick="toggleConstructMenu()" title="尺規作圖"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8e44ad" stroke-width="2"><rect x="2" y="2" width="6" height="20" rx="1" /><path d="M8 6 L5 6" /><path d="M8 10 L5 10" /><circle cx="16" cy="5" r="2" /><path d="M16 7 L12 22" /><path d="M16 7 L20 22" /></svg><span class="btn-text">尺規作圖</span></button>
+                    <div id="menu-construct" class="popup-menu" style="width: 150px;">
+                        <div class="popup-item" onclick="toggleConstructMode('midpoint')"><span>·</span> 中點</div>
+                        <div class="popup-item" onclick="toggleConstructMode('perpendicular')"><span>⊥</span> 中垂線</div>
+                        <div class="popup-item" onclick="toggleConstructMode('perpendicular_point')"><span>⟂</span> 點到線垂線</div>
+                        <div class="popup-item" onclick="toggleConstructMode('median_line')"><span>∕</span> 中線</div>
+                        <div class="popup-item" onclick="toggleConstructMode('parallel')"><span>∥</span> 平行線</div>
+                        <div class="popup-item" onclick="toggleConstructMode('tangent')"><span>○</span> 圓切線</div>
+                        <div class="popup-item" onclick="toggleConstructMode('connect_points')"><span>/</span> 兩點連線</div>
+                        <div style="border-top: 1px solid #eee; margin: 2px 0;"></div>
+                        <div class="popup-item" onclick="toggleConstructMode('divide_line')"><span>📏</span> 線段等分</div>
+                        <div class="popup-item" onclick="toggleConstructMode('divide_angle')"><span>∠</span> 角平分</div>
+                        <div style="border-top: 1px solid #eee; margin: 2px 0;"></div>
+                        <div class="popup-item" onclick="toggleConstructMode('circumcenter')"><span>🔵</span> 外心</div>
+                        <div class="popup-item" onclick="toggleConstructMode('incenter')"><span>⚪</span> 內心</div>
+                        <div class="popup-item" onclick="toggleConstructMode('centroid')"><span>⚖️</span> 重心</div>
+                    </div>
+                </div>
+                <div class="tool-btn-wrapper">
+                    <button id="btn-circle-angles" class="tool-btn" onclick="toggleCircleAngleMenu()" title="圓形角作圖"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1abc9c" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 12 L19.07 15.93"></path><path d="M12 12 L15.93 5.07"></path><path d="M10 14 A 2.5 2.5 0 0 0 14 14"></path></svg><span class="btn-text">圓形角</span></button>
+                    <div id="menu-circle-angles" class="popup-menu" style="width: 150px;">
+                        <div class="popup-item" onclick="toggleCircleAngleMode('central')"><span>⚪</span> 圓心角</div>
+                        <div class="popup-item" onclick="toggleCircleAngleMode('inscribed')"><span> V </span> 圓周角</div>
+                        <div class="popup-item" onclick="toggleCircleAngleMode('tangent-chord')"><span> T </span> 弦切角</div>
+                    </div>
+                </div>
+            </div>
+            <div class="group-separator"></div>
+            <div class="sidebar-row">
+                <button class="tool-btn btn-delete" onclick="deleteSelected()" title="刪除選取物件"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg><span class="btn-text">刪除物件</span></button>
+                <button class="tool-btn btn-delete" onclick="clearCanvas()" title="清空畫布"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="2"><path d="M16 2l4 4-10 10-4-4L16 2z" fill="#fce4ec"></path><path d="M6 16l-3 3 3 3 3-3-3-3z"></path><line x1="3" y1="19" x2="21" y2="19" stroke="#7f8c8d" stroke-width="3"></line></svg><span class="btn-text">清空畫布</span></button>
+            </div>
+        </div>
+        <div class="left-sidebar">
+            <div class="sidebar-group-title">── 線段類 ──</div>
+            <div class="sidebar-group">
+                <button class="tool-btn shape-btn" onclick="setShape('point')" oncontextmenu="event.preventDefault(); setShape('point', true)"><span class="btn-icon">●</span><span class="btn-text">圓點</span></button>
+                <button class="tool-btn shape-btn active" onclick="setShape('line-simple')" oncontextmenu="event.preventDefault(); setShape('line-simple', true)"><span class="btn-icon">╱</span><span class="btn-text">直線</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('line-end')" oncontextmenu="event.preventDefault(); setShape('line-end', true)"><span class="btn-icon">→</span><span class="btn-text">單箭頭</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('line-start')" oncontextmenu="event.preventDefault(); setShape('line-start', true)"><span class="btn-icon">←</span><span class="btn-text">單箭頭</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('line-double')" oncontextmenu="event.preventDefault(); setShape('line-double', true)"><span class="btn-icon">↔</span><span class="btn-text">雙箭頭</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('angle')" oncontextmenu="event.preventDefault(); setShape('angle', true)"><span class="btn-icon">∠</span><span class="btn-text">角</span></button>
+            </div>
+            <div class="sidebar-group-title">── 三角形 ──</div>
+            <div class="sidebar-group">
+                <button class="tool-btn shape-btn" onclick="setShape('tri-iso')" oncontextmenu="event.preventDefault(); setShape('tri-iso', true)"><span class="btn-icon">△</span><span class="btn-text">等腰</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('tri-right')" oncontextmenu="event.preventDefault(); setShape('tri-right', true)"><span class="btn-icon">⊿</span><span class="btn-text">直角</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('tri-equi')" oncontextmenu="event.preventDefault(); setShape('tri-equi', true)"><span class="btn-icon">△</span><span class="btn-text">正三角</span></button>
+            </div>
+            <div class="sidebar-group-title">── 四邊形 ──</div>
+            <div class="sidebar-group">
+                <button class="tool-btn shape-btn" onclick="setShape('rect-free')" oncontextmenu="event.preventDefault(); setShape('rect-free', true)"><span class="btn-icon">▭</span><span class="btn-text">矩形</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('rect-square')" oncontextmenu="event.preventDefault(); setShape('rect-square', true)"><span class="btn-icon">□</span><span class="btn-text">正方形</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('rhombus')" oncontextmenu="event.preventDefault(); setShape('rhombus', true)"><span class="btn-icon">◇</span><span class="btn-text">菱形</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('kite')" oncontextmenu="event.preventDefault(); setShape('kite', true)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.0"><path d="M12 2 L20 9 L12 22 L4 9 Z" /></svg><span class="btn-text">箏形</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('parallelogram')" oncontextmenu="event.preventDefault(); setShape('parallelogram', true)"><span class="btn-icon">▱</span><span class="btn-text">平行</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('trapezoid')" oncontextmenu="event.preventDefault(); setShape('trapezoid', true)"><span class="btn-icon">⏢</span><span class="btn-text">梯形</span></button>
+            </div>
+            <div class="sidebar-group-title">── 圓/多邊 ──</div>
+            <div class="sidebar-group">
+                <button class="tool-btn shape-btn" onclick="setShape('circle')" oncontextmenu="event.preventDefault(); setShape('circle', true)"><span class="btn-icon">○</span><span class="btn-text">圓形</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('ellipse')" oncontextmenu="event.preventDefault(); setShape('ellipse', true)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.0"><ellipse cx="12" cy="12" rx="9" ry="6" /></svg><span class="btn-text">橢圓</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('sector')" oncontextmenu="event.preventDefault(); setShape('sector', true)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M 5 19 L 19 19 A 14 14 0 0 0 5 5 Z" /></svg><span class="btn-text">扇形</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('arc')" oncontextmenu="event.preventDefault(); setShape('arc', true)"><span class="btn-icon">⌒</span><span class="btn-text">圓弧</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('arch')" oncontextmenu="event.preventDefault(); setShape('arch', true)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M 8 4 L 8 20 A 8 8 0 0 0 8 4 Z" /></svg><span class="btn-text">弓形</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('polygon-regular')" oncontextmenu="event.preventDefault(); setShape('polygon-regular', true)"><span class="btn-icon">⬠</span><span class="btn-text">多邊形</span></button>
+                <button class="tool-btn shape-btn" onclick="openParamModal('star')"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span class="btn-text">星形</span></button>
+            </div>
+            <div class="sidebar-group-title">── 立體 ──</div>
+            <div class="sidebar-group">
+                <button class="tool-btn shape-btn" onclick="setShape('solid-cube')" oncontextmenu="event.preventDefault(); setShape('solid-cube', true)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.0"><path d="M21 16.5 L 21 7.5 L 12 2.25 L 3 7.5 L 3 16.5 L 12 21.75 L 21 16.5 Z" /><path d="M3 7.5 L 12 12.75 L 21 7.5" /><path d="M12 12.75 L 12 21.75" /></svg><span class="btn-text">正方體</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('solid-cylinder')" oncontextmenu="event.preventDefault(); setShape('solid-cylinder', true)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.0"><path d="M4 5 L 4 19 A 8 3 0 0 0 20 19 L 20 5" /><ellipse cx="12" cy="5" rx="8" ry="3" /></svg><span class="btn-text">圓柱</span></button>
+                <button class="tool-btn shape-btn" onclick="setShape('solid-cone')" oncontextmenu="event.preventDefault(); setShape('solid-cone', true)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.0"><ellipse cx="12" cy="19" rx="8" ry="3" /><path d="M4 19 L 12 2 L 20 19" /></svg><span class="btn-text">圓錐</span></button>
+            </div>
+            <div class="sidebar-group-title">── 代數 ──</div>
+            <div class="sidebar-group">
+                <button class="tool-btn shape-btn" onclick="openParamModal('parabola')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 4 Q 12 20 20 4" /></svg><span class="btn-text">拋物線</span></button>
+                <button class="tool-btn shape-btn" onclick="openParamModal('inequality')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="4" y1="12" x2="20" y2="12"></line><circle cx="4" cy="12" r="3"></circle><polyline points="16 8 20 12 16 16"></polyline></svg><span class="btn-text">不等式</span></button>
+            </div>
+            <div class="sidebar-group-title">── 統計 ──</div>
+            <div class="sidebar-group">
+                <button class="tool-btn shape-btn" onclick="openParamModal('boxplot')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="2" y1="12" x2="6" y2="12"></line><rect x="6" y="7" width="12" height="10"></rect><line x1="12" y1="7" x2="12" y2="17"></line><line x1="18" y1="12" x2="22" y2="12"></line></svg><span class="btn-text">盒狀圖</span></button>
+                <button class="tool-btn shape-btn" onclick="openParamModal('histogram')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="10" width="5" height="10"></rect><rect x="7" y="6" width="5" height="14"></rect><rect x="12" y="14" width="5" height="6"></rect></svg><span class="btn-text">直方圖</span></button>
+                <button class="tool-btn shape-btn" onclick="openParamModal('pie_chart')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></svg><span class="btn-text">圓餅圖</span></button>
+            </div>
+            <div class="sidebar-group-title">── 集合 ──</div>
+            <div class="sidebar-group"><button class="tool-btn shape-btn" onclick="openParamModal('venn_diagram')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="12" r="6" /><circle cx="16" cy="12" r="6" /></svg><span class="btn-text">文氏圖</span></button></div>
+        </div>
+        <div id="drawing-area" style="display: flex; flex-direction: column;">
+            <div class="canvas-top-bar" style="height: 40px; width: 100%; background: #ecf0f1; border-bottom: 1px solid #bdc3c7; display: flex; align-items: center; padding: 0 10px; gap: 4px; flex-shrink: 0;">
+                <label style="display: flex; align-items: center; gap: 5px; font-size: 14px; cursor: pointer; user-select: none; color: #2c3e50; font-weight: bold;"><input type="checkbox" id="auto-label-check"></label>
+                <span style="font-size: 14px; color: #2c3e50; font-weight: bold;">🔠自動頂點標註(起標<input type="text" id="label-start-input" value="A" maxlength="3" style="width: 30px; text-align: center; padding: 2px;" onchange="setLabelIndexFromInput()">)</span>
+                <button class="tool-btn" onclick="toggleLabelOnSelection()" style="width: auto; padding: 0 8px; font-weight:bold; font-size:14px; color:#2c3e50; height: 26px;">頂點標註/刪除</button>
+                <button class="tool-btn" id="btn-label-dir" onclick="toggleLabelDirection()" style="width: 30px; height: 26px; font-size: 18px; padding: 0; line-height: 1;">↺</button>
+                <div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
+                <label style="display: flex; align-items: center; gap: 5px; font-size: 14px; cursor: pointer; user-select: none; color: #2c3e50; font-weight: bold;"><input type="checkbox" id="auto-angle-label-check">∠自動角度標註</label>
+                <button class="tool-btn" onclick="toggleAngleLabelOnSelection()" style="width: auto; padding: 0 8px; font-weight:bold; font-size:14px; color:#2c3e50; height: 26px;">角度標註/刪除</button>
+                <div style="width: 1px; height: 20px; background: #ccc; margin: 0 5px;"></div>
+                <button class="tool-btn" id="btn-rotate-90" onclick="rotateFixed(event, -90)" style="width: auto; padding: 0 10px; font-size:14px; color:#2c3e50; height: 26px; display:flex; align-items:center; gap:4px;"><span style="font-size: 18px;">↺</span><span id="rotation-display" style="font-size: 14px; color: #2c3e50; font-weight: bold;">0°</span></button>
+                <div style="display: flex; align-items: center; gap: 2px;"><input type="number" id="input-angle-custom" style="width: 50px; padding: 2px; text-align: center; height: 18px; font-size: 12px;"><span style="font-size: 14px;">°</span><button class="tool-btn" onclick="rotateSpecific()" style="width: auto; padding: 0 5px; height: 26px; font-weight: bold; font-size: 14px;">旋轉</button></div>
+                <div id="json-import-modal" class="modal-overlay" style="z-index: 4000;">
+                    <div class="modal-box" style="width: 650px; max-height: 95vh; display: flex; flex-direction: column;">
+                        <div class="modal-header">🤖 智慧解析匯入</div>
+                        <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 15px;">
+                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                <div style="flex: 1;"><label style="display: block; font-weight: bold; margin-bottom: 5px; color: #2980b9; font-size: 13px;">識圖解析</label><div id="ai-upload-container" style="border: 2px dashed #3498db; padding: 10px; text-align: center; border-radius: 8px; background: #f7fbff; margin-bottom: 10px;"><input type="file" id="ai-image-input" accept="image/*" style="display: none;"><div style="display: flex; gap: 5px; justify-content: center; margin-bottom: 8px;"><button type="button" onclick="document.getElementById('ai-image-input').click()" style="padding: 5px 12px; font-size: 12px; background: #fff; border: 1px solid #3498db; border-radius: 4px; color: #3498db; cursor: pointer; font-weight: bold;">📂 選擇檔案</button><button type="button" onclick="handleExplicitPaste()" style="padding: 5px 12px; font-size: 12px; background: #3498db; border: 1px solid #3498db; border-radius: 4px; color: #fff; cursor: pointer; font-weight: bold;">📋 貼上圖片</button></div><div id="ai-status-display" style="margin-top: 8px; font-size: 11px; color: #666; min-height: 1.5em; font-weight: bold;"></div></div><label style="display: block; font-weight: bold; margin-bottom: 5px; color: #27ae60; font-size: 13px;">素材名稱</label><input type="text" id="json-import-name" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box;"><label style="display: block; font-weight: bold; margin-bottom: 5px; color: #8e44ad; font-size: 13px;">儲存分類</label><select id="json-import-category" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; box-sizing: border-box;"></select></div>
+                                <div style="width: 300px; display: flex; flex-direction: column; gap: 10px;"><div><label style="display: block; font-weight: bold; margin-bottom: 3px; color: #e67e22; font-size: 12px;">🖼️ 原始圖片</label><div id="source-image-preview" style="width: 100%; height: 110px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; display: flex; align-items: center; justify-content: center; overflow: hidden;"><span style="color: #ccc; font-size: 11px;">尚未上傳圖片</span></div></div><div><label style="display: block; font-weight: bold; margin-bottom: 3px; color: #7f8c8d; font-size: 12px;">👁️ AI 預覽</label><div id="import-preview-container" style="width: 100%; height: 110px; border: 1px solid #ddd; border-radius: 4px; background: #fff; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative;"><svg id="import-preview-svg" viewBox="0 0 800 600" style="width: 100%; height: 100%; pointer-events: none;"></svg><div id="preview-error-msg" style="position: absolute; color: #e74c3c; font-size: 10px; background: rgba(255,255,255,0.8); display: none; text-align: center; padding: 5px;">JSON 格式錯誤</div></div></div></div>
+                            </div>
+                            <label style="display: block; font-weight: bold; margin-bottom: 5px; color: #2c3e50; font-size: 13px;">解析代碼 (JSON)</label><textarea id="json-import-area" style="width: 100%; height: 180px; font-family: monospace; font-size: 11px; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; background: #fdfdfd; resize: none;"></textarea>
+                        </div>
+                        <div class="modal-footer"><button class="btn-modal btn-cancel" onclick="closeJsonImportModal()">取消</button><button class="btn-modal btn-confirm" id="btn-ai-confirm" onclick="confirmJsonImport()">確認匯入圖庫</button></div>
+                    </div>
+                </div>
+                <div id="canvas-info-display" onclick="openCanvasSettingsModal()" class="clickable-badge" style="margin-left: auto; margin-right: 10px; font-size: 12px; color: #34495e; background: #fff; padding: 4px 10px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; white-space: nowrap; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 5px;"><span>800 x 600 (螢幕)</span><span style="font-size: 10px; color: #999;">▼</span></div>
+                <div id="hidden-library-modal-container"></div>
+            </div>
+            <div class="canvas-main-container" style="display: flex; flex-direction: row; align-items: flex-start; justify-content: center; padding: 10px; gap: 10px;">
+                <svg id="svg-canvas" class="grid-bg-css" style="width: 800px; height: 600px; display: block;"><defs><marker id="arrow-end" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L10,3 L0,6" fill="#000" /></marker><marker id="arrow-start" markerWidth="10" markerHeight="10" refX="1" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M10,0 L0,3 L10,6" fill="#000" /></marker><clipPath id="canvas-clip"><rect x="35" y="35" width="730" height="530" /></clipPath><g id="fill-patterns"><pattern id="pat-slash" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" stroke="currentColor" stroke-width="1" /></pattern><pattern id="pat-backslash" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><line x1="0" y1="0" x2="0" y2="5" stroke="currentColor" stroke-width="1" /></pattern><pattern id="pat-grid" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M 8 0 L 0 0 0 8" fill="none" stroke="currentColor" stroke-width="0.8"/></pattern><pattern id="pat-dot" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="0.8" fill="currentColor" /></pattern><pattern id="pat-h-line" width="5" height="5" patternUnits="userSpaceOnUse"><line x1="0" y1="2.5" x2="5" y2="2.5" stroke="currentColor" stroke-width="1" /></pattern><pattern id="pat-v-line" width="5" height="5" patternUnits="userSpaceOnUse"><line x1="2.5" y1="0" x2="2.5" y2="5" stroke="currentColor" stroke-width="1" /></pattern><pattern id="pat-diag-cross" width="6" height="6" patternUnits="userSpaceOnUse"><path d="M0 0 L6 6 M6 0 L0 6" stroke="currentColor" stroke-width="0.8" /></pattern></g></defs><g id="background-layer"></g><g id="shapes-layer"></g><g id="temp-layer"></g><g id="handles-layer"></g></svg>
+                <div id="selection-rect"></div>
+                <div class="canvas-right-bar">
+                    <div class="right-bar-title">圖庫工具</div>
+                    <button class="tool-btn v-btn" onclick="saveToCollection()"><span class="btn-icon">⭐</span><span class="btn-text">選圖入庫</span></button>
+                    <button class="tool-btn v-btn" onclick="openJsonImportModal()"><span class="btn-icon">📥</span><span class="btn-text">解圖入庫</span></button>
+                    <button class="tool-btn v-btn" id="btn-library-trigger" onclick="openLibraryModal()"><span class="btn-icon">📚</span><span class="btn-text">圖庫管理</span></button>
+                    <div class="right-bar-separator"></div>
+                </div>
+                <div id="library-modal" class="modal-overlay" style="z-index: 5000;">
+                    <div class="modal-box" style="width: 90%; max-width: 1000px; height: 85vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+                        <div class="lib-header" style="padding: 15px; background: #2c3e50; color: white; display: flex; justify-content: space-between; align-items: center;"><div style="display:flex; align-items:center; gap:15px;"><div style="font-size: 18px; font-weight: bold;">📚 數學繪圖資源庫</div><input type="text" id="lib-search" oninput="filterLibraryItems()" style="font-size:14px; padding:4px 8px; border-radius:4px; border:none; color:#333; width:120px;"><div class="lib-search-options"><label><input type="radio" name="search-scope" value="global" checked onchange="filterLibraryItems()"> 全域</label><label><input type="radio" name="search-scope" value="category" onchange="filterLibraryItems()"> 當前分類</label></div></div><div style="display: flex; gap: 2px;"><input type="file" id="library-import-input" style="display: none;" accept=".json" onchange="importFullLibrary(this)"><input type="file" id="library-restore-input" style="display: none;" accept=".json" onchange="restoreFullLibrary(this)"><button class="btn-modal" onclick="triggerLibraryImport()" style="background:#3498db; color:white; padding:5px 10px;">📥 匯入</button><button class="btn-modal" onclick="exportFullLibrary()" style="background:#27ae60; color:white; padding:5px 10px;">📤 備份</button><button class="btn-modal" onclick="triggerLibraryRestore()" style="background:#8e44ad; color:white; padding:5px 10px;">♻️ 還原</button><button class="btn-modal" onclick="triggerClearLibrary()" style="background:#c0392b; color:white; padding:5px 10px;">💣 清除</button><div style="width:1px; background:rgba(255,255,255,0.3); margin:0 5px;"></div><button class="btn-modal" onclick="closeLibraryModal()" style="background:#95a5a6; color:white; padding:5px 10px;">✕ 關閉</button></div></div>
+                        <div style="flex: 1; display: flex; overflow: hidden; background: #f5f6fa;">
+                            <div class="lib-sidebar" style="width: 220px; background: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column;"><div style="padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; color: #555; background:#f9f9f9;">📂 分類目錄</div><div id="lib-category-list" style="flex: 1; overflow-y: auto; padding: 5px;"></div><div style="padding: 10px; border-top: 1px solid #eee;"><button class="tool-btn" onclick="createNewCategory()" style="width: 100%; justify-content: center; font-size:13px;">➕ 新增分類</button></div></div>
+                            <div class="lib-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;"><div id="lib-action-bar" style="padding: 10px; background: #fff; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 10px; height:40px;"><label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:14px;"><input type="checkbox" id="lib-select-all" onchange="toggleSelectAllLibrary()"> 全選</label><div style="width:1px; height:20px; background:#ccc; margin:0 5px;"></div><span id="lib-selected-count" style="font-size:13px; color:#666; font-weight:bold;">已選 0 項</span><div id="lib-batch-actions" style="display: flex; gap: 5px;"><button class="tool-btn lib-batch-btn" id="btn-batch-move" onclick="batchMoveLibraryItems()" style="background:#ebf5fb; color:#2980b9;" disabled>📂 移動</button><button class="tool-btn lib-batch-btn" id="btn-batch-del" onclick="batchDeleteLibraryItems()" style="background:#fdedec; color:#e74c3c;" disabled>🗑️ 刪除</button><button class="tool-btn lib-batch-btn" id="btn-batch-copy" onclick="batchCopyLibraryJson()" style="background:#f4f6f7; color:#333;" disabled>📋 複製</button><button class="tool-btn lib-batch-btn" id="btn-batch-export" onclick="batchExportLibraryItems()" style="background:#e8f8f5; color:#16a085;" disabled>📤 匯出</button></div><div style="margin-left: auto;"><button class="tool-btn" onclick="deleteCurrentCategory()" id="btn-del-cat" style="font-size: 12px; color:#c0392b; border-color:#c0392b;">🗑️ 刪除此分類</button></div></div><div id="lib-item-grid" style="flex: 1; overflow-y: auto; padding: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; align-content: start;"></div><div id="lib-empty-msg" style="display:none; flex:1; flex-direction:column; align-items:center; justify-content:center; color:#999;"><div style="font-size:48px; margin-bottom:10px;">📭</div><div>此分類尚無素材</div></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="canvas-settings-modal" class="modal-overlay" style="z-index: 6000;">
+        <div class="modal-box" style="width: 320px; padding: 20px;"><div class="modal-header">畫布設定</div><div class="modal-body" style="font-size: 14px; display: flex; flex-direction: column; gap: 12px;"><div style="display: flex; align-items: center;"><div style="font-weight:bold; color:#2c3e50; width: 80px; text-align: right; margin-right: 10px;">使用情境：</div><div style="display: flex; gap: 15px;"><label style="cursor:pointer; display:flex; align-items:center; gap: 4px;"><input type="radio" name="canvas-mode" value="screen" checked onchange="updateCanvasSettingsUI()"><span>🖥️ 螢幕</span></label><label style="cursor:pointer; display:flex; align-items:center; gap: 4px;"><input type="radio" name="canvas-mode" value="print" onchange="updateCanvasSettingsUI()"><span>🖨️ 列印</span></label></div></div><div style="display: flex; align-items: center;"><div style="font-weight:bold; color:#2c3e50; width: 80px; text-align: right; margin-right: 10px;">版面方向：</div><div style="display: flex; gap: 15px;"><label style="cursor:pointer; display:flex; align-items:center; gap: 4px;"><input type="radio" name="canvas-orient" value="landscape" checked onchange="updateCanvasSizeOptions()"><span>▅ 橫向</span></label><label style="cursor:pointer; display:flex; align-items:center; gap: 4px;"><input type="radio" name="canvas-orient" value="portrait" onchange="updateCanvasSizeOptions()"><span>▍ 直向</span></label></div></div><div style="display: flex; align-items: center;"><div style="font-weight:bold; color:#2c3e50; width: 80px; text-align: right; margin-right: 10px;">畫布尺寸：</div><select id="canvas-size-dropdown" style="flex: 1; padding: 4px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px;"></select></div><div style="border-top: 1px dashed #ddd; margin-top: 5px;"></div><div style="display: flex; justify-content: center; padding-top: 5px;"><label style="cursor:pointer; display:flex; align-items:center; gap: 6px;"><input type="checkbox" id="canvas-safe-margin"><span style="font-size:13px; color:#555;">顯示安全邊距</span></label></div></div><div class="modal-footer" style="padding-top: 15px; justify-content: center; gap: 15px;"><button class="btn-modal btn-cancel" onclick="document.getElementById('canvas-settings-modal').style.display='none'">取消</button><button class="btn-modal btn-confirm" onclick="confirmCanvasSettings()">確定套用</button></div></div>
+    </div>
+    <div id="smart-panel" class="floating-panel" style="display:none;"><div class="panel-header"><span>𝑓(𝑥) 參數調整</span><button onclick="cleanupTemporaryFunction(document.querySelector('.smart-function.selected'))" style="background:none;border:none;color:#666;cursor:pointer;">✕</button></div><div id="smart-panel-content"></div></div>
+    <div id="status-bar">
+        <span id="status-text">就緒。</span>
+        <div style="display: flex; align-items: center;"><span style="margin-right: 5px;">X:</span><input type="number" id="input-coord-x" value="0"><span style="margin-right: 5px;">Y:</span><input type="number" id="input-coord-y" value="0"><label><input type="checkbox" id="lock-coords"><span style="font-size: 12px;">🔒 鎖定輸入</span></label></div>
+    </div>
+    <div id="text-modal" class="modal-overlay">
+        <div class="modal-box"><div class="modal-header">編輯文字</div><div class="modal-body"><div class="modal-row" style="justify-content: space-between; align-items: center;"><span class="modal-label">文字內容:</span><div style="display: flex; align-items: center; gap: 5px;"><select id="font-size-select" class="tool-btn" style="width: 80px; height: 30px;"><option value="12">12 px</option><option value="14">14 px</option><option value="16">16 px</option><option value="18">18 px</option><option value="20" selected>20 px</option><option value="24">24 px</option><option value="32">32 px</option><option value="48">48 px</option><option value="64">64 px</option><option value="96">96 px</option></select><select id="text-color-select" class="tool-btn" style="width: 100px; height: 30px;"><option value="#000000">⬛ 黑色</option><option value="#FFFFFF">⬜ 白色</option><option value="#c0392b">🟥 紅色</option><option value="#2980b9">🟦 藍色</option><option value="#27ae60">🟩 綠色</option><option value="#d35400">🟧 深橘</option><option value="#8e44ad">🟪 紫色</option></select></div></div><textarea id="text-input-area"></textarea><div id="symbol-section"><div style="font-size:14px; color:#2c3e50; font-weight:bold; margin-bottom:8px;">⌨️ 常用符號</div><div class="symbol-grid" id="symbol-container"></div></div></div><div class="modal-footer"><button class="btn-cancel" onclick="closeTextModal()">取消</button><button class="btn-confirm" onclick="confirmTextEntry()">確定</button></div></div>
+    </div>
+    <div id="axes-modal" class="modal-overlay">
+        <div class="modal-box2"><div class="modal-header">設定座標軸</div><div class="input-group" style="margin-bottom: 10px; border-bottom: 1px dashed #eee; padding-bottom: 10px;"><label style="width: auto; margin-right: 10px;">類型:</label><label style="cursor: pointer; margin-right: 15px; display:inline-flex; align-items:center;"><input type="radio" name="axis-type" value="xy" checked style="margin-right:5px;"> XY 座標平面</label><label style="cursor: pointer; display:inline-flex; align-items:center;"><input type="radio" name="axis-type" value="number-line" style="margin-right:5px;"> 數線 (一維)</label></div><div class="input-group"><label>單邊範圍:</label><input type="number" id="axis-range" value="10" min="1"></div><div style="border-top:1px solid #eee; margin:10px 0; padding-top:10px;"><div class="input-group"><label style="width:110px;">小刻度:</label><input type="checkbox" id="chk-axis-minor" checked onchange="toggleInput('chk-axis-minor', 'axis-step-minor')"><input type="number" id="axis-step-minor" value="1" step="0.5"></div><div class="input-group"><label style="width:110px;">大刻度:</label><input type="checkbox" id="chk-axis-major" checked onchange="toggleInput('chk-axis-major', 'axis-step-major')"><input type="number" id="axis-step-major" value="5" step="1"></div><div class="input-group"><label style="width:110px;">數字:</label><input type="checkbox" id="chk-axis-label" checked onchange="toggleInput('chk-axis-label', 'axis-step-label')"><input type="number" id="axis-step-label" value="5" step="1"></div><div class="input-group"><label style="width: auto; cursor: pointer;"><input type="checkbox" id="axis-show-grid"><span>顯示網格線</span></label></div></div><div class="modal-footer"><button class="btn-cancel" onclick="closeAxesModal()">取消</button><button class="btn-confirm" onclick="confirmAxesSetup()">確定建立</button></div></div>
+    </div>
+    <div id="angle-modal-overlay" class="modal-overlay-bg"></div>
+    <div id="angle-input-modal"><div style="font-weight:bold; margin-bottom:10px; color:#2c3e50;">輸入角度文字</div><div style="display:flex; gap:5px; margin-bottom:10px;"><input type="text" id="angle-modal-input" style="flex:1; padding:5px; font-size:16px;"></div><div style="display:grid; grid-template-columns: repeat(6, 1fr); gap:4px; margin-bottom:15px;"><button class="sym-btn" onclick="insertAngleSymbol('θ')">θ</button><button class="sym-btn" onclick="insertAngleSymbol('α')">α</button><button class="sym-btn" onclick="insertAngleSymbol('β')">β</button><button class="sym-btn" onclick="insertAngleSymbol('°')">°</button><button class="sym-btn" onclick="insertAngleSymbol('30°')">30°</button><button class="sym-btn" onclick="insertAngleSymbol('45°')">45°</button><button class="sym-btn" onclick="insertAngleSymbol('60°')">60°</button><button class="sym-btn" onclick="insertAngleSymbol('90°')">90°</button></div><div style="display:flex; justify-content:flex-end; gap:10px;"><button class="btn-cancel" onclick="closeAngleModal()">取消</button><button class="btn-confirm" onclick="confirmAngleText()">確定</button></div></div>
+    <div id="function-modal" class="modal-overlay">
+        <div class="modal-box2"><div class="modal-header">繪製函數</div><div style="background:#e8f6f3; padding:10px; border-radius:5px; margin-bottom:15px; border:1px solid #1abc9c;"><div style="font-weight:bold; font-size:13px; color:#16a085; margin-bottom:5px;">智慧參數繪圖</div><div style="display:flex; gap:10px;"><button class="btn-preview" onclick="createSmartFunction('linear'); document.getElementById('function-modal').style.display='none';" style="flex:1; background:#16a085;">一次函數</button><button class="btn-preview" onclick="createSmartFunction('quadratic'); document.getElementById('function-modal').style.display='none';" style="flex:1; background:#16a085;">二次函數</button></div></div><div style="border-bottom:1px solid #eee; margin-bottom:10px;"></div><div class="input-group"><label style="width:80px; font-weight:bold;">函數類型:</label><select id="std-func-selector" onchange="renderStdFuncInputs()"><option value="" disabled selected>-- 請選擇 --</option><option value="linear_gen">一次函數 (y = ax + b)</option><option value="quadratic_vertex">二次頂點 (y = a(x-h)² + k)</option><option value="quadratic_gen">二次一般 (y = ax² + bx + c)</option><option value="cubic">三次函數</option><option value="sin">正弦函數</option><option value="cos">餘弦函數</option><option value="tan">正切函數</option><option value="exp">指數函數</option><option value="log">對數函數</option><option value="rational">有理/反比</option></select></div><div id="std-func-params" style="background:#f8f9fa; padding:10px; border-radius:4px; margin-bottom:10px; display:flex; flex-direction:row; flex-wrap:nowrap; gap:10px; justify-content: flex-start; align-items: center; overflow-x: auto;"></div><div style="margin-bottom:15px; border-top:1px dashed #ccc; padding-top:10px;"><label style="cursor:pointer; font-size:13px; margin-right:15px;"><input type="checkbox" id="chk-draw-axis" checked> 自動建立座標軸</label><div style="display:inline-flex; align-items:center; gap:5px; font-size:13px;"><span>範圍(±):</span><input type="number" id="func-range" value="10" min="1" style="width:50px; padding:2px;"></div></div><div class="modal-footer"><button class="btn-cancel" onclick="document.getElementById('function-modal').style.display='none'">取消</button><button class="btn-confirm" onclick="plotStandardFunction()">確定繪製</button></div></div>
+    </div>
+    <div id="math-modal-v2"><div class="math-modal-box"><div class="math-modal-header"><span>數學公式編輯器</span><span style="cursor:pointer; font-size:20px;" onclick="closeMathModal()">&times;</span></div><div class="math-modal-body"><div class="math-col-left"><div class="math-toolbar"><span style="font-size:12px; font-weight:bold; color:#555;">大小:</span><select id="math-v2-size" onchange="previewMathV2()"><option value="12">12px</option><option value="14">14px</option><option value="16">16px</option><option value="20" selected>20px</option><option value="24">24px</option><option value="32">32px</option><option value="48">48px</option><option value="64">64px</option></select><span style="font-size:12px; font-weight:bold; color:#555; margin-left:5px;">顏色:</span><select id="math-v2-color" onchange="previewMathV2()"><option value="#000000">⬛ 黑色</option><option value="#FFFFFF">⬜ 白色</option><option value="#c0392b">🟥 紅色</option><option value="#2980b9">🟦 藍色</option><option value="#27ae60">🟩 綠色</option><option value="#d35400">🟧 橘色</option><option value="#8e44ad">🟪 紫色</option></select></div><textarea id="math-v2-input" oninput="previewMathV2()"></textarea><div class="quick-formula-area"><div class="quick-formula-label">快速插入:</div><div id="quick-formula-scroll" class="quick-formula-scroll"></div></div><div class="math-preview-area" id="math-v2-preview-container"><div id="math-v2-output" style="font-size:24px;"></div></div></div><div class="math-col-right"><div style="font-size:12px; font-weight:bold; color:#2c3e50; margin-bottom:5px;">範例</div><div id="math-v2-examples" class="math-example-grid"></div><div style="font-size:12px; font-weight:bold; color:#2c3e50; margin-bottom:5px;">符號</div><div id="math-v2-symbols" class="math-symbol-grid"></div></div></div><div class="math-footer"><button class="btn-cancel" onclick="closeMathModal()">取消</button><button class="btn-confirm" onclick="confirmMathEntryV2();">確定插入</button></div></div></div>
+    <div id="paramModal" class="modal-overlay"><div class="modal-box"><div class="modal-header" id="modalTitle">設定參數</div><div class="modal-body" id="modalContent"></div><div class="modal-footer"><button class="btn-modal btn-cancel" onclick="closeParamModal()">取消</button><button class="btn-modal btn-confirm" onclick="submitParamDrawing()">確定繪製</button></div></div></div>
+    <div id="sys-modal" class="modal-overlay" style="z-index: 9999;"><div class="modal-box" style="width: 320px; text-align: center;"><div class="modal-header" id="sys-modal-title">提示</div><div class="modal-body" id="sys-modal-msg"></div><div class="modal-footer"><button id="sys-btn-cancel" class="btn-modal btn-cancel" style="display:none;">取消</button><button id="sys-btn-ok" class="btn-modal btn-confirm">確定</button></div></div></div>
+    <div id="context-menu" style="display: none; position: fixed; z-index: 1001; background: white; border: 1px solid #bdc3c7; border-radius: 5px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); overflow: hidden; min-width: 180px; padding: 5px 0;"><div id="ctx-actions-specific"></div><div id="ctx-separator" class="context-menu-separator" style="display: none;"></div><div id="ctx-actions-general"></div></div>
+    <div id="favorite-name-modal" class="modal-overlay" style="z-index: 6000;"><div class="modal-box" style="width: 300px;"><div class="modal-header">收藏物件</div><div class="modal-body" style="display:flex; flex-direction:column; gap:10px;"><label>名稱：</label><input type="text" id="favorite-name-input" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"><label>分類：</label><select id="favorite-category-select" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></select></div><div class="modal-footer"><button class="btn-modal btn-cancel" onclick="closeFavoriteNameModal()">取消</button><button class="btn-modal btn-confirm" onclick="confirmSaveFavorite()">確定儲存</button></div></div></div>
+    <div id="library-preview-modal" class="modal-overlay" style="z-index: 7000; backdrop-filter: blur(5px); background: rgba(0,0,0,0.7);"><div id="preview-box-content" style="width: 60%; height: 70%; background: #fff; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden;"><div id="preview-header" style="padding: 15px; background: #f8f9fa; border-bottom: 1px solid #ddd; font-weight: bold; color: #2c3e50; font-size: 16px; text-align: center;"></div><div id="preview-image-container" style="flex: 1; padding: 20px; display: flex; align-items: center; justify-content: center; background: #f0f2f5;"></div><div style="padding: 15px; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; justify-content: center; gap: 15px;"><button class="btn-modal btn-cancel" onclick="closeLibraryPreview()">✕ 返回</button><button class="btn-modal btn-confirm" onclick="insertFromPreview()">📥 插入</button><button class="btn-modal" onclick="replaceCanvasFromPreview()" style="background-color: #e67e22; color: white;">🔄 取代</button></div></div></div>
+    <div id="cursor-tooltip"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="collection.js"></script>
+    <script src="core.js"></script>
+    <script src="ui.js"></script>
+    <script src="drawing.js"></script>
+    <script src="tools.js"></script>
+    <script src="construction.js"></script>
+    <script src="file_io.js"></script>
+    <script src="features.js"></script>
+    <script src="utils.js"></script>
+</body>
+</html>
