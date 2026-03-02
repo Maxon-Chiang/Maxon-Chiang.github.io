@@ -671,6 +671,63 @@ async function showSchedule(name, type, direction = 10) {
     const todayWeekStart = getMonday(new Date());
     const isCurrentWeek = currentWeekStart.getTime() === todayWeekStart.getTime();
     document.getElementById('today-btn').classList.toggle('current', isCurrentWeek);
+    document.getElementById('prev-week-btn').onclick = () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        showSchedule(name, type, -1); // -1 代表向左滑動動畫
+    };
+    document.getElementById('next-week-btn').onclick = () => {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        showSchedule(name, type, 1); // 1 代表向右滑動動畫
+    };
+    document.getElementById('today-btn').onclick = () => {
+        currentWeekStart = getMonday(new Date());
+        showSchedule(name, type, 0);
+    };
+
+    // 2. 異動週次按鈕 (檢查資料庫是否有資料)
+    const prevChangeBtn = document.getElementById('prev-change-week-btn');
+    const nextChangeBtn = document.getElementById('next-change-week-btn');
+    const hasChanges = activeChanges && activeChanges.length > 0;
+
+    // 狀態設定：若無資料則變半透明且不可點擊
+    if (hasChanges) {
+        prevChangeBtn.disabled = false;
+        nextChangeBtn.disabled = false;
+        prevChangeBtn.style.opacity = 1;
+        nextChangeBtn.style.opacity = 1;
+        prevChangeBtn.style.cursor = 'pointer';
+    } else {
+        prevChangeBtn.disabled = true;
+        nextChangeBtn.disabled = true;
+        prevChangeBtn.style.opacity = 0.5;
+        nextChangeBtn.style.opacity = 0.5;
+        prevChangeBtn.style.cursor = 'not-allowed';
+        prevChangeBtn.title = "目前無任何調代課紀錄";
+        nextChangeBtn.title = "目前無任何調代課紀錄";
+    }
+
+    prevChangeBtn.onclick = () => {
+        if (!hasChanges) return;
+        const targetWeek = findNextChangeWeek(-1);
+        if (targetWeek) {
+            currentWeekStart = targetWeek;
+            showSchedule(name, type, -1);
+        } else {
+            alert('沒有更早的異動週次了。');
+        }
+    };
+
+    nextChangeBtn.onclick = () => {
+        if (!hasChanges) return;
+        const targetWeek = findNextChangeWeek(1);
+        if (targetWeek) {
+            currentWeekStart = targetWeek;
+            showSchedule(name, type, 1);
+        } else {
+            alert('沒有更晚的異動週次了。');
+        }
+    };
+	
     await deriveSchedules(); 
     let schedule, title;
     if (type === 'teacher' && teacherSchedules.has(name)) {
@@ -836,6 +893,15 @@ async function showSchedule(name, type, direction = 10) {
             table.classList.remove('slide-in-right', 'slide-in-left', 'slide-out-right', 'slide-out-left', 'slide-in-down', 'slide-out-up');
         }
     } else {
+        const transitionContainers = bodyEl.querySelectorAll('div');
+        if (transitionContainers.length > 0) {
+            transitionContainers.forEach(div => div.remove());
+        }
+        const activeTable = bodyEl.querySelector('.schedule-table');
+        if (!activeTable) {
+            renderScheduleTable(bodyEl);
+            return;
+        }		
         bodyEl.style.position = 'relative';
         bodyEl.style.overflow = 'hidden';
         const newTableContainer = document.createElement('div');

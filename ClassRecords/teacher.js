@@ -1722,75 +1722,99 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	myTimetableIconBtn.addEventListener('click', async () => {
-        document.getElementById('dropdown-menu').classList.remove('show');
+		document.getElementById('dropdown-menu').classList.remove('show');
 
-        // 初始化 Checkbox 狀態
-        if (autoOpenHomepageChk) {
-            const currentPref = localStorage.getItem('homepagePreference');
-            // 如果設定是 'timetable' 則勾選，否則不勾選
-            autoOpenHomepageChk.checked = (currentPref === 'timetable');
-        }
+		// 初始化 "下次自動開啟" Checkbox 狀態
+		if (autoOpenHomepageChk) {
+			const currentPref = localStorage.getItem('homepagePreference');
+			autoOpenHomepageChk.checked = (currentPref === 'timetable');
+		}
 
-        if (!scheduleDataLoaded) {
-             timetableMessage.textContent = '課表數據正在載入中...';
-        }
+		if (!scheduleDataLoaded) {
+			 timetableMessage.textContent = '課表數據正在載入中...';
+		}
 
-        // (以下邏輯保持不變)
-        myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
+		myTimetableTitle.textContent = `${currentUserData.displayName} 的課表`;
 
-        if (PERIOD_TIMES.length === 0) {
-             myTimetableBody.innerHTML = '<p style="text-align: center; color: var(--danger-color);">錯誤：未載入課程時間表數據，無法計算節次時間。</p>';
-             timetableMessage.textContent = '資料錯誤';
-        }
-        else if (!teacherTimetableData || Object.keys(teacherTimetableData.periods).length === 0) {
-             myTimetableBody.innerHTML = '<p style="text-align: center;">找不到您的課表資料，請聯繫管理員上傳。</p>';
-             timetableMessage.textContent = '資料錯誤';
-        } else {
-             currentWeekStart = getMonday(new Date());
+		if (PERIOD_TIMES.length === 0) {
+			 myTimetableBody.innerHTML = '<p style="text-align: center; color: var(--danger-color);">錯誤：未載入課程時間表數據。</p>';
+			 timetableMessage.textContent = '資料錯誤';
+		}
+		else if (!teacherTimetableData || Object.keys(teacherTimetableData.periods).length === 0) {
+			 myTimetableBody.innerHTML = '<p style="text-align: center;">找不到您的課表資料。</p>';
+			 timetableMessage.textContent = '資料錯誤';
+		} else {
+			 currentWeekStart = getMonday(new Date());
+			 await renderDerivedMyTimetable(10); // 靜態渲染第一次
+			 timetableMessage.textContent = '';
+		}
 
-             await renderDerivedMyTimetable(10);
-             timetableMessage.textContent = '';
-        }
+		// --- 🟢 關鍵修改：檢查是否有調課資料，並更新按鈕狀態 ---
+		const hasChanges = activeChanges && activeChanges.length > 0;
+		const prevChangeBtn = document.getElementById('prev-change-week-btn');
+		const nextChangeBtn = document.getElementById('next-change-week-btn');
+
+		if (hasChanges) {
+			prevChangeBtn.disabled = false;
+			nextChangeBtn.disabled = false;
+			prevChangeBtn.style.opacity = 1;
+			nextChangeBtn.style.opacity = 1;
+			prevChangeBtn.title = "跳至上一個有異動的週次";
+			nextChangeBtn.title = "跳至下一個有異動的週次";
+		} else {
+			// 如果沒有調課資料，就禁用按鈕並給予提示
+			prevChangeBtn.disabled = true;
+			nextChangeBtn.disabled = true;
+			prevChangeBtn.style.opacity = 0.5;
+			nextChangeBtn.style.opacity = 0.5;
+			prevChangeBtn.title = "目前無任何調代課紀錄";
+			nextChangeBtn.title = "目前無任何調代課紀錄";
+		}
+		// --- 🟢 修改結束 ---
+		
+		// 將事件監聽器綁定移到這裡，確保每次打開 Modal 都是最新的
+		document.getElementById('prev-week-btn').onclick = () => {
+			currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+			renderDerivedMyTimetable(-1);
+		};
+		document.getElementById('next-week-btn').onclick = () => {
+			currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+			renderDerivedMyTimetable(1);
+		};
+		document.getElementById('today-btn').onclick = () => {
+			currentWeekStart = getMonday(new Date());
+			renderDerivedMyTimetable(0);
+		};
+		
+		prevChangeBtn.onclick = () => {
+			if (!prevChangeBtn.disabled) {
+				const targetWeek = findNextChangeWeek(-1);
+				if (targetWeek) {
+					currentWeekStart = targetWeek;
+					renderDerivedMyTimetable(-1);
+				} else {
+					alert('沒有找到更早的異動週次了。');
+				}
+			}
+		};
+		
+		nextChangeBtn.onclick = () => {
+			if (!nextChangeBtn.disabled) {
+				const targetWeek = findNextChangeWeek(1);
+				if (targetWeek) {
+					currentWeekStart = targetWeek;
+					renderDerivedMyTimetable(1);
+				} else {
+					alert('沒有找到更晚的異動週次了。');
+				}
+			}
+		};
 
 		document.body.classList.add('modal-open');
-        myTimetableModal.style.display = 'flex';
+		myTimetableModal.style.display = 'flex';
 
-        // (以下按鈕監聽器保持不變)
-        document.getElementById('prev-week-btn').onclick = () => {
-            currentWeekStart.setDate(currentWeekStart.getDate() - 7);
-            renderDerivedMyTimetable(-1);
-        };
-        document.getElementById('next-week-btn').onclick = () => {
-            currentWeekStart.setDate(currentWeekStart.getDate() + 7);
-            renderDerivedMyTimetable(1);
-        };
-        document.getElementById('today-btn').onclick = () => {
-            currentWeekStart = getMonday(new Date());
-            renderDerivedMyTimetable(0);
-        };
-        
-        document.getElementById('prev-change-week-btn').onclick = () => {
-            const targetWeek = findNextChangeWeek(-1);
-            if (targetWeek) {
-                currentWeekStart = targetWeek;
-                renderDerivedMyTimetable(-1);
-            } else {
-                alert('沒有找到更早的異動週次了。');
-            }
-        };
-        
-        document.getElementById('next-change-week-btn').onclick = () => {
-            const targetWeek = findNextChangeWeek(1);
-            if (targetWeek) {
-                currentWeekStart = targetWeek;
-                renderDerivedMyTimetable(1);
-            } else {
-                alert('沒有找到更晚的異動週次了。');
-            }
-        };
-
-        if (timetableIntervalId) clearInterval(timetableIntervalId);
-        timetableIntervalId = setInterval(() => renderDerivedMyTimetable(10), 30000);
+		if (timetableIntervalId) clearInterval(timetableIntervalId);
+		timetableIntervalId = setInterval(() => renderDerivedMyTimetable(10), 30000);
     });
 
     document.getElementById('my-timetable-modal').querySelector('.close-btn').addEventListener('click', () => {

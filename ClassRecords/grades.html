@@ -1,600 +1,200 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>成績登錄 - 班級綜合成績紀錄系統</title>
-    <style>
-        :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
-        button, input, select, textarea {
-            font-family: inherit;
-        }
-		header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        header h1 { font-size: 1.6em; margin: 0; }
-        header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em; }
-        main { padding: 20px; max-width: 1000px; margin: auto; }
-        .section { background-color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
-        input, button, textarea { padding: 10px; margin: 5px 0; font-size: 1em; border-radius: 4px; border: 1px solid var(--border-color); box-sizing: border-box; }
-        button { background-color: var(--primary-color); color: white; cursor: pointer; border: none; }
-        
-        .form-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-            gap: 20px; 
-            align-items: flex-end; 
-        }
-        .form-grid label {
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-grid input {
-            width: 100%;
-        }
-        #create-section.disabled { opacity: 0.5; pointer-events: none; }
-        
-        #history-list { list-style-type: none; padding: 0; }
-        
-        .history-item {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            border: 1px solid #eee;
-            border-radius: 5px;
-            margin-bottom: 6px; 
-            background-color: #f9f9f9;
-        }
-        .history-item:hover { background-color: #eef; }
-        .history-item-content {
-            flex-grow: 1;
-            display: flex;
-            align-items: baseline;
-            gap: 10px;
-            min-width: 0;
-            cursor: pointer;
-            position: relative; 
-            padding-left: 30px; 
-        }
-        .history-item-content::before {
-             content: "📊"; 
-             position: absolute;
-             left: 0;
-             top: 50%;
-             transform: translateY(-50%);
-             font-size: 1.2em;
-        }
-        .history-item-title {
-            font-weight: bold;
-            font-size: 1.1em;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        .history-item-comment {
-            font-size: 0.9em;
-            color: #555;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .history-item-meta, .history-item-actions {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-        }
-        .history-item-stats {
-            font-size: 0.9em;
-            color: #333;
-            white-space: nowrap;
-        }
-        .history-item-actions .delete-btn {
-            background-color: #e74c3c;
-            font-size: 0.8em;
-            padding: 5px 8px;
-            margin-left: 15px;
-        }
-		header .header-actions {
-            display: flex;
-            align-items: center;
-        }
-        #user-email {
-            margin-left: 10px;
-            font-size: 1.0em;
-        }
-		.section-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			border-bottom: 2px solid var(--primary-color);
-			padding-bottom: 10px;
-			margin-bottom: 20px; 
-		}
-
-		.section-header h2 {
-			border-bottom: none; 
-			padding-bottom: 0;
-			margin: 0; 
-		}
-        
-        #go-to-create-btn {
-            padding: 10px 20px;
-        }
-        
-        #grade-entry-section, #student-scores-container { display: none !important; }
-        @media (max-width: 600px) {
-			main {
-                padding: 8px;
-            }
-			.reload-text {
-                display: block;
-            }
-			.section {
-				padding: 8px; 
-				margin-bottom: 8px; 
-			}
-			.section button {
-				padding: 10px; 
-				margin-bottom: 5px; 
-			}
-	        #user-email {
-				font-size: 0.6em;
-			}
-			h2, .section-header h2 {
-				font-size: 1.5em; 
-				padding-bottom: 8px;
-			}
-			h3, #current-assignment-title {
-				font-size: 1.2em; 
-				padding-bottom: 8px;
-			}
-			header button { padding: 5px 5px; margin-left: 5px; font-size: 0.8em; }
-			.history-item {
-				padding: 10px; 
-				align-items: flex-start; 
-			}
-			.history-item-content {
-				flex-direction: column; 
-				align-items: flex-start; 
-				gap: 2px; 
-			}
-            .history-item-content::before {
-                 font-size: 1.0em; 
-            }
-            .history-item-content {
-                 padding-left: 20px;
-            }
-			.history-item-title {
-				font-size: 0.9em; 
-			}
-			.history-item-comment {
-				white-space: normal; 
-				overflow: visible;
-				text-overflow: clip;
-				color: #666; 
-			}
-			.history-item-actions {
-				margin-top: 2px; 
-			}
-			.history-item-stats { 
-                display: none; 
-            }
-			.section-header, .grade-entry-header-bar {
-				margin-bottom: 8px; 
-				font-size: 1.0em; 
-			}
-			.form-grid {
-				grid-template-columns: 1fr 1fr; 
-				gap: 5px; 
-				margin-bottom: 10px; 
-			}
-			.form-grid label { 
-				font-size: 0.8em; 
-				margin-bottom: 2px;
-			}
-			.form-grid input {
-				padding: 8px; 
-			}
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成績登錄 - 班級綜合成績紀錄系統</title>
+  <style>
+    :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+    button, input, select, textarea { font-family: inherit; }
+    header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    header h1 { font-size: 1.6em; margin: 0; }
+    header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em; }
+    main { padding: 20px; max-width: 1000px; margin: auto; }
+    .section { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    h2 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; }
+    .control-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 20px; align-items: flex-end; margin-bottom: 20px; }
+    .control-group { display: flex; flex-direction: column; }
+    .control-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+    .control-group select, .control-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; height: 40px; box-sizing: border-box; }
+    #btn-add-grade { background-color: #28a745; color: white; border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; height: 40px; font-size: 1em; font-weight: bold; }
+    .grades-list { margin-top: 20px; border-top: 1px solid #eee; }
+    .grade-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; transition: background-color 0.2s; }
+    .grade-item:hover { background-color: #f9f9f9; }
+    .grade-info { flex-grow: 1; }
+    .grade-name { font-weight: bold; font-size: 1.1em; color: var(--primary-color); display: block; }
+    .grade-meta { font-size: 0.85em; color: #666; margin-top: 4px; }
+    .grade-actions button { margin-left: 10px; padding: 6px 12px; border-radius: 4px; cursor: pointer; border: 1px solid #ddd; background-color: white; font-size: 0.9em; }
+    .btn-edit { color: var(--primary-color); border-color: var(--primary-color) !important; }
+    .btn-delete { color: #dc3545; border-color: #dc3545 !important; }
+    #user-email { margin-left: 10px; font-size: 1.0em; }
+    @media (max-width: 768px) {
+      header h1 { font-size: 1.2em; }
+      header button { padding: 4px 8px; font-size: 0.8em; }
+      #user-email { font-size: 0.8em; }
+      .control-grid { grid-template-columns: 1fr; gap: 10px; }
+      .grade-item { flex-direction: column; align-items: flex-start; }
+      .grade-actions { margin-top: 10px; width: 100%; display: flex; justify-content: flex-end; }
+    }
+  </style>
 </head>
 <body>
-	<header>
-        <h1 id="header-title">成績登錄</h1>
-        <div class="header-actions">
-            <button id="manual-reload-btn">🔄 手動更新</button>
-			<button onclick="window.location.href='teacher.html'">返回主頁</button>
-            <button id="logout-btn">登出</button>
-            <span id="user-email"></span>
+  <header>
+    <h1>成績管理</h1>
+    <div style="display:flex; align-items:center;">
+      <button id="manual-reload-btn">🔄 手動更新</button>
+      <button onclick="window.location.href='teacher.html'">返回主頁</button>
+      <button id="logout-btn">登出</button>
+      <span id="user-email"></span>
+    </div>
+  </header>
+  <main id="app-container" style="display:none;">
+    <div class="section">
+      <h2>成績項目列表</h2>
+      <div class="control-grid">
+        <div class="control-group">
+          <label for="class-select">篩選班級</label>
+          <select id="class-select"><option value="all">所有班級</option></select>
         </div>
-    </header>
-    <main id="app-container" style="display: none;">
-        
-        <div class="section">
-            <div class="section-header">
-                <h2 id="class-header">成績項目清單</h2>
+        <div class="control-group">
+          <label for="search-input">搜尋項目名稱</label>
+          <input type="text" id="search-input" placeholder="輸入關鍵字...">
+        </div>
+        <button id="btn-add-grade">+ 新增成績項目</button>
+      </div>
+      <div id="grades-list-container" class="grades-list"></div>
+    </div>
+  </main>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
+      authDomain: "classrecords-13902.firebaseapp.com",
+      projectId: "classrecords-13902",
+      storageBucket: "classrecords-13902.firebasestorage.app",
+      messagingSenderId: "431747377367",
+      appId: "1:431747377367:web:b157a8f5c59ce38091e892",
+      measurementId: "G-JWTQGM9XMP"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let currentUser = null, studentsData = [], assignments = [];
+    const GRADES_CACHE_KEY = 'teacher_grades_list_cache_v1';
+    const USER_AUTH_KEY = 'user_auth_profile_v1';
+    const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        currentUser = user;
+        const displayElement = document.getElementById('user-email');
+        let userData = null;
+        try {
+          const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
+          if (cachedAuthData) {
+            userData = JSON.parse(cachedAuthData).userData;
+            displayElement.textContent = userData.displayName || user.email;
+          }
+        } catch (e) {}
+        if (!userData) {
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          if (userDoc.exists) {
+            userData = userDoc.data();
+            displayElement.textContent = userData.displayName || user.email;
+          }
+        }
+        if (userData && userData.role === 'teacher') {
+          initializePage(userData.schoolId);
+          document.getElementById('app-container').style.display = 'block';
+        } else { window.location.href = 'login.html'; }
+      } else { window.location.href = 'login.html'; }
+    });
+    async function initializePage(schoolId) {
+      try {
+        const cachedStatic = localStorage.getItem(STATIC_CACHE_KEY);
+        if (cachedStatic) {
+          const data = JSON.parse(cachedStatic);
+          if (data.uid === currentUser.uid) studentsData = data.rosterData || [];
+        }
+        if (studentsData.length === 0) {
+          const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
+          if (rosterDoc.exists) studentsData = rosterDoc.data().students || [];
+        }
+        const classSelect = document.getElementById('class-select');
+        const classes = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
+        classes.forEach(c => classSelect.appendChild(new Option(`${c} 班`, c)));
+        const cachedGrades = localStorage.getItem(GRADES_CACHE_KEY);
+        if (cachedGrades) {
+          const data = JSON.parse(cachedGrades);
+          if (data.uid === currentUser.uid) {
+            assignments = data.assignments;
+            renderGradesList();
+          }
+        }
+        db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
+          .orderBy('date', 'desc')
+          .onSnapshot(snapshot => {
+            assignments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            localStorage.setItem(GRADES_CACHE_KEY, JSON.stringify({ assignments, uid: currentUser.uid, timestamp: Date.now() }));
+            renderGradesList();
+          });
+        bindEventListeners();
+      } catch (e) { console.error(e); }
+    }
+    function bindEventListeners() {
+      document.getElementById('class-select').addEventListener('change', renderGradesList);
+      document.getElementById('search-input').addEventListener('input', renderGradesList);
+      document.getElementById('btn-add-grade').addEventListener('click', () => { window.location.href = 'grades-edit.html'; });
+      document.getElementById('manual-reload-btn').addEventListener('click', () => {
+        if(confirm('確定要從雲端重新下載成績項目資料嗎？')) {
+          localStorage.removeItem(GRADES_CACHE_KEY);
+          localStorage.removeItem(STATIC_CACHE_KEY);
+          window.location.reload();
+        }
+      });
+      document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
+    }
+    function renderGradesList() {
+      const classFilter = document.getElementById('class-select').value;
+      const searchQuery = document.getElementById('search-input').value.toLowerCase();
+      const container = document.getElementById('grades-list-container');
+      const filtered = assignments.filter(a => {
+        const matchClass = classFilter === 'all' || a.className === classFilter;
+        const matchSearch = a.assignmentName.toLowerCase().includes(searchQuery);
+        return matchClass && matchSearch;
+      });
+      if (filtered.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">找不到符合的成績項目</p>';
+        return;
+      }
+      container.innerHTML = filtered.map(a => {
+        const dateStr = a.date ? (a.date.seconds ? new Date(a.date.seconds * 1000).toLocaleDateString() : new Date(a.date).toLocaleDateString()) : '無日期';
+        const scoreCount = a.scores ? Object.keys(a.scores).length : 0;
+        return `
+          <div class="grade-item">
+            <div class="grade-info">
+              <span class="grade-name">${a.className} 班 - ${a.assignmentName}</span>
+              <div class="grade-meta">建立日期：${dateStr} | 已登錄人數：${scoreCount}</div>
             </div>
-            <ul id="history-list"><li id="history-loading">載入中...</li></ul>
-        </div>
-        
-		<div id="create-section" class="section">
-            <div class="section-header">
-				<h2>建立新成績項目</h2>
-				<button id="go-to-create-btn">下一步：登錄成績</button>
-			</div>
-			<div class="form-grid">
-				<div>
-					<label for="new-assignment-name">成績項目名稱：</label>
-					<input type="text" id="new-assignment-name" placeholder="例如: 習作1-1" list="assignment-suggestions" required>
-					<datalist id="assignment-suggestions"></datalist>
-				</div>
-				<div>
-					<label for="new-general-comment">成績說明 (選填)：</label>
-					<input type="text" id="new-general-comment" placeholder="例如: 遲交">
-				</div>
-			</div>
-		</div>
-        
-		<div id="grade-entry-section" class="section" style="display: none;">
-			<div class="grade-entry-header-bar">
-				<h3 id="current-assignment-title"></h3>
-				<div class="grade-entry-actions">
-					<button class="save-grades-btn" style="background-color: #28a745;">更新儲存</button>
-					<button class="cancel-edit-btn" style="background-color: #777;">取消</button>
-				</div>
-			</div>
-			<div class="form-grid">
-				<div>
-					<label for="edit-assignment-name">成績項目名稱：</label>
-					<input type="text" id="edit-assignment-name">
-				</div>
-				<div>
-					<label for="edit-general-comment">成績說明 (選填)：</label>
-					<input type="text" id="edit-general-comment">
-				</div>
-			</div>
-			<hr>
-			<div id="student-scores-container">
-				</div>
-			<div style="margin-top: 20px;" class="grade-entry-actions">
-				<button class="save-grades-btn" style="background-color: #28a745;">更新儲存</button>
-				<button class="cancel-edit-btn" style="background-color: #777;">取消</button>
-			</div>
-		</div>
-    </main>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script>
-	  const firebaseConfig = {
-		apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
-		authDomain: "classrecords-13902.firebaseapp.com",
-		projectId: "classrecords-13902",
-		storageBucket: "classrecords-13902.firebasestorage.app",
-		messagingSenderId: "431747377367",
-		appId: "1:431747377367:web:b157a8f5c59ce38091e892",
-		measurementId: "G-JWTQGM9XMP"
-	  };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(); const auth = firebase.auth();
-        let currentUser = null, classId = null, studentsInClass = [];
-        const appContainer = document.getElementById('app-container');
-        const createSection = document.getElementById('create-section');
-        const goToCreateBtn = document.getElementById('go-to-create-btn'); 
-        const newAssignmentNameInput = document.getElementById('new-assignment-name');
-        const newGeneralCommentInput = document.getElementById('new-general-comment');
-        const historyList = document.getElementById('history-list');
-        const ASSIGNMENT_DATA_KEY = 'assignmentId';
-        const ASSIGNMENT_NAME_KEY = 'assignmentName';
-        const ASSIGNMENT_COMMENT_KEY = 'assignmentComment';
-        const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
-		const GRADES_CACHE_KEY = 'grades_cache_v1'
-        const CACHE_LIFETIME = 45 * 60 * 1000; 
-        const USER_AUTH_KEY = 'user_auth_profile_v1';
-        let CACHE_DATA_STATIC = {};
-        let CACHE_DATA_GRADES = {};
-		
-		auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                currentUser = user;
-                const displayElement = document.getElementById('user-email');
-                let userData = null;
-                try {
-                    const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
-                    if (cachedAuthData) {
-                         userData = JSON.parse(cachedAuthData).userData;
-                         if (userData.displayName) {
-                             displayElement.textContent = userData.displayName;
-                         } else {
-                             displayElement.textContent = user.email;
-                         }
-                    }
-                } catch (e) {
-                     console.error('❌ 解析 AUTH 快取失敗:', e);
-                }
-                if (!userData) {
-                     const userDoc = await db.collection('users').doc(user.uid).get();
-                     console.log('載入user資料...');
-                     if (userDoc.exists) {
-                          userData = userDoc.data();
-                          if (userData.displayName) {
-                              displayElement.textContent = userData.displayName;
-                          } else {
-                              displayElement.textContent = user.email;
-                          }
-                     }
-                }
-                if (userData && userData.role === 'teacher') {
-                    await initializeGradesPage(userData);
-                } else {
-                    alert('權限不足或帳號設定錯誤。');
-                    window.location.href = 'login.html';
-                }
-            } else {
-                window.location.href = 'login.html';
-            }
-		});
-
-		async function initializeGradesPage(userData) {
-			const urlParams = new URLSearchParams(window.location.search);
-			classId = urlParams.get('class');
-            let useStaticCache = false;
-			let useGradesCache = false;
-            let rosterDataLoaded = false;
-            let assignmentsDataLoaded = false;
-            let allStudents = [];
-			
-            try {
-                const cachedStatic = localStorage.getItem(STATIC_CACHE_KEY);
-                if (cachedStatic) {
-                    CACHE_DATA_STATIC = JSON.parse(cachedStatic);
-                    if (CACHE_DATA_STATIC.uid === currentUser.uid) {
-                        useStaticCache = true;
-                    } else {
-                        localStorage.removeItem(STATIC_CACHE_KEY);
-                    }
-                }
-            } catch (e) {
-                console.error('❌ 解析 STATIC 快取失敗:', e);
-                localStorage.removeItem(STATIC_CACHE_KEY);
-            }
-			try {
-                const cachedGrades = localStorage.getItem(GRADES_CACHE_KEY);
-                if (cachedGrades) {
-                    CACHE_DATA_GRADES = JSON.parse(cachedGrades);
-                    if (CACHE_DATA_GRADES.uid === currentUser.uid) {
-                        useGradesCache = true;
-                    } else {
-                        localStorage.removeItem(STATIC_CACHE_KEY);
-                    }
-                }
-            } catch (e) {
-                console.error('❌ 解析 STATIC 快取失敗:', e);
-                localStorage.removeItem(STATIC_CACHE_KEY);
-            }
-
-            if (useStaticCache && CACHE_DATA_STATIC.rosterData) {
-                allStudents = CACHE_DATA_STATIC.rosterData;
-                rosterDataLoaded = true;
-                console.log('✅ 學生名冊：STATIC 快取命中！');
-            }
-
-            if (!rosterDataLoaded) {
-                if (!userData.schoolId) {
-                    alert('錯誤：您的帳號未綁定學校ID，無法讀取名冊。');
-                    return;
-                }
-                const rosterDoc = await db.collection('schools').doc(userData.schoolId).collection('rosters').doc('current').get();
-                console.log('載入學生名冊資料...');
-                if (!rosterDoc.exists) {
-                    alert('找不到學校的學生名冊，請聯繫學校管理者上傳資料。');
-                    return;
-                }
-                allStudents = rosterDoc.data().students || [];
-                CACHE_DATA_STATIC.rosterData = allStudents;
-                CACHE_DATA_STATIC.uid = currentUser.uid; 
-            }
-            
-            
-            const now = new Date().getTime();
-            if (useGradesCache && CACHE_DATA_GRADES.assignmentNames) {
-                var gradeAssignmentNames = new Set(CACHE_DATA_GRADES.assignmentNames);
-                assignmentsDataLoaded = true;
-                console.log('✅ 成績項目名稱：STATIC 快取命中！(手動模式)');
-            }
-
-			if (!classId) {
-				appContainer.innerHTML = '<h2>錯誤：未指定班級。請返回主頁選擇班級後重新進入。</h2>';
-				appContainer.style.display = 'block';
-				return;
-			}
-			document.getElementById('class-header').textContent = `${classId} 班 成績項目清單`;
-
-
-            if (!assignmentsDataLoaded) {
-				try {
-					if (!allStudents || allStudents.length === 0) {
-					    console.warn("未載入學生名冊，無法確定任教班級，跳過成績建議載入。");
-                        return;
-					}
-					const teacherClasses = [...new Set(allStudents.map(s => s.id.substring(0, 3)))];
-					const queryPromises = teacherClasses.map(cId => 
-						db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
-						  .where('className', '==', cId)
-						  .get()
-					);
-					console.log('載入作業成績資料...');
-					const snapshots = await Promise.all(queryPromises);
-					gradeAssignmentNames = new Set();
-					snapshots.forEach(snapshot => {
-						snapshot.forEach(doc => {
-							gradeAssignmentNames.add(doc.data().assignmentName);
-						});
-					});
-                    
-                    CACHE_DATA_GRADES.assignmentNames = Array.from(gradeAssignmentNames);
-                    CACHE_DATA_GRADES.lastAssignmentUpdate = now;
-                    CACHE_DATA_GRADES.uid = currentUser.uid; 
-                    localStorage.setItem(GRADES_CACHE_KEY, JSON.stringify(CACHE_DATA_GRADES));
-                    
-				} catch (error) {
-					console.error("讀取成績項目建議清單失敗:", error);
-				}
-			}
-            
-            if (gradeAssignmentNames) {
-				const datalist = document.getElementById('assignment-suggestions');
-				datalist.innerHTML = '';
-				gradeAssignmentNames.forEach(name => {
-					const option = document.createElement('option');
-					option.value = name;
-					datalist.appendChild(option);
-				});
-            }
-			loadHistory();
-			appContainer.style.display = 'block';
-		}
-		
-        function navigateToEditPage(assignmentId = null, assignmentName = '', generalComment = '') {
-            if (!classId) {
-                alert('班級ID遺失，無法跳轉。');
-                return;
-            }
-            const params = new URLSearchParams();
-            params.set('class', classId);
-            if (assignmentId) {
-                params.set(ASSIGNMENT_DATA_KEY, assignmentId);
-            }
-            if (assignmentName) {
-                params.set(ASSIGNMENT_NAME_KEY, encodeURIComponent(assignmentName));
-            }
-            if (generalComment) {
-                 params.set(ASSIGNMENT_COMMENT_KEY, encodeURIComponent(generalComment));
-            }
-            window.location.href = `grades-edit.html?${params.toString()}`;
-        }
-
-		goToCreateBtn.addEventListener('click', () => {
-            const newAssignmentName = newAssignmentNameInput.value.trim();
-            if (!newAssignmentName) {
-                alert('請先輸入成績項目名稱！');
-                newAssignmentNameInput.focus();
-                return;
-            }
-            const historyItems = Array.from(historyList.querySelectorAll('.history-item'));
-            const existingItem = historyItems.find(item => {
-                const titleElement = item.querySelector('.history-item-title');
-                const titleText = titleElement ? titleElement.textContent.split(' (')[0] : '';
-                return titleText === newAssignmentName;
-            });
-            if (existingItem) {
-                const existingId = existingItem.dataset.id;
-                const existingComment = existingItem.dataset.generalComment || '';
-                alert(`提醒：已存在名為「${newAssignmentName}」的成績項目，將直接載入該項目進行編輯。`);
-                navigateToEditPage(existingId, newAssignmentName, existingComment);
-            } else {
-                navigateToEditPage(null, newAssignmentName, newGeneralCommentInput.value.trim());
-            }
-        });
-        
-        
-        function loadHistory() {
-            db.collection('gradebooks').doc(currentUser.uid).collection('assignments')
-              .where('className', '==', classId)
-              .orderBy('date', 'desc')
-              .onSnapshot(snapshot => {
-                historyList.innerHTML = '';
-                if (snapshot.empty) {
-                    historyList.innerHTML = '<li>尚無成績項目。</li>';
-                    return;
-                }
-                snapshot.forEach(doc => {
-                    const a = doc.data();
-                    const li = document.createElement('li');
-                    li.className = 'history-item';
-                    li.dataset.id = doc.id;
-                    li.dataset.assignmentName = a.assignmentName;
-                    li.dataset.generalComment = a.generalComment || ''; 
-                    let studentCount = 0;
-                    let totalScore = 0;
-                    if (a.scores) {
-                        for (const studentId in a.scores) {
-                            if (a.scores[studentId].score !== undefined && a.scores[studentId].score !== null && a.scores[studentId].score !== '') {
-                                studentCount++;
-                                totalScore += parseFloat(a.scores[studentId].score);
-                            }
-                        }
-                    }
-                    const averageScore = studentCount > 0 ? (totalScore / studentCount).toFixed(1) : 'N/A';
-                    const dateString = a.date ? a.date.toDate().toLocaleDateString() : '日期未知';
-                    const commentText = a.generalComment || '';
-                    
-                    li.innerHTML = `
-                        <div class="history-item-content" data-id="${doc.id}">
-                            <span class="history-item-title">${a.assignmentName} (${dateString})</span>
-                            <span class="history-item-comment">${commentText}</span>
-                        </div>
-                        <div class="history-item-meta">
-                            <span class="history-item-stats">人數: <strong>${studentCount}</strong> | 平均: <strong>${averageScore}</strong></span>
-                        </div>
-                        <div class="history-item-actions">
-                            <button class="delete-btn" data-id="${doc.id}">刪除</button>
-                        </div>
-                    `;
-                    
-                    li.querySelector('.history-item-content').addEventListener('click', (e) => {
-                        const targetId = e.currentTarget.dataset.id;
-                        const assignmentName = e.currentTarget.closest('.history-item').dataset.assignmentName;
-                        const generalComment = e.currentTarget.closest('.history-item').dataset.generalComment;
-                        navigateToEditPage(targetId, assignmentName, generalComment);
-                    });
-                    
-                    historyList.appendChild(li);
-                });
-            }, error => {
-                console.error("讀取成績失敗:", error);
-                historyList.innerHTML = '<li>讀取項目清單時發生錯誤。</li>';
-            });
-        }
-
-		historyList.addEventListener('click', async (e) => {
-            if (e.target.closest('.delete-btn')) {
-                e.stopPropagation();
-                const deleteBtn = e.target.closest('.delete-btn');
-                const docId = deleteBtn.dataset.id;
-                
-                const listItem = deleteBtn.closest('.history-item');
-                const assignmentName = listItem.dataset.assignmentName || '未命名項目';
-                const className = classId;
-                const firstConfirm = confirm(`您確定要刪除【${className} 班】的成績項目：\n\n「${assignmentName}」\n\n及其所有學生成績嗎？`);
-                
-                if (firstConfirm) {
-                    const secondConfirm = confirm(`【【【最後確認】】】\n\n此操作將永久刪除「${assignmentName}」的所有成績，無法復原！\n\n真的確定要刪除嗎？`);
-                    
-                    if (secondConfirm) {
-                        try {
-                            await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete();
-                            alert(`已成功刪除「${assignmentName}」`);
-                        } catch (error) {
-                            alert("刪除失敗！");
-                        }
-                    }
-                }
-            }
-        });
-		const manualReloadBtn = document.getElementById('manual-reload-btn');
-        if(manualReloadBtn){
-            manualReloadBtn.addEventListener('click', () => {
-                if(confirm('確定要從雲端重新下載成績項目資料嗎？')) {
-                    localStorage.removeItem(GRADES_CACHE_KEY);
-                    // 也要清除 static cache 以確保名冊也是新的
-                    localStorage.removeItem(STATIC_CACHE_KEY);
-                    window.location.reload();
-                }
-            });
-        }
-        document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
-    </script>
+            <div class="grade-actions">
+              <button class="btn-edit" onclick="editAssignment('${a.id}')">編輯成績</button>
+              <button class="btn-delete" onclick="deleteAssignment('${a.id}', '${a.className}', '${a.assignmentName}')">刪除</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+    function editAssignment(id) { window.location.href = `grades-edit.html?id=${id}`; }
+    async function deleteAssignment(docId, classId, assignmentName) {
+      if (confirm(`確定要刪除【${classId} 班】的成績項目：\n\n「${assignmentName}」？`) && 
+          confirm(`最後確認！此操作無法復原，真的確定嗎？`)) {
+        try {
+          await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete();
+          alert(`已成功刪除「${assignmentName}」`);
+        } catch (e) { alert("刪除失敗！"); }
+      }
+    }
+  </script>
 </body>
 </html>

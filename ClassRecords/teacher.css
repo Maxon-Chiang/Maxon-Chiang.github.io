@@ -1254,3 +1254,21 @@ body.modal-open { overflow: hidden; }
 		padding: 2px 5px;
 	}	
 }
+#records-list {
+	max-height: 50vh;  /* 設定最大高度，約佔螢幕高度一半 */
+	overflow-y: auto;  /* 超出時顯示垂直捲軸 */
+	padding-right: 5px; /* 避免捲軸擋住內容 */
+	overscroll-behavior: contain; /* 防止捲動傳遞到背景 */
+	border-top: 1px solid #eee;
+	margin-top: 10px;
+	padding-top: 10px;
+}
+
+/* 美化捲軸 (Chrome/Safari) */
+#records-list::-webkit-scrollbar {
+	width: 6px;
+}
+#records-list::-webkit-scrollbar-thumb {
+	background-color: #ccc;
+	border-radius: 3px;
+}

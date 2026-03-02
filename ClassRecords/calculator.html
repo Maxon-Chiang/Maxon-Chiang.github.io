@@ -1,916 +1,574 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學生成績計算 - 班級綜合成績紀錄系統</title>
-    <style>
-        :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
-		
-        button, input, select, textarea {
-            font-family: inherit;
-        }
-        header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        header h1 { font-size: 1.6em; margin: 0; }
-        header a button, header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em;}
-        main { padding: 20px; max-width: 1200px; margin: auto; }
-        .section { background-color: white; padding: 5px 10px; border-radius: 8px; margin: 0 0 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
-        h3 { font-size: 1.2em; border-bottom-width: 1px; margin-top: 25px; margin-bottom: 15px; }
-        
-        .tab-nav { display: flex; border-bottom: 2px solid #dee2e6; margin-bottom: 20px; }
-        .tab-nav button { padding: 12px 20px; font-size: 1.1em; border: none; background-color: transparent; cursor: pointer; margin-bottom: -2px; border-bottom: 2px solid transparent; color: #6c757d; }
-        .tab-nav button.active { font-weight: bold; color: #0d6efd; border-bottom-color: #0d6efd; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-		.input-decimal { width: 50px;}
-		.input-integer { width: 40px; }
-		
-        #calculator-tab .control-grid {
-            display: grid;
-            grid-template-columns: 2fr 2fr auto;
-            gap: 15px 20px;
-            align-items: end;
-        }
-        #rules-tab .control-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 2fr 2fr;
-            gap: 15px 20px;fr
-            align-items: end;
-        } 
-        .control-group { display: flex; flex-direction: column; }
-        .control-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
-        .control-group input, .control-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; height: 40px; box-sizing: border-box; }
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-        }
-        .section-header h2 {
-            border-bottom: none;
-            padding-bottom: 0;
-            margin: 0;
-        }
-        
-        #rule-editor-actions button {
-            padding: 8px 12px;
-            font-size: 0.9em;
-            margin-left: 5px;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        #btn-save-rule { background-color: #28a745; }
-        #btn-delete-rule { background-color: #dc3545; }
-                
-        .steps-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .step-card { border: 1px solid var(--border-color); padding: 15px; border-radius: 6px; }
-        .step-card h4 { margin-top: 0; }
-        .assignment-list { max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 0px; border-radius: 4px; border: 1px solid #eee; }
-        .assignment-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.95em; }
-        .assignment-item input[type="number"] { width: 60px; text-align: center; padding: 4px; }
-        .assignment-item label { flex-grow: 1; }
-        .multiplier-input { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
-        #btn-calculate {
-            font-size: 1em;
-            padding: 8px 30px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            height: 40px;
-        }
-        
-        #results-container { min-height: 100px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
-        th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        tr:nth-child(even) { background-color: #f9f9f9; }
-		.visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }		
-        #user-email {
-            margin-left: 10px;
-            font-size: 1.0em;
-        }
-        header .header-actions {
-            display: flex;
-            align-items: center;
-        }		
-		@media (max-width: 768px) {
-            main {
-                padding: 10px;
-            }
-			header a button, header button { padding: 5px 5px; margin-left: 5px; font-size: 0.8em;}
-            .reload-text {
-                display: block;
-            }
-			#user-email {
-				margin-left: 10px;
-				font-size: 0.6em;
-			}
-			.tab-nav button {
-                padding: 10px 12px;
-                font-size: 1em;
-            }
-			.section { padding: 5px 10px; margin: 0 0 5px;}
-            .section-header {
-	            display: flex;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            .section-header h2 {
-                font-size: 1.5em;
-            }
-            .section-header button, .section-header div {
-                align-self: flex-end;
-            }
-            
-            
-            #calculator-tab .control-grid,
-            #rules-tab .control-grid {
-                grid-template-columns: 1fr 1fr;
-                column-gap: 10px;
-            }
-            .control-group {
-                min-width: 0;
-            }
-            .control-group label {
-                font-size: 0.8em;
-                word-break: break-word;
-            }
-            .control-group input, .control-group select {
-                padding-left: 6px;
-                padding-right: 6px;
-                font-size: 0.9em;
-                width: 100%;
-            }
-            
-            #rules-tab .control-group:last-child div {
-                flex-direction: column;
-                align-items: stretch;
-                gap: 10px;
-            }
-            #rules-tab .control-group:last-child input[type="text"] {
-                margin-left: 0 !important;
-            }
-			.steps-container {
-				grid-template-columns: 1fr;
-				margin-top: 10px;
-			}
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>學生成績計算 - 班級綜合成績紀錄系統</title>
+  <style>
+    :root { --primary-color: #4a90e2; --secondary-color: #f5f5ff; --font-color: #333; --border-color: #ddd; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; margin: 0; background-color: var(--secondary-color); color: var(--font-color); }
+    button, input, select, textarea { font-family: inherit; }
+    header { background-color: var(--primary-color); color: white; padding: 0.6rem 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+    header h1 { font-size: 1.6em; margin: 0; }
+    header a button, header button { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-left: 10px; font-size: 1em;}
+    main { padding: 20px; max-width: 1200px; margin: auto; }
+    .section { background-color: white; padding: 5px 10px; border-radius: 8px; margin: 0 0 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    h2, h3 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+    h3 { font-size: 1.2em; border-bottom-width: 1px; margin-top: 25px; margin-bottom: 15px; }
+    .tab-nav { display: flex; border-bottom: 2px solid #dee2e6; margin-bottom: 20px; }
+    .tab-nav button { padding: 12px 20px; font-size: 1.1em; border: none; background-color: transparent; cursor: pointer; margin-bottom: -2px; border-bottom: 2px solid transparent; color: #6c757d; }
+    .tab-nav button.active { font-weight: bold; color: #0d6efd; border-bottom-color: #0d6efd; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .input-decimal { width: 50px;}
+    .input-integer { width: 40px; }
+    #calculator-tab .control-grid { display: grid; grid-template-columns: 2fr 2fr auto; gap: 15px 20px; align-items: end; }
+    #rules-tab .control-grid { display: grid; grid-template-columns: 1fr 1fr 2fr 2fr; gap: 15px 20px; align-items: end; } 
+    .control-group { display: flex; flex-direction: column; }
+    .control-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
+    .control-group input, .control-group select { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; height: 40px; box-sizing: border-box; }
+    .section-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; }
+    .section-header h2 { border-bottom: none; padding-bottom: 0; margin: 0; }
+    #rule-editor-actions button { padding: 8px 12px; font-size: 0.9em; margin-left: 5px; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    #btn-save-rule { background-color: #28a745; }
+    #btn-delete-rule { background-color: #dc3545; }
+    .steps-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+    .step-card { border: 1px solid var(--border-color); padding: 15px; border-radius: 6px; }
+    .step-card h4 { margin-top: 0; }
+    .assignment-list { max-height: 200px; overflow-y: auto; background: #f9f9f9; padding: 0px; border-radius: 4px; border: 1px solid #eee; }
+    .assignment-item { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 0.95em; }
+    .assignment-item input[type="number"] { width: 60px; text-align: center; padding: 4px; }
+    .assignment-item label { flex-grow: 1; }
+    .multiplier-input { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 10px; }
+    #btn-calculate { font-size: 1em; padding: 8px 30px; background-color: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; height: 40px; }
+    #results-container { min-height: 100px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.9em; }
+    th, td { border: 1px solid var(--border-color); padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    #user-email { margin-left: 10px; font-size: 1.0em; }
+    header .header-actions { display: flex; align-items: center; }
+    @media (max-width: 768px) {
+      main { padding: 10px; }
+      header a button, header button { padding: 5px 5px; margin-left: 5px; font-size: 0.8em;}
+      #user-email { margin-left: 10px; font-size: 0.6em; }
+      .tab-nav button { padding: 10px 12px; font-size: 1em; }
+      .section { padding: 5px 10px; margin: 0 0 5px;}
+      .section-header { display: flex; align-items: flex-start; gap: 10px; }
+      .section-header h2 { font-size: 1.5em; }
+      .section-header button, .section-header div { align-self: flex-end; }
+      #calculator-tab .control-grid, #rules-tab .control-grid { grid-template-columns: 1fr 1fr; column-gap: 10px; }
+      .control-group label { font-size: 0.8em; word-break: break-word; }
+      .control-group input, .control-group select { padding-left: 6px; padding-right: 6px; font-size: 0.9em; width: 100%; }
+      #rules-tab .control-group:last-child div { flex-direction: column; align-items: stretch; gap: 10px; }
+      #rules-tab .control-group:last-child input[type="text"] { margin-left: 0 !important; }
+      .steps-container { grid-template-columns: 1fr; margin-top: 10px; }
+    }
+  </style>
 </head>
 <body>
-	<header>
-        <h1>成績計算</h1>
-        <div class="header-actions">
-			<button id="manual-reload-btn">🔄 手動更新</button>
-			<button onclick="history.back()">返回主頁</button>
-            <button id="logout-btn">登出</button>
-            <span id="user-email"></span>
+  <header>
+    <h1>成績計算</h1>
+    <div class="header-actions">
+      <button id="manual-reload-btn">🔄 手動更新</button>
+      <button onclick="history.back()">返回主頁</button>
+      <button id="logout-btn">登出</button>
+      <span id="user-email"></span>
+    </div>
+  </header>
+  <main id="app-container" style="display:none;">
+    <div class="tab-nav">
+      <button class="tab-btn active" data-tab="calculator-tab">執行成績計算</button>
+      <button class="tab-btn" data-tab="rules-tab">管理計算規則</button>
+    </div>
+    <div id="calculator-tab" class="tab-content active">
+      <div class="section">
+        <div class="section-header">
+          <h2>選擇計算對象與規則</h2><button id="btn-calculate" disabled>計算成績</button>
         </div>
-    </header>
-    <main id="app-container" style="display:none;">
-        <div class="tab-nav">
-            <button class="tab-btn active" data-tab="calculator-tab">執行成績計算</button>
-            <button class="tab-btn" data-tab="rules-tab">管理計算規則</button>
+        <div class="control-grid">
+          <div class="control-group" style="margin-top: 15px;">
+            <label for="calc-target-select">計算對象 (班級或年段)</label>
+            <select id="calc-target-select"><option value="">請選擇</option></select>
+          </div>
+          <div class="control-group" style="margin-top: 15px;">
+            <label for="calc-rule-select">套用計算規則</label>
+            <select id="calc-rule-select" disabled><option value="">請先選擇計算對象</option></select>
+          </div>
         </div>
-        <div id="calculator-tab" class="tab-content active">
-            <div class="section">
-                <div class="section-header">	
-                <h2>選擇計算對象與規則</h2><button id="btn-calculate" disabled>計算成績</button>
-				</div>
-                <div class="control-grid">
-                    <div class="control-group" style="margin-top: 15px;">
-                        <label for="calc-target-select">計算對象 (班級或年段)</label>
-                        <select id="calc-target-select"><option value="">請選擇</option></select>
-                    </div>
-                    <div class="control-group" style="margin-top: 15px;">
-                        <label for="calc-rule-select">套用計算規則</label>
-                        <select id="calc-rule-select" disabled><option value="">請先選擇計算對象</option></select>
-                    </div>
-                </div>
-                <h2>計算結果</h2>
-				<p>請選擇計算對象和規則後，點擊按鈕開始計算。</p>
-                <div id="results-container"></div>
+        <h2>計算結果</h2>
+        <p>請選擇計算對象和規則後，點擊按鈕開始計算。</p>
+        <div id="results-container"></div>
+      </div>
+    </div>
+    <div id="rules-tab" class="tab-content">
+      <div class="section">
+        <div class="section-header">
+          <h2>規則編輯器</h2>
+          <div id="rule-editor-actions">
+            <button id="btn-save-rule" disabled>儲存</button>
+            <button id="btn-delete-rule" disabled>刪除</button>
+          </div>
+        </div>
+        <div class="control-grid" style="margin-top: 15px;">
+          <div class="control-group">
+            <label for="rule-grade-select">1. 選擇規則所屬年段</label>
+            <select id="rule-grade-select"><option value="">請選擇年段</option></select>
+          </div>
+          <div class="control-group">
+            <label for="rule-default-score">2. 缺考/缺交預設分數</label>
+            <input type="number" id="rule-default-score" value="0">
+          </div>
+          <div class="control-group">
+            <label for="rule-select">3. 選擇、建立或修改規則</label>
+            <select id="rule-select" disabled><option value="new">-- 建立新規則 --</option></select>
+          </div>
+          <div class="control-group">
+            <label for="rule-name" class="visually-hidden">規則名稱</label>
+            <input type="text" id="rule-name" placeholder="請為規則命名" style="flex-grow: 2; margin-left:10px;">
+          </div>
+        </div>
+        <div id="rule-config-panel" style="display:none;">
+          <h3>規則內容設定(各步驟選填)</h3>
+          <div class="steps-container">
+            <div class="step-card">
+              <h4>步驟1: 特定作業加權</h4>
+              <div id="step1-assignments" class="assignment-list"></div>
             </div>
-        </div>
-        <div id="rules-tab" class="tab-content">
-            <div class="section">
-                <div class="section-header">
-                    <h2>規則編輯器</h2>
-                    <div id="rule-editor-actions">
-                        <button id="btn-save-rule" disabled>儲存</button>
-                        <button id="btn-delete-rule" disabled>刪除</button>
-                    </div>
-                </div>
-                <div class="control-grid" style="margin-top: 15px;">
-                    <div class="control-group">
-                        <label for="rule-grade-select">1. 選擇規則所屬年段</label>
-                        <select id="rule-grade-select">
-                            <option value="">請選擇年段</option>
-                            </select>
-                    </div>
-                     <div class="control-group">
-                        <label for="rule-default-score">2. 缺考/缺交預設分數</label>
-                        <input type="number" id="rule-default-score" value="0">
-                    </div>
-                    <div class="control-group">
-                        <label for="rule-select">3. 選擇、建立或修改規則</label>
-                        <select id="rule-select" disabled><option value="new">-- 建立新規則 --</option></select>
-                    </div>
-                    <div class="control-group">
-						<label for="rule-name" class="visually-hidden">規則名稱</label>
-                        <input type="text" id="rule-name" placeholder="請為規則命名" style="flex-grow: 2; margin-left:10px;">
-                   </div>
-                </div>
-                <div id="rule-config-panel" style="display:none;">
-                    <h3>規則內容設定(各步驟選填)</h3>
-                    <div class="steps-container">
-                        <div class="step-card">
-                            <h4>步驟1: 特定作業加權</h4>
-                            <div id="step1-assignments" class="assignment-list"></div>
-                        </div>
-                        <div class="step-card">
-                            <h4>步驟2: 作業平均加權</h4>
-                            <div id="step2-assignments" class="assignment-list"></div>
-                            <div class="multiplier-input">
-                                <label for="step2-multiplier">平均成績乘數:</label>
-                                <input type="number" class="input-decimal" id="step2-multiplier" min="0" max="1" step="0.01" value="1.0">
-                            </div>
-                        </div>
-                        <div class="step-card">
-                            <h4>步驟3: 前 N 高作業平均加權</h4>
-                            <div class="multiplier-input">
-                                <label for="step3-n">取前</label>
-                                <input type="number" class="input-integer" id="step3-n" value="5" min="1">
-                                <label for="step3-multiplier">高分</label>
-                            </div>
-                            <div class="multiplier-input">
-                                <label for="step3-multiplier">平均成績乘數:</label>
-                                <input type="number" class="input-decimal" id="step3-multiplier" min="0" max="1" step="0.01" value="1.0">
-                            </div>
-                        </div>
-                        <div class="step-card">
-                            <h4>步驟4: 日常表現總分加權</h4>
-                             <div class="multiplier-input">
-                                <label for="step4-multiplier">表現總分乘數:</label>
-                                <input type="number" class="input-decimal" id="step4-multiplier" min="0" max="1" step="0.01" value="1.0">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="step-card">
+              <h4>步驟2: 作業平均加權</h4>
+              <div id="step2-assignments" class="assignment-list"></div>
+              <div class="multiplier-input">
+                <label for="step2-multiplier">平均成績乘數:</label>
+                <input type="number" class="input-decimal" id="step2-multiplier" min="0" max="1" step="0.01" value="1.0">
+              </div>
             </div>
+            <div class="step-card">
+              <h4>步驟3: 前 N 高作業平均加權</h4>
+              <div class="multiplier-input">
+                <label for="step3-n">取前</label>
+                <input type="number" class="input-integer" id="step3-n" value="5" min="1">
+                <label for="step3-multiplier">高分</label>
+              </div>
+              <div class="multiplier-input">
+                <label for="step3-multiplier">平均成績乘數:</label>
+                <input type="number" class="input-decimal" id="step3-multiplier" min="0" max="1" step="0.01" value="1.0">
+              </div>
+            </div>
+            <div class="step-card">
+              <h4>步驟4: 日常表現總分加權</h4>
+              <div class="multiplier-input">
+                <label for="step4-multiplier">表現總分乘數:</label>
+                <input type="number" class="input-decimal" id="step4-multiplier" min="0" max="1" step="0.01" value="1.0">
+              </div>
+            </div>
+          </div>
         </div>
-    </main>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-	<script>
-	  const firebaseConfig = {
-		apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
-		authDomain: "classrecords-13902.firebaseapp.com",
-		projectId: "classrecords-13902",
-		storageBucket: "classrecords-13902.firebasestorage.app",
-		messagingSenderId: "431747377367",
-		appId: "1:431747377367:web:b157a8f5c59ce38091e892",
-		measurementId: "G-JWTQGM9XMP"
-	  };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        let currentUser = null,
-            studentsData = [],
-            allAssignments = {},
-            allPerformanceScores = {},
-            allRules = [],
-            gradeLevels = { '1': [], '2': [], '3': [] };
-        const appContainer = document.getElementById('app-container');
-        const GRADE_MAP = { '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '七', '8': '八', '9': '九' };
-		const USER_AUTH_KEY = 'user_auth_profile_v1';
-        const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
-        const DYNAMIC_CACHE_KEY = 'teacher_dynamic_cache_v6';		
-        const CALCULATOR_DYNAMIC_CACHE_KEY = 'calculator_cache_v1'; 
-        const CACHE_LIFETIME = 45 * 60 * 1000; 
-        let STATIC_CACHE = {};
-        let DYNAMIC_CACHE = {};
-        let DYNAMIC_CACHE_CALCULATOR = {};
-        
-		auth.onAuthStateChanged(async (user) => {
-			if (user) {
-                currentUser = user;
-                const displayElement = document.getElementById('user-email');
-                let userData = null;
-                try {
-                    const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
-                    if (cachedAuthData) {
-                         userData = JSON.parse(cachedAuthData).userData;
-                         console.log('✅ AUTH 快取命中：讀取到用戶資料。');
-                         if (userData.displayName) {
-                             displayElement.textContent = userData.displayName;
-                         } else {
-                             displayElement.textContent = user.email;
-                         }
-                    }
-                } catch (e) {
-                     console.error('❌ 解析 AUTH 快取失敗，將從 Firestore 載入。', e);
-                }
-                if (!userData) {
-                     const userDoc = await db.collection('users').doc(user.uid).get();
-                     console.log('載入user資料...');
-                     if (userDoc.exists) {
-                          userData = userDoc.data();
-                          if (userData.displayName) {
-                              displayElement.textContent = userData.displayName;
-                          } else {
-                              displayElement.textContent = user.email;
-                          }
-                     }
-                }
-                if (userData && userData.role === 'teacher') {
-                    if (!userData.schoolId) {
-                        appContainer.innerHTML = '<h2>帳號設定錯誤：未綁定學校ID。</h2>';
-                        return;
-                    }
-                    initializePage(userData);
-                    appContainer.style.display = 'block';
-                } else { 
-                    window.location.href = 'login.html'; 
-                }
-            } else { 
-                window.location.href = 'login.html'; 
+      </div>
+    </div>
+  </main>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
+      authDomain: "classrecords-13902.firebaseapp.com",
+      projectId: "classrecords-13902",
+      storageBucket: "classrecords-13902.firebasestorage.app",
+      messagingSenderId: "431747377367",
+      appId: "1:431747377367:web:b157a8f5c59ce38091e892",
+      measurementId: "G-JWTQGM9XMP"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+    let currentUser = null, studentsData = [], allAssignments = {}, allPerformanceScores = {}, allRules = [], gradeLevels = {};
+    const appContainer = document.getElementById('app-container');
+    const GRADE_MAP = { '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '七', '8': '八', '9': '九' };
+    const USER_AUTH_KEY = 'user_auth_profile_v1';
+    const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
+    const DYNAMIC_CACHE_KEY = 'teacher_dynamic_cache_v6';
+    const CALCULATOR_DYNAMIC_CACHE_KEY = 'calculator_cache_v1';
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        currentUser = user;
+        const displayElement = document.getElementById('user-email');
+        let userData = null;
+        try {
+          const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
+          if (cachedAuthData) {
+            userData = JSON.parse(cachedAuthData).userData;
+            displayElement.textContent = userData.displayName || user.email;
+          }
+        } catch (e) {}
+        if (!userData) {
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          if (userDoc.exists) {
+            userData = userDoc.data();
+            displayElement.textContent = userData.displayName || user.email;
+          }
+        }
+        if (userData && userData.role === 'teacher') {
+          if (!userData.schoolId) {
+            appContainer.innerHTML = '<h2>帳號設定錯誤：未綁定學校ID。</h2>';
+            return;
+          }
+          initializePage(userData);
+          appContainer.style.display = 'block';
+        } else { window.location.href = 'login.html'; }
+      } else { window.location.href = 'login.html'; }
+    });
+    async function initializePage(userData) {
+      const schoolId = userData.schoolId;
+      let rosterDataLoaded = false, assignmentsDataLoaded = false, rulesDataLoaded = false, perfDataLoaded = false;
+      try {
+        const cachedStatic = localStorage.getItem(STATIC_CACHE_KEY);
+        if (cachedStatic) {
+          const data = JSON.parse(cachedStatic);
+          if (data.uid === currentUser.uid && data.rosterData) {
+            studentsData = data.rosterData;
+            rosterDataLoaded = true;
+          }
+        }
+        const cachedDynamic = localStorage.getItem(DYNAMIC_CACHE_KEY);
+        if (cachedDynamic) {
+          const data = JSON.parse(cachedDynamic);
+          if (data.uid === currentUser.uid && data.performanceRecords && studentsData.length > 0) {
+            const tempPerformance = {};
+            studentsData.forEach(s => tempPerformance[s.id] = 0);
+            data.performanceRecords.forEach(r => {
+              const studentId = r.entityId || r.studentId;
+              if ((r.entityType === 'student' || !r.entityType) && studentId && tempPerformance.hasOwnProperty(studentId)) {
+                tempPerformance[studentId] += (r.points || 0);
+              }
+            });
+            allPerformanceScores = tempPerformance;
+            perfDataLoaded = true;
+          }
+        }
+        const cachedCalc = localStorage.getItem(CALCULATOR_DYNAMIC_CACHE_KEY);
+        if (cachedCalc) {
+          const data = JSON.parse(cachedCalc);
+          if (data.uid === currentUser.uid) {
+            allRules = data.allRules || [];
+            rulesDataLoaded = true;
+            allAssignments = data.allAssignments || {};
+            assignmentsDataLoaded = Object.keys(allAssignments).length > 0;
+          }
+        }
+      } catch (e) {
+        localStorage.removeItem(STATIC_CACHE_KEY);
+        localStorage.removeItem(DYNAMIC_CACHE_KEY);
+        localStorage.removeItem(CALCULATOR_DYNAMIC_CACHE_KEY);
+      }
+      const fetchPromises = [];
+      if (!rosterDataLoaded) {
+        fetchPromises.push((async () => {
+          const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
+          if (!rosterDoc.exists) {
+            appContainer.innerHTML = '<h2>找不到學校名冊</h2>';
+            return;
+          }
+          studentsData = rosterDoc.data().students || [];
+        })());
+      }
+      if (fetchPromises.length > 0) await Promise.all(fetchPromises);
+      fetchPromises.length = 0;
+      if (studentsData.length === 0) return;
+      if (!rulesDataLoaded) fetchPromises.push(loadAllRules());
+      if (!assignmentsDataLoaded) {
+        fetchPromises.push((async () => {
+          const assignmentsSnapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').get();
+          const tempAssignments = {};
+          assignmentsSnapshot.forEach(doc => {
+            const data = doc.data();
+            if (!tempAssignments[data.className]) tempAssignments[data.className] = [];
+            tempAssignments[data.className].push({ id: doc.id, ...data });
+          });
+          allAssignments = tempAssignments;
+        })());
+      }
+      if (!perfDataLoaded) {
+        fetchPromises.push((async () => {
+          const perfSnapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+          const tempPerformance = {};
+          studentsData.forEach(s => tempPerformance[s.id] = 0);
+          perfSnapshot.forEach(doc => {
+            const r = doc.data();
+            const studentId = r.entityId || r.studentId;
+            if ((r.entityType === 'student' || !r.entityType) && studentId && tempPerformance.hasOwnProperty(studentId)) {
+              tempPerformance[studentId] += (r.points || 0);
             }
+          });
+          allPerformanceScores = tempPerformance;
+        })());
+      }
+      if (fetchPromises.length > 0) {
+        await Promise.all(fetchPromises);
+        localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify({
+          allRules, allAssignments, uid: currentUser.uid, lastUpdated: Date.now()
+        }));
+      }
+      const classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
+      gradeLevels = {};
+      classList.forEach(c => {
+        const grade = getGradeLevelFromClassId(c);
+        if (grade) {
+          if (!gradeLevels[grade]) gradeLevels[grade] = [];
+          gradeLevels[grade].push(c);
+        }
+      });
+      const calcTargetSelect = document.getElementById('calc-target-select');
+      const ruleGradeSelect = document.getElementById('rule-grade-select');
+      for (const grade in gradeLevels) {
+        const gradeName = GRADE_MAP[grade] || grade;
+        const optGroup = document.createElement('optgroup');
+        optGroup.label = `--- ${gradeName}年級 ---`;
+        optGroup.appendChild(new Option(`${gradeName}年級全體`, `grade-${grade}`));
+        gradeLevels[grade].forEach(c => optGroup.appendChild(new Option(`${c}班`, c)));
+        calcTargetSelect.appendChild(optGroup);
+        ruleGradeSelect.appendChild(new Option(`${gradeName}年級`, grade));
+      }
+      bindEventListeners();
+    }
+    function getGradeLevelFromClassId(classId) {
+      if (!classId || classId.length < 3) return null;
+      const firstDigit = classId.charAt(0);
+      return GRADE_MAP[firstDigit] ? firstDigit : null;
+    }
+    function bindEventListeners() {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById(btn.dataset.tab).classList.add('active');
         });
-
-		async function initializePage(userData) {
-            const schoolId = userData.schoolId;
-            let rosterDataLoaded = false;
-            let assignmentsDataLoaded = false; 
-            let rulesDataLoaded = false; 
-            let perfDataLoaded = false; 
-            try {
-                const cachedStatic = localStorage.getItem(STATIC_CACHE_KEY);
-                if (cachedStatic) {
-                    STATIC_CACHE = JSON.parse(cachedStatic);
-                    if (STATIC_CACHE.uid === currentUser.uid) {
-                        if (STATIC_CACHE.rosterData) {
-                            studentsData = STATIC_CACHE.rosterData;
-                            rosterDataLoaded = true;
-                            console.log('✅ 學生名冊：STATIC 快取命中！');
-                        }
-                    } else {
-                         localStorage.removeItem(STATIC_CACHE_KEY);
-                    }
-                }
-				const cachedDynamic = localStorage.getItem(DYNAMIC_CACHE_KEY);
-                if (cachedDynamic) {
-                    DYNAMIC_CACHE = JSON.parse(cachedDynamic);
-                    if (DYNAMIC_CACHE.uid === currentUser.uid) {                      
-                        if (DYNAMIC_CACHE.performanceRecords && studentsData.length > 0) {
-                            const records = DYNAMIC_CACHE.performanceRecords;
-                            const tempPerformance = {};
-                            studentsData.forEach(s => tempPerformance[s.id] = 0);
-                            records.forEach(r => {
-                                const studentId = r.entityId || r.studentId;
-                                if ((r.entityType === 'student' || !r.entityType) && studentId && tempPerformance.hasOwnProperty(studentId)) {
-                                    tempPerformance[studentId] += (r.points || 0);
-                                }
-                            });
-                            allPerformanceScores = tempPerformance;
-                            perfDataLoaded = true;
-                            console.log('✅ 學生紀錄：STATIC 快取命中！');
-                        }
-                    } else {
-                         localStorage.removeItem(DYNAMIC_CACHE_KEY);
-                    }
-                }
-                
-                const cachedDynamicCalculator = localStorage.getItem(CALCULATOR_DYNAMIC_CACHE_KEY);
-                const now = new Date().getTime();
-                
-                if (cachedDynamicCalculator) {
-                    DYNAMIC_CACHE_CALCULATOR = JSON.parse(cachedDynamicCalculator);
-                    if (DYNAMIC_CACHE_CALCULATOR.uid === currentUser.uid) {
-                        
-                        const isCacheValid = true;
-                        
-                        if (DYNAMIC_CACHE_CALCULATOR.hasOwnProperty('allRules') && isCacheValid) {
-                            allRules = DYNAMIC_CACHE_CALCULATOR.allRules || [];
-                            rulesDataLoaded = true;
-                            console.log('✅ 計算規則：DYNAMIC 快取命中 (45m 時效)!');
-                        }
-                        
-                        if (DYNAMIC_CACHE_CALCULATOR.allAssignments && isCacheValid) {
-                            allAssignments = DYNAMIC_CACHE_CALCULATOR.allAssignments || {};
-                            assignmentsDataLoaded = Object.keys(allAssignments).length > 0;
-                            console.log('✅ 所有成績項目：DYNAMIC 快取命中 (45m 時效)!');
-                        }
-                    } else {
-                         localStorage.removeItem(CALCULATOR_DYNAMIC_CACHE_KEY);
-                         DYNAMIC_CACHE_CALCULATOR = {};
-                    }
-                }
-            } catch (e) {
-                console.error('❌ 快取讀取失敗:', e);
-                localStorage.removeItem(STATIC_CACHE_KEY);
-				localStorage.removeItem(DYNAMIC_CACHE_KEY);
-                localStorage.removeItem(CALCULATOR_DYNAMIC_CACHE_KEY);
-            }
-            
-            
-            const fetchPromises = [];
-            const nowForWrite = new Date().getTime();
-            let dynamicNeedsCacheUpdate = false;
-            
-            if (!rosterDataLoaded) {
-                fetchPromises.push((async () => {
-                    const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
-                    console.log('載入學生名冊資料...');
-                    if (!rosterDoc.exists) {
-                        appContainer.innerHTML = '<h2>找不到學校名冊</h2><p>請聯繫學校管理者上傳最新學期的學生名冊資料。</p>';
-                        return;
-                    }
-                    studentsData = rosterDoc.exists ? rosterDoc.data().students : [];
-                })());
-            }
-            if (fetchPromises.length > 0) {
-                 await Promise.all(fetchPromises);
-            }
-            if (studentsData.length === 0) return;
-            
-            
-            if (!rulesDataLoaded) {
-                fetchPromises.push(loadAllRules());
-                dynamicNeedsCacheUpdate = true;
-            }
-            
-            if (!assignmentsDataLoaded) {
-                fetchPromises.push((async () => {
-                    /* 🛠️ 修改處開始：修正讀取成績的路徑 🛠️ */
-                    /* 原本代碼 (錯誤)：使用 collectionGroup 且依賴不存在的 teacherId 欄位
-                    const assignmentsSnapshot = await db.collectionGroup('assignments').where('teacherId', '==', currentUser.uid).get(); 
-                    */
-                    
-                    /* 修改後代碼 (正確)：直接指向該老師的 gradebooks 路徑，這與 grades.html 的讀取方式一致 */
-                    const assignmentsSnapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').get();
-                    /* 🛠️ 修改處結束 🛠️ */
-
-                    console.log('載入作業名稱資料...');
-                    const tempAssignments = {};
-                    assignmentsSnapshot.forEach(doc => {
-                        const data = doc.data();
-                        if (!tempAssignments[data.className]) tempAssignments[data.className] = [];
-                        tempAssignments[data.className].push({ id: doc.id, ...data });
-                    });
-                    allAssignments = tempAssignments;
-                    dynamicNeedsCacheUpdate = true;
-                })());
-            }
-            
-            if (!perfDataLoaded) { 
-                fetchPromises.push((async () => {
-                    const perfSnapshot = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
-                    console.log('載入學生紀錄資料 (備用)...');
-                    const records = [];
-                    perfSnapshot.forEach(doc => records.push(doc.data()));
-                    
-                    const tempPerformance = {};
-                    studentsData.forEach(s => tempPerformance[s.id] = 0);
-                    records.forEach(r => {
-                        const studentId = r.entityId || r.studentId;
-                        if ((r.entityType === 'student' || !r.entityType) && studentId && tempPerformance.hasOwnProperty(studentId)) {
-                            tempPerformance[studentId] += (r.points || 0);
-                        }
-                    });
-                    allPerformanceScores = tempPerformance;
-                })());
-            }
-            if (fetchPromises.length > 0) {
-                 await Promise.all(fetchPromises);
-                 if (dynamicNeedsCacheUpdate) {
-                    DYNAMIC_CACHE_CALCULATOR.allRules = allRules;
-                    DYNAMIC_CACHE_CALCULATOR.allAssignments = allAssignments;
-                    DYNAMIC_CACHE_CALCULATOR.lastUpdated = nowForWrite;
-                    DYNAMIC_CACHE_CALCULATOR.uid = currentUser.uid;
-                    localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify(DYNAMIC_CACHE_CALCULATOR));
-                 }
-            }
-            const classList = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
-            
-            gradeLevels = {}; // 清空並動態建立
-            classList.forEach(c => {
-                const grade = getGradeLevelFromClassId(c);
-                if (grade) {
-                    // 如果該年段還沒有陣列，則建立一個
-                    if (!gradeLevels[grade]) {
-                        gradeLevels[grade] = [];
-                    }
-                    gradeLevels[grade].push(c);
-                }
-            });
-
-            const calcTargetSelect = document.getElementById('calc-target-select');
-            const ruleGradeSelect = document.getElementById('rule-grade-select');
-            ruleGradeSelect.innerHTML = '<option value="">請選擇年段</option>';
-            
-            // 這裡的迴圈會自動根據實際存在的年段 (gradeLevels 的 key) 來產生選項
-            for (const grade in gradeLevels) {
-                if (gradeLevels[grade].length > 0) {
-                    const gradeName = GRADE_MAP[grade] || grade;
-                    const optGroup = document.createElement('optgroup');
-                    optGroup.label = `--- ${gradeName}年級 ---`; 
-                    optGroup.appendChild(new Option(`${gradeName}年級全體`, `grade-${grade}`));
-                    gradeLevels[grade].forEach(c => {
-                        optGroup.appendChild(new Option(`${c}班`, c));
-                    });
-                    calcTargetSelect.appendChild(optGroup);
-                    const option = new Option(`${gradeName}年級`, grade); // 顯示名稱
-                    ruleGradeSelect.appendChild(option);
-                }
-            }
-            bindEventListeners();
+      });
+      const ruleGradeSelect = document.getElementById('rule-grade-select');
+      const ruleSelect = document.getElementById('rule-select');
+      const ruleNameInput = document.getElementById('rule-name');
+      const ruleConfigPanel = document.getElementById('rule-config-panel');
+      ruleGradeSelect.addEventListener('change', (e) => {
+        const grade = e.target.value;
+        [ruleSelect, ruleNameInput, document.getElementById('btn-save-rule')].forEach(el => el.disabled = !grade);
+        if (grade) {
+          populateRulesForGrade(grade);
+          populateAssignmentsForGrade(grade);
+          ruleConfigPanel.style.display = 'block';
+        } else {
+          ruleConfigPanel.style.display = 'none';
+          document.getElementById('btn-delete-rule').disabled = true;
         }
-   
-        function getGradeLevelFromClassId(classId) {
-            if (!classId || classId.length < 3) return null;
-            const firstDigit = classId.charAt(0);
-            if (GRADE_MAP[firstDigit]) return firstDigit; 
-            return null;
+      });
+      ruleSelect.addEventListener('change', (e) => {
+        const ruleId = e.target.value;
+        const deleteBtn = document.getElementById('btn-delete-rule');
+        if (ruleId === 'new') {
+          clearRuleForm();
+          ruleNameInput.value = '';
+          deleteBtn.disabled = true;
+        } else {
+          const rule = allRules.find(r => r.id === ruleId);
+          if (rule) loadRuleIntoForm(rule);
+          deleteBtn.disabled = false;
         }
-        
-        function bindEventListeners() {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.tab-btn, .tab-content').forEach(el => el.classList.remove('active'));
-                    btn.classList.add('active');
-                    document.getElementById(btn.dataset.tab).classList.add('active');
-                });
-            });
-            const ruleGradeSelect = document.getElementById('rule-grade-select');
-            const ruleSelect = document.getElementById('rule-select');
-            const ruleNameInput = document.getElementById('rule-name');
-            const ruleConfigPanel = document.getElementById('rule-config-panel');
-            
-            ruleGradeSelect.addEventListener('change', (e) => {
-                const grade = e.target.value;
-                const UIElements = [ruleSelect, ruleNameInput, document.getElementById('btn-save-rule')];
-                UIElements.forEach(el => el.disabled = !grade);
-                if (grade) {
-                    populateRulesForGrade(grade);
-                    populateAssignmentsForGrade(grade);
-                    ruleConfigPanel.style.display = 'block';
-                } else {
-                    ruleConfigPanel.style.display = 'none';
-                    document.getElementById('btn-delete-rule').disabled = true;
-                }
-            });
-            
-            ruleSelect.addEventListener('change', (e) => {
-                const ruleId = e.target.value;
-                const deleteBtn = document.getElementById('btn-delete-rule');
-                if (ruleId === 'new') {
-                    clearRuleForm();
-                    ruleNameInput.value = '';
-                    ruleNameInput.placeholder = "請為新規則命名";
-                    deleteBtn.disabled = true;
-                } else {
-                    const rule = allRules.find(r => r.id === ruleId);
-                    if (rule) loadRuleIntoForm(rule);
-                    deleteBtn.disabled = false;
-                }
-            });
-            document.getElementById('btn-save-rule').addEventListener('click', saveRule);
-            document.getElementById('btn-delete-rule').addEventListener('click', deleteRule);
-            
-            const calcTargetSelect = document.getElementById('calc-target-select');
-            const calcRuleSelect = document.getElementById('calc-rule-select');
-            
-            calcTargetSelect.addEventListener('change', (e) => {
-                const target = e.target.value;
-                calcRuleSelect.innerHTML = '<option value="">請選擇規則</option>';
-                const calculateBtn = document.getElementById('btn-calculate');
-                if (target) {
-                    const grade = target.startsWith('grade-') ? target.split('-')[1] : getGradeLevelFromClassId(target);
-                    const rulesForGrade = allRules.filter(r => r.gradeLevel === grade);
-                    if (rulesForGrade.length > 0) {
-                        rulesForGrade.forEach(r => calcRuleSelect.appendChild(new Option(r.ruleName, r.id)));
-                        calcRuleSelect.disabled = false;
-                        calculateBtn.disabled = false;
-                    } else {
-                         calcRuleSelect.innerHTML = '<option value="">此年段尚無可用規則</option>';
-                         calcRuleSelect.disabled = true;
-                         calculateBtn.disabled = true;
-                    }
-                } else {
-                    calcRuleSelect.disabled = true;
-                    calculateBtn.disabled = true;
-                }
-            });
-            document.getElementById('btn-calculate').addEventListener('click', calculateScores);
+      });
+      document.getElementById('btn-save-rule').addEventListener('click', saveRule);
+      document.getElementById('btn-delete-rule').addEventListener('click', deleteRule);
+      const calcTargetSelect = document.getElementById('calc-target-select');
+      const calcRuleSelect = document.getElementById('calc-rule-select');
+      calcTargetSelect.addEventListener('change', (e) => {
+        const target = e.target.value;
+        calcRuleSelect.innerHTML = '<option value="">請選擇規則</option>';
+        const calculateBtn = document.getElementById('btn-calculate');
+        if (target) {
+          const grade = target.startsWith('grade-') ? target.split('-')[1] : getGradeLevelFromClassId(target);
+          const rulesForGrade = allRules.filter(r => r.gradeLevel === grade);
+          if (rulesForGrade.length > 0) {
+            rulesForGrade.forEach(r => calcRuleSelect.appendChild(new Option(r.ruleName, r.id)));
+            calcRuleSelect.disabled = false;
+            calculateBtn.disabled = false;
+          } else {
+            calcRuleSelect.innerHTML = '<option value="">尚無可用規則</option>';
+            calcRuleSelect.disabled = true;
+            calculateBtn.disabled = true;
+          }
+        } else {
+          calcRuleSelect.disabled = true;
+          calculateBtn.disabled = true;
         }
-        
-        async function loadAllRules() {
-            const snapshot = await db.collection('calculationRules').where('teacherId', '==', currentUser.uid).get();
-			console.log('載入計算規則資料...');
-            allRules = [];
-            snapshot.forEach(doc => allRules.push({ id: doc.id, ...doc.data() }));
+      });
+      document.getElementById('btn-calculate').addEventListener('click', calculateScores);
+    }
+    async function loadAllRules() {
+      const snapshot = await db.collection('calculationRules').where('teacherId', '==', currentUser.uid).get();
+      allRules = [];
+      snapshot.forEach(doc => allRules.push({ id: doc.id, ...doc.data() }));
+    }
+    function populateRulesForGrade(grade) {
+      const ruleSelect = document.getElementById('rule-select');
+      ruleSelect.innerHTML = '<option value="new">-- 建立新規則 --</option>';
+      allRules.filter(r => r.gradeLevel === grade).forEach(r => ruleSelect.appendChild(new Option(r.ruleName, r.id)));
+      clearRuleForm();
+    }
+    function populateAssignmentsForGrade(grade) {
+      const classesInGrade = gradeLevels[grade] || [];
+      const assignmentNames = new Set();
+      classesInGrade.forEach(classId => {
+        (allAssignments[classId] || []).forEach(a => assignmentNames.add(a.assignmentName));
+      });
+      const step1Container = document.getElementById('step1-assignments');
+      const step2Container = document.getElementById('step2-assignments');
+      step1Container.innerHTML = ''; step2Container.innerHTML = '';
+      const sortedNames = [...assignmentNames].sort();
+      if (sortedNames.length === 0) {
+        step1Container.innerHTML = '<small>尚無項目</small>';
+        step2Container.innerHTML = '<small>尚無項目</small>';
+        return;
+      }
+      sortedNames.forEach((name, index) => {
+        const safeId = index;
+        const item1HTML = `<input type="checkbox" id="s1-${safeId}" data-name="${name}" data-peer="s2-${safeId}"><label for="s1-${safeId}">${name}</label><input type="number" min="0" max="1" step="0.01" value="1.0" disabled>`;
+        const item2HTML = `<input type="checkbox" id="s2-${safeId}" data-name="${name}" data-peer="s1-${safeId}"><label for="s2-${safeId}">${name}</label>`;
+        step1Container.innerHTML += `<div class="assignment-item">${item1HTML}</div>`;
+        step2Container.innerHTML += `<div class="assignment-item">${item2HTML}</div>`;
+      });
+      const handleCheckboxChange = (e) => {
+        document.getElementById(e.target.dataset.peer).disabled = e.target.checked;
+        if(e.target.id.startsWith('s1-')) e.target.nextElementSibling.nextElementSibling.disabled = !e.target.checked;
+      };
+      step1Container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', handleCheckboxChange));
+      step2Container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', handleCheckboxChange));
+    }
+    function clearRuleForm() {
+      document.getElementById('rule-default-score').value = 0;
+      document.querySelectorAll('#rule-config-panel input[type="checkbox"]').forEach(cb => { cb.checked = false; cb.disabled = false; });
+      document.querySelectorAll('#step1-assignments input[type="number"]').forEach(num => { num.value = 1.0; num.disabled = true; });
+      document.getElementById('step2-multiplier').value = 1.0;
+      document.getElementById('step3-n').value = 5;
+      document.getElementById('step3-multiplier').value = 1.0;
+      document.getElementById('step4-multiplier').value = 1.0;
+    }
+    function getRuleFromForm() {
+      const ruleData = {
+        ruleName: document.getElementById('rule-name').value.trim(),
+        gradeLevel: document.getElementById('rule-grade-select').value,
+        defaultMissingScore: parseFloat(document.getElementById('rule-default-score').value),
+        step1: {},
+        step2: { assignments: [], multiplier: parseFloat(document.getElementById('step2-multiplier').value) },
+        step3: { n: parseInt(document.getElementById('step3-n').value), multiplier: parseFloat(document.getElementById('step3-multiplier').value) },
+        step4: { multiplier: parseFloat(document.getElementById('step4-multiplier').value) }
+      };
+      document.querySelectorAll('#step1-assignments input:checked').forEach(cb => {
+        ruleData.step1[cb.dataset.name] = parseFloat(cb.nextElementSibling.nextElementSibling.value);
+      });
+      document.querySelectorAll('#step2-assignments input:checked').forEach(cb => {
+        ruleData.step2.assignments.push(cb.dataset.name);
+      });
+      return ruleData;
+    }
+    function loadRuleIntoForm(rule) {
+      clearRuleForm();
+      document.getElementById('rule-name').value = rule.ruleName;
+      document.getElementById('rule-default-score').value = rule.defaultMissingScore || 0;
+      const s1Cbs = Array.from(document.querySelectorAll('#step1-assignments input[type="checkbox"]'));
+      if(rule.step1) {
+        for(const name in rule.step1) {
+          const cb = s1Cbs.find(el => el.dataset.name === name);
+          if(cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); cb.nextElementSibling.nextElementSibling.value = rule.step1[name]; }
         }
-
-        function populateRulesForGrade(grade) {
-            const ruleSelect = document.getElementById('rule-select');
-            ruleSelect.innerHTML = '<option value="new">-- 建立新規則 --</option>';
-            
-            allRules.filter(r => r.gradeLevel === grade).forEach(r => {
-                ruleSelect.appendChild(new Option(r.ruleName, r.id));
-            });
-            clearRuleForm();
-        }
-        
-		function populateAssignmentsForGrade(grade) {
-            const classesInGrade = gradeLevels[grade] || [];
-            const assignmentNames = new Set();
-            classesInGrade.forEach(classId => {
-                (allAssignments[classId] || []).forEach(a => assignmentNames.add(a.assignmentName));
-            });
-            
-            const step1Container = document.getElementById('step1-assignments');
-            const step2Container = document.getElementById('step2-assignments');
-            step1Container.innerHTML = ''; step2Container.innerHTML = '';
-            
-            const sortedNames = [...assignmentNames].sort();
-            if (sortedNames.length === 0) {
-                step1Container.innerHTML = '<small>此年段尚無成績項目</small>';
-                step2Container.innerHTML = '<small>此年段尚無成績項目</small>';
-                return;
-            }
-            
-            /* 🟢 修改處開始：改用 index 作為 ID 基礎，解決中文名稱導致 ID 重複的問題 */
-            sortedNames.forEach((name, index) => {
-                // 原本：const safeId = name.replace(/[^a-zA-Z0-9]/g, ''); 
-                // 修改為：直接使用 index，保證唯一
-                const safeId = index; 
-                
-                const item1HTML = `
-                    <input type="checkbox" id="s1-${safeId}" data-name="${name}" data-peer="s2-${safeId}">
-                    <label for="s1-${safeId}">${name}</label>
-                    <input type="number" min="0" max="1" step="0.01" value="1.0" disabled>`;
-                const item2HTML = `
-                    <input type="checkbox" id="s2-${safeId}" data-name="${name}" data-peer="s1-${safeId}">
-                    <label for="s2-${safeId}">${name}</label>`;
-                
-                step1Container.innerHTML += `<div class="assignment-item">${item1HTML}</div>`;
-                step2Container.innerHTML += `<div class="assignment-item">${item2HTML}</div>`;
-            });
-            /* 🟢 修改處結束 */
-
-            const handleCheckboxChange = (e) => {
-                document.getElementById(e.target.dataset.peer).disabled = e.target.checked;
-                if(e.target.id.startsWith('s1-')) {
-                    e.target.nextElementSibling.nextElementSibling.disabled = !e.target.checked;
-                }
-            };
-            step1Container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', handleCheckboxChange));
-            step2Container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', handleCheckboxChange));
-        }
-
-        function clearRuleForm() {
-            document.getElementById('rule-default-score').value = 0;
-            document.querySelectorAll('#rule-config-panel input[type="checkbox"]').forEach(cb => {
-                cb.checked = false;
-                cb.disabled = false;
-            });
-            document.querySelectorAll('#step1-assignments input[type="number"]').forEach(num => {
-                num.value = 1.0;
-                num.disabled = true;
-            });
-            document.getElementById('step2-multiplier').value = 1.0;
-            document.getElementById('step3-n').value = 5;
-            document.getElementById('step3-multiplier').value = 1.0;
-            document.getElementById('step4-multiplier').value = 1.0;
-        }
-
-        function getRuleFromForm() {
-            const ruleData = {
-                ruleName: document.getElementById('rule-name').value.trim(),
-                gradeLevel: document.getElementById('rule-grade-select').value,
-                defaultMissingScore: parseFloat(document.getElementById('rule-default-score').value),
-                step1: {},
-                step2: { assignments: [], multiplier: 1.0 },
-                step3: { n: 5, multiplier: 1.0 },
-                step4: { multiplier: 1.0 }
-            };
-            document.querySelectorAll('#step1-assignments input:checked').forEach(cb => {
-                const name = cb.dataset.name;
-                const multiplier = parseFloat(cb.nextElementSibling.nextElementSibling.value);
-                ruleData.step1[name] = multiplier;
-            });
-            document.querySelectorAll('#step2-assignments input:checked').forEach(cb => {
-                ruleData.step2.assignments.push(cb.dataset.name);
-            });
-            ruleData.step2.multiplier = parseFloat(document.getElementById('step2-multiplier').value);
-            ruleData.step3.n = parseInt(document.getElementById('step3-n').value);
-            ruleData.step3.multiplier = parseFloat(document.getElementById('step3-multiplier').value);
-            ruleData.step4.multiplier = parseFloat(document.getElementById('step4-multiplier').value);
-            return ruleData;
-        }
-
-		function loadRuleIntoForm(rule) {
-            clearRuleForm();
-            document.getElementById('rule-name').value = rule.ruleName;
-            document.getElementById('rule-default-score').value = rule.defaultMissingScore || 0;
-            
-            /* 🟢 修改處開始：改用 dataset.name 查找元素，不依賴 ID 計算 */
-            if(rule.step1) {
-                // 取得所有步驟1的 checkbox
-                const step1Checkboxes = Array.from(document.querySelectorAll('#step1-assignments input[type="checkbox"]'));
-                
-                for(const assignName in rule.step1) {
-                    // 原本：const safeId = assignName.replace(...); const cb = document.getElementById(...);
-                    // 修改為：尋找 data-name 等於 assignName 的 checkbox
-                    const cb = step1Checkboxes.find(el => el.dataset.name === assignName);
-                    
-                    if(cb) {
-                        cb.checked = true;
-                        cb.dispatchEvent(new Event('change'));
-                        cb.nextElementSibling.nextElementSibling.value = rule.step1[assignName];
-                    }
-                }
-            }
-            if(rule.step2) {
-                // 取得所有步驟2的 checkbox
-                const step2Checkboxes = Array.from(document.querySelectorAll('#step2-assignments input[type="checkbox"]'));
-                
-                rule.step2.assignments.forEach(assignName => {
-                    // 同樣修改為透過 data-name 查找
-                    const cb = step2Checkboxes.find(el => el.dataset.name === assignName);
-                    
-                    if(cb) {
-                        cb.checked = true;
-                        cb.dispatchEvent(new Event('change'));
-                    }
-                });
-                document.getElementById('step2-multiplier').value = rule.step2.multiplier;
-            }
-            /* 🟢 修改處結束 */
-
-            if(rule.step3) {
-                 document.getElementById('step3-n').value = rule.step3.n;
-                 document.getElementById('step3-multiplier').value = rule.step3.multiplier;
-            }
-            if(rule.step4) {
-                document.getElementById('step4-multiplier').value = rule.step4.multiplier;
-            }
-        }
-
-		async function saveRule() {
-            const ruleId = document.getElementById('rule-select').value;
-            const ruleName = document.getElementById('rule-name').value.trim();
-            const gradeLevel = document.getElementById('rule-grade-select').value;
-            if (!ruleName || !gradeLevel) {
-                alert('請先選擇年段並為規則命名！');
-                return;
-            }
-            const ruleData = getRuleFromForm();
-            ruleData.teacherId = currentUser.uid;
-            
-            try {
-                if (ruleId === 'new') {
-                    const docRef = await db.collection('calculationRules').add(ruleData);
-                    alert('規則已儲存！');
-                    await loadAllRules();
-                    populateRulesForGrade(gradeLevel);
-                    document.getElementById('rule-select').value = docRef.id;
-                } else {
-                    await db.collection('calculationRules').doc(ruleId).set(ruleData);
-                    alert('規則已更新！');
-                    const selectedValue = ruleId;
-                    await loadAllRules();
-                    populateRulesForGrade(gradeLevel);
-                    document.getElementById('rule-select').value = selectedValue;
-                }
-                
-                DYNAMIC_CACHE_CALCULATOR.allRules = allRules;
-                DYNAMIC_CACHE_CALCULATOR.lastUpdated = new Date().getTime(); 
-                DYNAMIC_CACHE_CALCULATOR.uid = currentUser.uid;
-                localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify(DYNAMIC_CACHE_CALCULATOR));
-            } catch(e) {
-                alert('儲存失敗: ' + e.message);
-            }
-        }
-		
-		async function deleteRule() {
-            const ruleId = document.getElementById('rule-select').value;
-            const gradeLevel = document.getElementById('rule-grade-select').value;
-            if (ruleId === 'new' || !confirm('確定要刪除這個規則嗎？')) return;
-            try {
-                await db.collection('calculationRules').doc(ruleId).delete();
-                alert('規則已刪除！');
-                await loadAllRules();
-                populateRulesForGrade(gradeLevel);
-                
-                DYNAMIC_CACHE_CALCULATOR.allRules = allRules;
-                DYNAMIC_CACHE_CALCULATOR.lastUpdated = new Date().getTime(); 
-                DYNAMIC_CACHE_CALCULATOR.uid = currentUser.uid;
-                localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify(DYNAMIC_CACHE_CALCULATOR));
-            } catch(e) {
-                alert('刪除失敗: ' + e.message);
-            }
-        }
-        
-        function calculateScores() {
-            const target = document.getElementById('calc-target-select').value;
-            const ruleId = document.getElementById('calc-rule-select').value;
-            if (!target || !ruleId) {
-                alert('請選擇計算對象和規則！');
-                return;
-            }
-            const rule = allRules.find(r => r.id === ruleId);
-            const isGradeCalc = target.startsWith('grade-');
-            const grade = isGradeCalc ? target.split('-')[1] : getGradeLevelFromClassId(target); 
-            const classesToCalc = isGradeCalc ? gradeLevels[grade] : [target];
-            const studentsToCalc = studentsData.filter(s => classesToCalc.includes(s.id.substring(0, 3)))
-                                               .sort((a,b) => a.id.localeCompare(b.id));
-            const resultsContainer = document.getElementById('results-container');
-            resultsContainer.innerHTML = '計算中...';
-            let tableHTML = `<table><thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>最終成績</th>
-                <th>步驟1</th><th>步驟2</th><th>步驟3</th><th>步驟4</th>
-                </tr></thead><tbody>`;
-            studentsToCalc.forEach(student => {
-                const studentClassId = student.id.substring(0, 3);
-                const assignmentsInStudentClass = allAssignments[studentClassId] || [];
-                let finalScore = 0;
-                let s1Score = 0, s2Score = 0, s3Score = 0, s4Score = 0;
-                
-                
-                for (const assignName in rule.step1) {
-                    const assignment = assignmentsInStudentClass.find(a => a.assignmentName === assignName);
-                    const score = (assignment && assignment.scores[student.id]?.score !== undefined) ? assignment.scores[student.id].score : rule.defaultMissingScore;
-                    s1Score += score * rule.step1[assignName];
-                }
-
-                
-                let s2Total = 0, s2Count = 0;
-                rule.step2.assignments.forEach(assignName => {
-                    const assignment = assignmentsInStudentClass.find(a => a.assignmentName === assignName);
-                    const score = (assignment && assignment.scores[student.id]?.score !== undefined) ? assignment.scores[student.id].score : rule.defaultMissingScore;
-                    s2Total += score; s2Count++;
-                });
-                if (s2Count > 0) s2Score = (s2Total / s2Count) * rule.step2.multiplier;
-                
-                
-                const usedNames = [...Object.keys(rule.step1), ...rule.step2.assignments];
-                const remainingAssignments = assignmentsInStudentClass.filter(a => !usedNames.includes(a.assignmentName));
-                const studentScores = remainingAssignments.map(a => (a.scores[student.id]?.score !== undefined) ? a.scores[student.id].score : rule.defaultMissingScore).sort((a,b) => b-a);
-                let s3Total = 0;
-                const n = rule.step3.n;
-                for(let i=0; i < n; i++) s3Total += studentScores[i] || rule.defaultMissingScore;
-                if (n > 0) s3Score = (s3Total / n) * rule.step3.multiplier;
-                
-                
-                s4Score = (allPerformanceScores[student.id] || 0) * rule.step4.multiplier;
-                finalScore = s1Score + s2Score + s3Score + s4Score;
-                tableHTML += `<tr>
-                    <td>${studentClassId}</td>
-                    <td>${student.id.substring(3)}</td>
-                    <td>${student.name}</td>
-                    <td><strong>${finalScore.toFixed(2)}</strong></td>
-                    <td>${s1Score.toFixed(2)}</td>
-                    <td>${s2Score.toFixed(2)}</td>
-                    <td>${s3Score.toFixed(2)}</td>
-                    <td>${s4Score.toFixed(2)}</td>
-                </tr>`;
-            });
-            tableHTML += `</tbody></table>`;
-            resultsContainer.innerHTML = tableHTML;
-        }
-		document.getElementById('manual-reload-btn').addEventListener('click', () => {
-            if(confirm('確定要從雲端重新下載成績與規則資料嗎？')) {
-                localStorage.removeItem(CALCULATOR_DYNAMIC_CACHE_KEY);
-                localStorage.removeItem(STATIC_CACHE_KEY);
-                localStorage.removeItem(DYNAMIC_CACHE_KEY);
-                window.location.reload();
-            }
+      }
+      const s2Cbs = Array.from(document.querySelectorAll('#step2-assignments input[type="checkbox"]'));
+      if(rule.step2) {
+        rule.step2.assignments.forEach(name => {
+          const cb = s2Cbs.find(el => el.dataset.name === name);
+          if(cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
         });
-        document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
-    </script>
+        document.getElementById('step2-multiplier').value = rule.step2.multiplier;
+      }
+      if(rule.step3) {
+        document.getElementById('step3-n').value = rule.step3.n;
+        document.getElementById('step3-multiplier').value = rule.step3.multiplier;
+      }
+      if(rule.step4) document.getElementById('step4-multiplier').value = rule.step4.multiplier;
+    }
+    async function saveRule() {
+      const ruleId = document.getElementById('rule-select').value;
+      const ruleName = document.getElementById('rule-name').value.trim();
+      const gradeLevel = document.getElementById('rule-grade-select').value;
+      if (!ruleName || !gradeLevel) { alert('請填寫資訊'); return; }
+      const ruleData = getRuleFromForm();
+      ruleData.teacherId = currentUser.uid;
+      try {
+        if (ruleId === 'new') {
+          const docRef = await db.collection('calculationRules').add(ruleData);
+          await loadAllRules();
+          populateRulesForGrade(gradeLevel);
+          document.getElementById('rule-select').value = docRef.id;
+        } else {
+          await db.collection('calculationRules').doc(ruleId).set(ruleData);
+          await loadAllRules();
+          populateRulesForGrade(gradeLevel);
+          document.getElementById('rule-select').value = ruleId;
+        }
+        localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify({ allRules, allAssignments, uid: currentUser.uid, lastUpdated: Date.now() }));
+        alert('儲存成功');
+      } catch(e) { alert('失敗'); }
+    }
+    async function deleteRule() {
+      const ruleId = document.getElementById('rule-select').value;
+      const gradeLevel = document.getElementById('rule-grade-select').value;
+      if (ruleId === 'new' || !confirm('確定刪除？')) return;
+      try {
+        await db.collection('calculationRules').doc(ruleId).delete();
+        await loadAllRules();
+        populateRulesForGrade(gradeLevel);
+        localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify({ allRules, allAssignments, uid: currentUser.uid, lastUpdated: Date.now() }));
+      } catch(e) { alert('失敗'); }
+    }
+    function calculateScores() {
+      const target = document.getElementById('calc-target-select').value;
+      const ruleId = document.getElementById('calc-rule-select').value;
+      if (!target || !ruleId) { alert('請選擇'); return; }
+      const rule = allRules.find(r => r.id === ruleId);
+      const isGrade = target.startsWith('grade-');
+      const grade = isGrade ? target.split('-')[1] : getGradeLevelFromClassId(target);
+      const classes = isGrade ? gradeLevels[grade] : [target];
+      const students = studentsData.filter(s => classes.includes(s.id.substring(0, 3))).sort((a,b) => a.id.localeCompare(b.id));
+      const container = document.getElementById('results-container');
+      let tableHTML = `<table><thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>最終成績</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th></tr></thead><tbody>`;
+      students.forEach(student => {
+        const studentClassId = student.id.substring(0, 3);
+        const assigns = allAssignments[studentClassId] || [];
+        let s1 = 0, s2 = 0, s2T = 0, s2C = 0;
+        for (const name in rule.step1) {
+          const a = assigns.find(x => x.assignmentName === name);
+          const sc = (a && a.scores[student.id]?.score !== undefined) ? a.scores[student.id].score : rule.defaultMissingScore;
+          s1 += sc * rule.step1[name];
+        }
+        rule.step2.assignments.forEach(name => {
+          const a = assigns.find(x => x.assignmentName === name);
+          s2T += (a && a.scores[student.id]?.score !== undefined) ? a.scores[student.id].score : rule.defaultMissingScore;
+          s2C++;
+        });
+        if (s2C > 0) s2 = (s2T / s2C) * rule.step2.multiplier;
+        const used = [...Object.keys(rule.step1), ...rule.step2.assignments];
+        const scs = assigns.filter(x => !used.includes(x.assignmentName)).map(x => (x.scores[student.id]?.score !== undefined) ? x.scores[student.id].score : rule.defaultMissingScore).sort((a,b) => b-a);
+        let s3 = 0, s3T = 0, n = rule.step3.n;
+        for(let i=0; i < n; i++) s3T += scs[i] || rule.defaultMissingScore;
+        if (n > 0) s3 = (s3T / n) * rule.step3.multiplier;
+        const s4 = (allPerformanceScores[student.id] || 0) * rule.step4.multiplier;
+        const final = s1 + s2 + s3 + s4;
+        tableHTML += `<tr><td>${studentClassId}</td><td>${student.id.substring(3)}</td><td>${student.name}</td><td><strong>${final.toFixed(2)}</strong></td><td>${s1.toFixed(2)}</td><td>${s2.toFixed(2)}</td><td>${s3.toFixed(2)}</td><td>${s4.toFixed(2)}</td></tr>`;
+      });
+      container.innerHTML = tableHTML + `</tbody></table>`;
+    }
+    document.getElementById('manual-reload-btn').addEventListener('click', () => {
+      if(confirm('重新下載？')) { localStorage.removeItem(CALCULATOR_DYNAMIC_CACHE_KEY); localStorage.removeItem(STATIC_CACHE_KEY); localStorage.removeItem(DYNAMIC_CACHE_KEY); window.location.reload(); }
+    });
+    document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
+  </script>
 </body>
 </html>
