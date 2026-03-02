@@ -372,60 +372,67 @@
         }
        
         function parseTimetable(text) {
-            const OFFICIAL_SUBJECTS = ['國文', '英文', '英語', '數學', '社會', '自然', '綜合', '藝術', '健體', '科技', '公民', '歷史', '地理', '理化', '生物', '地科', '表演', '視覺', '音樂', '體育', '家政', '童軍', '輔導', '本土語', '資訊科技', '生活科技'];
+            // 定義領域與關鍵字
+            const DOMAIN_MAP = {
+                '國文': ['國文', '閱讀', '溝通力'],
+                '英語': ['英語', '英語', 'Go有趣', '夢想探索'],
+                '數學': ['數學', '補救教學'],
+                '社會': ['社會', '公民', '歷史', '地理'],
+                '自然': ['自然', '理化', '生物', '地科', '地球科學', '金手指'],
+                '綜合': ['綜合', '家政', '童軍', '輔導', '生聲相惜'],
+                '藝術': ['藝術', '視覺', '音樂', '表演'],
+                '健體': ['健體', '體育', '健教'],
+                '科技': ['科技', '資訊科技', '生活科技']
+            };
+
+            // 定義優先領域清單
+            const PRIORITY_DOMAINS = ['國文', '英語', '數學', '社會', '自然'];
+
             const PERIOD_NAMES = ['第一節', '第二節', '第三節', '第四節', '第五節', '第六節', '第七節', '第八節'];
             const lines = text.trim().split(/\r?\n/);
             
-            // 偵測標頭並移除 (保持不變)
-            if (lines.length > 0 && (lines[0].includes('老師名稱') || lines[0].includes('教師姓名'))) {
+            if (lines.length > 0 && (lines[0].includes('姓名') || lines[0].includes('老師'))) {
                 lines.shift();
             }
 
             const schedules = {};
             const teacherTitles = {};
-            const teacherSubjects = {};
+            const teacherDetectedDomains = {}; // 暫存老師的所有可能領域
 
             for (let i = 0; i < lines.length; i++) {
                 const parts = lines[i].split(',').map(p => p.trim());
-                
-                // --- 🟢 關鍵修改處 ---
-                // 檢查欄位數量，並動態決定要讀取哪幾個欄位
-                let name, title, periodStr, mon, tue, wed, thu, fri;
+                if (parts.length < 8) continue;
 
+                let name, title, csvDomain, periodStr, mon, tue, wed, thu, fri;
                 if (parts.length >= 9) {
-                    // 9 欄格式: [姓名, 頭銜, 領域, 節次, 週一, ..., 週五]
-                    [name, title, , periodStr, mon, tue, wed, thu, fri] = parts; // 第3欄(領域)用空白佔位符忽略
-                } else if (parts.length === 8) {
-                    // 8 欄格式: [姓名, 頭銜, 節次, 週一, ..., 週五]
-                    [name, title, periodStr, mon, tue, wed, thu, fri] = parts;
+                    [name, title, csvDomain, periodStr, mon, tue, wed, thu, fri] = parts;
                 } else {
-                    // 欄位數不足，跳過此行
-                    console.warn(`[解析警告] 第 ${i + 2} 行的欄位數量不足 (${parts.length}欄)，已忽略。`);
-                    continue;
+                    [name, title, periodStr, mon, tue, wed, thu, fri] = parts;
+                    csvDomain = "";
                 }
-                // --- 🟢 修改結束 ---
 
                 if (!name) continue;
 
                 if (!schedules[name]) {
-                    schedules[name] = Array.from({ length: 8 }, () => Array(5).fill('')); 
-                    teacherSubjects[name] = new Set();
-                    teacherTitles[name] = title;
+                    schedules[name] = Array.from({ length: 8 }, () => Array(5).fill(''));
+                    teacherTitles[name] = title || '教師';
+                    teacherDetectedDomains[name] = new Set();
+                    
+                    if (csvDomain && csvDomain !== '其他') {
+                        teacherDetectedDomains[name].add(csvDomain);
+                    }
                 }
 
                 const periodIndex = PERIOD_NAMES.indexOf(periodStr);
-                if (periodIndex === -1 && periodStr) {
-                    console.warn(`[解析警告] 找不到對應的節次名稱: "${periodStr}" 於第 ${i + 2} 行。該行課表將被忽略。`);
-                }
-                
                 if (periodIndex !== -1 && periodIndex < 8) {
                     const dailyLessons = [mon, tue, wed, thu, fri];
                     schedules[name][periodIndex] = dailyLessons;
+
                     dailyLessons.forEach(lesson => {
                         if (lesson) {
-                            for (const officialSub of OFFICIAL_SUBJECTS) {
-                                if (lesson.includes(officialSub)) {
-                                    teacherSubjects[name].add(officialSub);
+                            for (const [domain, keywords] of Object.entries(DOMAIN_MAP)) {
+                                if (keywords.some(k => lesson.includes(k))) {
+                                    teacherDetectedDomains[name].add(domain);
                                     break;
                                 }
                             }
@@ -434,13 +441,25 @@
                 }
             }
 
-            for (const teacher in teacherSubjects) {
-                teacherSubjects[teacher] = Array.from(teacherSubjects[teacher]).join(', ') || '其他';
+            // --- 領域過濾邏輯：確保只有一個領域 ---
+            const finalizedSubjects = {};
+            for (const teacher in teacherDetectedDomains) {
+                const detectedSet = teacherDetectedDomains[teacher];
+                
+                // 1. 檢查是否有優先領域 (國英數社自)
+                let selectedDomain = PRIORITY_DOMAINS.find(p => detectedSet.has(p));
+                
+                // 2. 如果沒有優先領域，則取偵測到的第一個領域
+                if (!selectedDomain) {
+                    selectedDomain = Array.from(detectedSet)[0] || '其他';
+                }
+                
+                finalizedSubjects[teacher] = selectedDomain;
             }
             
-            return { schedules, teacherTitles, teacherSubjects };
+            return { schedules, teacherTitles, teacherSubjects: finalizedSubjects };
         }
-        
+		
         async function uploadTimetable() {
             const text = document.getElementById('timetable-data').value;
             if (!text) return alert('請貼上全校課表資料！');
@@ -448,62 +467,73 @@
             const btn = document.getElementById('upload-timetable-btn');
 
             try {
-                // 1. 解析資料
                 const { schedules, teacherTitles, teacherSubjects } = parseTimetable(text);
                 const teacherCount = Object.keys(schedules).length;
 
                 if (teacherCount === 0) {
-                    alert("⚠️ 錯誤：解析到的教師數量為 0！\n\n請按 F12 打開開發者工具，查看 Console (控制台) 中的詳細警告訊息，確認 CSV 格式是否正確。\n(資料庫未進行任何變更)");
+                    alert("⚠️ 錯誤：無法解析資料，請檢查格式。");
                     return;
                 }
 
-                if (!confirm(`✅ 解析成功！共找到 ${teacherCount} 位老師的課表。\n\n確定要覆蓋現有的全校課表嗎？`)) {
-                    return alert('操作已取消。');
+                if (!confirm(`✅ 解析成功！共找到 ${teacherCount} 位老師。\n系統將依優先序 (國英數社自) 自動篩選單一領域。\n確定要更新嗎？`)) {
+                    return;
                 }
                 
                 btn.disabled = true;
-                btn.textContent = "正在寫入資料庫...";
+                btn.textContent = "正在同步資料庫...";
 
                 const schoolRef = db.collection('schools').doc(schoolId);
-                const batch = db.batch();
+                let batch = db.batch();
+                let opCount = 0;
 
-                // 3. 清除舊課表
+                // 1. 清空舊資料
                 const oldTimetables = await schoolRef.collection('timetables').get();
-                oldTimetables.forEach(doc => batch.delete(doc.ref));
+                oldTimetables.forEach(doc => { batch.delete(doc.ref); opCount++; });
+                
+                const oldTeachers = await schoolRef.collection('teachers').get();
+                oldTeachers.forEach(doc => { batch.delete(doc.ref); opCount++; });
 
-                // 4. 寫入新資料
+                if (opCount > 400) { await batch.commit(); batch = db.batch(); opCount = 0; }
+
+                // 2. 寫入新資料
                 for (const name in schedules) {
                     const scheduleObject = {};
-                    schedules[name].forEach((dayData, periodIndex) => {
-                        scheduleObject[periodIndex] = dayData;
+                    schedules[name].forEach((dayData, idx) => { scheduleObject[idx] = dayData; });
+
+                    const title = teacherTitles[name];
+                    const subject = teacherSubjects[name]; // 此時已是過濾後的單一字串
+
+                    batch.set(schoolRef.collection('timetables').doc(name), {
+                        periods: scheduleObject,
+                        title: title,
+                        subject: subject
                     });
-                    const scheduleData = { 
-                         periods: scheduleObject,
-                         title: teacherTitles[name] || '專任教師', 
-                         subject: teacherSubjects[name] || '其他'
-                     };
-                    // --- 再次偵錯 ---
-                    // 檢查準備寫入的單一老師資料是否為空
-                    if(Object.values(scheduleData.periods).every(p => p.every(c => c === ''))) {
-                        console.error(`[寫入警告] 教師 "${name}" 的課表資料是空的！這代表解析可能有問題。雖然文件會被建立，但內容會是空的。`);
+
+                    batch.set(schoolRef.collection('teachers').doc(name), {
+                        name: name,
+                        title: title,
+                        subject: subject
+                    });
+
+                    opCount += 2;
+                    if (opCount >= 400) {
+                        await batch.commit();
+                        batch = db.batch();
+                        opCount = 0;
                     }
-                    // --- 偵錯結束 ---
-                    const docRef = schoolRef.collection('timetables').doc(name);
-                    batch.set(docRef, scheduleData);
                 }
 
                 await batch.commit();
-                alert(`🎉 成功！已更新 ${teacherCount} 位老師的課表。`);
+                alert(`🎉 成功！已同步 ${teacherCount} 位教師的資料。\n所有老師皆已歸類至單一主要領域。`);
 
             } catch (error) {
                 console.error(error);
-                alert('❌ 上傳失敗：\n' + error.message);
+                alert('❌ 上傳失敗：' + error.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = "上傳教師課表";
             }
         }
-
 
         document.getElementById('upload-periods-btn').addEventListener('click', uploadPeriods);
         document.getElementById('upload-roster-btn').addEventListener('click', uploadRoster);
