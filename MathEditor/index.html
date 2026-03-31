@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>數學式與圖形編輯器</title>
     <link rel="stylesheet" href="style.css">
 	<script type="importmap">
@@ -422,16 +422,21 @@
                 <span class="btn-text">對稱作圖</span>
             </button>
         </div>
-        <div class="sidebar-row">
-        </div>
+		<div class="sidebar-row">
+			<button id="btn-mark-smart" class="tool-btn" onclick="activateSmartMarkTool('smart')" oncontextmenu="event.preventDefault(); toggleSmartMarkMenu('btn-mark-smart')" title="智慧標記 (左鍵：點擊圖形自動標記線/角；右鍵：選擇樣式)">
+                <span class="btn-icon" style="font-weight: bold; font-size: 18px;">🏷️</span>
+                <span class="btn-text">智標</span>
+            </button>
+			<button id="btn-show-length" class="tool-btn" onclick="toggleShowLengthMode()" oncontextmenu="event.preventDefault(); openScaleSettingsModal()" title="顯示動態長度：&#10;左鍵點擊線段或多邊形邊緣標註實際長度。&#10;右鍵點擊設定比例尺基準。">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2c3e50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="0" y1="20" x2="24" y2="20"></line>
+					<text x="12" y="12" font-size="10" text-anchor="middle" fill="#2c3e50" font-weight="bold" stroke="none">25</text>
+				</svg>
+				<span class="btn-text">顯示長度</span>
+			</button>
+		</div>		
         <div class="sidebar-row">
             <div class="tool-btn-wrapper">
-                <!--
-				<button id="btn-mark-smart" class="tool-btn" onclick="activateSmartMarkTool('smart')" oncontextmenu="event.preventDefault(); toggleSmartMarkMenu('btn-mark-smart')" title="智慧標記 (左鍵：點擊圖形自動標記線/角；右鍵：選擇樣式)">
-                    <span class="btn-icon" style="font-weight: bold; font-size: 18px;">🏷️</span>
-                    <span class="btn-text">智標</span>
-                </button>
-				-->
 				<button id="btn-mark-edge" class="tool-btn" onclick="activateSmartMarkTool('edge')" oncontextmenu="event.preventDefault(); toggleSmartMarkMenu('btn-mark-edge')" title="強制線標 (點擊邊緣標記等長/平行)">
 					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e67e22" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 						<path d="M4 20L20 4"></path>
@@ -462,6 +467,9 @@
                     <div class="popup-item" onclick="selectSmartMarkStyle('edge', 'parallel')">
                         <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16 M14 6l6 6-6 6"/></svg></span> 平行箭號
                     </div>
+					<div class="popup-item" onclick="selectSmartMarkStyle('edge', 'length')">
+						<span>📏</span> 動態長度
+					</div>
                     <!-- 角度樣式 -->
                     <div style="padding: 4px 8px; background: #ecf0f1; font-size: 12px; font-weight: bold; color: #7f8c8d; text-align: center; border-top: 1px solid #ddd; margin-top: 4px;">── 角度樣式 ──</div>
                     <div class="popup-item" onclick="selectSmartMarkStyle('angle', 'degree')"><span>°</span> 度數</div>
@@ -545,7 +553,7 @@
                     <div class="popup-item" onclick="toggleConstructMode('shared_hexagon')"><span>⬡</span> 正六邊形</div>
                     <div class="popup-item" onclick="toggleConstructMode('shared_semicircle')"><span>⌓</span> 半圓</div>
                 </div>
-            </div>
+            </div>		
         </div>
         <div class="sidebar-row">
             <button class="tool-btn btn-delete" onclick="deleteSelected()" title="刪除選取物件 (Del)">
@@ -566,7 +574,7 @@
                 </svg>
                 <span class="btn-text">清空畫布</span>
             </button>
-        </div>
+        </div>		
     </div>
     <div class="left-sidebar">
         <div class="sidebar-group-title">
@@ -1196,7 +1204,10 @@
 </div>
 <div id="status-bar">
     <span id="status-text">就緒。</span>
-    <!-- 移除 input 標籤，改用 span 僅供顯示，並加上 ID 以便 JS 更新 -->
+    <!-- 新增的比例尺顯示區 -->
+    <div id="scale-display" style="display: flex; align-items: center; gap: 5px; font-family: monospace; font-weight: bold; position: absolute; left: 50%; transform: translateX(-50%);">
+        <!-- JS 會填入內容 -->
+    </div>
     <div style="font-family: monospace; color: #bdc3c7; font-size: 13px;">
         <span>X: <span id="display-coord-x" style="color: #fff; min-width: 30px; display: inline-block;">0</span></span>
         <span style="margin-left: 10px;">Y: <span id="display-coord-y" style="color: #fff; min-width: 30px; display: inline-block;">0</span></span>
@@ -2501,6 +2512,34 @@
         <div class="modal-footer" style="margin-top: 15px; flex-shrink: 0;">
             <button class="btn-modal btn-cancel" onclick="document.getElementById('gallery-new-post-modal').style.display='none'; hideMathPanelsForGallery();">取消</button>
             <button class="btn-modal btn-confirm" onclick="submitNewGalleryPost(event)" style="font-weight: bold; background: #8e44ad;">🚀 確認發布</button>
+        </div>
+    </div>
+</div>
+<div id="scale-settings-modal" class="modal-overlay param-positioned-modal" style="z-index: 9500;">
+    <div class="modal-box" style="width: 320px; padding: 20px;">
+        <div class="modal-header" style="margin-bottom: 15px;">📏 比例尺與長度設定</div>
+        <div class="modal-body" style="font-size: 14px; display: flex; flex-direction: column; gap: 15px;">
+            <div style="display: flex; align-items: center;">
+                <div style="font-weight:bold; color:#2c3e50; width: 110px; text-align: right; margin-right: 10px;">畫面像素 (px):</div>
+                <input type="number" id="scale-px-length" min="1" step="1" value="100" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center;">
+            </div>
+            <div style="display: flex; align-items: center;">
+                <div style="font-weight:bold; color:#2c3e50; width: 110px; text-align: right; margin-right: 10px;">代表長度:</div>
+                <input type="number" id="scale-actual-length" min="1" step="1" value="10" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center;">
+            </div>
+            <div style="display: flex; align-items: center;">
+                <div style="font-weight:bold; color:#2c3e50; width: 110px; text-align: right; margin-right: 10px;">小數位數:</div>
+                <input type="number" id="scale-decimals" min="0" max="5" step="1" value="0" style="flex: 1; padding: 6px; border: 1px solid #ccc; border-radius: 4px; text-align: center;">
+            </div>
+            <div style="display: flex; align-items: center; justify-content: center; margin-top: 5px;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap: 6px; font-weight:bold; color:#2c3e50;">
+                    <input type="checkbox" id="scale-rotate-text" style="margin:0;"> 隨線方向旋轉顯示
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer" style="padding-top: 15px; justify-content: center; gap: 15px;">
+            <button class="btn-modal btn-cancel" onclick="document.getElementById('scale-settings-modal').style.display='none'">取消</button>
+            <button class="btn-modal btn-confirm" onclick="confirmScaleSetting()">確定儲存</button>
         </div>
     </div>
 </div>
