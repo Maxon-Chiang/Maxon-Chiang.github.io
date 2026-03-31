@@ -2094,3 +2094,150 @@ kbd {
     margin-left: auto; /* 將紅點推到最右邊 */
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
+
+/* ==========================================================================
+   📱 手機版專屬介面優化 (Responsive Web Design for Mobile)
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. 頂部導覽列：縮小字體與內距 */
+    header {
+        padding: 5px 10px;
+    }
+    header div[style*="font-size:18px"] {
+        font-size: 14px !important;
+    }
+    header .tool-btn {
+        padding: 0 8px 3px 8px !important;
+    }
+    
+    /* 2. 主工具列：改為水平滑動，避免換行擠壓畫布 */
+    .toolbar {
+        padding: 2px 5px;
+        gap: 4px;
+        flex-wrap: nowrap;        /* 強制不換行 */
+        overflow-x: auto;         /* 允許水平滑動 */
+        overflow-y: hidden;
+        -webkit-overflow-scrolling: touch; /* 讓 iOS 滑動更順暢 */
+    }
+    /* 隱藏工具列的捲軸，讓畫面更乾淨 */
+    .toolbar::-webkit-scrollbar {
+        display: none;
+    }
+    
+    /* 3. 縮小所有工具列按鈕與字體 */
+    .tool-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+        padding: 0;
+        flex-shrink: 0; /* 防止按鈕被擠扁 */
+    }
+    .tool-btn.btn-labeled {
+        font-size: 11px;
+        padding: 0 6px;
+        min-width: auto;
+    }
+    select.tool-btn {
+        min-width: 60px;
+        font-size: 12px;
+    }
+    .group-separator {
+        margin: 0 3px;
+        height: 20px;
+    }
+
+    /* 4. 左側邊欄：縮小寬度 */
+    .left-sidebar {
+        width: 145px;
+        top: 85px;
+        padding: 3px;
+    }
+    .sidebar-group-title {
+        font-size: 11px;
+        padding: 3px 5px;
+    }
+    .left-sidebar .tool-btn {
+        height: 40px;
+    }
+    .left-sidebar .tool-btn .btn-icon {
+        font-size: 18px;
+    }
+    .left-sidebar .tool-btn .btn-text {
+        font-size: 10px;
+    }
+    .left-toggle {
+        left: 160px; /* 配合縮小後的左側欄 */
+    }
+
+    /* 5. 右側邊欄：極度縮小，隱藏文字僅留圖示 */
+    .right-sidebar {
+        right: 5px;
+        top: 85px;
+        min-width: 45px;
+        width: 45px;
+        padding: 4px;
+    }
+    .right-sidebar .tool-btn {
+        width: 35px;
+        height: 35px;
+    }
+    .right-sidebar .tool-btn .btn-icon, 
+    .right-sidebar .tool-btn svg {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+    }
+    .right-sidebar .tool-btn .btn-text {
+        display: none; /* 手機版空間寶貴，隱藏文字 */
+    }
+    .right-toggle {
+        right: 65px; /* 配合縮小後的右側欄 */
+    }
+
+    /* 6. 浮動面板與頁次導覽：適應螢幕寬度 */
+    #quick-edit-bar, #quick-math-bar {
+        min-width: 95vw;
+        max-width: 95vw;
+        flex-wrap: wrap; /* 允許文字框與選項換行 */
+        padding: 5px 25px 5px 5px;
+        top: 5px;
+    }
+    .page-bar {
+        min-width: 90vw;
+        bottom: 25px;
+        padding: 0 8px;
+        gap: 5px;
+        height: 36px;
+    }
+    .page-nav-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+    }
+    .page-info-display {
+        font-size: 12px;
+        min-width: 50px;
+        padding: 2px 5px;
+    }
+    
+    /* 7. 畫布捲動優化 */
+    #editor-container {
+        padding: 5px;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* 8. 其他微調 */
+    .canvas-top-bar {
+        height: 36px;
+        padding: 0 5px;
+        font-size: 11px;
+    }
+    .canvas-top-bar input[type="text"], .canvas-top-bar .tool-btn {
+        height: 24px;
+        font-size: 11px;
+    }
+    #status-bar {
+        font-size: 10px;
+        padding: 3px 10px;
+    }
+}
