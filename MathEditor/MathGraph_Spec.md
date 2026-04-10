@@ -106,45 +106,25 @@
 
 ---
 
-## 5. 統計圖表 (Statistical Charts)
-當辨識到統計圖表時，請優先使用帶有 `data-params` 的群組結構封裝，系統將會自動將其渲染為可拖拉參數的原生圖表。
+## 5. 統計圖表與座標系 (Charts & Axes) - 高階組件優先使用
+若題目出現數線、坐標平面或直方圖，請**優先使用**系統內建的高階組件，不要自己用 line 慢慢畫！
 
-### 5.1 圓餅圖 (Pie Chart)
-- `data-values` 為數據陣列，`data-labels` 為對應標籤陣列。
-<g class="shape group pie-chart" data-tool="group" data-sub-tool="pie-chart" data-center-x="400" data-center-y="300" data-radius="100" data-values="[30,20,50]" data-labels='["A","B","C"]'>
-    <!-- 內部 path 與 text 由系統渲染，可留空或放入大致路徑 -->
+### 5.1 數線 (Number Line)
+請使用 `data-type="number-line"`。
+<g id="axes-group-1" class="shape axes-system" data-tool="group" data-type="number-line" data-range="10" data-minor="1" data-major="5" data-label="5" data-show-grid="false">
+    <!-- 系統會自動生成數線，AI不需在裡面畫刻度 -->
 </g>
 
-### 5.2 直方圖 / 長條圖 (Histogram / Bar Chart)
-- `data-params` 必須包含 `p_vals` (數據) 與 `p_labs` (標籤)。
-<g class="shape group" data-tool="group" data-sub-tool="histogram" data-params='{"p_vals":"20,50,80","p_labs":"A,B,C"}'>
+### 5.2 XY 坐標平面 (Coordinate Plane)
+請使用 `data-type="xy"`。若背景需要方格紙，設定 `data-show-grid="true"`。
+<g id="axes-group-2" class="shape axes-system" data-tool="group" data-type="xy" data-range="10" data-minor="1" data-major="5" data-label="5" data-show-grid="true">
 </g>
+<!-- 若有坐標點，請獨立畫圓點在外部 -->
+<circle cx="450" cy="250" r="3" class="shape" data-tool="point" fill="#000" />
+<text x="450" y="240" class="shape vertex-label" data-tool="text">P(1, 2)</text>
 
-### 5.3 盒狀圖 (Boxplot)
-- `data-params` 必須包含五數總結 (`p_min`, `p_q1`, `p_med`, `p_q3`, `p_max`)。
-<g class="shape group" data-tool="group" data-sub-tool="boxplot" data-params='{"p_min":10, "p_q1":25, "p_med":50, "p_q3":75, "p_max":90}'>
+### 5.3 長條圖 / 直方圖 (Histogram)
+若遇到統計圖表，請使用 `data-sub-tool="histogram"`，並將數據寫入 `data-params` 中，系統會自動生成完美的直方圖。
+<g class="shape group" data-tool="group" data-sub-tool="histogram" data-center-x="400" data-center-y="300" data-h="200" 
+data-params='{"p_vals":"10,20,30,15","p_labs":"A,B,C,D","p_width":40,"p_gap":0,"p_y_max":40,"p_y_interval":10,"p_val_pos":"top","p_axis_x":"組別","p_axis_y":"次數","p_label_pos":"side"}'>
 </g>
-
-### 5.4 文氏圖 (Venn Diagram)
-<g class="shape group" data-tool="group" data-sub-tool="venn" data-count="2" data-radius="100" data-spacing-percent="60" data-label-a="A" data-label-b="B">
-</g>
-
----
-
-## 6. 特殊圖形與系統物件 (Solid & System Objects)
-
-### 6.1 智能座標系 (Axes System)
-若圖片中包含完整的 XY 座標軸，請勿將其繪製為破碎的線段，必須將其獨立封裝為系統座標軸群組，系統會接管其網格與刻度。
-<g id="axes-group" class="shape axes-system" data-tool="group" data-type="xy" data-range="10" data-minor="1" data-major="5" data-label="5" data-show-grid="true">
-</g>
-
-### 6.2 立體幾何圖形 (Solid/3D)
-若為標準立體圖形（正方體、圓柱、圓錐、角錐、三角柱），需標記 `data-tool="solid"` 與對應的 `data-sub-tool`。
-<g class="shape group" data-tool="solid" data-sub-tool="solid-cylinder" data-view-mode="3d" data-cx="400" data-cy="300" data-r="50" data-h="150">
-    <path class="solid-visible" d="..." fill="none" stroke="black" />
-    <path class="solid-hidden" d="..." fill="none" stroke="black" stroke-dasharray="4,4" />
-</g>
-
-### 6.3 幾何鎖定與約束 (Geometric Constraints)
-若題目明確標示某多邊形或線段的邊長、角度為**不變的定值**，可為其加上鎖定屬性。Key 為頂點/邊的 Index。
-<polygon points="..." class="shape" data-tool="polygon" data-locked-edges='{"0":100}' data-locked-angles='{"1":1.5707}' />
