@@ -64,36 +64,42 @@
 
 ---
 
-## 3. 標註與尺寸 (Markers & Dimensions)
+## 3. 標註、角標與尺寸 (Markers & Dimensions) - 極度重要
+若圖片中出現角度標示、長度標示，絕對禁止當作獨立無關的 `<path>` 隨便畫在空中！必須使用系統專屬的屬性綁定在主體多邊形上。
 
 ### 3.1 頂點標籤 (Vertex Label)
-- 必須綁定主體形狀。
-
+用來標示多邊形頂點的 A, B, C 等字母，必須綁定主體形狀 (`data-owner-shape`)。
 <text x="100" y="90" class="shape vertex-label" data-tool="text" data-owner-shape="poly-1" font-size="20" fill="#c0392b" font-weight="bold" text-anchor="middle" dominant-baseline="central">A</text>
 
+### 3.2 角度標記 (Angle Mark)
+若題目圖形中帶有「內角弧線」或「直角符號」與度數，必須綁定在主圖形的「頂點索引 (vertex-index)」上。
+- `data-owner-shape` 與 `data-owner-angle-shape`：綁定主圖形的 ID。
+- `data-dependency-type="angle_mark"`：宣告此為角標。
+- `data-vertex-index`：對應多邊形的第幾個頂點 (0, 1, 2...)。
+- `data-angle-type`：弧線用 `'arc'`，直角用 `'right'`。
+- `data-radius-offset`：弧線的半徑大小 (預設給 25 即可，系統會自動校正)。
 
-### 3.2 尺寸標註線 (Dimension Line)
-- 包含虛線延伸線與帶箭頭的雙向尺寸線及置中文字。
+<!-- 弧線或直角符號本身 -->
+<path d="M 120 100 A 20 20 0 0 1 100 120" class="shape mark-path" data-tool="mark" data-owner-angle-shape="poly-1" data-owner-shape="poly-1" data-dependency-type="angle_mark" data-vertex-index="1" data-angle-type="arc" data-radius-offset="25" stroke="#c0392b" stroke-width="1.5" fill="none" />
 
-<g class="shape group dimension" data-tool="group" data-sub-tool="dimension" data-owner="poly-1" data-dependency-type="dimension">
-    <line x1="10" y1="10" x2="10" y2="50" class="dimension-line" style="stroke-dasharray:2,2; fill:none;" stroke="#2980b9" />
-    <line x1="100" y1="10" x2="100" y2="50" class="dimension-line" style="stroke-dasharray:2,2; fill:none;" stroke="#2980b9" />
-    <path d="M 10 30 L 100 30" style="stroke-dasharray: 4,2; fill:none;" stroke="#2980b9"/>
-    <text x="55" y="25" transform="rotate(0)">10cm</text>
+<!-- 角度度數文字 -->
+<text x="130" y="130" class="shape angle-label-text" data-tool="text" data-owner-angle-shape="poly-1" data-owner-shape="poly-1" data-dependency-type="angle_mark" data-vertex-index="1" data-angle-type="degree" data-radius-offset="25" font-size="13" fill="#c0392b" font-weight="bold">60°</text>
+
+### 3.3 尺寸標註線 (Dimension / Length Mark)
+若圖形旁帶有長度標註線（如直線箭頭、弧線、大括號），必須打包在 `<g>` 群組內，並記錄該線段的起始與結束座標。
+- `data-dim-style`：標準直線為 `'standard'`，曲線為 `'curve'`，括號為 `'brace'`，純文字無箭頭為 `'text-only'`。
+- `data-edge-index`：對應多邊形的第幾條邊 (若無明確對應邊可填 -1)。
+
+<g class="shape group dimension" data-tool="group" data-sub-tool="dimension" data-dim-style="curve" data-owner="poly-1" data-dependency-type="dimension" data-edge-index="0" data-p1-x="100" data-p1-y="100" data-p2-x="300" data-p2-y="100" data-offset="20">
+    <!-- 標註線路徑 (系統匯入後會自動接管重繪，這裡提供基本路徑即可) -->
+    <path d="M 100 100 Q 200 70 300 100" class="dimension-path" style="stroke-dasharray: 2,2; fill:none;" stroke="#2980b9" />
+    <!-- 長度數值文字 -->
+    <text x="200" y="60" class="shape dimension-text" data-tool="text" fill="#2980b9" font-weight="bold" font-size="12">10</text>
 </g>
 
-
-### 3.3 角度標記 (Angle Mark)
-
-<path d="M 120 100 A 20 20 0 0 1 100 120" class="shape mark-path" data-tool="mark" data-owner-angle-shape="poly-1" stroke="#c0392b" stroke-width="1.5" fill="none" />
-<text x="130" y="130" class="shape vertex-label" data-tool="text" data-owner-angle-shape="poly-1">60°</text>
-
-
 ### 3.4 邊長等長/平行標記 (Edge Symbol)
-- `data-edge-index` 指定作用於主體的哪一條邊。
-
-<path d="M 0 -5 L 0 5" class="shape mark-path" data-tool="mark-edge-symbol" data-owner="poly-1" data-edge-index="0" data-dependency-type="edge_mark" transform="translate(150, 100) rotate(45)" stroke="#c0392b" stroke-width="2" fill="none" />
-
+若邊上有一撇、兩撇或箭頭等平行/等長符號：
+<path d="M 0 -5 L 0 5" class="shape mark-path" data-tool="mark-edge-symbol" data-owner="poly-1" data-edge-index="0" data-dependency-type="edge_mark" data-edge-style="1" transform="translate(200, 100) rotate(45)" stroke="#c0392b" stroke-width="2" fill="none" />
 
 ---
 
