@@ -195,7 +195,9 @@
             <div class="form-grid">
 				<div>
 					<label for="edit-assignment-name">成績項目名稱：</label>
-					<input type="text" id="edit-assignment-name" required>
+					<!-- 🟢 新增 list 屬性綁定 datalist，並關閉原生的 autocomplete 避免干擾 -->
+					<input type="text" id="edit-assignment-name" list="existing-assignment-names" autocomplete="off" required>
+					<datalist id="existing-assignment-names"></datalist>
 				</div>
 				<div>
 					<label for="edit-general-comment">成績說明 (選填)：</label>
@@ -256,6 +258,7 @@
         const backToListBtn = document.getElementById('back-to-list-btn');
 		const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
         const USER_AUTH_KEY = 'user_auth_profile_v1';
+		const GRADES_CACHE_KEY = 'grades_cache_v1'
         let CACHE_DATA = {};
         const ASSIGNMENT_COMMENT_KEY = 'assignmentComment';
         let currentAssignmentData = null; // 📌 Gemini 新增：儲存當前作業簿資料
@@ -410,10 +413,19 @@
                 const assignmentDoc = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(assignmentId).get();
 				console.log('載入作業成績資料...');
                 if (assignmentDoc.exists) {
-                    currentGradesData = assignmentDoc.data().scores || {};
-					const docData = assignmentDoc.data();
+                    const docData = assignmentDoc.data();
+                    currentGradesData = docData.scores || {};
                     const docDate = docData.date ? formatDate(docData.date) : '日期未知';
                     assignmentDateDisplay.textContent = `建立/更新日期: ${docDate}`;
+                    
+                    // 🟢 修復：將從資料庫抓回來的名稱與說明，填入畫面的輸入框中
+                    editAssignmentNameInput.value = docData.assignmentName || '';
+                    editGeneralCommentInput.value = docData.generalComment || '';
+                    
+                    // 同時更新上方的標題
+                    assignmentEditHeader.textContent = `${classId} 班 成績編輯：${docData.assignmentName || ''}`;
+                    document.title = `編輯 ${docData.assignmentName || ''}`;
+                    
                 } else {
                     alert('找不到此成績項目，將以新增模式載入。');
                     assignmentId = null;
@@ -422,11 +434,45 @@
 			if (!assignmentId) {
                 assignmentDateDisplay.textContent = `登錄日期: ${formatDate(new Date())}`;
             }
+			loadAssignmentNameSuggestions(classId);
             renderStudentScores();
 			appContainer.style.display = 'block';
 			document.getElementById('user-email').style.display = 'none';
 			document.getElementById('logout-btn').style.display = 'none';
 		}
+		async function loadAssignmentNameSuggestions(currentClassId) {
+            if (!currentClassId) return;
+            const gradeLevel = currentClassId.charAt(0); // 取得年段 (例如 701 -> 7)
+            const datalist = document.getElementById('existing-assignment-names');
+            datalist.innerHTML = ''; // 清空舊有建議
+
+            try {
+                // 從資料庫取得該教師所有的成績項目
+                const snapshot = await db.collection('gradebooks')
+                                         .doc(currentUser.uid)
+                                         .collection('assignments')
+                                         .get();
+
+                const uniqueNames = new Set();
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    // 判斷：如果有班級，且班級第 1 碼與當前年段相同，且有項目名稱
+                    if (data.className && data.className.charAt(0) === gradeLevel && data.assignmentName) {
+                        uniqueNames.add(data.assignmentName.trim());
+                    }
+                });
+
+                // 將名稱排序後加入 datalist 中
+                const sortedNames = Array.from(uniqueNames).sort();
+                sortedNames.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    datalist.appendChild(option);
+                });
+            } catch (error) {
+                console.error("載入成績名稱建議失敗:", error);
+            }
+        }
         
         function renderStudentScores() {
             const existingHeader = studentScoresContainer.querySelector('.score-entry-header');
@@ -605,6 +651,7 @@
                     assignmentEditHeader.textContent = `${classId} 班 成績編輯：${assignmentName}`;
                     alert('新成績項目已成功建立！');
                 }
+				localStorage.removeItem(GRADES_CACHE_KEY);
                 navigateBackToList();
             } catch (error) {
                 console.error("儲存成績失敗:", error);
