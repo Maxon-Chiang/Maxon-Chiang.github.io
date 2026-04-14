@@ -88,9 +88,9 @@
         td.header-col { background-color: #34495e; color: white; font-weight: bold; }
         
         /* Highlight Styles */
-        .hl-row { background-color: #ffeaa7 !important; }
-        .hl-col { background-color: #ffeaa7 !important; }
-        .hl-cross { background-color: #e17055 !important; color: white; font-weight: bold; transform: scale(1.1); }
+        .hl-row { background-color: #ffeaa7 !important; color: #333 !important;}
+        .hl-col { background-color: #ffeaa7 !important; color: #333 !important;}
+        .hl-cross { background-color: #e17055 !important; color: white !important; font-weight: bold; transform: scale(1.1); }
 
         /* Specific Page Styles */
         .anim-area { display: flex; flex-direction: column; align-items: center; }
@@ -121,7 +121,7 @@
     <div class="slide active" id="slide-1">
         <h2>第 1 頁：什麼是維吉尼亞密碼？</h2>
         <p><strong>維吉尼亞密碼 (Vigenère cipher)</strong> 是一種經典的多表代換密碼，發明於 16 世紀。</p>
-        <p>傳統的「凱撒密碼」只用一個規則替換字母（例如所有字母往後推 3 格），很容易被頻率分析法破解。而維吉尼亞密碼透過使用一個<strong>「密鑰 (Key)」</strong>，讓同一個字母在明文的不同位置，會被加密成不同的密文字母，大幅提高了安全性。</p>
+        <p>傳統的「凱撒密碼」只用一個規則替換字母，容易被破解。而維吉尼亞密碼透過使用一個<strong>「密鑰 (Key)」</strong>，讓同一個字母在明文的不同位置，會被加密成不同的密文字母，大幅提高了安全性。</p>
         <p><strong>核心三元素：</strong></p>
         <ul>
             <li><strong>明文 (Plaintext)：</strong> 你想要隱藏的原始訊息。</li>
@@ -133,7 +133,7 @@
 
     <div class="slide" id="slide-2">
         <h2>第 2 頁：認識密碼表 (Tabula Recta)</h2>
-        <p>這是一個 26x26 的方陣。第一列是 A-Z，接下來每一列都將字母向左平移一格。最上方標題列代表<strong>明文</strong>，最左方標題行代表<strong>密鑰</strong>。</p>
+        <p>這是一個 26x26 的方陣。上方標題列代表<strong>明文</strong>，左方標題行代表<strong>密鑰</strong>，中間的字母群則是對應出來的<strong>密文</strong>。</p>
         <div class="table-container" id="table-container-static"></div>
     </div>
 
@@ -191,7 +191,6 @@
             <h3>加密結果：</h3>
             <p style="font-size: 24px; font-family: monospace; color: #e17055; font-weight: bold;" id="sandbox-result"></p>
         </div>
-        <p style="margin-top:20px;">感謝您完成維吉尼亞密碼教學！</p>
     </div>
 
     <div class="footer-controls">
@@ -201,29 +200,25 @@
 </div>
 
 <script>
-    // --- State Management ---
     let currentPage = 1;
     const totalPages = 6;
-    
-    // Animation States
     const demoPlain = "HELLO";
     const demoKey = "KEYKE";
     let encStep = 0;
-    
     const demoDecCipher = "RIJVS";
     let decStep = 0;
 
-    // --- Generate Vigenere Table ---
+    // 生成更新版密碼表
     function generateTableHTML(tableId) {
         let html = `<table id="${tableId}">`;
         
-        // 新增第一列：標註頂部的「明文區」
+        // 第 0 列：明文區標註
         html += `<tr>`;
-        html += `<th style="background-color: white; border: none;"></th>`; // 左上角留白
+        html += `<th style="background-color: white; border: none;"></th>`; 
         html += `<th colspan="26" style="background-color: #27ae60; color: white; letter-spacing: 10px; font-size: 16px; padding: 5px;">⬇ 明文區 (Plaintext) ⬇</th>`;
         html += `</tr>`;
 
-        // 原始標題列 (A-Z) + 左上角標註「密鑰」
+        // 第 1 列：密鑰標註 + A~Z
         html += `<tr>`;
         html += `<th style="background-color: #8e44ad; color: white; font-size: 13px; line-height: 1.4; white-space: nowrap;">密鑰區<br>(Key) ➡</th>`;
         for (let i = 0; i < 26; i++) {
@@ -231,16 +226,11 @@
         }
         html += `</tr>`;
 
-        // 表格主體 (密文區)
+        // 第 2 列開始：密文方陣
         for (let row = 0; row < 26; row++) {
-            // 左側行：密鑰 A-Z
             html += `<tr><td class="header-col" style="background-color: #8e44ad; color: white; font-weight: bold;">${String.fromCharCode(65 + row)}</td>`;
-            
-            // 中間 26x26 內容：密文區
             for (let col = 0; col < 26; col++) {
                 let charCode = 65 + ((row + col) % 26);
-                
-                // 在正中間加上一個極淡的「密文區」文字提示 (利用 CSS 與 Title)
                 if (row === 12 && col === 12) {
                     html += `<td title="這裡是密文區 (Ciphertext)" style="position: relative;">`;
                     html += `<span style="position: absolute; width: 200px; left: -80px; top: -10px; color: rgba(0,0,0,0.05); font-size: 40px; font-weight: bold; pointer-events: none;">密文區</span>`;
@@ -255,29 +245,22 @@
         return html;
     }
 
-    // Initialize tables on page load
     document.getElementById('table-container-static').innerHTML = generateTableHTML('tbl-static');
     document.getElementById('table-container-enc').innerHTML = generateTableHTML('tbl-enc');
     document.getElementById('table-container-dec').innerHTML = generateTableHTML('tbl-dec');
-    updateSandbox(); // Init sandbox
+    updateSandbox();
 
-    // --- Page Navigation Logic ---
     function changePage(delta) {
         document.getElementById(`slide-${currentPage}`).classList.remove('active');
         currentPage += delta;
         document.getElementById(`slide-${currentPage}`).classList.add('active');
-        
         document.getElementById('page-num').innerText = currentPage;
-        
         document.getElementById('btn-prev').disabled = (currentPage === 1);
         document.getElementById('btn-next').disabled = (currentPage === totalPages);
-
-        // Reset animations if leaving page
         if(currentPage !== 4) resetEncrypt();
         if(currentPage !== 5) resetDecrypt();
     }
 
-    // --- Utility for Animation ---
     function clearHighlights(tableId) {
         const table = document.getElementById(tableId);
         const cells = table.getElementsByTagName('td');
@@ -286,45 +269,41 @@
         for(let th of ths) { th.classList.remove('hl-row', 'hl-col', 'hl-cross'); }
     }
 
+    // 修復後的高亮功能：將行數索引 +1，以略過最上方的「明文區」標題
     function highlightCell(tableId, rowIdx, colIdx) {
         clearHighlights(tableId);
         const table = document.getElementById(tableId);
         
-        // Highlight headers
-        table.rows[0].cells[colIdx + 1].classList.add('hl-col');
-        table.rows[rowIdx + 1].cells[0].classList.add('hl-row');
+        // 高亮標題：A~Z 在第 1 列 (rows[1])，資料在第 2 列之後 (rows[rowIdx + 2])
+        table.rows[1].cells[colIdx + 1].classList.add('hl-col');
+        table.rows[rowIdx + 2].cells[0].classList.add('hl-row');
 
-        // Highlight full row/col up to intersection
+        // 畫出黃色十字路徑
         for(let i = 1; i <= colIdx + 1; i++) {
-            table.rows[rowIdx + 1].cells[i].classList.add('hl-row');
+            table.rows[rowIdx + 2].cells[i].classList.add('hl-row');
         }
-        for(let i = 1; i <= rowIdx + 1; i++) {
+        for(let i = 1; i <= rowIdx + 2; i++) {
             table.rows[i].cells[colIdx + 1].classList.add('hl-col');
         }
 
-        // Highlight intersection
-        table.rows[rowIdx + 1].cells[colIdx + 1].classList.add('hl-cross');
+        // 高亮橘色交會點
+        table.rows[rowIdx + 2].cells[colIdx + 1].classList.add('hl-cross');
     }
 
-    // --- Encrypt Animation Logic ---
     function stepEncrypt() {
         if (encStep >= demoPlain.length) return;
-        
         const pChar = demoPlain[encStep];
         const kChar = demoKey[encStep];
         const pIdx = pChar.charCodeAt(0) - 65;
         const kIdx = kChar.charCodeAt(0) - 65;
         const cChar = String.fromCharCode(65 + ((pIdx + kIdx) % 26));
 
-        // Highlight table
         highlightCell('tbl-enc', kIdx, pIdx);
 
-        // Update Text Display
         let pDisplay = "", kDisplay = "", cDisplay = "";
         for(let i=0; i<demoPlain.length; i++) {
             pDisplay += (i === encStep) ? `<span class="current-char">${demoPlain[i]}</span>` : demoPlain[i];
             kDisplay += (i === encStep) ? `<span class="current-char">${demoKey[i]}</span>` : demoKey[i];
-            
             if (i < encStep) {
                 const prevP = demoPlain[i].charCodeAt(0) - 65;
                 const prevK = demoKey[i].charCodeAt(0) - 65;
@@ -339,11 +318,8 @@
         document.getElementById('enc-plain').innerHTML = pDisplay;
         document.getElementById('enc-key').innerHTML = kDisplay;
         document.getElementById('enc-cipher').innerHTML = cDisplay;
-
-        // Update Explanation
         document.getElementById('enc-explanation').innerHTML = 
-            `<strong>步驟 ${encStep + 1}：</strong> 加密字母 <strong>${pChar}</strong>。<br>
-            找上方明文標題 <strong>${pChar}</strong> 行，左側密鑰標題 <strong>${kChar}</strong> 列。交會處為 <strong>${cChar}</strong>。`;
+            `<strong>步驟 ${encStep + 1}：</strong> 加密字母 <strong>${pChar}</strong>。<br>找上方明文區 <strong>${pChar}</strong> 行，左側密鑰區 <strong>${kChar}</strong> 列。交會處為 <strong>${cChar}</strong>。`;
 
         encStep++;
         if (encStep >= demoPlain.length) {
@@ -362,28 +338,21 @@
         clearHighlights('tbl-enc');
     }
 
-    // --- Decrypt Animation Logic ---
     function stepDecrypt() {
         if (decStep >= demoDecCipher.length) return;
-        
         const cChar = demoDecCipher[decStep];
         const kChar = demoKey[decStep];
         const kIdx = kChar.charCodeAt(0) - 65;
         const cIdx = cChar.charCodeAt(0) - 65;
-        
-        // Reverse math: Plain = (Cipher - Key + 26) % 26
         const pIdx = (cIdx - kIdx + 26) % 26;
         const pChar = String.fromCharCode(65 + pIdx);
 
-        // Highlight table (Same intersection logic, just explained differently)
         highlightCell('tbl-dec', kIdx, pIdx);
 
-        // Update Text Display
         let cDisplay = "", kDisplay = "", pDisplay = "";
         for(let i=0; i<demoDecCipher.length; i++) {
             cDisplay += (i === decStep) ? `<span class="current-char">${demoDecCipher[i]}</span>` : demoDecCipher[i];
             kDisplay += (i === decStep) ? `<span class="current-char">${demoKey[i]}</span>` : demoKey[i];
-            
             if (i < decStep) {
                 const prevC = demoDecCipher[i].charCodeAt(0) - 65;
                 const prevK = demoKey[i].charCodeAt(0) - 65;
@@ -398,11 +367,8 @@
         document.getElementById('dec-cipher').innerHTML = cDisplay;
         document.getElementById('dec-key').innerHTML = kDisplay;
         document.getElementById('dec-plain').innerHTML = pDisplay;
-
-        // Update Explanation
         document.getElementById('dec-explanation').innerHTML = 
-            `<strong>步驟 ${decStep + 1}：</strong> 解密字母 <strong>${cChar}</strong>。<br>
-            先找左側密鑰標題 <strong>${kChar}</strong> 列。在該列往右尋找密文字母 <strong>${cChar}</strong>，往上看頂部標題即為明文 <strong>${pChar}</strong>。`;
+            `<strong>步驟 ${decStep + 1}：</strong> 解密字母 <strong>${cChar}</strong>。<br>先找左側密鑰區 <strong>${kChar}</strong> 列。在該列往右尋找密文字母 <strong>${cChar}</strong>，往上看頂部標題即為明文 <strong>${pChar}</strong>。`;
 
         decStep++;
         if (decStep >= demoDecCipher.length) {
@@ -421,20 +387,15 @@
         clearHighlights('tbl-dec');
     }
 
-    // --- Sandbox Logic ---
     function updateSandbox() {
         let plain = document.getElementById('sandbox-plain').value.toUpperCase().replace(/[^A-Z]/g, '');
         let key = document.getElementById('sandbox-key').value.toUpperCase().replace(/[^A-Z]/g, '');
-        
-        // Update inputs to show sanitized values
         document.getElementById('sandbox-plain').value = plain;
         document.getElementById('sandbox-key').value = key;
-
         if (!plain || !key) {
             document.getElementById('sandbox-result').innerText = "請輸入英文字母";
             return;
         }
-
         let cipher = "";
         for (let i = 0; i < plain.length; i++) {
             let pIdx = plain.charCodeAt(i) - 65;
@@ -443,7 +404,6 @@
         }
         document.getElementById('sandbox-result').innerText = cipher;
     }
-
 </script>
 </body>
 </html>
