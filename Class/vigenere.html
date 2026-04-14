@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>維吉尼亞密碼 (Vigenère cipher) 教學動畫</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #app-container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+            min-height: 650px;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { margin: 0; font-size: 1.5rem; }
+        .page-indicator { font-weight: bold; }
+        
+        .slide {
+            padding: 20px;
+            display: none;
+            flex-grow: 1;
+            animation: fadeIn 0.5s;
+        }
+        .slide.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .footer-controls {
+            background: #ecf0f1;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background: #3498db;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s;
+        }
+        button:hover { background: #2980b9; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+
+        /* Table Styles */
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+        }
+        table {
+            border-collapse: collapse;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            width: 22px;
+            height: 22px;
+            text-align: center;
+            cursor: default;
+        }
+        th { background-color: #34495e; color: white; }
+        td.header-col { background-color: #34495e; color: white; font-weight: bold; }
+        
+        /* Highlight Styles */
+        .hl-row { background-color: #ffeaa7 !important; }
+        .hl-col { background-color: #ffeaa7 !important; }
+        .hl-cross { background-color: #e17055 !important; color: white; font-weight: bold; transform: scale(1.1); }
+
+        /* Specific Page Styles */
+        .anim-area { display: flex; flex-direction: column; align-items: center; }
+        .word-display { font-size: 24px; letter-spacing: 5px; margin: 10px 0; font-family: monospace;}
+        .current-char { color: #e17055; font-weight: bold; text-decoration: underline; }
+        .explanation-box {
+            background: #e8f4f8;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            min-height: 60px;
+        }
+        .anim-btn { background: #e67e22; margin-top: 10px;}
+        .anim-btn:hover { background: #d35400; }
+
+        input { padding: 8px; font-size: 16px; margin: 5px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div class="header">
+        <h1>維吉尼亞密碼 教學</h1>
+        <div class="page-indicator">頁數: <span id="page-num">1</span> / 6</div>
+    </div>
+
+    <div class="slide active" id="slide-1">
+        <h2>第 1 頁：什麼是維吉尼亞密碼？</h2>
+        <p><strong>維吉尼亞密碼 (Vigenère cipher)</strong> 是一種經典的多表代換密碼，發明於 16 世紀。</p>
+        <p>傳統的「凱撒密碼」只用一個規則替換字母（例如所有字母往後推 3 格），很容易被頻率分析法破解。而維吉尼亞密碼透過使用一個<strong>「密鑰 (Key)」</strong>，讓同一個字母在明文的不同位置，會被加密成不同的密文字母，大幅提高了安全性。</p>
+        <p><strong>核心三元素：</strong></p>
+        <ul>
+            <li><strong>明文 (Plaintext)：</strong> 你想要隱藏的原始訊息。</li>
+            <li><strong>密鑰 (Key)：</strong> 用來加密與解密的秘密單字，會重複使用。</li>
+            <li><strong>密碼表 (Tabula Recta)：</strong> 一個 26x26 的字母方陣，用於查表加解密。</li>
+        </ul>
+        <p>請點擊下方「下一頁」來認識這個強大的密碼表！</p>
+    </div>
+
+    <div class="slide" id="slide-2">
+        <h2>第 2 頁：認識密碼表 (Tabula Recta)</h2>
+        <p>這是一個 26x26 的方陣。第一列是 A-Z，接下來每一列都將字母向左平移一格。最上方標題列代表<strong>明文</strong>，最左方標題行代表<strong>密鑰</strong>。</p>
+        <div class="table-container" id="table-container-static"></div>
+    </div>
+
+    <div class="slide" id="slide-3">
+        <h2>第 3 頁：步驟一、金鑰對齊</h2>
+        <p>在開始查表之前，我們必須讓「密鑰」的長度與「明文」一樣長。作法是將密鑰不斷重複循環，直到對齊每一個明文字母。</p>
+        <div class="explanation-box">
+            <strong>範例：</strong><br>
+            假設明文是 <code>HELLO</code> (5個字母)<br>
+            假設密鑰是 <code>KEY</code> (3個字母)
+        </div>
+        <p>對齊後的結果如下：</p>
+        <div style="font-size: 28px; font-family: monospace; text-align: center; background:#eee; padding: 20px; border-radius: 8px;">
+            明文：H E L L O<br>
+            密鑰：K E Y K E
+        </div>
+        <p>接下來，我們就根據這上下對應的字母，一個一個去密碼表查表！</p>
+    </div>
+
+    <div class="slide" id="slide-4">
+        <h2>第 4 頁：加密教學動畫演示</h2>
+        <p>明文：<span id="enc-plain" class="word-display">HELLO</span> &nbsp;|&nbsp; 密鑰：<span id="enc-key" class="word-display">KEYKE</span> &nbsp;|&nbsp; 密文：<span id="enc-cipher" class="word-display" style="color:#e17055;">_____</span></p>
+        <div class="explanation-box" id="enc-explanation">
+            點擊下方「播放下一步」按鈕開始加密演示。
+        </div>
+        <div style="text-align: center;">
+            <button class="anim-btn" id="btn-enc-next" onclick="stepEncrypt()">▶ 播放下一步 (查表)</button>
+            <button class="anim-btn" onclick="resetEncrypt()" style="background:#7f8c8d;">↺ 重置</button>
+        </div>
+        <div class="table-container" id="table-container-enc"></div>
+    </div>
+
+    <div class="slide" id="slide-5">
+        <h2>第 5 頁：解密教學動畫演示</h2>
+        <p>解密是反向操作：先從左側找到<strong>密鑰列</strong>，在該列往右找<strong>密文字母</strong>，最後往上看頂部對應的<strong>明文字母</strong>。</p>
+        <p>密文：<span id="dec-cipher" class="word-display">RIJVS</span> &nbsp;|&nbsp; 密鑰：<span id="dec-key" class="word-display">KEYKE</span> &nbsp;|&nbsp; 明文：<span id="dec-plain" class="word-display" style="color:#27ae60;">_____</span></p>
+        <div class="explanation-box" id="dec-explanation">
+            點擊下方「播放下一步」按鈕開始解密演示。
+        </div>
+        <div style="text-align: center;">
+            <button class="anim-btn" id="btn-dec-next" onclick="stepDecrypt()">▶ 播放下一步 (查表)</button>
+            <button class="anim-btn" onclick="resetDecrypt()" style="background:#7f8c8d;">↺ 重置</button>
+        </div>
+        <div class="table-container" id="table-container-dec"></div>
+    </div>
+
+    <div class="slide" id="slide-6">
+        <h2>第 6 頁：自由互動練習區</h2>
+        <p>現在換你試試看了！輸入英文明文與密鑰，系統會自動為你計算出密文。</p>
+        <div style="background: #ecf0f1; padding: 20px; border-radius: 8px;">
+            <label>輸入明文 (只限英文字母)：</label><br>
+            <input type="text" id="sandbox-plain" value="TAIWAN" oninput="updateSandbox()"><br><br>
+            <label>輸入密鑰 (只限英文字母)：</label><br>
+            <input type="text" id="sandbox-key" value="SECRET" oninput="updateSandbox()"><br><br>
+            <h3>加密結果：</h3>
+            <p style="font-size: 24px; font-family: monospace; color: #e17055; font-weight: bold;" id="sandbox-result"></p>
+        </div>
+        <p style="margin-top:20px;">感謝您完成維吉尼亞密碼教學！</p>
+    </div>
+
+    <div class="footer-controls">
+        <button id="btn-prev" onclick="changePage(-1)" disabled>← 上一頁</button>
+        <button id="btn-next" onclick="changePage(1)">下一頁 →</button>
+    </div>
+</div>
+
+<script>
+    // --- State Management ---
+    let currentPage = 1;
+    const totalPages = 6;
+    
+    // Animation States
+    const demoPlain = "HELLO";
+    const demoKey = "KEYKE";
+    let encStep = 0;
+    
+    const demoDecCipher = "RIJVS";
+    let decStep = 0;
+
+    // --- Generate Vigenere Table ---
+    function generateTableHTML(tableId) {
+        let html = `<table id="${tableId}"><tr><th>+</th>`;
+        // Header Row
+        for (let i = 0; i < 26; i++) {
+            html += `<th>${String.fromCharCode(65 + i)}</th>`;
+        }
+        html += `</tr>`;
+        // Body Rows
+        for (let row = 0; row < 26; row++) {
+            html += `<tr><td class="header-col">${String.fromCharCode(65 + row)}</td>`;
+            for (let col = 0; col < 26; col++) {
+                let charCode = 65 + ((row + col) % 26);
+                html += `<td>${String.fromCharCode(charCode)}</td>`;
+            }
+            html += `</tr>`;
+        }
+        html += `</table>`;
+        return html;
+    }
+
+    // Initialize tables on page load
+    document.getElementById('table-container-static').innerHTML = generateTableHTML('tbl-static');
+    document.getElementById('table-container-enc').innerHTML = generateTableHTML('tbl-enc');
+    document.getElementById('table-container-dec').innerHTML = generateTableHTML('tbl-dec');
+    updateSandbox(); // Init sandbox
+
+    // --- Page Navigation Logic ---
+    function changePage(delta) {
+        document.getElementById(`slide-${currentPage}`).classList.remove('active');
+        currentPage += delta;
+        document.getElementById(`slide-${currentPage}`).classList.add('active');
+        
+        document.getElementById('page-num').innerText = currentPage;
+        
+        document.getElementById('btn-prev').disabled = (currentPage === 1);
+        document.getElementById('btn-next').disabled = (currentPage === totalPages);
+
+        // Reset animations if leaving page
+        if(currentPage !== 4) resetEncrypt();
+        if(currentPage !== 5) resetDecrypt();
+    }
+
+    // --- Utility for Animation ---
+    function clearHighlights(tableId) {
+        const table = document.getElementById(tableId);
+        const cells = table.getElementsByTagName('td');
+        const ths = table.getElementsByTagName('th');
+        for(let c of cells) { c.classList.remove('hl-row', 'hl-col', 'hl-cross'); }
+        for(let th of ths) { th.classList.remove('hl-row', 'hl-col', 'hl-cross'); }
+    }
+
+    function highlightCell(tableId, rowIdx, colIdx) {
+        clearHighlights(tableId);
+        const table = document.getElementById(tableId);
+        
+        // Highlight headers
+        table.rows[0].cells[colIdx + 1].classList.add('hl-col');
+        table.rows[rowIdx + 1].cells[0].classList.add('hl-row');
+
+        // Highlight full row/col up to intersection
+        for(let i = 1; i <= colIdx + 1; i++) {
+            table.rows[rowIdx + 1].cells[i].classList.add('hl-row');
+        }
+        for(let i = 1; i <= rowIdx + 1; i++) {
+            table.rows[i].cells[colIdx + 1].classList.add('hl-col');
+        }
+
+        // Highlight intersection
+        table.rows[rowIdx + 1].cells[colIdx + 1].classList.add('hl-cross');
+    }
+
+    // --- Encrypt Animation Logic ---
+    function stepEncrypt() {
+        if (encStep >= demoPlain.length) return;
+        
+        const pChar = demoPlain[encStep];
+        const kChar = demoKey[encStep];
+        const pIdx = pChar.charCodeAt(0) - 65;
+        const kIdx = kChar.charCodeAt(0) - 65;
+        const cChar = String.fromCharCode(65 + ((pIdx + kIdx) % 26));
+
+        // Highlight table
+        highlightCell('tbl-enc', kIdx, pIdx);
+
+        // Update Text Display
+        let pDisplay = "", kDisplay = "", cDisplay = "";
+        for(let i=0; i<demoPlain.length; i++) {
+            pDisplay += (i === encStep) ? `<span class="current-char">${demoPlain[i]}</span>` : demoPlain[i];
+            kDisplay += (i === encStep) ? `<span class="current-char">${demoKey[i]}</span>` : demoKey[i];
+            
+            if (i < encStep) {
+                const prevP = demoPlain[i].charCodeAt(0) - 65;
+                const prevK = demoKey[i].charCodeAt(0) - 65;
+                cDisplay += String.fromCharCode(65 + ((prevP + prevK) % 26));
+            } else if (i === encStep) {
+                cDisplay += `<span class="current-char">${cChar}</span>`;
+            } else {
+                cDisplay += "_";
+            }
+        }
+        
+        document.getElementById('enc-plain').innerHTML = pDisplay;
+        document.getElementById('enc-key').innerHTML = kDisplay;
+        document.getElementById('enc-cipher').innerHTML = cDisplay;
+
+        // Update Explanation
+        document.getElementById('enc-explanation').innerHTML = 
+            `<strong>步驟 ${encStep + 1}：</strong> 加密字母 <strong>${pChar}</strong>。<br>
+            找上方明文標題 <strong>${pChar}</strong> 行，左側密鑰標題 <strong>${kChar}</strong> 列。交會處為 <strong>${cChar}</strong>。`;
+
+        encStep++;
+        if (encStep >= demoPlain.length) {
+            document.getElementById('btn-enc-next').disabled = true;
+            document.getElementById('enc-explanation').innerHTML += "<br><strong>加密完成！</strong>";
+        }
+    }
+
+    function resetEncrypt() {
+        encStep = 0;
+        document.getElementById('enc-plain').innerHTML = demoPlain;
+        document.getElementById('enc-key').innerHTML = demoKey;
+        document.getElementById('enc-cipher').innerHTML = "_____";
+        document.getElementById('enc-explanation').innerHTML = "點擊下方「播放下一步」按鈕開始加密演示。";
+        document.getElementById('btn-enc-next').disabled = false;
+        clearHighlights('tbl-enc');
+    }
+
+    // --- Decrypt Animation Logic ---
+    function stepDecrypt() {
+        if (decStep >= demoDecCipher.length) return;
+        
+        const cChar = demoDecCipher[decStep];
+        const kChar = demoKey[decStep];
+        const kIdx = kChar.charCodeAt(0) - 65;
+        const cIdx = cChar.charCodeAt(0) - 65;
+        
+        // Reverse math: Plain = (Cipher - Key + 26) % 26
+        const pIdx = (cIdx - kIdx + 26) % 26;
+        const pChar = String.fromCharCode(65 + pIdx);
+
+        // Highlight table (Same intersection logic, just explained differently)
+        highlightCell('tbl-dec', kIdx, pIdx);
+
+        // Update Text Display
+        let cDisplay = "", kDisplay = "", pDisplay = "";
+        for(let i=0; i<demoDecCipher.length; i++) {
+            cDisplay += (i === decStep) ? `<span class="current-char">${demoDecCipher[i]}</span>` : demoDecCipher[i];
+            kDisplay += (i === decStep) ? `<span class="current-char">${demoKey[i]}</span>` : demoKey[i];
+            
+            if (i < decStep) {
+                const prevC = demoDecCipher[i].charCodeAt(0) - 65;
+                const prevK = demoKey[i].charCodeAt(0) - 65;
+                pDisplay += String.fromCharCode(65 + ((prevC - prevK + 26) % 26));
+            } else if (i === decStep) {
+                pDisplay += `<span class="current-char">${pChar}</span>`;
+            } else {
+                pDisplay += "_";
+            }
+        }
+        
+        document.getElementById('dec-cipher').innerHTML = cDisplay;
+        document.getElementById('dec-key').innerHTML = kDisplay;
+        document.getElementById('dec-plain').innerHTML = pDisplay;
+
+        // Update Explanation
+        document.getElementById('dec-explanation').innerHTML = 
+            `<strong>步驟 ${decStep + 1}：</strong> 解密字母 <strong>${cChar}</strong>。<br>
+            先找左側密鑰標題 <strong>${kChar}</strong> 列。在該列往右尋找密文字母 <strong>${cChar}</strong>，往上看頂部標題即為明文 <strong>${pChar}</strong>。`;
+
+        decStep++;
+        if (decStep >= demoDecCipher.length) {
+            document.getElementById('btn-dec-next').disabled = true;
+            document.getElementById('dec-explanation').innerHTML += "<br><strong>解密完成！</strong>";
+        }
+    }
+
+    function resetDecrypt() {
+        decStep = 0;
+        document.getElementById('dec-cipher').innerHTML = demoDecCipher;
+        document.getElementById('dec-key').innerHTML = demoKey;
+        document.getElementById('dec-plain').innerHTML = "_____";
+        document.getElementById('dec-explanation').innerHTML = "點擊下方「播放下一步」按鈕開始解密演示。";
+        document.getElementById('btn-dec-next').disabled = false;
+        clearHighlights('tbl-dec');
+    }
+
+    // --- Sandbox Logic ---
+    function updateSandbox() {
+        let plain = document.getElementById('sandbox-plain').value.toUpperCase().replace(/[^A-Z]/g, '');
+        let key = document.getElementById('sandbox-key').value.toUpperCase().replace(/[^A-Z]/g, '');
+        
+        // Update inputs to show sanitized values
+        document.getElementById('sandbox-plain').value = plain;
+        document.getElementById('sandbox-key').value = key;
+
+        if (!plain || !key) {
+            document.getElementById('sandbox-result').innerText = "請輸入英文字母";
+            return;
+        }
+
+        let cipher = "";
+        for (let i = 0; i < plain.length; i++) {
+            let pIdx = plain.charCodeAt(i) - 65;
+            let kIdx = key.charCodeAt(i % key.length) - 65;
+            cipher += String.fromCharCode(65 + ((pIdx + kIdx) % 26));
+        }
+        document.getElementById('sandbox-result').innerText = cipher;
+    }
+
+</script>
+</body>
+</html>
