@@ -14,19 +14,26 @@
     main { padding: 20px; max-width: 1000px; margin: auto; }
     .section { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
     h2 { color: #333; border-bottom: 2px solid var(--primary-color); padding-bottom: 10px; margin-top: 0; }
-    .control-grid { display: grid; grid-template-columns: 1fr 1fr auto; gap: 20px; align-items: flex-end; margin-bottom: 20px; }
+    .control-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: flex-end; margin-bottom: 20px; }
     .control-group { display: flex; flex-direction: column; }
     .control-group label { font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
     .control-group select, .control-group input { padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1em; height: 40px; box-sizing: border-box; }
     #btn-add-grade { background-color: #28a745; color: white; border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; height: 40px; font-size: 1em; font-weight: bold; }
     .grades-list { margin-top: 20px; border-top: 1px solid #eee; }
-    .grade-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; transition: background-color 0.2s; }
+    
+    /* 🟢 修復 3：縮減每一項的高度 (調整 padding) */
+    .grade-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; border-bottom: 1px solid #eee; transition: background-color 0.2s; }
     .grade-item:hover { background-color: #f9f9f9; }
     .grade-info { flex-grow: 1; }
     .grade-name { font-weight: bold; font-size: 1.1em; color: var(--primary-color); display: block; }
-    .grade-meta { font-size: 0.85em; color: #666; margin-top: 4px; }
-    .grade-actions button { margin-left: 10px; padding: 6px 12px; border-radius: 4px; cursor: pointer; border: 1px solid #ddd; background-color: white; font-size: 0.9em; }
+    
+    /* 🟢 修復 3：縮小日期和人數的上方間距 */
+    .grade-meta { font-size: 0.85em; color: #666; margin-top: 2px; }
+    
+    /* 🟢 調整按鈕間距與字體大小 */
+    .grade-actions button { margin-left: 5px; padding: 5px 10px; border-radius: 4px; cursor: pointer; border: 1px solid #ddd; background-color: white; font-size: 0.85em; }
     .btn-edit { color: var(--primary-color); border-color: var(--primary-color) !important; }
+    .btn-rename { color: #fd7e14; border-color: #fd7e14 !important; } /* 修改名稱按鈕樣式 */
     .btn-delete { color: #dc3545; border-color: #dc3545 !important; }
     #user-email { margin-left: 10px; font-size: 1.0em; }
     @media (max-width: 768px) {
@@ -57,11 +64,23 @@
           <label for="class-select">篩選班級</label>
           <select id="class-select"><option value="all">所有班級</option></select>
         </div>
+        
+        <!-- 🟢 修復 1：新增排序下拉選單 -->
         <div class="control-group">
-          <label for="search-input">搜尋項目名稱</label>
+          <label for="sort-select">排序方式</label>
+          <select id="sort-select">
+            <option value="date-desc" selected>登錄時間 (新到舊)</option>
+            <option value="date-asc">登錄時間 (舊到新)</option>
+            <option value="name-asc">成績名稱 (A到Z)</option>
+            <option value="name-desc">成績名稱 (Z到A)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="search-input">搜尋名稱</label>
           <input type="text" id="search-input" placeholder="輸入關鍵字...">
         </div>
-        <button id="btn-add-grade">+ 新增成績項目</button>
+        <button id="btn-add-grade">+ 新增項目</button>
       </div>
       <div id="grades-list-container" class="grades-list"></div>
     </div>
@@ -154,8 +173,8 @@ async function initializePage(schoolId) {
 function bindEventListeners() {
       document.getElementById('class-select').addEventListener('change', renderGradesList);
       document.getElementById('search-input').addEventListener('input', renderGradesList);
-      
-      // 🟢 修復 2：新增成績項目時，檢查並帶入目前選取的班級參數
+      document.getElementById('sort-select').addEventListener('change', renderGradesList); // 🟢 綁定排序選單
+
       document.getElementById('btn-add-grade').addEventListener('click', () => { 
         const selectedClass = document.getElementById('class-select').value;
         if (selectedClass === 'all') {
@@ -174,22 +193,45 @@ function bindEventListeners() {
       });
       document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
     }
+
     function renderGradesList() {
       const classFilter = document.getElementById('class-select').value;
       const searchQuery = document.getElementById('search-input').value.toLowerCase();
+      const sortValue = document.getElementById('sort-select').value; // 🟢 取得排序方式
       const container = document.getElementById('grades-list-container');
-      const filtered = assignments.filter(a => {
+      
+      let filtered = assignments.filter(a => {
         const matchClass = classFilter === 'all' || a.className === classFilter;
         const matchSearch = a.assignmentName.toLowerCase().includes(searchQuery);
         return matchClass && matchSearch;
       });
+
+      // 🟢 執行排序邏輯
+      filtered.sort((a, b) => {
+        if (sortValue.startsWith('date')) {
+          // 若無時間預設為 0
+          const timeA = a.date ? (a.date.seconds || new Date(a.date).getTime() / 1000) : 0;
+          const timeB = b.date ? (b.date.seconds || new Date(b.date).getTime() / 1000) : 0;
+          return sortValue === 'date-desc' ? timeB - timeA : timeA - timeB;
+        } else if (sortValue.startsWith('name')) {
+          const nameA = a.assignmentName || '';
+          const nameB = b.assignmentName || '';
+          return sortValue === 'name-asc' ? nameA.localeCompare(nameB, 'zh-TW') : nameB.localeCompare(nameA, 'zh-TW');
+        }
+        return 0;
+      });
+
       if (filtered.length === 0) {
         container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">找不到符合的成績項目</p>';
         return;
       }
+      
       container.innerHTML = filtered.map(a => {
         const dateStr = a.date ? (a.date.seconds ? new Date(a.date.seconds * 1000).toLocaleDateString() : new Date(a.date).toLocaleDateString()) : '無日期';
         const scoreCount = a.scores ? Object.keys(a.scores).length : 0;
+        // 處理引號跳脫，避免影響 onclick 屬性
+        const safeName = (a.assignmentName || '').replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
         return `
           <div class="grade-item">
             <div class="grade-info">
@@ -197,21 +239,41 @@ function bindEventListeners() {
               <div class="grade-meta">建立日期：${dateStr} | 已登錄人數：${scoreCount}</div>
             </div>
             <div class="grade-actions">
-              <button class="btn-edit" onclick="editAssignment('${a.id}', '${a.className}')">編輯成績</button>
-              <button class="btn-delete" onclick="deleteAssignment('${a.id}', '${a.className}', '${a.assignmentName}')">刪除</button>
+              <button class="btn-edit" onclick="editAssignment('${a.id}', '${a.className}')">編輯</button>
+              <!-- 🟢 修復 2：加入修改名稱按鈕 -->
+              <button class="btn-rename" onclick="renameAssignment('${a.id}', '${safeName}')">改名</button>
+              <button class="btn-delete" onclick="deleteAssignment('${a.id}', '${a.className}', '${safeName}')">刪除</button>
             </div>
           </div>`;
       }).join('');
     }
+
     function editAssignment(id, className) { 
         window.location.href = `grades-edit.html?assignmentId=${id}&class=${className}`; 
     }
+
+    // 🟢 修復 2：新增修改名稱的函式
+    async function renameAssignment(docId, oldName) {
+        const newName = prompt("請輸入新的成績項目名稱：", oldName);
+        if (newName !== null && newName.trim() !== '' && newName.trim() !== oldName) {
+            try {
+                await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).update({
+                    assignmentName: newName.trim()
+                });
+                localStorage.removeItem(GRADES_CACHE_KEY); // 清除快取確保其他頁面更新
+                // Firestore 的 onSnapshot 會自動觸發重新渲染畫面
+            } catch (e) {
+                alert("修改名稱失敗：" + e.message);
+            }
+        }
+    }
+
     async function deleteAssignment(docId, classId, assignmentName) {
       if (confirm(`確定要刪除【${classId} 班】的成績項目：\n\n「${assignmentName}」？`) && 
           confirm(`最後確認！此操作無法復原，真的確定嗎？`)) {
         try {
           await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(docId).delete();
-          alert(`已成功刪除「${assignmentName}」`);
+          // alert(`已成功刪除「${assignmentName}」`); // onSnapshot 自動更新，移除提示以加速操作
         } catch (e) { alert("刪除失敗！"); }
       }
     }
