@@ -215,18 +215,39 @@
 
     // --- Generate Vigenere Table ---
     function generateTableHTML(tableId) {
-        let html = `<table id="${tableId}"><tr><th>+</th>`;
-        // Header Row
+        let html = `<table id="${tableId}">`;
+        
+        // 新增第一列：標註頂部的「明文區」
+        html += `<tr>`;
+        html += `<th style="background-color: white; border: none;"></th>`; // 左上角留白
+        html += `<th colspan="26" style="background-color: #27ae60; color: white; letter-spacing: 10px; font-size: 16px; padding: 5px;">⬇ 明文區 (Plaintext) ⬇</th>`;
+        html += `</tr>`;
+
+        // 原始標題列 (A-Z) + 左上角標註「密鑰」
+        html += `<tr>`;
+        html += `<th style="background-color: #8e44ad; color: white; font-size: 13px; line-height: 1.4; white-space: nowrap;">密鑰區<br>(Key) ➡</th>`;
         for (let i = 0; i < 26; i++) {
             html += `<th>${String.fromCharCode(65 + i)}</th>`;
         }
         html += `</tr>`;
-        // Body Rows
+
+        // 表格主體 (密文區)
         for (let row = 0; row < 26; row++) {
-            html += `<tr><td class="header-col">${String.fromCharCode(65 + row)}</td>`;
+            // 左側行：密鑰 A-Z
+            html += `<tr><td class="header-col" style="background-color: #8e44ad; color: white; font-weight: bold;">${String.fromCharCode(65 + row)}</td>`;
+            
+            // 中間 26x26 內容：密文區
             for (let col = 0; col < 26; col++) {
                 let charCode = 65 + ((row + col) % 26);
-                html += `<td>${String.fromCharCode(charCode)}</td>`;
+                
+                // 在正中間加上一個極淡的「密文區」文字提示 (利用 CSS 與 Title)
+                if (row === 12 && col === 12) {
+                    html += `<td title="這裡是密文區 (Ciphertext)" style="position: relative;">`;
+                    html += `<span style="position: absolute; width: 200px; left: -80px; top: -10px; color: rgba(0,0,0,0.05); font-size: 40px; font-weight: bold; pointer-events: none;">密文區</span>`;
+                    html += `${String.fromCharCode(charCode)}</td>`;
+                } else {
+                    html += `<td title="密文">${String.fromCharCode(charCode)}</td>`;
+                }
             }
             html += `</tr>`;
         }
