@@ -1,34 +1,32 @@
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>學生綜合紀錄暨課表系統</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <link rel="stylesheet" href="teacher.css">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>學生綜合紀錄暨課表系統</title>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+	<link rel="stylesheet" href="teacher.css">
 </head>
-
 <body>
 	<header>
-        <div class="header-left-panel">
-            <div id="main-sort-container">
-                <h1>學生綜合紀錄暨課表系統</h1>
-                <button id="main-sort-btn" title="切換班級排序方式">
-                    <span class="main-sort-arrow" id="main-sort-up-arrow">▲</span>
-                    <span class="main-sort-arrow" id="main-sort-down-arrow">▼</span>
-                </button>
-            </div>            
-        </div>
-       <div class="header-right-panel">
-            <div class="main-actions">
-                <a href="calculator.html"><button>成績計算</button></a>
-                <a href="report.html"><button>數據報告</button></a>
-            </div>
-            <div class="system-switcher-container">
-				<button id="sys-switch-btn" class="sys-switch-btn">
-					🗂️ 切換系統 ▼
+		<div class="header-left-panel">
+			<div id="main-sort-container">
+				<h1>學生綜合紀錄暨課表系統</h1>
+				<span id="system-date-range-display" style="font-size: 0.85em; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; margin-right: 10px; cursor: pointer; white-space: nowrap;" title="點擊修改資料期間">📅 全部期間</span>
+				<button id="main-sort-btn" title="切換班級排序方式" style="display:none;">
+					<span class="main-sort-arrow" id="main-sort-up-arrow">▲</span>
+					<span class="main-sort-arrow" id="main-sort-down-arrow">▼</span>
 				</button>
+			</div>
+		</div>
+		<div class="header-right-panel">
+			<div class="main-actions">
+				<a href="calculator.html"><button>成績計算</button></a>
+				<a href="report.html"><button>數據報告</button></a>
+			</div>
+			<div class="system-switcher-container">
+				<button id="sys-switch-btn" class="sys-switch-btn">🗂️ 切換系統 ▼</button>
 				<div id="sys-switch-menu" class="sys-switch-content">
 					<div class="sys-item" data-target="teacher.html">
 						<span class="sys-link" onclick="window.location.href='teacher.html'">學生綜合紀錄系統(主頁)</span>
@@ -38,77 +36,67 @@
 						<span class="sys-link" onclick="window.location.href='timetable.html'">課表系統</span>
 						<span class="sys-home-icon" onclick="setDefaultSystem('timetable.html', '課表系統')">🏠</span>
 					</div>
-					<!--
-					<div class="sys-item" data-target="worksheet_manager.html">
-						<span class="sys-link" onclick="window.location.href='worksheet_manager.html'">學習單系統</span>
-						<span class="sys-home-icon" onclick="setDefaultSystem('worksheet_manager.html', '學習單系統')">🏠</span>
-					</div>
-					-->
 				</div>
 			</div>
 			<div class="user-profile">
 				<button id="reload-cache-btn" title="重新載入基本資料 (學生名冊/課表)">🔄</button>
-            </div>
-            <div class="dropdown">
-                <button id="dropdown-btn" class="icon-btn" title="設定與功能">⚙️</button>
+			</div>
+			<div class="dropdown">
+				<button id="dropdown-btn" class="icon-btn" title="設定與功能">⚙️</button>
 				<div id="dropdown-menu" class="dropdown-content">
 					<button id="class-settings-btn">班級顯示設定</button>
+					<button id="date-range-settings-btn">📅 期間設定</button>
 					<button id="toggle-direct-entry-btn">⚡ 直進上課班級 (檢查中...)</button>
 					<button id="change-password-btn">修改密碼</button>
 					<button id="tutorial-btn">操作說明</button>
 					<button id="info-btn-new">功能說明</button>
 					<hr style="margin: 4px 10px; border-color: #eee; border-style: solid; border-width: 1px 0 0 0;">
-					<button id="logout-btn">登出</button>					
+					<button id="logout-btn">登出</button>
 				</div>
 				<span id="user-email" title="我的課表"></span>
-            </div>
-        </div>
-    </header>
-    <main id="app-container" class="class-grid">
-        <h2>正在載入您的資料...</h2>
-    </main>
-
-    <div id="welcome-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" data-modal="welcome-modal">&times;</span>
-            <h2>歡迎使用 學生綜合紀錄暨課表系統</h2>
-            <p>這是一套專為教師設計的整合性管理工具，主要包含以下核心系統：</p>
-            <ul>
-                <li><strong>主系統</strong>: 快速登記學生日常表現、管理成績項目、計算學期總分、產出數據報告。</li>
-                <li><strong>課表系統</strong>: 提供強大的智慧調課、代課與換課功能，並可將課程匯出至個人行事曆。</li>
-            </ul>
-            <p>建議您登入後，點擊頁首右上角的齒輪圖示 (⚙️) 查看更詳細的功能說明。</p>
+			</div>
+		</div>
+	</header>
+	<main id="app-container" class="class-grid">
+		<h2>正在載入您的資料...</h2>
+	</main>
+	<div id="welcome-modal" class="modal">
+		<div class="modal-content">
+			<span class="close-btn" data-modal="welcome-modal">&times;</span>
+			<h2>歡迎使用 學生綜合紀錄暨課表系統</h2>
+			<p>這是一套專為教師設計的整合性管理工具，主要包含以下核心系統：</p>
+			<ul>
+				<li><strong>主系統</strong>: 快速登記學生日常表現、管理成績項目、計算學期總分、產出數據報告。</li>
+				<li><strong>課表系統</strong>: 提供強大的智慧調課、代課與換課功能，並可將課程匯出至個人行事曆。</li>
+			</ul>
+			<p>建議您登入後，點擊頁首右上角的齒輪圖示 (⚙️) 查看更詳細的功能說明。</p>
 			<div class="notice">
 				<span style="font-size:1.0em; color:#0000ff; "><b>⚠️跨裝置同步重要提醒</b></span><br>
-                <span style="font-size:0.8em;">
-					若您在其他裝置（如手機、平板或另一台電腦）上編輯過資料，欲確保資料同步更新，請點擊畫面右上角的 
-					<span style="background:#fff; border:1px solid #ccc; padding:2px 6px; border-radius:3px;">🔄 手動更新</span> 按鈕重新載入。
-				</span>
+				<span style="font-size:0.8em;">若您在其他裝置（如手機、平板或另一台電腦）上編輯過資料，欲確保資料同步更新，請點擊畫面右上角的 <span style="background:#fff; border:1px solid #ccc; padding:2px 6px; border-radius:3px;">🔄 手動更新</span> 按鈕重新載入。</span>
 			</div>
-            <div class="modal-footer">
-                <label><input type="checkbox" id="dont-show-again-login"> 以後不要再顯示此訊息</label>
-                <button id="close-welcome-btn" style="width: auto; padding: 8px 20px;">關閉</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal" class="modal2">
-        <div class="modal-content">
-            <span class="close-btn" data-modal="modal">&times;</span>
-            <h2 id="modal-title"></h2>
-            <div class="form-container">
-                <div class="form-header">
-                    <div class="record-stats-display">
-                        <span id="record-count-display">事件數: 0</span>
-                        <span id="record-total-score-display">總分: 0.0</span>
-                    </div>
-                    <div class="mobile-score-controls">
-                        <button type="button" class="score-adjust-btn" id="score-minus-btn">-</button>
-                        <button type="button" class="score-adjust-btn" id="score-plus-btn">+</button>
-                    </div>
-                    <button type="button" id="save-record-btn" style="background-color: var(--success-color);">新增</button>
-                    <button type="button" id="btn-cancel-edit" style="display:none; background-color:#6c757d;">取消</button>
-                </div>
+			<div class="modal-footer">
+				<label><input type="checkbox" id="dont-show-again-login"> 以後不要再顯示此訊息</label>
+				<button id="close-welcome-btn" style="width: auto; padding: 8px 20px;">關閉</button>
+			</div>
+		</div>
+	</div>
+	<div id="modal" class="modal2">
+		<div class="modal-content">
+			<span class="close-btn" data-modal="modal">&times;</span>
+			<h2 id="modal-title"></h2>
+			<div class="form-container">
+				<div class="form-header">
+					<div class="record-stats-display">
+						<span id="record-count-display">事件數: 0</span>
+						<span id="record-total-score-display">總分: 0.0</span>
+					</div>
+					<div class="mobile-score-controls">
+						<button type="button" class="score-adjust-btn" id="score-minus-btn">-</button>
+						<button type="button" class="score-adjust-btn" id="score-plus-btn">+</button>
+					</div>
+					<button type="button" id="save-record-btn" style="background-color: var(--success-color);">新增</button>
+					<button type="button" id="btn-cancel-edit" style="display:none; background-color:#6c757d;">取消</button>
+				</div>
 				<form id="add-record-form" novalidate>
 					<input type="number" id="record-points" placeholder="加/減分" disabled>
 					<div class="input-wrapper">
@@ -117,18 +105,17 @@
 					</div>
 					<datalist id="recent-texts-list"></datalist>
 				</form>
-            </div>
-            <div class="records-container">
-                <h3>事件紀錄</h3>
-                <div id="records-list"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="password-reset-overlay">
-        <div class="password-reset-box">
-            <h2>初次登入，請重設密碼</h2>
-            <p>為了帳號安全，請設定一組您自己的新密碼。</p>
+			</div>
+			<div class="records-container">
+				<h3>事件紀錄</h3>
+				<div id="records-list"></div>
+			</div>
+		</div>
+	</div>
+	<div id="password-reset-overlay">
+		<div class="password-reset-box">
+			<h2>初次登入，請重設密碼</h2>
+			<p>為了帳號安全，請設定一組您自己的新密碼。</p>
 			<form id="password-reset-form">
 				<div class="password-wrapper">
 					<input type="password" id="new-password" placeholder="請輸入新密碼" required minlength="6">
@@ -141,14 +128,13 @@
 				<button type="submit">設定新密碼</button>
 			</form>
 			<button type="button" id="force-logout-btn" style="margin-top: 15px; background-color: #777; font-size: 0.9em; color:white;">無法更新？點此登出並重新開始</button>
-            <p id="password-error-message"></p>
-        </div>
-    </div>
-
-    <div id="change-password-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" data-modal="change-password-modal">&times;</span>
-            <h2>修改密碼</h2>
+			<p id="password-error-message"></p>
+		</div>
+	</div>
+	<div id="change-password-modal" class="modal">
+		<div class="modal-content">
+			<span class="close-btn" data-modal="change-password-modal">&times;</span>
+			<h2>修改密碼</h2>
 			<form id="change-password-form">
 				<p>請輸入您的新密碼（至少6個字元）。</p>
 				<div class="password-wrapper">
@@ -162,124 +148,113 @@
 				<button type="submit" id="save_new_password_btn">確認修改</button>
 				<p id="cp-error-message"></p>
 			</form>
-        </div>
-    </div>
-
-    <div id="class-settings-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" data-modal="class-settings-modal">&times;</span>
-            <h2>班級顯示設定</h2>
-            <p>請勾選您想在主畫面上顯示的班級。</p>
-            <div id="class-settings-controls">
-                <input type="checkbox" id="select-all-visible-classes">
-                <label for="select-all-visible-classes">全選 / 全取消</label>
-            </div>
-            <div id="class-settings-list"></div>
-            <button id="save-class-settings-btn">儲存設定</button>
-        </div>
-    </div>
-
+		</div>
+	</div>
+	<div id="class-settings-modal" class="modal">
+		<div class="modal-content">
+			<span class="close-btn" data-modal="class-settings-modal">&times;</span>
+			<h2>班級顯示設定</h2>
+			<p>請勾選您想在主畫面上顯示的班級。</p>
+			<div id="class-settings-controls">
+				<input type="checkbox" id="select-all-visible-classes">
+				<label for="select-all-visible-classes">全選 / 全取消</label>
+			</div>
+			<div id="class-settings-list"></div>
+			<button id="save-class-settings-btn">儲存設定</button>
+		</div>
+	</div>
 	<div id="info-modal" class="modal-notes">
-        <div class="modal-content">
-            <span class="close-btn" data-modal="info-modal">&times;</span>
-            <div class="info-modal-header">
-                <h2>系統功能說明</h2>
-                <button id="reset-welcome-prefs-btn">重設歡迎訊息</button>
-            </div>
-            <div id="info-modal-body">
-                <h3>學生綜合紀錄系統 (主系統)</h3>
-                <ul>
-                    <li><strong>主系統</strong>: 透過班級格子，快速進入**學生名單 (🧑‍🎓)** 進行日常表現紀錄，或進入**成績登錄 (📋)** 管理成績項目。</li>
-                    <li><strong>成績登錄 (📋)</strong>: 建立如作業、小考等成績項目，並為每位學生輸入分數與個別註解。支援成績項目名稱的歷史紀錄建議。</li>
-                    <li><strong>成績計算</strong>: 專業的學期總成績計算工具，可自訂「特定作業加權」、「前N高平均」等複雜計分規則並一鍵算出最終成績。</li>
-                    <li><strong>數據報告</strong>: 提供多維度報表：可查詢「表現紀錄明細/統計摘要」或「成績明細/班級分析/跨班級比較」報告，並支援匯出 CSV。</li>
-                </ul>
-                <h3>課表系統 (位於頁首按鈕)</h3>
-                <ul>
-                    <li><strong>課表查詢</strong>: 查詢個人、班級、或場地的課表。點擊班級課表中的課程，可純瀏覽該任課老師的課表。</li>
-                    <li><strong>調課操作</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段 (智慧調課)。</li>
-                    <li><strong>代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」，並支援檢查時段衝突。</li>
-                    <li><strong>行事曆匯出</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
-                </ul>
-                <p style="font-size: 0.9em; color: #666; margin-top: 25px;">您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
-            </div>
-        </div>
-    </div>
-	
+		<div class="modal-content">
+			<span class="close-btn" data-modal="info-modal">&times;</span>
+			<div class="info-modal-header">
+				<h2>系統功能說明</h2>
+				<button id="reset-welcome-prefs-btn">重設歡迎訊息</button>
+			</div>
+			<div id="info-modal-body">
+				<h3>學生綜合紀錄系統 (主系統)</h3>
+				<ul>
+					<li><strong>主系統</strong>: 透過班級格子，快速進入**學生名單 (🧑‍🎓)** 進行日常表現紀錄，或進入**成績登錄 (📋)** 管理成績項目。</li>
+					<li><strong>成績登錄 (📋)</strong>: 建立如作業、小考等成績項目，並為每位學生輸入分數與個別註解。支援成績項目名稱的歷史紀錄建議。</li>
+					<li><strong>成績計算</strong>: 專業的學期總成績計算工具，可自訂「特定作業加權」、「前N高平均」等複雜計分規則並一鍵算出最終成績。</li>
+					<li><strong>數據報告</strong>: 提供多維度報表：可查詢「表現紀錄明細/統計摘要」或「成績明細/班級分析/跨班級比較」報告，並支援匯出 CSV。</li>
+				</ul>
+				<h3>課表系統 (位於頁首按鈕)</h3>
+				<ul>
+					<li><strong>課表查詢</strong>: 查詢個人、班級、或場地的課表。點擊班級課表中的課程，可純瀏覽該任課老師的課表。</li>
+					<li><strong>調課操作</strong>: 點擊自己課表上的課程，系統會自動標示出可互相調課的老師與時段 (智慧調課)。</li>
+					<li><strong>代課/換課</strong>: 點擊自己課表上的課程，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」，並支援檢查時段衝突。</li>
+					<li><strong>行事曆匯出</strong>: 在任何課表上長按 (或右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
+				</ul>
+				<p style="font-size: 0.9em; color: #666; margin-top: 25px;">您可以重設所有「歡迎訊息」的顯示偏好，讓它們在下次訪問時重新出現。</p>
+			</div>
+		</div>
+	</div>
 	<div id="tutorial-modal" class="modal-notes">
-        <div class="modal-content">
-            <span class="close-btn" data-modal="tutorial-modal">&times;</span>
+		<div class="modal-content">
+			<span class="close-btn" data-modal="tutorial-modal">&times;</span>
 			<div class="info-modal-header">
 				<h2>📖 系統操作說明指南</h2>
 			</div>
-            <div id="tutorial-modal-body">
-                <h3>一、 首頁 - 班級格子操作</h3>
-                <ul>
-                    <li><span class="instruction-highlight">進入班級共同紀錄</span>：點擊班級格子中的<span class="instruction-highlight">班級名稱</span>（例如：「701 班」）。</li>
-                    <li><span class="instruction-highlight">進入學生名單</span>：點擊班級格子下方的<span class="instruction-highlight">🧑‍🎓 學生按鈕</span>。</li>
-                    <li><span class="instruction-highlight">進入成績登錄</span>：點擊班級格子下方的<span class="instruction-highlight">📋 成績按鈕</span>。</li>
-                    <li><span class="instruction-highlight">班級排序切換</span>：點擊標題列 <span class="instruction-highlight">h1 旁的 ▲▼ 按鈕</span>，可在「預設班級代碼排序」、「總分高到低排序」與「總分低到高排序」之間切換。</li>
-                    <li><span class="instruction-highlight">自動高亮</span>：當前上課時段的班級格子會自動出現<span class="instruction-highlight">閃爍邊框高亮</span>。</li>
-                </ul>
-
-                <h3>二、 學生/班級紀錄操作</h3>
-                <ul>
-                    <li><span class="instruction-highlight">切換紀錄對象</span>：在學生名單中，點擊 <span class="instruction-highlight">「班級名稱及總分」區域</span> 可切換到班級紀錄操作頁面。</li>
-                    <li><span class="instruction-highlight">紀錄預設文字</span>：進入紀錄頁面時，**文字輸入框** 會自動<span class="instruction-highlight">預設為您「最近一筆」紀錄的文字內容</span>（若最近一筆無文字則預設為空）。</li>
-                    <li><span class="instruction-highlight">分數調整（手機）</span>：在手機上，可使用分數輸入框旁的 <span class="instruction-highlight">「+」或「-」按鈕</span> 快速增減分數。</li>
-                    <li><span class="instruction-highlight">編輯歷史紀錄</span>：<span class="instruction-highlight">點擊歷史事件紀錄列表中的「文字內容」</span>即可載入該紀錄的文字到輸入框進行更新。</li>
-                    <li><span class="instruction-highlight">刪除歷史紀錄</span>：點擊歷史事件紀錄列表右側的<span class="instruction-highlight">「🗑️」按鈕</span>。</li>
+			<div id="tutorial-modal-body">
+				<h3>一、 首頁 - 班級格子操作</h3>
+				<ul>
+					<li><span class="instruction-highlight">進入班級共同紀錄</span>：點擊班級格子中的<span class="instruction-highlight">班級名稱</span>（例如：「701 班」）。</li>
+					<li><span class="instruction-highlight">進入學生名單</span>：點擊班級格子下方的<span class="instruction-highlight">🧑‍🎓 學生按鈕</span>。</li>
+					<li><span class="instruction-highlight">進入成績登錄</span>：點擊班級格子下方的<span class="instruction-highlight">📋 成績按鈕</span>。</li>
+					<li><span class="instruction-highlight">班級排序切換</span>：點擊標題列 <span class="instruction-highlight">h1 旁的 ▲▼ 按鈕</span>，可在「預設班級代碼排序」、「總分高到低排序」與「總分低到高排序」之間切換。</li>
+					<li><span class="instruction-highlight">自動高亮</span>：當前上課時段的班級格子會自動出現<span class="instruction-highlight">閃爍邊框高亮</span>。</li>
+				</ul>
+				<h3>二、 學生/班級紀錄操作</h3>
+				<ul>
+					<li><span class="instruction-highlight">切換紀錄對象</span>：在學生名單中，點擊 <span class="instruction-highlight">「班級名稱及總分」區域</span> 可切換到班級紀錄操作頁面。</li>
+					<li><span class="instruction-highlight">紀錄預設文字</span>：進入紀錄頁面時，**文字輸入框** 會自動<span class="instruction-highlight">預設為您「最近一筆」紀錄的文字內容</span>（若最近一筆無文字則預設為空）。</li>
+					<li><span class="instruction-highlight">分數調整（手機）</span>：在手機上，可使用分數輸入框旁的 <span class="instruction-highlight">「+」或「-」按鈕</span> 快速增減分數。</li>
+					<li><span class="instruction-highlight">編輯歷史紀錄</span>：<span class="instruction-highlight">點擊歷史事件紀錄列表中的「文字內容」</span>即可載入該紀錄的文字到輸入框進行更新。</li>
+					<li><span class="instruction-highlight">刪除歷史紀錄</span>：點擊歷史事件紀錄列表右側的<span class="instruction-highlight">「🗑️」按鈕</span>。</li>
 					<li><span class="instruction-highlight">學生標註</span>：只記錄文字而不給分數的內容視為學生標註，在學生名單中以藍框及紅色紀錄文字做為標註。</li>
-                </ul>
-                
-                <h3>三、 學生名單操作</h3>
-                <ul>
-                    <li><span class="instruction-highlight">進入學生單人紀錄</span>：點擊名單中的<span class="instruction-highlight">任一位學生卡片</span>。</li>
-                    <li><span class="instruction-highlight">排序切換</span>：點擊名單標題列右方的 <span class="instruction-highlight">▲▼ 按鈕</span>，可在「預設座號排序」、「總分高到低排序」與「總分低到高排序」之間切換。</li>
-                </ul>
-
-                <h3>四、 課表基本操作</h3>
-                <ul>
-                    <li><span class="instruction-highlight">週次巡航</span>：點擊課表上方的 <span class="instruction-highlight">「‹上週」、「‹本週」、「下週›」按鈕</span>切換週次。</li>
-                    <li><span class="instruction-highlight">異動巡航</span>：點擊課表上方的 <span class="instruction-highlight">「‹異動週」、「異動週›」按鈕</span>可直接跳至課表前/後異動的週次。</li>
-                    <li><span class="instruction-highlight">滑動巡航（手機）</span>：在課表內<span class="instruction-highlight">左右滑動</span>，可快速切換上一週或下一週。</li>
-                    <li><span class="instruction-highlight">進入班級學生名單</span>：<span class="instruction-highlight">點擊課表中有課的格子</span>，可直接進入該課程所屬班級的學生名單並可操作紀錄功能。</li>
-                </ul>
-                
-                <h3>五、 課表系統操作</h3>
-                <ul>
-                    <li><span class="instruction-highlight">調/代/換課紀錄</span>：滑鼠<span class="instruction-highlight">左鍵點擊</span>自己課表上有課的格子，可啟動<span class="instruction-highlight">智慧調課模式</span>，或進行<span class="instruction-highlight">指定代課/換課</span>。</li>
-                    <li><span class="instruction-highlight">取消異動</span>：在課表上<span class="instruction-highlight">點擊已被設定為「調課/代課/換課」的格子</span>，會跳出對話框詢問是否<span class="instruction-highlight">取消此異動</span>。</li>
-                    <li><span class="instruction-highlight">瀏覽教師課表</span>：點擊教師名單或班級課表上<span class="instruction-highlight">有課的格子</span>，會開啟<span class="instruction-highlight">純瀏覽模式</span>，顯示該任課老師的完整課表。</li>
-                    <li><span class="instruction-highlight">匯出行事曆</span>：在任何課表上，使用滑鼠<span class="instruction-highlight">右鍵點擊</span>，或手機<span class="instruction-highlight">長按</span>有課的格子，即可匯出該課程的 .ics 檔案。</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <div id="student-roster-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn" data-modal="student-roster-modal">&times;</span>
-
-            <h2 id="student-roster-title">
-                <div class="roster-title-text" id="roster-title-text-container">
-                    <div id="roster-click-area" class="roster-title-clickable">
-                        <h3 id="roster-class-name"></h3>
-                        <div class="score-display" id="roster-total-score-display"></div>
-                    </div>
-                </div>
-                <button id="roster-sort-btn" title="切換排序方式">
-                    <span class="roster-sort-arrow" id="roster-sort-up-arrow">▲</span>
-                    <span class="roster-sort-arrow" id="roster-sort-down-arrow">▼</span>
-                </button>
-            </h2>
-
-            <div id="student-grid-container"></div>
-        </div>
-    </div>
-
-    <div id="my-timetable-modal" class="modal">
-        <div class="modal-content">
+				</ul>
+				<h3>三、 學生名單操作</h3>
+				<ul>
+					<li><span class="instruction-highlight">進入學生單人紀錄</span>：點擊名單中的<span class="instruction-highlight">任一位學生卡片</span>。</li>
+					<li><span class="instruction-highlight">排序切換</span>：點擊名單標題列右方的 <span class="instruction-highlight">▲▼ 按鈕</span>，可在「預設座號排序」、「總分高到低排序」與「總分低到高排序」之間切換。</li>
+				</ul>
+				<h3>四、 課表基本操作</h3>
+				<ul>
+					<li><span class="instruction-highlight">週次巡航</span>：點擊課表上方的 <span class="instruction-highlight">「‹上週」、「‹本週」、「下週›」按鈕</span>切換週次。</li>
+					<li><span class="instruction-highlight">異動巡航</span>：點擊課表上方的 <span class="instruction-highlight">「‹異動週」、「異動週›」按鈕</span>可直接跳至課表前/後異動的週次。</li>
+					<li><span class="instruction-highlight">滑動巡航（手機）</span>：在課表內<span class="instruction-highlight">左右滑動</span>，可快速切換上一週或下一週。</li>
+					<li><span class="instruction-highlight">進入班級學生名單</span>：<span class="instruction-highlight">點擊課表中有課的格子</span>，可直接進入該課程所屬班級的學生名單並可操作紀錄功能。</li>
+				</ul>
+				<h3>五、 課表系統操作</h3>
+				<ul>
+					<li><span class="instruction-highlight">調/代/換課紀錄</span>：滑鼠<span class="instruction-highlight">左鍵點擊</span>自己課表上有課的格子，可啟動<span class="instruction-highlight">智慧調課模式</span>，或進行<span class="instruction-highlight">指定代課/換課</span>。</li>
+					<li><span class="instruction-highlight">取消異動</span>：在課表上<span class="instruction-highlight">點擊已被設定為「調課/代課/換課」的格子</span>，會跳出對話框詢問是否<span class="instruction-highlight">取消此異動</span>。</li>
+					<li><span class="instruction-highlight">瀏覽教師課表</span>：點擊教師名單或班級課表上<span class="instruction-highlight">有課的格子</span>，會開啟<span class="instruction-highlight">純瀏覽模式</span>，顯示該任課老師的完整課表。</li>
+					<li><span class="instruction-highlight">匯出行事曆</span>：在任何課表上，使用滑鼠<span class="instruction-highlight">右鍵點擊</span>，或手機<span class="instruction-highlight">長按</span>有課的格子，即可匯出該課程的 .ics 檔案。</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+	<div id="student-roster-modal" class="modal">
+		<div class="modal-content">
+			<span class="close-btn" data-modal="student-roster-modal">&times;</span>
+			<h2 id="student-roster-title">
+				<div class="roster-title-text" id="roster-title-text-container">
+					<div id="roster-click-area" class="roster-title-clickable">
+						<h3 id="roster-class-name"></h3>
+						<div class="score-display" id="roster-total-score-display"></div>
+					</div>
+				</div>
+				<button id="roster-sort-btn" title="切換排序方式">
+					<span class="roster-sort-arrow" id="roster-sort-up-arrow">▲</span>
+					<span class="roster-sort-arrow" id="roster-sort-down-arrow">▼</span>
+				</button>
+			</h2>
+			<div id="student-grid-container"></div>
+		</div>
+	</div>
+	<div id="my-timetable-modal" class="modal">
+		<div class="modal-content">
 			<span class="close-btn" data-modal="my-timetable-modal">&times;</span>
 			<div class="modal-header" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 0 40px 0 10px; margin-bottom: 10px;">
 				<div class="modal-title-container" style="flex-grow: 1;">
@@ -291,18 +266,34 @@
 					</div>
 				</div>
 				<div class="week-navigator modal-week-nav">
-                    <button id="prev-change-week-btn" style="padding: 2px 4px; font-size: 0.9em;">‹異動週</button>
-                    <button id="prev-week-btn" style="padding: 2px 4px; font-size: 0.9em;">‹上週</button>
-                    <button id="today-btn" style="padding: 2px 4px; font-size: 0.9em;">本週</button>
-                    <button id="next-week-btn" style="padding: 2px 4px; font-size: 0.9em;">下週›</button>
-                    <button id="next-change-week-btn" style="padding: 3px 8px; font-size: 0.9em;">異動週›</button>
-                </div>
-            </div>
-            <div id="timetable-message" style="color: var(--danger-color); text-align: center; margin-bottom: 10px;"></div>
-            <div id="my-timetable-body"></div>
-        </div>
-    </div>
-
-<script src="teacher.js?v=3.0"></script>
- </body>
+					<button id="prev-change-week-btn" style="padding: 2px 4px; font-size: 0.9em;">‹異動週</button>
+					<button id="prev-week-btn" style="padding: 2px 4px; font-size: 0.9em;">‹上週</button>
+					<button id="today-btn" style="padding: 2px 4px; font-size: 0.9em;">本週</button>
+					<button id="next-week-btn" style="padding: 2px 4px; font-size: 0.9em;">下週›</button>
+					<button id="next-change-week-btn" style="padding: 3px 8px; font-size: 0.9em;">異動週›</button>
+				</div>
+			</div>
+			<div id="timetable-message" style="color: var(--danger-color); text-align: center; margin-bottom: 10px;"></div>
+			<div id="my-timetable-body"></div>
+		</div>
+	</div>
+	<div id="date-range-modal" class="modal">
+		<div class="modal-content" style="max-width: 400px;">
+			<span class="close-btn" data-modal="date-range-modal">&times;</span>
+			<h2>資料期間設定</h2>
+			<p style="font-size: 0.9em; color: #666;">設定後，系統只會載入此日期區間內的「表現紀錄」與「成績項目」。留空表示不限制。<br><span style="color:red;">此設定會同步至您的帳號，跨裝置生效。</span></p>
+			<div style="margin: 15px 0;">
+				<label style="display:block; margin-bottom:5px; font-weight:bold;">開始日期：</label>
+				<input type="date" id="sys-start-date" style="width:100%; padding:8px;">
+			</div>
+			<div style="margin: 15px 0;">
+				<label style="display:block; margin-bottom:5px; font-weight:bold;">結束日期：</label>
+				<input type="date" id="sys-end-date" style="width:100%; padding:8px;">
+			</div>
+			<button id="save-date-range-btn" style="width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:4px; font-size:1.1em; cursor:pointer;">儲存並重新載入</button>
+			<button id="clear-date-range-btn" style="width:100%; padding:10px; background:#dc3545; color:white; border:none; border-radius:4px; margin-top:10px; font-size:1.1em; cursor:pointer;">清除限制 (載入全部)</button>
+		</div>
+	</div>
+	<script src="teacher.js?v=3.0"></script>
+</body>
 </html>

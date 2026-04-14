@@ -1,515 +1,355 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>登入 - 學生綜合紀錄暨課表系統</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif;
-            background-color: #f5f5f5;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding-top: 10vh;
-            margin: 0;
-            width: 100%;
-            overflow-x: hidden;
-        }
-        button, input, select, textarea {
-            font-family: inherit;
-        }
-        .container {
-            background-color: white;
-            padding: 30px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            text-align: center;
-            width: 90%;
-            max-width: 450px;
-            overflow-y: auto;
-            max-height: 95vh;
-            margin: 10px auto;
-        }
-        h1 {
-            color: #333;
-            margin-top: 0;
-            margin-bottom: 25px;
-            word-break: break-word;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-size: 1em;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background-color: #4a90e2;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1em;
-        }
-        button:hover {
-            background-color: #357abd;
-        }
-        #error-message {
-            color: #d0021b;
-            margin-top: 10px;
-            min-height: 20px;
-            font-size: 0.9em;
-        }
-        #splash-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #f5f5f5;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-        .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #4a90e2;
-            animation: spin 1s ease infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .password-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        .password-wrapper input {
-            padding-right: 50px;
-        }
-        .toggle-password {
-            position: absolute;
-            right: 15px;
-            cursor: pointer;
-            font-size: 1.2em;
-            color: #888;
-        }
-        #google-signin-btn {
-            background-color: #ffffff;
-            color: #444;
-            border: 1px solid #ccc;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-size: 1.1em;
-            padding: 15px;
-            min-width: 100%;
-            white-space: nowrap;
-        }
-        #google-signin-btn:hover {
-            background-color: #f8f8f8;
-        }
-        #google-signin-btn img {
-            width: auto;
-            height: 22px;
-            flex-shrink: 0;
-            object-fit: contain;
-        }
-        .admin-toggle-link {
-            display: block;
-            margin-top: 25px;
-            font-size: 0.9em;
-            color: #6c757d;
-            text-decoration: none;
-            cursor: pointer;
-        }
-        .admin-toggle-link:hover {
-            text-decoration: underline;
-        }
-        .options-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 15px 0;
-            font-size: 0.9em;
-            color: #555;
-        }
-        #remember-me {
-            margin-right: 8px;
-            width: 16px;
-            height: 16px;
-        }
-        .onboarding-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-        .onboarding-modal .container {
-            text-align: left;
-        }
-        .onboarding-modal h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .selection-list {
-            list-style-type: none;
-            padding: 0;
-            margin: 20px 0;
-            max-height: 40vh;
-            overflow-y: auto;
-            border: 1px solid #eee;
-            border-radius: 5px;
-        }
-        .selection-list li {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .selection-list li:last-child {
-            border-bottom: none;
-        }
-        .selection-list li:hover {
-            background-color: #f5f5f5;
-        }
-        .selection-list strong {
-            display: block;
-            font-size: 1.1em;
-            color: #333;
-        }
-        .selection-list span {
-            font-size: 0.9em;
-            color: #666;
-        }
-        @media (max-width: 600px) {
-            h1 { font-size: 1.5em; }
-            body { height: auto; min-height: 100vh; }
-        }
-    </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>登入 - 學生綜合紀錄暨課表系統</title>
+	<style>
+		body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif; background-color: #f5f5f5; display: flex; justify-content: center; align-items: flex-start; padding-top: 10vh; margin: 0; width: 100%; overflow-x: hidden; }
+		button, input, select, textarea { font-family: inherit; }
+		.container { background-color: white; padding: 30px 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); text-align: center; width: 90%; max-width: 450px; overflow-y: auto; max-height: 95vh; margin: 10px auto; }
+		h1 { color: #333; margin-top: 0; margin-bottom: 25px; word-break: break-word; }
+		input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
+		button { width: 100%; padding: 12px; background-color: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+		button:hover { background-color: #357abd; }
+		#error-message { color: #d0021b; margin-top: 10px; min-height: 20px; font-size: 0.9em; }
+		#splash-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #f5f5f5; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
+		.spinner { border: 4px solid rgba(0, 0, 0, 0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: #4a90e2; animation: spin 1s ease infinite; }
+		@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+		.password-wrapper { position: relative; display: flex; align-items: center; }
+		.password-wrapper input { padding-right: 50px; }
+		.toggle-password { position: absolute; right: 15px; cursor: pointer; font-size: 1.2em; color: #888; }
+		#google-signin-btn { background-color: #ffffff; color: #444; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 1.1em; padding: 15px; min-width: 100%; white-space: nowrap; }
+		#google-signin-btn:hover { background-color: #f8f8f8; }
+		#google-signin-btn img { width: auto; height: 22px; flex-shrink: 0; object-fit: contain; }
+		.admin-toggle-link { display: block; margin-top: 25px; font-size: 0.9em; color: #6c757d; text-decoration: none; cursor: pointer; }
+		.admin-toggle-link:hover { text-decoration: underline; }
+		.options-container { display: flex; justify-content: center; align-items: center; margin: 15px 0; font-size: 0.9em; color: #555; }
+		#remember-me { margin-right: 8px; width: 16px; height: 16px; }
+		.onboarding-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; padding: 15px; box-sizing: border-box; }
+		.onboarding-modal .container { text-align: left; }
+		.onboarding-modal h2 { text-align: center; margin-bottom: 20px; }
+		.selection-list { list-style-type: none; padding: 0; margin: 20px 0; max-height: 40vh; overflow-y: auto; border: 1px solid #eee; border-radius: 5px; }
+		.selection-list li { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: background-color 0.2s; }
+		.selection-list li:last-child { border-bottom: none; }
+		.selection-list li:hover { background-color: #f5f5f5; }
+		.selection-list strong { display: block; font-size: 1.1em; color: #333; }
+		.selection-list span { font-size: 0.9em; color: #666; }
+		@media (max-width: 600px) { h1 { font-size: 1.5em; } body { height: auto; min-height: 100vh; } }
+	</style>
 </head>
 <body>
-    <div id="splash-screen">
-        <div class="spinner"></div>
-        <p style="margin-top: 20px; color: #555;">載入中...</p>
-    </div>
-    <div id="login-view">
-        <div class="container">
-            <h1>學生綜合紀錄暨課表系統</h1>
-            <div id="teacher-login-view">
-                <button id="google-signin-btn">
-                    <img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google Logo">
-                    使用 Google 帳號登入 (教師)
-                </button>
-                <a href="#" id="show-admin-login" class="admin-toggle-link">管理員登入請點此</a>
-            </div>
-            <div id="admin-login-view" style="display: none;">
-                <form id="login-form">
-                    <input type="email" id="login-email" placeholder="管理員 Email" required autocomplete="email">
-                    <div class="password-wrapper">
-                        <input type="password" id="login-password" placeholder="密碼" required autocomplete="current-password">
-                        <span class="toggle-password" data-target="login-password">👁️</span>
-                    </div>
-                    <div class="options-container">
-                        <input type="checkbox" id="remember-me">
-                        <label for="remember-me">保持登入狀態</label>
-                    </div>
-                    <button type="submit">管理員登入</button>
-                </form>
-                <a href="#" id="back-to-teacher-login" class="admin-toggle-link">返回教師登入</a>
-            </div>
-            <p id="error-message"></p>
-        </div>
-    </div>
-    <div id="school-selection-view" class="onboarding-modal">
-        <div class="container">
-            <h2>身分驗證</h2>
-            <p>我們在您的 Email 網域中找到了以下學校，請選擇您任職的學校：</p>
-            <ul id="school-selection-list" class="selection-list"></ul>
-        </div>
-    </div>
-    <div id="teacher-selection-view" class="onboarding-modal">
-        <div class="container">
-            <h2 id="teacher-selection-title">身分確認</h2>
-            <p>請在下列名單中選擇您的身分，以完成帳號綁定。</p>
-            <ul id="teacher-selection-list" class="selection-list"></ul>
-        </div>
-    </div>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const firebaseConfig = {
-                apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
-                authDomain: "classrecords-13902.firebaseapp.com",
-                projectId: "classrecords-13902",
-                storageBucket: "classrecords-13902.firebasestorage.app",
-                messagingSenderId: "431747377367",
-                appId: "1:431747377367:web:b157a8f5c59ce38091e892",
-                measurementId: "G-JWTQGM9XMP"
-            };
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore();
-            const auth = firebase.auth();
-            const splashScreen = document.getElementById('splash-screen');
-            const loginView = document.getElementById('login-view');
-            const errorMessage = document.getElementById('error-message');
-            const schoolSelectionView = document.getElementById('school-selection-view');
-            const teacherSelectionView = document.getElementById('teacher-selection-view');
-            const teacherLoginView = document.getElementById('teacher-login-view');
-            const adminLoginView = document.getElementById('admin-login-view');
-            const showAdminLoginLink = document.getElementById('show-admin-login');
-            const backToTeacherLoginLink = document.getElementById('back-to-teacher-login');
-            const googleSignInBtn = document.getElementById('google-signin-btn');
-            const loginForm = document.getElementById('login-form');
-            const loginEmailInput = document.getElementById('login-email');
-            const USER_AUTH_KEY = 'user_auth_profile_v1';
-            const savedEmail = localStorage.getItem('lastLoginEmail');
-            if (savedEmail) {
-                loginEmailInput.value = savedEmail;
-            }
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    if (user.email) {
-                        localStorage.setItem('lastLoginEmail', user.email);
-                    }
-                    splashScreen.style.display = 'flex';
-                    const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
-                    let userDocData = null;
-                    if (cachedAuthData) {
-                        try {
-                            const parsedCache = JSON.parse(cachedAuthData);
-                            if (parsedCache.uid === user.uid) {
-                                userDocData = parsedCache.userData;
-                            } else {
-                                localStorage.removeItem(USER_AUTH_KEY);
-                            }
-                        } catch (e) {
-                            console.error(e);
-                            localStorage.removeItem(USER_AUTH_KEY);
-                        }
-                    }
-                    if (!userDocData) {
-                        const userDoc = await db.collection('users').doc(user.uid).get();
-                        if (userDoc.exists) {
-                            userDocData = userDoc.data();
-                            localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
-                                uid: user.uid,
-                                userData: userDocData,
-                                lastUpdated: new Date().getTime()
-                            }));
-                        }
-                    }
-                    if (userDocData) {
-                        routeUser(userDocData.role);
-                    } else {
-                        await startOnboarding(user);
-                    }
-                } else {
-                    splashScreen.style.display = 'none';
-                    loginView.style.display = 'block';
-                    schoolSelectionView.style.display = 'none';
-                    teacherSelectionView.style.display = 'none';
-                }
-            });
-            async function startOnboarding(user) {
-                try {
-                    const emailDomain = user.email.split('@')[1];
-                    const schoolsSnapshot = await db.collection('schools').where('domain', '==', emailDomain).get();
-                    if (schoolsSnapshot.empty) {
-                        showLoginError(`您的 Email 網域 (${emailDomain}) 未在本系統註冊任何學校。請聯繫超級管理員。`);
-                        return;
-                    }
-                    const potentialSchools = schoolsSnapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
-                    if (potentialSchools.length === 1) {
-                        await handleSchoolSelection(user, potentialSchools[0].id);
-                    } else {
-                        displaySchoolSelection(user, potentialSchools);
-                    }
-                } catch (error) {
-                    showLoginError("驗證學校身分時發生錯誤：" + error.message);
-                }
-            }
-            function displaySchoolSelection(user, schools) {
-                const schoolList = document.getElementById('school-selection-list');
-                schoolList.innerHTML = '';
-                schools.forEach(school => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `<strong>${school.name}</strong>`;
-                    li.onclick = () => handleSchoolSelection(user, school.id);
-                    schoolList.appendChild(li);
-                });
-                splashScreen.style.display = 'none';
-                loginView.style.display = 'none';
-                schoolSelectionView.style.display = 'flex';
-            }
-            async function handleSchoolSelection(user, schoolId) {
-                try {
-                    splashScreen.style.display = 'flex';
-                    const googleName = user.displayName;
-                    const teachersSnapshot = await db.collection('schools').doc(schoolId).collection('teachers').where('name', '==', googleName).get();
-                    if (teachersSnapshot.empty) {
-                        const schoolDoc = await db.collection('schools').doc(schoolId).get();
-                        const schoolName = schoolDoc.exists ? schoolDoc.data().name : '該學校';
-                        showLoginError(`在「${schoolName}」的教師名冊中找不到您的姓名「${googleName}」。請聯繫您的學校管理者，確認名冊上的姓名是否與您的 Google 帳戶名稱完全一致。`);
-                        return;
-                    }
-                    const matchingTeachers = teachersSnapshot.docs.map(doc => doc.data());
-                    if (matchingTeachers.length === 1) {
-                        await createUserProfile(user, schoolId, matchingTeachers[0]);
-                    } else {
-                        const schoolDoc = await db.collection('schools').doc(schoolId).get();
-                        const schoolName = schoolDoc.exists ? schoolDoc.data().name : '';
-                        displayTeacherSelection(user, schoolId, schoolName, matchingTeachers);
-                    }
-                } catch (error) {
-                    showLoginError("查找教師資料時發生錯誤：" + error.message);
-                }
-            }
-            async function createUserProfile(user, schoolId, teacherProfile) {
-                try {
-                    splashScreen.style.display = 'flex';
-                    const schoolDoc = await db.collection('schools').doc(schoolId).get();
-                    if (!schoolDoc.exists) throw new Error("找不到學校資料");
-                    const schoolData = schoolDoc.data();
-                    const newUserProfile = {
-                        role: 'teacher',
-                        email: user.email,
-                        displayName: teacherProfile.name,
-                        schoolId: schoolId,
-                        schoolCode: schoolData.schoolCode,
-                        uid: user.uid,
-                        ...teacherProfile
-                    };
-                    await db.collection('users').doc(user.uid).set(newUserProfile);
-                    localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
-                        uid: user.uid,
-                        userData: newUserProfile,
-                        lastUpdated: new Date().getTime()
-                    }));
-                    routeUser('teacher');
-                } catch (error) {
-                    showLoginError("建立使用者設定時發生錯誤：" + error.message);
-                }
-            }
-            googleSignInBtn.addEventListener('click', async () => {
-                errorMessage.textContent = '';
-                splashScreen.style.display = 'flex';
-                const provider = new firebase.auth.GoogleAuthProvider();
-                try {
-                    await auth.signInWithPopup(provider);
-                } catch (error) {
-                    splashScreen.style.display = 'none';
-                    errorMessage.textContent = 'Google 登入失敗: ' + error.message;
-                }
-            });
-            loginForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = loginEmailInput.value;
-                const password = document.getElementById('login-password').value;
-                errorMessage.textContent = '';
-                splashScreen.style.display = 'flex';
-                try {
-                    const persistence = document.getElementById('remember-me').checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
-                    await auth.setPersistence(persistence);
-                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                    const user = userCredential.user;
-                    const userDoc = await db.collection('users').doc(user.uid).get();
-                    if (userDoc.exists) {
-                        const userDocData = userDoc.data();
-                        localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
-                            uid: user.uid,
-                            userData: userDocData,
-                            lastUpdated: new Date().getTime()
-                        }));
-                        routeUser(userDocData.role);
-                    } else {
-                        showLoginError("找不到用戶資料，請聯繫管理員。");
-                    }
-                } catch (error) {
-                    splashScreen.style.display = 'none';
-                    errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。';
-                }
-            });
-            showAdminLoginLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                teacherLoginView.style.display = 'none';
-                adminLoginView.style.display = 'block';
-                errorMessage.textContent = '';
-            });
-            backToTeacherLoginLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                adminLoginView.style.display = 'none';
-                teacherLoginView.style.display = 'block';
-                errorMessage.textContent = '';
-            });
-            document.querySelectorAll('.toggle-password').forEach(toggle => {
-                toggle.addEventListener('click', () => {
-                    const targetId = toggle.dataset.target;
-                    const passwordInput = document.getElementById(targetId);
-                    if (passwordInput.type === 'password') {
-                        passwordInput.type = 'text';
-                        toggle.textContent = '🙈';
-                    } else {
-                        passwordInput.type = 'password';
-                        toggle.textContent = '👁️';
-                    }
-                });
-            });
-            function routeUser(role) {
-                if (role === 'admin') {
-                    window.location.href = 'admin.html';
-                } else if (role === 'school_admin') {
-                    window.location.href = 'school_admin.html';
-                } else if (role === 'teacher') {
-                    const directEntryEnabled = localStorage.getItem('pref_direct_class_entry') === 'true';
-                    if (directEntryEnabled) {
-                        window.location.href = 'teacher.html';
-                        return;
-                    }
-                    const defaultPage = localStorage.getItem('defaultSystemPage');
-                    if (defaultPage && (defaultPage === 'timetable.html' || defaultPage === 'worksheet_manager.html')) {
-                        window.location.href = defaultPage;
-                    } else {
-                        window.location.href = 'teacher.html';
-                    }
-                } else {
-                    showLoginError(`未知的用戶角色 (${role})，無法登入。`);
-                }
-            }
-            function showLoginError(msg) {
-                splashScreen.style.display = 'none';
-                loginView.style.display = 'block';
-                schoolSelectionView.style.display = 'none';
-                teacherSelectionView.style.display = 'none';
-                errorMessage.textContent = msg;
-                auth.signOut();
-            }
-        });
-    </script>
+	<div id="splash-screen">
+		<div class="spinner"></div>
+		<p style="margin-top: 20px; color: #555;">載入中...</p>
+	</div>
+	<div id="login-view">
+		<div class="container">
+			<h1>學生綜合紀錄暨課表系統</h1>
+			<div id="teacher-login-view">
+				<button id="google-signin-btn">
+					<img src="https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_272x92dp.png" alt="Google Logo">
+					使用 Google 帳號登入 (教師)
+				</button>
+				<a href="#" id="show-admin-login" class="admin-toggle-link">管理員登入請點此</a>
+			</div>
+			<div id="admin-login-view" style="display: none;">
+				<form id="login-form">
+					<input type="email" id="login-email" placeholder="管理員 Email" required autocomplete="email">
+					<div class="password-wrapper">
+						<input type="password" id="login-password" placeholder="密碼" required autocomplete="current-password">
+						<span class="toggle-password" data-target="login-password">👁️</span>
+					</div>
+					<div class="options-container">
+						<input type="checkbox" id="remember-me">
+						<label for="remember-me">保持登入狀態</label>
+					</div>
+					<button type="submit">管理員登入</button>
+				</form>
+				<a href="#" id="back-to-teacher-login" class="admin-toggle-link">返回教師登入</a>
+			</div>
+			<p id="error-message"></p>
+		</div>
+	</div>
+	<div id="school-selection-view" class="onboarding-modal">
+		<div class="container">
+			<h2>身分驗證</h2>
+			<p>我們在您的 Email 網域中找到了以下學校，請選擇您任職的學校：</p>
+			<ul id="school-selection-list" class="selection-list"></ul>
+		</div>
+	</div>
+	<div id="teacher-selection-view" class="onboarding-modal">
+		<div class="container">
+			<h2 id="teacher-selection-title">身分確認</h2>
+			<p>請在下列名單中選擇您的身分，以完成帳號綁定。</p>
+			<ul id="teacher-selection-list" class="selection-list"></ul>
+		</div>
+	</div>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			const firebaseConfig = {
+				apiKey: "AIzaSyAVLFoqQlSR5NK_ZaWgL07eA2LMsfHT_Ew",
+				authDomain: "classrecords-13902.firebaseapp.com",
+				projectId: "classrecords-13902",
+				storageBucket: "classrecords-13902.firebasestorage.app",
+				messagingSenderId: "431747377367",
+				appId: "1:431747377367:web:b157a8f5c59ce38091e892",
+				measurementId: "G-JWTQGM9XMP"
+			};
+			firebase.initializeApp(firebaseConfig);
+			const db = firebase.firestore();
+			const auth = firebase.auth();
+			const splashScreen = document.getElementById('splash-screen');
+			const loginView = document.getElementById('login-view');
+			const errorMessage = document.getElementById('error-message');
+			const schoolSelectionView = document.getElementById('school-selection-view');
+			const teacherSelectionView = document.getElementById('teacher-selection-view');
+			const teacherLoginView = document.getElementById('teacher-login-view');
+			const adminLoginView = document.getElementById('admin-login-view');
+			const showAdminLoginLink = document.getElementById('show-admin-login');
+			const backToTeacherLoginLink = document.getElementById('back-to-teacher-login');
+			const googleSignInBtn = document.getElementById('google-signin-btn');
+			const loginForm = document.getElementById('login-form');
+			const loginEmailInput = document.getElementById('login-email');
+			const USER_AUTH_KEY = 'user_auth_profile_v1';
+			const savedEmail = localStorage.getItem('lastLoginEmail');
+			if (savedEmail) {
+				loginEmailInput.value = savedEmail;
+			}
+			auth.onAuthStateChanged(async (user) => {
+				if (user) {
+					if (user.email) {
+						localStorage.setItem('lastLoginEmail', user.email);
+					}
+					splashScreen.style.display = 'flex';
+					const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
+					let userDocData = null;
+					if (cachedAuthData) {
+						try {
+							const parsedCache = JSON.parse(cachedAuthData);
+							if (parsedCache.uid === user.uid) {
+								userDocData = parsedCache.userData;
+							} else {
+								localStorage.removeItem(USER_AUTH_KEY);
+							}
+						} catch (e) {
+							localStorage.removeItem(USER_AUTH_KEY);
+						}
+					}
+					if (!userDocData) {
+						const userDoc = await db.collection('users').doc(user.uid).get();
+						if (userDoc.exists) {
+							userDocData = userDoc.data();
+							localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
+								uid: user.uid,
+								userData: userDocData,
+								lastUpdated: new Date().getTime()
+							}));
+						}
+					}
+					if (userDocData) {
+						routeUser(userDocData.role);
+					} else {
+						await startOnboarding(user);
+					}
+				} else {
+					splashScreen.style.display = 'none';
+					loginView.style.display = 'block';
+					schoolSelectionView.style.display = 'none';
+					teacherSelectionView.style.display = 'none';
+				}
+			});
+			async function startOnboarding(user) {
+				try {
+					const emailDomain = user.email.split('@')[1];
+					const schoolsSnapshot = await db.collection('schools').where('domain', '==', emailDomain).get();
+					if (schoolsSnapshot.empty) {
+						showLoginError(`您的 Email 網域 (${emailDomain}) 未在本系統註冊任何學校。請聯繫超級管理員。`);
+						return;
+					}
+					const potentialSchools = schoolsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+					if (potentialSchools.length === 1) {
+						await handleSchoolSelection(user, potentialSchools[0].id);
+					} else {
+						displaySchoolSelection(user, potentialSchools);
+					}
+				} catch (error) {
+					showLoginError("驗證學校身分時發生錯誤：" + error.message);
+				}
+			}
+			function displaySchoolSelection(user, schools) {
+				const schoolList = document.getElementById('school-selection-list');
+				schoolList.innerHTML = '';
+				schools.forEach(school => {
+					const li = document.createElement('li');
+					li.innerHTML = `<strong>${school.name}</strong>`;
+					li.onclick = () => handleSchoolSelection(user, school.id);
+					schoolList.appendChild(li);
+				});
+				splashScreen.style.display = 'none';
+				loginView.style.display = 'none';
+				schoolSelectionView.style.display = 'flex';
+			}
+			async function handleSchoolSelection(user, schoolId) {
+				try {
+					splashScreen.style.display = 'flex';
+					const googleName = user.displayName;
+					const teachersSnapshot = await db.collection('schools').doc(schoolId).collection('teachers').where('name', '==', googleName).get();
+					if (teachersSnapshot.empty) {
+						const schoolDoc = await db.collection('schools').doc(schoolId).get();
+						const schoolName = schoolDoc.exists ? schoolDoc.data().name : '該學校';
+						showLoginError(`在「${schoolName}」的教師名冊中找不到您的姓名「${googleName}」。請聯繫您的學校管理者，確認名冊上的姓名是否與您的 Google 帳戶名稱完全一致。`);
+						return;
+					}
+					const matchingTeachers = teachersSnapshot.docs.map(doc => doc.data());
+					if (matchingTeachers.length === 1) {
+						await createUserProfile(user, schoolId, matchingTeachers[0]);
+					} else {
+						const schoolDoc = await db.collection('schools').doc(schoolId).get();
+						const schoolName = schoolDoc.exists ? schoolDoc.data().name : '';
+						displayTeacherSelection(user, schoolId, schoolName, matchingTeachers);
+					}
+				} catch (error) {
+					showLoginError("查找教師資料時發生錯誤：" + error.message);
+				}
+			}
+			function displayTeacherSelection(user, schoolId, schoolName, teachers) {
+				const teacherList = document.getElementById('teacher-selection-list');
+				teacherList.innerHTML = '';
+				document.getElementById('teacher-selection-title').textContent = `請選擇您在 ${schoolName} 的身分`;
+				teachers.forEach(teacher => {
+					const li = document.createElement('li');
+					li.innerHTML = `<strong>${teacher.name}</strong><span>${teacher.title || ''} ${teacher.subject || ''}</span>`;
+					li.onclick = () => createUserProfile(user, schoolId, teacher);
+					teacherList.appendChild(li);
+				});
+				splashScreen.style.display = 'none';
+				schoolSelectionView.style.display = 'none';
+				teacherSelectionView.style.display = 'flex';
+			}
+			async function createUserProfile(user, schoolId, teacherProfile) {
+				try {
+					splashScreen.style.display = 'flex';
+					const schoolDoc = await db.collection('schools').doc(schoolId).get();
+					if (!schoolDoc.exists) throw new Error("找不到學校資料");
+					const schoolData = schoolDoc.data();
+					const newUserProfile = {
+						role: 'teacher',
+						email: user.email,
+						displayName: teacherProfile.name,
+						schoolId: schoolId,
+						schoolCode: schoolData.schoolCode,
+						uid: user.uid,
+						...teacherProfile
+					};
+					await db.collection('users').doc(user.uid).set(newUserProfile);
+					localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
+						uid: user.uid,
+						userData: newUserProfile,
+						lastUpdated: new Date().getTime()
+					}));
+					routeUser('teacher');
+				} catch (error) {
+					showLoginError("建立使用者設定時發生錯誤：" + error.message);
+				}
+			}
+			googleSignInBtn.addEventListener('click', async () => {
+				errorMessage.textContent = '';
+				splashScreen.style.display = 'flex';
+				const provider = new firebase.auth.GoogleAuthProvider();
+				try {
+					await auth.signInWithPopup(provider);
+				} catch (error) {
+					splashScreen.style.display = 'none';
+					errorMessage.textContent = 'Google 登入失敗: ' + error.message;
+				}
+			});
+			loginForm.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				const email = loginEmailInput.value;
+				const password = document.getElementById('login-password').value;
+				errorMessage.textContent = '';
+				splashScreen.style.display = 'flex';
+				try {
+					const persistence = document.getElementById('remember-me').checked ? firebase.auth.Auth.Persistence.LOCAL : firebase.auth.Auth.Persistence.SESSION;
+					await auth.setPersistence(persistence);
+					const userCredential = await auth.signInWithEmailAndPassword(email, password);
+					const user = userCredential.user;
+					const userDoc = await db.collection('users').doc(user.uid).get();
+					if (userDoc.exists) {
+						const userDocData = userDoc.data();
+						localStorage.setItem(USER_AUTH_KEY, JSON.stringify({
+							uid: user.uid,
+							userData: userDocData,
+							lastUpdated: new Date().getTime()
+						}));
+						routeUser(userDocData.role);
+					} else {
+						showLoginError("找不到用戶資料，請聯繫管理員。");
+					}
+				} catch (error) {
+					splashScreen.style.display = 'none';
+					errorMessage.textContent = 'Email 或密碼錯誤，請檢查後再試。';
+				}
+			});
+			showAdminLoginLink.addEventListener('click', (e) => {
+				e.preventDefault();
+				teacherLoginView.style.display = 'none';
+				adminLoginView.style.display = 'block';
+				errorMessage.textContent = '';
+			});
+			backToTeacherLoginLink.addEventListener('click', (e) => {
+				e.preventDefault();
+				adminLoginView.style.display = 'none';
+				teacherLoginView.style.display = 'block';
+				errorMessage.textContent = '';
+			});
+			document.querySelectorAll('.toggle-password').forEach(toggle => {
+				toggle.addEventListener('click', () => {
+					const targetId = toggle.dataset.target;
+					const passwordInput = document.getElementById(targetId);
+					if (passwordInput.type === 'password') {
+						passwordInput.type = 'text';
+						toggle.textContent = '🙈';
+					} else {
+						passwordInput.type = 'password';
+						toggle.textContent = '👁️';
+					}
+				});
+			});
+			function routeUser(role) {
+				if (role === 'admin') {
+					window.location.href = 'admin.html';
+				} else if (role === 'school_admin') {
+					window.location.href = 'school_admin.html';
+				} else if (role === 'teacher') {
+					const directEntryEnabled = localStorage.getItem('pref_direct_class_entry') === 'true';
+					if (directEntryEnabled) {
+						window.location.href = 'teacher.html';
+						return;
+					}
+					const defaultPage = localStorage.getItem('defaultSystemPage');
+					if (defaultPage && (defaultPage === 'timetable.html' || defaultPage === 'worksheet_manager.html')) {
+						window.location.href = defaultPage;
+					} else {
+						window.location.href = 'teacher.html';
+					}
+				} else {
+					showLoginError(`未知的用戶角色 (${role})，無法登入。`);
+				}
+			}
+			function showLoginError(msg) {
+				splashScreen.style.display = 'none';
+				loginView.style.display = 'block';
+				schoolSelectionView.style.display = 'none';
+				teacherSelectionView.style.display = 'none';
+				errorMessage.textContent = msg;
+				auth.signOut();
+			}
+		});
+	</script>
 </body>
 </html>

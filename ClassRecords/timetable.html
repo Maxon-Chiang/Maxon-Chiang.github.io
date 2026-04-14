@@ -1,177 +1,174 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>課表暨調課系統</title>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
-<link rel="stylesheet" href="timetable.css">
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>課表暨調課系統</title>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+	<link rel="stylesheet" href="timetable.css">
 </head>
 <body>
 	<header>
-        <div class="title-container">
-            <h1 id="main-title" style="cursor: pointer;" title="點擊顯示最近開啟紀錄">課表系統</h1>
-            <div class="dropdown">
-                <button id="recent-schedules-btn" class="icon-btn">▼</button>
-                <div id="recent-schedules-list" class="dropdown-content">
-                    </div>
-            </div>
-        </div>					
-        <div class="header-actions">
+		<div class="title-container">
+			<h1 id="main-title" style="cursor: pointer;" title="點擊顯示最近開啟紀錄">課表系統</h1>
+			<div class="dropdown">
+				<button id="recent-schedules-btn" class="icon-btn">▼</button>
+				<div id="recent-schedules-list" class="dropdown-content"></div>
+			</div>
+		</div>
+		<div class="header-actions">
 			<button id="manual-reload-btn">🔄 手動更新</button>
 			<button onclick="window.location.href='teacher.html'">返回主頁</button>
-            <button id="logout-btn">登出</button>
-            <span id="user-email"></span>
-        </div>
-    </header>
-    <div class="container">
-        <div class="controls-header">
-            <input type="search" id="search-teacher" placeholder="搜尋教師">
-            <select id="class-selector"><option value="" disabled selected>班級課表</option></select>
+			<button id="logout-btn">登出</button>
+			<span id="user-email"></span>
 		</div>
-        <div id="teacher-list-column">
-            <div id="teacher-list-by-subject-container"><p>正在載入教師列表...</p></div>
-        </div>
-    </div>
-    <div id="schedule-modal" class="modal main-modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
+	</header>
+	<div class="container">
+		<div class="controls-header">
+			<input type="search" id="search-teacher" placeholder="搜尋教師">
+			<select id="class-selector">
+				<option value="" disabled selected>班級課表</option>
+			</select>
+		</div>
+		<div id="teacher-list-column">
+			<div id="teacher-list-by-subject-container">
+				<p>正在載入教師列表...</p>
+			</div>
+		</div>
+	</div>
+	<div id="schedule-modal" class="modal main-modal">
+		<div class="modal-content">
+			<span class="close-button">&times;</span>
 			<div class="modal-header">
-                <div class="title-group" style="display: flex; align-items: center; gap: 15px;">
-                    <h2 id="modal-title" style="margin: 0;"></h2>
-                    <label style="font-size: 0.9em; display: flex; align-items: center; cursor: pointer; color: #555; font-weight: normal; user-select: none;">
-                        <input type="checkbox" id="auto-open-chk" style="margin-right: 5px; width: auto;"> 下次自動開啟
-                    </label>
-                </div>
-
-                <div class="week-navigator">
+				<div class="title-group" style="display: flex; align-items: center; gap: 15px;">
+					<h2 id="modal-title" style="margin: 0;"></h2>
+					<label style="font-size: 0.9em; display: flex; align-items: center; cursor: pointer; color: #555; font-weight: normal; user-select: none;">
+						<input type="checkbox" id="auto-open-chk" style="margin-right: 5px; width: auto;"> 下次自動開啟
+					</label>
+				</div>
+				<div class="week-navigator">
 					<button id="prev-change-week-btn">‹異動週</button>
 					<button id="prev-week-btn">‹上週</button>
 					<button id="today-btn">本週</button>
 					<button id="next-week-btn">下週›</button>
 					<button id="next-change-week-btn">異動週›</button>
 				</div>
-            </div>
+			</div>
 			<div class="subtitle-header">
-                <h3 id="modal-title2"></h3>
-                <button id="substitution-btn">指定代課 / 換課</button>
-            </div>
-            <div id="reminder-container"></div>
-            <div id="modal-body"></div>
-        </div>
-    </div>
-    <div id="single-event-modal" class="modal sub-modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h3>將課程加入行事曆</h3>
-            <p id="single-event-info"></p>
-            <div>
-                <label for="single-event-date">選擇日期：</label>
-                <input type="date" id="single-event-date">
-            </div>
-            <div>
-                <label for="event-notes">註記 (例如：小考、交作業)：</label>
-                <textarea id="event-notes" rows="3" placeholder="此處的文字將會顯示在行事曆事件的說明中..."></textarea>
-            </div>
-            <p><button id="download-single-ics-btn">下載 .ics 檔案</button></p>
-        </div>
-    </div>
+				<h3 id="modal-title2"></h3>
+				<button id="substitution-btn">指定代課 / 換課</button>
+			</div>
+			<div id="reminder-container"></div>
+			<div id="modal-body"></div>
+		</div>
+	</div>
+	<div id="single-event-modal" class="modal sub-modal">
+		<div class="modal-content">
+			<span class="close-button">&times;</span>
+			<h3>將課程加入行事曆</h3>
+			<p id="single-event-info"></p>
+			<div>
+				<label for="single-event-date">選擇日期：</label>
+				<input type="date" id="single-event-date">
+			</div>
+			<div>
+				<label for="event-notes">註記 (例如：小考、交作業)：</label>
+				<textarea id="event-notes" rows="3" placeholder="此處的文字將會顯示在行事曆事件的說明中..."></textarea>
+			</div>
+			<p><button id="download-single-ics-btn">下載 .ics 檔案</button></p>
+		</div>
+	</div>
 	<div id="swap-confirm-modal" class="modal sub-modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h3>確認調課</h3>
-            <div class="swap-confirm-grid">
-                <div id="original-class-info" class="swap-info-box"></div>
-                <input type="date" id="original-class-date">
-                <div id="target-class-info" class="swap-info-box"></div>
-                <input type="date" id="target-class-date">
-            </div>
-            <p><button id="confirm-swap-btn">確認調課</button></p>
-        </div>
-    </div>
+		<div class="modal-content">
+			<span class="close-button">&times;</span>
+			<h3>確認調課</h3>
+			<div class="swap-confirm-grid">
+				<div id="original-class-info" class="swap-info-box"></div>
+				<input type="date" id="original-class-date">
+				<div id="target-class-info" class="swap-info-box"></div>
+				<input type="date" id="target-class-date">
+			</div>
+			<p><button id="confirm-swap-btn">確認調課</button></p>
+		</div>
+	</div>
 	<div id="substitution-modal" class="modal sub-modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h3>指定代課 / 換課</h3>
-            <div id="substitution-details"></div>
-            <div class="date-picker-group">
-                <label for="substitution-date">請假日期：</label>
-                <input type="date" id="substitution-date">
-            </div>
-            <div class="date-picker-group">
-                <label for="substitution-reason">事由 (選填)：</label>
-                <textarea id="substitution-reason" rows="2" placeholder="事由將顯示在課表格子的提示中..."></textarea>
-            </div>
-            <hr style="margin: 20px 0;">
-            <div class="date-picker-group">
-                <label for="substitute-teacher-select">選擇代課老師：</label>
-                <select id="substitute-teacher-select"></select>
-            </div>
-            <div class="control-group" style="margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                <input type="checkbox" id="exchange-checkbox" style="width: auto; height: 1.2em; transform: scale(1.2);">
-                <label for="exchange-checkbox">這是一次互相換課 (我要還課)</label>
-            </div>
-            <p><button id="confirm-substitution-btn">請先選擇老師</button></p>
-        </div>
-    </div>
-    <div id="exchange-modal" class="modal main-modal">
-        <div class="modal-content">
-            <span class="close-button">&times;</span>
-            <h2 id="exchange-modal-title" style="text-align: center;"></h2>
-            <h3 id="exchange-modal-subtitle" style="text-align: center; color: #555; font-weight: normal;"></h3>
-            <div class="modal-header" style="padding: 0; margin-bottom: 15px;">
-                <div class="week-navigator" style="margin: auto;">
-                    <button id="exchange-prev-week-btn">‹ 上週</button>
-                    <button id="exchange-today-btn">本週</button>
-                    <button id="exchange-next-week-btn">下週 ›</button>
-                </div>
-            </div>
-            <div id="exchange-modal-body"></div>
-        </div>
-    </div>
+		<div class="modal-content">
+			<span class="close-button">&times;</span>
+			<h3>指定代課 / 換課</h3>
+			<div id="substitution-details"></div>
+			<div class="date-picker-group">
+				<label for="substitution-date">請假日期：</label>
+				<input type="date" id="substitution-date">
+			</div>
+			<div class="date-picker-group">
+				<label for="substitution-reason">事由 (選填)：</label>
+				<textarea id="substitution-reason" rows="2" placeholder="事由將顯示在課表格子的提示中..."></textarea>
+			</div>
+			<hr style="margin: 20px 0;">
+			<div class="date-picker-group">
+				<label for="substitute-teacher-select">選擇代課老師：</label>
+				<select id="substitute-teacher-select"></select>
+			</div>
+			<div class="control-group" style="margin: 20px 0; display: flex; align-items: center; justify-content: center; gap: 10px;">
+				<input type="checkbox" id="exchange-checkbox" style="width: auto; height: 1.2em; transform: scale(1.2);">
+				<label for="exchange-checkbox">這是一次互相換課 (我要還課)</label>
+			</div>
+			<p><button id="confirm-substitution-btn">請先選擇老師</button></p>
+		</div>
+	</div>
+	<div id="exchange-modal" class="modal main-modal">
+		<div class="modal-content">
+			<span class="close-button">&times;</span>
+			<h2 id="exchange-modal-title" style="text-align: center;"></h2>
+			<h3 id="exchange-modal-subtitle" style="text-align: center; color: #555; font-weight: normal;"></h3>
+			<div class="modal-header" style="padding: 0; margin-bottom: 15px;">
+				<div class="week-navigator" style="margin: auto;">
+					<button id="exchange-prev-week-btn">‹ 上週</button>
+					<button id="exchange-today-btn">本週</button>
+					<button id="exchange-next-week-btn">下週 ›</button>
+				</div>
+			</div>
+			<div id="exchange-modal-body"></div>
+		</div>
+	</div>
 	<div id="view-only-modal" class="modal main-modal">
-        <div class="modal-content">
-            <span class="close-button" id="view-only-close-btn">&times;</span>
-            <div class="modal-header">
-                <button id="back-to-class-btn" style="padding: 5px 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    返回班級課表
-                </button>
-                <h2 id="view-only-modal-title" style="flex-grow: 1; text-align: center;"></h2>
-            </div>
-            <div id="view-only-modal-body"></div>
-        </div>
-    </div>
-    <div id="welcome-modal-timetable" class="modal">
-        <div class="modal-content" style="max-width: 500px; text-align: left; line-height: 1.8;">
-            <span class="close-button">&times;</span>
-            <h2>歡迎使用 課表系統</h2>
-            <p>這是一套整合性的課表工具，您可以：</p>
-            <ul>
-                <li><strong>查詢課表</strong>: 快速查詢個人、班級課表。</li>
-                <li><strong>智慧調課</strong>: 點擊自己課表上的課程，系統會自動以<span style="background-color: #d1e7dd; padding: 2px 4px; border-radius: 3px;">綠色</span>標示出可互相調課的時段。</li>
-                <li><strong>指定代課/換課</strong>: 點擊自己課表後，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」。</li>
-                <li><strong>加入行事曆</strong>: 在任何課表上長按 (或滑鼠右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
-            </ul>
-            <div class="modal-footer">
-                <label><input type="checkbox" id="dont-show-again-timetable"> 以後不要再顯示此訊息</label>
-                <button id="close-welcome-timetable-btn" style="width: auto; padding: 8px 20px; background-color: #4a90e2; color: white;">我了解了</button>
-            </div>
-        </div>
-    </div>
+		<div class="modal-content">
+			<span class="close-button" id="view-only-close-btn">&times;</span>
+			<div class="modal-header">
+				<button id="back-to-class-btn" style="padding: 5px 10px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">返回班級課表</button>
+				<h2 id="view-only-modal-title" style="flex-grow: 1; text-align: center;"></h2>
+			</div>
+			<div id="view-only-modal-body"></div>
+		</div>
+	</div>
+	<div id="welcome-modal-timetable" class="modal">
+		<div class="modal-content" style="max-width: 500px; text-align: left; line-height: 1.8;">
+			<span class="close-button">&times;</span>
+			<h2>歡迎使用 課表系統</h2>
+			<p>這是一套整合性的課表工具，您可以：</p>
+			<ul>
+				<li><strong>查詢課表</strong>: 快速查詢個人、班級課表。</li>
+				<li><strong>智慧調課</strong>: 點擊自己課表上的課程，系統會自動以<span style="background-color: #d1e7dd; padding: 2px 4px; border-radius: 3px;">綠色</span>標示出可互相調課的時段。</li>
+				<li><strong>指定代課/換課</strong>: 點擊自己課表後，可指定另一位老師進行單純的「代課」，或發起互相支援的「換課」。</li>
+				<li><strong>加入行事曆</strong>: 在任何課表上長按 (或滑鼠右鍵點擊) 某一節課，即可將該課程資訊下載成 .ics 檔案，方便匯入個人行事曆。</li>
+			</ul>
+			<div class="modal-footer">
+				<label><input type="checkbox" id="dont-show-again-timetable"> 以後不要再顯示此訊息</label>
+				<button id="close-welcome-timetable-btn" style="width: auto; padding: 8px 20px; background-color: #4a90e2; color: white;">我了解了</button>
+			</div>
+		</div>
+	</div>
 	<div id="multiple-ics-export-modal" class="modal">
 		<div class="modal-content" style="max-width: 500px;">
 			<span class="close-button">&times;</span>
 			<h2 id="multiple-ics-modal-title">調/換課異動行事曆匯出</h2>
 			<p style="color: #007bff;">以下為本次異動相關的兩筆事件，將匯出在同一個檔案中：</p>
-			<div id="multiple-ics-event-details" style="max-height: 40vh; overflow-y: auto; margin-bottom: 15px;">
-				</div>
-			<button id="multiple-ics-download-btn" class="primary-btn" style="width: 100%;">
-				下載合併行事曆 (.ics) 檔案
-			</button>
+			<div id="multiple-ics-event-details" style="max-height: 40vh; overflow-y: auto; margin-bottom: 15px;"></div>
+			<button id="multiple-ics-download-btn" class="primary-btn" style="width: 100%;">下載合併行事曆 (.ics) 檔案</button>
 		</div>
 	</div>
-<script src="timetable.js"></script>
+	<script src="timetable.js"></script>
 </body>
 </html>
