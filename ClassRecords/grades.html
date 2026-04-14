@@ -111,7 +111,7 @@
         } else { window.location.href = 'login.html'; }
       } else { window.location.href = 'login.html'; }
     });
-    async function initializePage(schoolId) {
+async function initializePage(schoolId) {
       try {
         const cachedStatic = localStorage.getItem(STATIC_CACHE_KEY);
         if (cachedStatic) {
@@ -125,6 +125,14 @@
         const classSelect = document.getElementById('class-select');
         const classes = [...new Set(studentsData.map(s => s.id.substring(0, 3)))].sort();
         classes.forEach(c => classSelect.appendChild(new Option(`${c} 班`, c)));
+
+        // 🟢 修復 1：讀取網址的班級參數，自動選擇下拉選單並過濾
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetClass = urlParams.get('class');
+        if (targetClass && classes.includes(targetClass)) {
+            classSelect.value = targetClass;
+        }
+
         const cachedGrades = localStorage.getItem(GRADES_CACHE_KEY);
         if (cachedGrades) {
           const data = JSON.parse(cachedGrades);
@@ -143,10 +151,20 @@
         bindEventListeners();
       } catch (e) { console.error(e); }
     }
-    function bindEventListeners() {
+function bindEventListeners() {
       document.getElementById('class-select').addEventListener('change', renderGradesList);
       document.getElementById('search-input').addEventListener('input', renderGradesList);
-      document.getElementById('btn-add-grade').addEventListener('click', () => { window.location.href = 'grades-edit.html'; });
+      
+      // 🟢 修復 2：新增成績項目時，檢查並帶入目前選取的班級參數
+      document.getElementById('btn-add-grade').addEventListener('click', () => { 
+        const selectedClass = document.getElementById('class-select').value;
+        if (selectedClass === 'all') {
+            alert('請先在左側「篩選班級」選擇一個特定的班級，才能新增成績項目。');
+            return;
+        }
+        window.location.href = `grades-edit.html?class=${selectedClass}`; 
+      });
+
       document.getElementById('manual-reload-btn').addEventListener('click', () => {
         if(confirm('確定要從雲端重新下載成績項目資料嗎？')) {
           localStorage.removeItem(GRADES_CACHE_KEY);
@@ -179,13 +197,15 @@
               <div class="grade-meta">建立日期：${dateStr} | 已登錄人數：${scoreCount}</div>
             </div>
             <div class="grade-actions">
-              <button class="btn-edit" onclick="editAssignment('${a.id}')">編輯成績</button>
+              <button class="btn-edit" onclick="editAssignment('${a.id}', '${a.className}')">編輯成績</button>
               <button class="btn-delete" onclick="deleteAssignment('${a.id}', '${a.className}', '${a.assignmentName}')">刪除</button>
             </div>
           </div>`;
       }).join('');
     }
-    function editAssignment(id) { window.location.href = `grades-edit.html?id=${id}`; }
+    function editAssignment(id, className) { 
+        window.location.href = `grades-edit.html?assignmentId=${id}&class=${className}`; 
+    }
     async function deleteAssignment(docId, classId, assignmentName) {
       if (confirm(`確定要刪除【${classId} 班】的成績項目：\n\n「${assignmentName}」？`) && 
           confirm(`最後確認！此操作無法復原，真的確定嗎？`)) {
