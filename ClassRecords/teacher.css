@@ -604,7 +604,7 @@ main {
 	justify-content: space-between;
 	align-items: center;
 	gap: 15px;
-	padding: 12px 0;
+	padding: 2px 0; /* 降低高度 */
 	border-bottom: 1px solid #eee;
 }
 .record-content {
@@ -937,3 +937,19 @@ body.modal-open { overflow: hidden; }
 }
 #records-list::-webkit-scrollbar { width: 6px; }
 #records-list::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 3px; }
+.quick-text-pill {
+	background-color: #e9ecef;
+	color: #495057;
+	padding: 4px 10px;
+	border-radius: 15px;
+	font-size: 0.85em;
+	cursor: pointer;
+	transition: all 0.2s;
+	border: 1px solid #ced4da;
+	user-select: none;
+}
+.quick-text-pill:hover {
+	background-color: var(--primary-color);
+	color: white;
+	border-color: var(--primary-color);
+}

@@ -1098,6 +1098,20 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 		if (countDisplay) countDisplay.textContent = `事件數: ${allRecords.length}`;
 		if (scoreDisplay) scoreDisplay.textContent = `總分: ${totalCalculatedScore.toFixed(1)}`;
+		
+		// --- 產生快捷輸入文字標籤 (預設 + 歷史去重複) ---
+		const predefinedTexts = ['回答問題', '互動積極', '完成任務', '競賽活動'];
+		const historicalTexts = allRecords.map(r => r.text).filter(t => t && t.trim() !== '');
+		const uniqueTexts = [...new Set([...predefinedTexts, ...historicalTexts])]; // 確保文字不重複
+		
+		const quickTextPanel = document.getElementById('quick-text-panel');
+		if (quickTextPanel) {
+			quickTextPanel.innerHTML = uniqueTexts.map(text => 
+				`<span class="quick-text-pill">${text.replace(/"/g, '&quot;')}</span>`
+			).join('');
+		}
+		// ------------------------------------------------
+
 		recordsList.innerHTML = '';
 		if (allRecords.length === 0) {
 			recordsList.innerHTML = '尚無紀錄。';
@@ -1770,6 +1784,37 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	let originalInit = initialize;
+	const recordsToggleBtn = document.getElementById('records-toggle-btn');
+	const quickTextPanel = document.getElementById('quick-text-panel');
+	const recordsToggleIcon = document.getElementById('records-toggle-icon');
+	
+	if (recordsToggleBtn && quickTextPanel) {
+		// 展開/收合切換
+		recordsToggleBtn.addEventListener('click', () => {
+			if (quickTextPanel.style.display === 'none') {
+				quickTextPanel.style.display = 'flex';
+				recordsToggleIcon.textContent = '▲';
+			} else {
+				quickTextPanel.style.display = 'none';
+				recordsToggleIcon.textContent = '▼';
+			}
+		});
+
+		// 點選標籤取代輸入框文字
+		quickTextPanel.addEventListener('click', (e) => {
+			if (e.target.classList.contains('quick-text-pill')) {
+				const text = e.target.textContent;
+				const input = document.getElementById('record-text');
+				input.value = text;  // 將文字放入（取代）輸入欄位
+				input.focus();
+				
+				// 給予視覺回饋 (閃爍底色)
+				input.style.backgroundColor = '#fff3cd';
+				setTimeout(() => input.style.backgroundColor = '', 300);
+			}
+		});
+	}
+	
 	initialize = async function(userData, forceReload = false, forceItem = 0) {
 		await originalInit(userData, forceReload, forceItem);
 		updateDateRangeDisplay();

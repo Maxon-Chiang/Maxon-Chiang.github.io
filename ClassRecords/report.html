@@ -482,6 +482,7 @@
 		let perfStatsSortState = { key: 'total', direction: 'desc', target: 'class' };
 		let gradeAssignmentSortState = { key: 'date', direction: 'desc' };
 		let gradeCrossClassSortState = { key: 'className', direction: 'asc' };
+		let gradesStudentSortState = { assignmentId: null, direction: 'none' };
 		const USER_AUTH_PROFILE_KEY = 'user_auth_profile_v1';
 		const REPORT_STATIC_CACHE_KEY = 'report_cache_v1';
 		const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
@@ -1266,10 +1267,41 @@
 					}
 				});
 				currentGradesResults = { type: 'student', students: studentsInClass, assignments: Object.values(assignmentsData), data: assignmentsData };
-				renderGradesStudentResults(currentGradesResults);
+				
+				// 初始化排序狀態並執行排序與渲染
+				gradesStudentSortState = { assignmentId: null, direction: 'none' };
+				sortAndRenderGradesStudentResults();
 			} catch (error) {
 				container.innerHTML = `<p style="color:red;">查詢失敗！</p>`;
 			}
+		}
+
+		function sortAndRenderGradesStudentResults() {
+			const { assignments, data } = currentGradesResults;
+			const selectedClass = document.getElementById('grades-class-select').value;
+			// 每次排序都先重置回依座號排序的乾淨陣列
+			let sortedStudents = studentsData.filter(s => s.id.startsWith(selectedClass)).sort((a,b) => parseInt(a.id) - parseInt(b.id));
+
+			if (gradesStudentSortState.direction !== 'none' && gradesStudentSortState.assignmentId) {
+				const aId = gradesStudentSortState.assignmentId;
+				const dir = gradesStudentSortState.direction === 'asc' ? 1 : -1;
+
+				sortedStudents.sort((a, b) => {
+					const scoreAInfo = data[aId] && data[aId].scores[a.id];
+					const scoreBInfo = data[aId] && data[aId].scores[b.id];
+					// 缺考/未輸入分數視為 -Infinity，讓他們沉在底部
+					const scoreA = (scoreAInfo && scoreAInfo.score !== undefined && scoreAInfo.score !== null) ? scoreAInfo.score : -Infinity;
+					const scoreB = (scoreBInfo && scoreBInfo.score !== undefined && scoreBInfo.score !== null) ? scoreBInfo.score : -Infinity;
+
+					if (scoreA < scoreB) return -1 * dir;
+					if (scoreA > scoreB) return 1 * dir;
+					return parseInt(a.id) - parseInt(b.id); // 同分時依座號排序
+				});
+			}
+
+			// 更新 currentGradesResults 的學生順序，這樣 CSV 匯出時順序才會跟畫面上一致
+			currentGradesResults.students = sortedStudents;
+			renderGradesStudentResults(currentGradesResults);
 		}
 
 		function renderGradesStudentResults(results) {
@@ -1280,11 +1312,20 @@
 				container.innerHTML = '<p>找不到學生資料。</p>';
 				return;
 			}
+			
 			let tableHTML = '<table><thead><tr><th>座號</th><th>姓名</th>';
 			assignments.forEach(assign => {
-				tableHTML += `<th>${assign.assignmentName}</th>`;
+				// 判斷當前這個表頭的排序箭頭符號
+				const getArrow = () => {
+					if (gradesStudentSortState.assignmentId !== assign.id) return '&#x25B4;&#x25BE;'; // 預設上下箭頭
+					if (gradesStudentSortState.direction === 'desc') return '&#x25BC;'; // 向下 (遞減)
+					if (gradesStudentSortState.direction === 'asc') return '&#x25B2;'; // 向上 (遞增)
+					return '&#x25B4;&#x25BE;'; // 無排序
+				};
+				tableHTML += `<th class="sortable-header" data-sort-student-grades="${assign.id}">${assign.assignmentName} <span class="sort-arrow">${getArrow()}</span></th>`;
 			});
 			tableHTML += '<th>個人平均</th></tr></thead><tbody>';
+			
 			students.forEach(student => {
 				tableHTML += `<tr><td>${student.id.substring(3)}</td><td>${student.name}</td>`;
 				let total = 0;
@@ -1312,6 +1353,24 @@
 			tableHTML += '</tbody></table>';
 			container.innerHTML = tableHTML;
 			document.getElementById('export-grades-csv-btn').disabled = false;
+
+			// 綁定表頭點擊排序事件
+			container.querySelectorAll('.sortable-header[data-sort-student-grades]').forEach(header => {
+				header.addEventListener('click', () => {
+					const aId = header.dataset.sortStudentGrades;
+					if (gradesStudentSortState.assignmentId === aId) {
+						// 循環切換：無(none) -> 遞減(desc) -> 遞增(asc) -> 無(none)
+						if (gradesStudentSortState.direction === 'none') gradesStudentSortState.direction = 'desc';
+						else if (gradesStudentSortState.direction === 'desc') gradesStudentSortState.direction = 'asc';
+						else gradesStudentSortState.direction = 'none';
+					} else {
+						// 點擊新的表頭，預設先進入遞減(高到低)
+						gradesStudentSortState.assignmentId = aId;
+						gradesStudentSortState.direction = 'desc';
+					}
+					sortAndRenderGradesStudentResults();
+				});
+			});
 		}
 
 		async function runGradesAssignmentQuery(fromDrillDown = false, drillDownClass = null) {

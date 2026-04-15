@@ -12,7 +12,7 @@
 	<header>
 		<div class="header-left-panel">
 			<div id="main-sort-container">
-				<h1 style="font-size: 1.2em;">學生綜合紀錄暨課表系統</h1>
+				<h1>學生綜合紀錄暨課表系統</h1>
 				<span id="system-date-range-display" style="font-size: 0.7em; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; margin-right: 10px; cursor: pointer; white-space: nowrap;" title="點擊修改資料期間">📅 全部期間</span>
 				<button id="main-sort-btn" title="切換班級排序方式" style="display:none;">
 					<span class="main-sort-arrow" id="main-sort-up-arrow">▲</span>
@@ -107,7 +107,13 @@
 				</form>
 			</div>
 			<div class="records-container">
-				<h3>事件紀錄</h3>
+				<h3 id="records-toggle-btn" style="cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 5px; color: var(--primary-color);">
+					事件紀錄 <span id="records-toggle-icon" style="font-size: 0.8em;">▼</span>
+				</h3>
+				<!-- 隱藏的快捷文字區塊 -->
+				<div id="quick-text-panel" style="display: none; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 6px; border: 1px solid #eee;">
+				</div>
+				
 				<div id="records-list"></div>
 			</div>
 		</div>
