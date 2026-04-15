@@ -1148,22 +1148,56 @@ document.addEventListener('DOMContentLoaded', function() {
 		const recordTextInput = document.getElementById('record-text');
 		datalist.innerHTML = '';
 		recordTextInput.value = '';
+		
+		// 預設的事件選項清單
+		const predefinedTexts = ['回答問題', '互動積極', '完成任務', '競賽活動', '兌換獎勵'];
+
+		// 將所有紀錄依時間由新到舊排序
 		const sortedRecords = allPerformanceRecords.slice().sort((a, b) => (b.timestamp?.seconds || b.timestamp?.toMillis() / 1000 || 0) - (a.timestamp?.seconds || a.timestamp?.toMillis() / 1000 || 0));
-		for (const doc of sortedRecords) {
+		
+		// 篩選出「目前操作的學生/班級」的專屬紀錄
+		const entityRecords = sortedRecords.filter(r => {
+			if (!currentEntity) return false;
+			if (currentEntity.type === 'student' && (r.entityType === 'student' || !r.entityType)) {
+				return r.entityId === currentEntity.id || r.studentId === currentEntity.id;
+			}
+			if (currentEntity.type === 'class' && r.entityType === 'class') {
+				return r.entityId === currentEntity.id;
+			}
+			return false;
+		});
+
+		let foundLastText = false;
+		// 找出該學生/班級最近一次「有文字」的事件內容
+		for (const doc of entityRecords) {
 			const text = doc.text;
 			if (text && text.trim() !== '') {
 				recordTextInput.value = text;
+				foundLastText = true;
 				break;
 			}
 		}
+
+		// 若無上一次事件內容，則預設為預設項目的第一項
+		if (!foundLastText) {
+			recordTextInput.value = predefinedTexts[0];
+		}
+
+		// 建立輸入框的自動完成下拉選單 (Datalist)
 		const recentTexts = new Set();
+		
+		// 先把預設選項加進去，確保它們出現在選項最上方
+		predefinedTexts.forEach(text => recentTexts.add(text));
+
+		// 再把歷史所有用過的文字加進去去重複
 		sortedRecords.forEach(doc => {
 			const text = doc.text;
 			if (text && text.trim() !== '') {
 				recentTexts.add(text.trim());
 			}
 		});
-		Array.from(recentTexts).slice(0, 10).forEach(text => {
+
+		Array.from(recentTexts).slice(0, 15).forEach(text => {
 			const option = document.createElement('option');
 			option.value = text;
 			datalist.appendChild(option);
