@@ -1100,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (scoreDisplay) scoreDisplay.textContent = `總分: ${totalCalculatedScore.toFixed(1)}`;
 		
 		// --- 產生快捷輸入文字標籤 (預設 + 歷史去重複) ---
-		const predefinedTexts = ['回答問題', '互動積極', '完成任務', '競賽活動'];
+		const predefinedTexts = ['回答問題', '互動積極', '完成任務', '競賽活動', '兌換獎勵'];
 		const historicalTexts = allRecords.map(r => r.text).filter(t => t && t.trim() !== '');
 		const uniqueTexts = [...new Set([...predefinedTexts, ...historicalTexts])]; // 確保文字不重複
 		
