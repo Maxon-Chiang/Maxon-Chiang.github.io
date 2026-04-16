@@ -287,17 +287,21 @@
 					
 					// 改為前端過濾
 					assignmentsSnapshot.forEach(doc => {
-						const data = doc.data();
+						const data = doc.data({ serverTimestamps: 'estimate' }); // 加入預估時間防呆
 						let include = true;
 						if (userData.sysStartDate || userData.sysEndDate) {
+							let aDate;
 							if (!data.date) {
-								include = false;
+								aDate = new Date();
+							} else if (typeof data.date.toDate === 'function') {
+								aDate = data.date.toDate();
+							} else if (data.date.seconds) {
+								aDate = new Date(data.date.seconds * 1000);
 							} else {
-								let aDate;
-								if (data.date.toDate) aDate = data.date.toDate();
-								else if (data.date.seconds) aDate = new Date(data.date.seconds * 1000);
-								else aDate = new Date(data.date);
+								aDate = new Date(data.date);
+							}
 
+							if (!isNaN(aDate.getTime())) {
 								if (userData.sysStartDate && aDate < new Date(userData.sysStartDate + 'T00:00:00')) include = false;
 								if (userData.sysEndDate && aDate > new Date(userData.sysEndDate + 'T23:59:59.999')) include = false;
 							}

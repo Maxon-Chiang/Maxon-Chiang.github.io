@@ -157,17 +157,25 @@
 				}
 				let query = db.collection('gradebooks').doc(currentUser.uid).collection('assignments');
 				query.onSnapshot(snapshot => {
-					let rawAssignments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+					// 加上 { serverTimestamps: 'estimate' }，確保剛新增尚未同步的資料會有預估的現在時間，不會是 null
+					let rawAssignments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data({ serverTimestamps: 'estimate' }) }));
 					
-					// 改為前端過濾，解決 Firebase 型別嚴格匹配導致舊資料或匯入資料消失的問題
 					assignments = rawAssignments.filter(a => {
 						if (!userData.sysStartDate && !userData.sysEndDate) return true;
-						if (!a.date) return false;
 						
 						let aDate;
-						if (a.date.toDate) aDate = a.date.toDate();
-						else if (a.date.seconds) aDate = new Date(a.date.seconds * 1000);
-						else aDate = new Date(a.date);
+						if (!a.date) {
+							aDate = new Date(); // 若真的沒有日期，視為最新建立
+						} else if (typeof a.date.toDate === 'function') {
+							aDate = a.date.toDate();
+						} else if (a.date.seconds) {
+							aDate = new Date(a.date.seconds * 1000);
+						} else {
+							aDate = new Date(a.date);
+						}
+
+						// 防呆：如果日期格式錯誤，預設顯示以免資料遺失
+						if (isNaN(aDate.getTime())) return true;
 
 						if (userData.sysStartDate && aDate < new Date(userData.sysStartDate + 'T00:00:00')) return false;
 						if (userData.sysEndDate && aDate > new Date(userData.sysEndDate + 'T23:59:59.999')) return false;
@@ -215,8 +223,16 @@
 			});
 			filtered.sort((a, b) => {
 				if (sortValue.startsWith('date')) {
-					const timeA = a.date ? (a.date.seconds || new Date(a.date).getTime() / 1000) : 0;
-					const timeB = b.date ? (b.date.seconds || new Date(b.date).getTime() / 1000) : 0;
+					// 強化排序時的日期解析，相容各種格式
+					const getTime = (dateObj) => {
+						if (!dateObj) return Date.now() / 1000;
+						if (typeof dateObj.toDate === 'function') return dateObj.toDate().getTime() / 1000;
+						if (dateObj.seconds) return dateObj.seconds;
+						const parsed = new Date(dateObj).getTime();
+						return isNaN(parsed) ? 0 : parsed / 1000;
+					};
+					const timeA = getTime(a.date);
+					const timeB = getTime(b.date);
 					return sortValue === 'date-desc' ? timeB - timeA : timeA - timeB;
 				} else if (sortValue.startsWith('name')) {
 					const nameA = a.assignmentName || '';
