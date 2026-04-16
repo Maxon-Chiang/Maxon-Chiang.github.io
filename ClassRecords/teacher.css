@@ -953,3 +953,54 @@ body.modal-open { overflow: hidden; }
 	color: white;
 	border-color: var(--primary-color);
 }
+.score-spinner-wrapper {
+	display: flex;
+	align-items: center;
+	border: 1px solid #ccc;
+	border-radius: 6px;
+	overflow: hidden;
+	flex-shrink: 0;
+	background-color: white;
+}
+.score-spinner-wrapper .score-adjust-btn {
+	background-color: #f8f9fa;
+	border: none;
+	width: 32px;
+	height: 42px;
+	font-size: 1.2em;
+	cursor: pointer;
+	color: #555;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	margin: 0;
+	border-radius: 0;
+}
+.score-spinner-wrapper .score-adjust-btn:active {
+	background-color: #e2e6ea;
+}
+.score-spinner-wrapper .score-adjust-btn:disabled {
+	color: #ccc;
+	cursor: not-allowed;
+	background-color: #f1f1f1;
+}
+.score-spinner-wrapper input[type="number"] {
+	border: none;
+	border-left: 1px solid #ccc;
+	border-right: 1px solid #ccc;
+	border-radius: 0;
+	width: 50px;
+	height: 42px;
+	text-align: center;
+	margin: 0;
+	padding: 0;
+	font-size: 1.1em;
+	font-weight: bold;
+	-moz-appearance: textfield;
+}
+/* 隱藏瀏覽器原生的箭頭 */
+.score-spinner-wrapper input[type="number"]::-webkit-outer-spin-button,
+.score-spinner-wrapper input[type="number"]::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}

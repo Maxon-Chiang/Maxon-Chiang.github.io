@@ -144,7 +144,9 @@
 			if (user) {
 				currentUser = user;
 				const userDoc = await db.collection('users').doc(user.uid).get();
-				if (userDoc.exists && userDoc.data().role === 'school_admin') {
+				const data = userDoc.exists ? userDoc.data() : {};
+				const roles = data.roles || (data.role ? [data.role] : []);
+				if (userDoc.exists && roles.includes('school_admin')) {
 					const userData = userDoc.data();
 					schoolId = userData.schoolId;
 					if (!schoolId) {

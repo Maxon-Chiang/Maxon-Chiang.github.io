@@ -154,7 +154,9 @@
 		auth.onAuthStateChanged(async (user) => {
 			if (user) {
 				const userDoc = await db.collection('users').doc(user.uid).get();
-				if (userDoc.exists && userDoc.data().role === 'admin') {
+				const data = userDoc.exists ? userDoc.data() : {};
+				const roles = data.roles || (data.role ? [data.role] : []);
+				if (userDoc.exists && roles.includes('admin')) {
 					document.getElementById('admin-email').textContent = user.email;
 					document.getElementById('admin-panel').style.display = 'block';
 					loadStats();

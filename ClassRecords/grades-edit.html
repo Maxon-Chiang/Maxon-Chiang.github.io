@@ -117,6 +117,7 @@
 		let currentUser = null;
 		let classId = null;
 		let assignmentId = null;
+		let isViewMode = false;
 		let studentsInClass = [];
 		let currentGradesData = {};
 		const appContainer = document.getElementById('app-container');
@@ -198,7 +199,8 @@
 						}
 					}
 				}
-				if (userData && userData.role === 'teacher') {
+				const roles = userData ? (userData.roles || (userData.role ? [userData.role] : [])) : [];
+				if (userData && roles.includes('teacher')) {
 					await initializeEditPage(userData);
 				} else {
 					window.location.href = 'login.html';
@@ -212,6 +214,7 @@
 			const urlParams = new URLSearchParams(window.location.search);
 			classId = urlParams.get('class');
 			assignmentId = urlParams.get('assignmentId');
+			isViewMode = urlParams.get('mode') === 'view';
 			const assignmentName = decodeURIComponent(urlParams.get('assignmentName') || '');
 			const assignmentComment = decodeURIComponent(urlParams.get('assignmentComment') || '');
 			let useStaticCache = false;
@@ -279,6 +282,17 @@
 			if (!assignmentId) {
 				assignmentDateDisplay.textContent = `登錄日期: ${formatDate(new Date())}`;
 			}
+			
+			// --- 新增：如果是檢視模式，鎖定輸入並隱藏底部選單 ---
+			if (isViewMode) {
+				document.getElementById('float-actions-bar').style.display = 'none';
+				editAssignmentNameInput.disabled = true;
+				editGeneralCommentInput.disabled = true;
+				assignmentEditHeader.textContent = `${classId} 班 成績檢視：${editAssignmentNameInput.value}`;
+				document.title = `檢視 ${editAssignmentNameInput.value}`;
+			}
+			// ----------------------------------------------------
+
 			loadAssignmentNameSuggestions(classId);
 			renderStudentScores();
 			appContainer.style.display = 'block';
@@ -331,14 +345,15 @@
 				const studentDiv = document.createElement('div');
 				studentDiv.className = 'score-entry-grid score-columns';
 				studentDiv.dataset.id = studentId;
+				const disabledAttr = isViewMode ? 'disabled' : '';
 				studentDiv.innerHTML = `
 					<div class="student-id-cell">${studentSeat}</div>
 					<div class="student-name-cell">${student.name}</div>
 					<div class="score-input-cell">
-						<input type="number" step="0.5" min="0" max="100" class="student-score-input" data-id="${studentId}" value="${existingScore}" placeholder="分數">
+						<input type="number" step="0.5" min="0" max="100" class="student-score-input" data-id="${studentId}" value="${existingScore}" placeholder="分數" ${disabledAttr}>
 					</div>
 					<div class="comment-input-cell">
-						<input type="text" class="student-comment-input" data-id="${studentId}" value="${existingComment}" placeholder="備註 (選填)">
+						<input type="text" class="student-comment-input" data-id="${studentId}" value="${existingComment}" placeholder="備註 (選填)" ${disabledAttr}>
 					</div>
 					<div class="score-date-display" style="text-align: center; font-size: 0.7em; color: #555; white-space: nowrap;">${existingDate}</div>
 				`;

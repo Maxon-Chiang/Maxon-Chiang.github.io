@@ -85,6 +85,13 @@
 			<ul id="teacher-selection-list" class="selection-list"></ul>
 		</div>
 	</div>
+	<div id="role-selection-view" class="onboarding-modal">
+		<div class="container">
+			<h2>請選擇登入身分</h2>
+			<p>您的帳號具有多重系統權限，請選擇您要進入的後台或系統：</p>
+			<ul id="role-selection-list" class="selection-list"></ul>
+		</div>
+	</div>
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -151,7 +158,26 @@
 						}
 					}
 					if (userDocData) {
-						routeUser(userDocData.role);
+						let rawRoles = userDocData.roles || userDocData.role;
+						let userRoles = [];
+						
+						// 判斷是陣列還是字串，自動轉換為乾淨的陣列
+						if (Array.isArray(rawRoles)) {
+							userRoles = rawRoles;
+						} else if (typeof rawRoles === 'string') {
+							// 如果不小心存成逗號分隔的字串(例如 "teacher, admin")，自動切開
+							userRoles = rawRoles.split(',').map(r => r.trim()).filter(r => r);
+						}
+
+						if (userRoles.length > 1) {
+							// 若有多個身分，呼叫選擇選單
+							displayRoleSelection(userRoles);
+						} else if (userRoles.length === 1) {
+							// 只有單一身分，直接進入
+							routeUser(userRoles[0]);
+						} else {
+							showLoginError("未分配任何權限，請聯繫管理員。");
+						}
 					} else {
 						await startOnboarding(user);
 					}
@@ -230,6 +256,29 @@
 				schoolSelectionView.style.display = 'none';
 				teacherSelectionView.style.display = 'flex';
 			}
+			function displayRoleSelection(roles) {
+				const roleList = document.getElementById('role-selection-list');
+				roleList.innerHTML = '';
+				
+				const roleNames = {
+					'teacher': '👨‍🏫 教師系統 (含課表與成績)',
+					'school_admin': '🏫 學校管理後台',
+					'admin': '⚙️ 超級管理後台'
+				};
+
+				roles.forEach(role => {
+					const li = document.createElement('li');
+					li.innerHTML = `<strong>${roleNames[role] || role}</strong>`;
+					li.onclick = () => routeUser(role);
+					roleList.appendChild(li);
+				});
+
+				splashScreen.style.display = 'none';
+				loginView.style.display = 'none';
+				schoolSelectionView.style.display = 'none';
+				teacherSelectionView.style.display = 'none';
+				document.getElementById('role-selection-view').style.display = 'flex';
+			}
 			async function createUserProfile(user, schoolId, teacherProfile) {
 				try {
 					splashScreen.style.display = 'flex';
@@ -237,6 +286,7 @@
 					if (!schoolDoc.exists) throw new Error("找不到學校資料");
 					const schoolData = schoolDoc.data();
 					const newUserProfile = {
+						roles: ['teacher'],
 						role: 'teacher',
 						email: user.email,
 						displayName: teacherProfile.name,
@@ -286,7 +336,27 @@
 							userData: userDocData,
 							lastUpdated: new Date().getTime()
 						}));
-						routeUser(userDocData.role);
+						
+						// 取得陣列權限 (加上 Array.isArray 雙重保險，防止資料庫欄位設錯)
+						let rawRoles = userDocData.roles || userDocData.role;
+						let userRoles = [];
+						
+						if (Array.isArray(rawRoles)) {
+							userRoles = rawRoles;
+						} else if (typeof rawRoles === 'string') {
+							userRoles = rawRoles.split(',').map(r => r.trim()).filter(r => r);
+						}
+						
+						if (userRoles.length > 1) {
+							// 若有多個身分，呼叫選擇選單
+							displayRoleSelection(userRoles);
+						} else if (userRoles.length === 1) {
+							// 只有單一身分，直接進入
+							routeUser(userRoles[0]);
+						} else {
+							showLoginError("未分配任何權限，請聯繫管理員。");
+						}
+						/* --- 修改結束 --- */
 					} else {
 						showLoginError("找不到用戶資料，請聯繫管理員。");
 					}

@@ -26,6 +26,7 @@
 		.grade-name { font-weight: bold; font-size: 1.1em; color: var(--primary-color); display: block; }
 		.grade-meta { font-size: 0.85em; color: #666; margin-top: 2px; }
 		.grade-actions button { margin-left: 5px; padding: 5px 10px; border-radius: 4px; cursor: pointer; border: 1px solid #ddd; background-color: white; font-size: 0.85em; }
+		.btn-view { color: #17a2b8; border-color: #17a2b8 !important; }
 		.btn-edit { color: var(--primary-color); border-color: var(--primary-color) !important; }
 		.btn-rename { color: #fd7e14; border-color: #fd7e14 !important; }
 		.btn-delete { color: #dc3545; border-color: #dc3545 !important; }
@@ -44,7 +45,6 @@
 	<header>
 		<h1>成績管理</h1>
 		<div style="display:flex; align-items:center;">
-			<span id="system-date-range-display-grades" style="font-size: 0.85em; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; margin-right: 10px; cursor: help;" title="若需修改日期區間，請至「返回主頁」的齒輪選單設定"></span>
 			<button id="manual-reload-btn">🔄 手動更新</button>
 			<button onclick="window.location.href='teacher.html'">返回主頁</button>
 			<button id="logout-btn">登出</button>
@@ -116,7 +116,8 @@
 						displayElement.textContent = userData.displayName || user.email;
 					}
 				}
-				if (userData && userData.role === 'teacher') {
+				const roles = userData ? (userData.roles || (userData.role ? [userData.role] : [])) : [];
+				if (userData && roles.includes('teacher')) {
 					initializePage(userData);
 					document.getElementById('app-container').style.display = 'block';
 				} else {
@@ -155,17 +156,24 @@
 					}
 				}
 				let query = db.collection('gradebooks').doc(currentUser.uid).collection('assignments');
-				if (userData.sysStartDate) query = query.where('date', '>=', new Date(userData.sysStartDate + 'T00:00:00'));
-				if (userData.sysEndDate) query = query.where('date', '<=', new Date(userData.sysEndDate + 'T23:59:59.999'));
-				const sysStart = localStorage.getItem('sysStartDate');
-				const sysEnd = localStorage.getItem('sysEndDate');
-				const displaySpan = document.getElementById('system-date-range-display-grades');
-				if (sysStart && sysEnd) displaySpan.textContent = `📅 ${sysStart.replace(/-/g,'/')} ~ ${sysEnd.replace(/-/g,'/')}`;
-				else if (sysStart) displaySpan.textContent = `📅 ${sysStart.replace(/-/g,'/')} 起`;
-				else if (sysEnd) displaySpan.textContent = `📅 至 ${sysEnd.replace(/-/g,'/')}`;
-				else displaySpan.textContent = '📅 全部期間';
-				query.orderBy('date', 'desc').onSnapshot(snapshot => {
-					assignments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+				query.onSnapshot(snapshot => {
+					let rawAssignments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+					
+					// 改為前端過濾，解決 Firebase 型別嚴格匹配導致舊資料或匯入資料消失的問題
+					assignments = rawAssignments.filter(a => {
+						if (!userData.sysStartDate && !userData.sysEndDate) return true;
+						if (!a.date) return false;
+						
+						let aDate;
+						if (a.date.toDate) aDate = a.date.toDate();
+						else if (a.date.seconds) aDate = new Date(a.date.seconds * 1000);
+						else aDate = new Date(a.date);
+
+						if (userData.sysStartDate && aDate < new Date(userData.sysStartDate + 'T00:00:00')) return false;
+						if (userData.sysEndDate && aDate > new Date(userData.sysEndDate + 'T23:59:59.999')) return false;
+						return true;
+					});
+
 					localStorage.setItem(GRADES_CACHE_KEY, JSON.stringify({ assignments, uid: currentUser.uid, timestamp: Date.now() }));
 					renderGradesList();
 				});
@@ -232,15 +240,20 @@
 							<div class="grade-meta">建立日期：${dateStr} | 已登錄人數：${scoreCount}</div>
 						</div>
 						<div class="grade-actions">
+							<button class="btn-view" onclick="viewAssignment('${a.id}', '${a.className}')">檢視</button>
 							<button class="btn-edit" onclick="editAssignment('${a.id}', '${a.className}')">編輯</button>
 							<button class="btn-rename" onclick="renameAssignment('${a.id}', '${safeName}')">改名</button>
 							<button class="btn-delete" onclick="deleteAssignment('${a.id}', '${a.className}', '${safeName}')">刪除</button>
+						</div>
 						</div>
 					</div>`;
 			}).join('');
 		}
 		function editAssignment(id, className) {
 			window.location.href = `grades-edit.html?assignmentId=${id}&class=${className}`;
+		}
+		function viewAssignment(id, className) {
+			window.location.href = `grades-edit.html?assignmentId=${id}&class=${className}&mode=view`;
 		}
 		async function renameAssignment(docId, oldName) {
 			const newName = prompt("請輸入新的成績項目名稱：", oldName);

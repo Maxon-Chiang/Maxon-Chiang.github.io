@@ -520,7 +520,8 @@
 						cacheUser = { userData: userDoc.data(), uid: user.uid };
 					}
 				}
-				if (cacheUser && (cacheUser.userData.role === 'teacher' || cacheUser.userData.role === 'admin')) {
+				const roles = cacheUser ? (cacheUser.userData.roles || (cacheUser.userData.role ? [cacheUser.userData.role] : [])) : [];
+				if (cacheUser && (roles.includes('teacher') || roles.includes('admin'))) {
 					if (cacheUser.userData.displayName) {
 						displayElement.textContent = cacheUser.userData.displayName;
 					} else {
@@ -622,12 +623,29 @@
 			});
 			if (!assignmentsDataLoaded) {
 				let query = db.collection('gradebooks').doc(currentUser.uid).collection('assignments');
-				if (sysStart) query = query.where('date', '>=', new Date(sysStart + 'T00:00:00'));
-				if (sysEnd) query = query.where('date', '<=', new Date(sysEnd + 'T23:59:59.999'));
-				const assignmentsSnapshot = await query.orderBy('date', 'desc').get();
+				const assignmentsSnapshot = await query.get();
 				allAssignments = [];
+				
+				// 改為前端過濾
 				assignmentsSnapshot.forEach(doc => {
-					allAssignments.push({ id: doc.id, ...doc.data() });
+					let data = doc.data();
+					let include = true;
+					if (sysStart || sysEnd) {
+						if (!data.date) {
+							include = false;
+						} else {
+							let aDate;
+							if (data.date.toDate) aDate = data.date.toDate();
+							else if (data.date.seconds) aDate = new Date(data.date.seconds * 1000);
+							else aDate = new Date(data.date);
+
+							if (sysStart && aDate < new Date(sysStart + 'T00:00:00')) include = false;
+							if (sysEnd && aDate > new Date(sysEnd + 'T23:59:59.999')) include = false;
+						}
+					}
+					if (include) {
+						allAssignments.push({ id: doc.id, ...data });
+					}
 				});
 			}
 			const uniqueAssignments = {};

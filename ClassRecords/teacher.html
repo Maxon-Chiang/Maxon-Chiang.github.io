@@ -90,15 +90,16 @@
 						<span id="record-count-display">事件數: 0</span>
 						<span id="record-total-score-display">總分: 0.0</span>
 					</div>
-					<div class="mobile-score-controls">
-						<button type="button" class="score-adjust-btn" id="score-minus-btn">-</button>
-						<button type="button" class="score-adjust-btn" id="score-plus-btn">+</button>
-					</div>
 					<button type="button" id="save-record-btn" style="background-color: var(--success-color);">新增</button>
 					<button type="button" id="btn-cancel-edit" style="display:none; background-color:#6c757d;">取消</button>
 				</div>
 				<form id="add-record-form" novalidate>
-					<input type="number" id="record-points" placeholder="加/減分" disabled>
+					<!-- 把按鈕跟輸入框包在一起 -->
+					<div class="score-spinner-wrapper">
+						<button type="button" class="score-adjust-btn" id="score-minus-btn" disabled>-</button>
+						<input type="number" id="record-points" placeholder="分數" disabled>
+						<button type="button" class="score-adjust-btn" id="score-plus-btn" disabled>+</button>
+					</div>
 					<div class="input-wrapper">
 						<input type="text" id="record-text" placeholder="文字紀錄 (選填)" list="recent-texts-list" autocomplete="off">
 						<span id="clear-text-btn" title="清除文字">X</span>

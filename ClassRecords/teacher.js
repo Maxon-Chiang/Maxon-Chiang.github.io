@@ -332,7 +332,8 @@ document.addEventListener('DOMContentLoaded', function() {
 						return;
 					}
 				}
-				if (userDocData && (userDocData.role === 'teacher' || userDocData.role === 'school_admin' || userDocData.role === 'admin')) {
+				const roles = userDocData ? (userDocData.roles || (userDocData.role ? [userDocData.role] : [])) : [];
+				if (userDocData && (roles.includes('teacher') || roles.includes('school_admin') || roles.includes('admin'))) {
 					const directEntryEnabled = localStorage.getItem('pref_direct_class_entry') === 'true';
 					const defaultPage = localStorage.getItem('defaultSystemPage');
 					if (!directEntryEnabled && defaultPage && defaultPage !== 'teacher.html' && defaultPage !== 'teacher.html#') {
@@ -1029,11 +1030,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		recordPointsInput.value = '1';
 		recordTextInput.value = '';
 		recordPointsInput.disabled = false;
-		if (window.innerWidth > 768) {
-			recordPointsInput.placeholder = '加/減分 (可用方向鍵調整整數)';
-		}
-		scorePlusBtn.style.display = window.innerWidth <= 768 ? 'inline-block' : 'none';
-		scoreMinusBtn.style.display = window.innerWidth <= 768 ? 'inline-block' : 'none';
+		
+		// 解除鎖定加減按鈕
+		scorePlusBtn.disabled = false;
+		scoreMinusBtn.disabled = false;
+		
 		saveRecordBtn.textContent = '新增';
 		saveRecordBtn.classList.remove('update-mode');
 		saveRecordBtn.style.backgroundColor = 'var(--success-color)';
@@ -1051,8 +1052,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		btnCancelEdit.style.display = 'inline-block';
 		recordPointsInput.value = record.points || 0;
 		recordPointsInput.disabled = true;
-		scorePlusBtn.style.display = 'none';
-		scoreMinusBtn.style.display = 'none';
+		
+		// 編輯狀態下，鎖定加減按鈕
+		scorePlusBtn.disabled = true;
+		scoreMinusBtn.disabled = true;
+		
 		recordTextInput.value = record.text || '';
 		modalTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
@@ -1234,7 +1238,6 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 	const adjustScore = (amount) => {
-		if (window.innerWidth > 768) return;
 		if (recordPointsInput.disabled) return;
 		let currentValue = parseFloat(document.getElementById('record-points').value) || 0;
 		let newValue = currentValue + amount;

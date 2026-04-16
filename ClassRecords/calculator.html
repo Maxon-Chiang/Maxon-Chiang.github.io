@@ -210,7 +210,8 @@
 						displayElement.textContent = userData.displayName || user.email;
 					}
 				}
-				if (userData && userData.role === 'teacher') {
+				const roles = userData ? (userData.roles || (userData.role ? [userData.role] : [])) : [];
+				if (userData && roles.includes('teacher')) {
 					if (!userData.schoolId) {
 						appContainer.innerHTML = '<h2>帳號設定錯誤：未綁定學校ID。</h2>';
 						return;
@@ -281,14 +282,30 @@
 			if (!assignmentsDataLoaded) {
 				fetchPromises.push((async () => {
 					let query = db.collection('gradebooks').doc(currentUser.uid).collection('assignments');
-					if (userData.sysStartDate) query = query.where('date', '>=', new Date(userData.sysStartDate + 'T00:00:00'));
-					if (userData.sysEndDate) query = query.where('date', '<=', new Date(userData.sysEndDate + 'T23:59:59.999'));
 					const assignmentsSnapshot = await query.get();
 					const tempAssignments = {};
+					
+					// 改為前端過濾
 					assignmentsSnapshot.forEach(doc => {
 						const data = doc.data();
-						if (!tempAssignments[data.className]) tempAssignments[data.className] = [];
-						tempAssignments[data.className].push({ id: doc.id, ...data });
+						let include = true;
+						if (userData.sysStartDate || userData.sysEndDate) {
+							if (!data.date) {
+								include = false;
+							} else {
+								let aDate;
+								if (data.date.toDate) aDate = data.date.toDate();
+								else if (data.date.seconds) aDate = new Date(data.date.seconds * 1000);
+								else aDate = new Date(data.date);
+
+								if (userData.sysStartDate && aDate < new Date(userData.sysStartDate + 'T00:00:00')) include = false;
+								if (userData.sysEndDate && aDate > new Date(userData.sysEndDate + 'T23:59:59.999')) include = false;
+							}
+						}
+						if (include) {
+							if (!tempAssignments[data.className]) tempAssignments[data.className] = [];
+							tempAssignments[data.className].push({ id: doc.id, ...data });
+						}
 					});
 					allAssignments = tempAssignments;
 				})());
