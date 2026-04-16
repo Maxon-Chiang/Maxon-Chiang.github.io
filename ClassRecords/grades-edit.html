@@ -26,6 +26,8 @@
 		#student-scores-container .score-entry-grid:nth-child(odd) { background-color: #fcfcfc; }
 		#student-scores-container .score-entry-grid:nth-child(even) { background-color: #f4f4f4; }
 		.score-entry-grid:last-child { border-bottom: none; }
+		#student-scores-container .missing-score-row { background-color: #ffe5e5 !important; }
+		#student-scores-container .missing-score-row input { background-color: #fff0f0 !important; color: #dc3545; }
 		.score-entry-grid input { background-color: transparent; margin: 0; padding: 8px; width: 100%; text-align: center; height: 30px; }
 		.student-id-cell { text-align: center; font-size: 0.9em; color: #555; }
 		.student-name-cell { text-align: center !important; font-weight: 500; }
@@ -81,7 +83,11 @@
 		<div id="grade-entry-section" class="section">
 			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
 				<h3>學生分數登錄</h3>
-				<span id="assignment-date-display" style="font-size: 0.9em; color: #666;"></span>
+				<div style="text-align: right;">
+					<div id="assignment-date-display" style="font-size: 0.9em; color: #666;"></div>
+					<!-- 新增未輸入人數顯示區塊 -->
+					<div id="missing-score-display" style="font-size: 0.85em; color: #dc3545; font-weight: bold; margin-top: 4px; display: none;"></div>
+				</div>
 			</div>
 			<div id="student-scores-container">
 				<div class="score-entry-header score-columns">
@@ -135,11 +141,22 @@
 
 		function formatDate(date) {
 			if (!date) return 'N/A';
-			if (date instanceof firebase.firestore.Timestamp) {
-				date = date.toDate();
+			let d;
+			
+			// 支援原生 Timestamp、匯入的 JSON 物件、或字串型態的日期
+			if (typeof date.toDate === 'function') {
+				d = date.toDate();
+			} else if (date.seconds) {
+				d = new Date(date.seconds * 1000);
+			} else {
+				d = new Date(date);
 			}
+			
+			// 防呆：如果轉換後仍然不是有效日期
+			if (isNaN(d.getTime())) return '日期無效';
+
 			const pad = (n) => String(n).padStart(2, '0');
-			return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+			return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 		}
 
 		function formatMinguoDate(dateString) {
@@ -334,6 +351,9 @@
 				headerDiv.innerHTML = `<div>座號</div><div>姓名</div><div>分數</div><div>備註</div><div>登錄時間</div>`;
 				studentScoresContainer.appendChild(headerDiv);
 			}
+			
+			let missingCount = 0; // 新增：計算未輸入成績的人數
+
 			studentsInClass.forEach(student => {
 				const studentId = student.id;
 				const studentSeat = studentId.substring(3);
@@ -342,8 +362,18 @@
 				const existingComment = existingScoreEntry.comment || '';
 				const rawDate = existingScoreEntry.scoreEntryDate;
 				const existingDate = (typeof rawDate === 'string' && rawDate.trim()) ? formatMinguoDate(rawDate) : '';
+				
+				const isMissing = existingScore === '';
+				if (isMissing) missingCount++;
+
 				const studentDiv = document.createElement('div');
 				studentDiv.className = 'score-entry-grid score-columns';
+				
+				// 新增：若為檢視模式且未輸入成績，加上醒目的紅色底色樣式
+				if (isViewMode && isMissing) {
+					studentDiv.className += ' missing-score-row';
+				}
+
 				studentDiv.dataset.id = studentId;
 				const disabledAttr = isViewMode ? 'disabled' : '';
 				studentDiv.innerHTML = `
@@ -359,6 +389,14 @@
 				`;
 				studentScoresContainer.appendChild(studentDiv);
 			});
+
+			// 新增：檢視模式下顯示未輸入人數資訊
+			const missingDisplay = document.getElementById('missing-score-display');
+			if (missingDisplay && isViewMode) {
+				missingDisplay.textContent = `未輸入人數：${missingCount} / ${studentsInClass.length}`;
+				missingDisplay.style.display = 'block';
+			}
+
 			setupKeyboardNavigation();
 		}
 
