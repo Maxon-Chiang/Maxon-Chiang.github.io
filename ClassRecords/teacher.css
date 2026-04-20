@@ -839,10 +839,16 @@ body.modal-open { overflow: hidden; }
 	#student-roster-modal .modal-content h2 { flex-wrap: nowrap; padding-right: 25px; }
 	.roster-title-text h3, .roster-title-clickable { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 	#roster-sort-btn { flex-shrink: 0; font-size: 1.2em; }
-	#student-grid-container { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 5px; padding: 5px; }
-	.student-block { height: 60px; }
-	.student-block-info { font-size: 0.9em; margin-bottom: 0px; }
-	.student-block-name { font-size: 0.9em; }
+	#student-grid-container { grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 2px; }
+	/* 縮小卡片高度與內部 padding */
+	.student-block { height: 55px; padding: 2px !important; }
+	/* 縮小座號與分數，並強制不換行 */
+	.student-block-info { font-size: 0.8em; margin-bottom: 0px; white-space: nowrap; letter-spacing: -0.5px; }
+	.student-block-info .score { font-size: 0.85em; }
+	/* 縮小姓名，若太長則用...省略，避免破版 */
+	.student-block-name { font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	/* 調整標註文字的尺寸與間距 */
+	.student-record-text { font-size: 0.65em; margin-top: 2px; }
 	.modal2 .modal-content { padding: 15px; }
 	.mobile-score-controls { display: flex; }
 	#save-record-btn, #btn-cancel-edit { padding: 5px 8px !important; font-size: 1em !important; flex-shrink: 0; }
