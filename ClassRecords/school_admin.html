@@ -22,14 +22,29 @@
 		#announcement-meta { font-size: 0.9em; color: #555; text-align: right; }
 		.data-block { border-bottom: 1px dashed #ccc; padding-bottom: 20px; margin-bottom: 20px; }
 		.data-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+		
+		/* 縮小課程時間表的列高度與 padding */
 		#periods-table { width: 100%; border-collapse: collapse; font-size: 0.95em; }
-		#periods-table th, #periods-table td { border: 1px solid #eee; padding: 8px; text-align: center; }
+		#periods-table th, #periods-table td { border: 1px solid #eee; padding: 4px; text-align: center; }
 		#periods-table th { background-color: #f2f2f2; }
-		#periods-table input[type="time"] { width: 150px; text-align: center; font-size: 1em; }
-		#periods-table input[type="number"] { width: 60px; text-align: center; }
+		#periods-table input[type="time"] { width: 120px; text-align: center; font-size: 1em; padding: 4px; }
+		#periods-table input[type="number"] { width: 60px; text-align: center; padding: 4px; }
 		#periods-table .duration-unit { white-space: nowrap; padding-left: 5px; }
-		#periods-table button { background-color: #6c757d; padding: 5px 10px; font-size: 0.9em; }
+		#periods-table button { background-color: #6c757d; padding: 4px 8px; font-size: 0.9em; }
 		.upload-btn { background-color: #198754; padding: 10px 20px; font-size: 1.1em; margin-top: 15px; }
+
+		/* 雙欄佈局專用樣式 */
+		.two-col-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+		.col-box { display: flex; flex-direction: column; height: 100%; }
+		.col-box textarea { flex-grow: 1; min-height: 250px; font-family: monospace; white-space: pre; }
+		.readonly-bg { background-color: #f4f4f4; cursor: not-allowed; }
+		.copy-btn { background-color: #17a2b8; padding: 6px 12px; font-size: 0.95em; margin-bottom: 5px; align-self: flex-end; }
+		.ai-prompt-btn { background-color: #ffc107; color: #333; padding: 6px 12px; font-size: 0.95em; margin-bottom: 5px; font-weight: bold; align-self: flex-start;}
+		
+		@media (max-width: 768px) {
+			.two-col-layout { grid-template-columns: 1fr; }
+			.col-box textarea { min-height: 150px; }
+		}
 	</style>
 </head>
 <body>
@@ -48,6 +63,7 @@
 	<div class="section">
 		<h2>學期資料設定與上傳</h2>
 		<p class="info-box">請將每項資料貼上/設定完成後，點擊該區塊的「上傳」按鈕獨立更新。必要資料：課程時間 → 學生名冊 → 教師課表。</p>
+		
 		<div class="data-block">
 			<h3>1. 課程時間表 (每節課起訖時間)</h3>
 			<p class="info-box">請設定每節課的開始時間和持續分鐘數。</p>
@@ -65,15 +81,44 @@
 			<button id="add-period-btn" style="margin-top: 10px;">+ 新增一節課</button>
 			<button id="upload-periods-btn" class="upload-btn" data-type="periods">上傳課程時間表</button>
 		</div>
+
 		<div class="data-block">
-			<label for="roster-data"><h3>2. 學生名冊</h3></label>
-			<textarea id="roster-data" placeholder="格式: 班級座號,姓名 (一行一筆)&#10;70101,陳宥炘&#10;70102,廖翊暟"></textarea>
-			<button id="upload-roster-btn" class="upload-btn" data-type="roster">上傳學生名冊</button>
+			<h3>2. 學生名冊</h3>
+			<div class="two-col-layout">
+				<div class="col-box">
+					<label for="roster-data"><strong>📥 上傳 / 更新資料區</strong></label>
+					<textarea id="roster-data" placeholder="格式: 班級座號,姓名 (一行一筆)&#10;10101,陳宥炘&#10;10102,廖翊暟"></textarea>
+					<button id="upload-roster-btn" class="upload-btn" data-type="roster">上傳 / 覆蓋學生名冊</button>
+				</div>
+				<div class="col-box">
+					<div style="display:flex; justify-content:space-between; align-items:center;">
+						<label for="current-roster-data"><strong>📂 系統現有資料</strong></label>
+						<button id="copy-roster-btn" class="copy-btn">📋 複製全部</button>
+					</div>
+					<textarea id="current-roster-data" class="readonly-bg" readonly placeholder="載入中..."></textarea>
+				</div>
+			</div>
 		</div>
+		
 		<div class="data-block">
-			<label for="timetable-data"><h3>3. 全校教師課表</h3></label>
-			<textarea id="timetable-data" placeholder="請貼上已轉AI換過的 CSV 格式課表..."></textarea>
-			<button id="upload-timetable-btn" class="upload-btn" data-type="timetable">上傳教師課表</button>
+			<h3>3. 全校教師課表</h3>
+			<div class="two-col-layout">
+				<div class="col-box">
+					<div style="display:flex; justify-content:space-between; align-items:center;">
+						<label for="timetable-data"><strong>📥 上傳 / 更新資料區</strong></label>
+						<button id="copy-ai-prompt-btn" class="ai-prompt-btn">🤖 複製 AI 轉換提示語</button>
+					</div>
+					<textarea id="timetable-data" placeholder="教師姓名,身份頭銜,教學領域,節次,星期一,星期二,星期三,星期四,星期五&#10;王大明,導師,國文,第一節,101 國文,102 國文,,,&#10;王大明,導師,國文,第二節,,101 國文,,,"></textarea>
+					<button id="upload-timetable-btn" class="upload-btn" data-type="timetable">上傳 / 覆蓋教師課表</button>
+				</div>
+				<div class="col-box">
+					<div style="display:flex; justify-content:space-between; align-items:center;">
+						<label for="current-timetable-data"><strong>📂 系統現有資料</strong></label>
+						<button id="copy-timetable-btn" class="copy-btn">📋 複製全部</button>
+					</div>
+					<textarea id="current-timetable-data" class="readonly-bg" readonly placeholder="載入中..."></textarea>
+				</div>
+			</div>
 		</div>
 	</div>
 	<div class="section" style="border-left: 5px solid #6610f2;">
@@ -158,6 +203,10 @@
 					loadLatestAnnouncement();
 					await loadPeriodsData();
 					renderPeriodsTable();
+					
+					// 載入右欄現有資料
+					loadCurrentRoster();
+					loadCurrentTimetables();
 				} else {
 					alert('權限不足！');
 					window.location.href = 'login.html';
@@ -450,9 +499,107 @@
 		}
 
 		document.getElementById('upload-periods-btn').addEventListener('click', uploadPeriods);
-		document.getElementById('upload-roster-btn').addEventListener('click', uploadRoster);
-		document.getElementById('upload-timetable-btn').addEventListener('click', uploadTimetable);
+		document.getElementById('upload-roster-btn').addEventListener('click', async () => { await uploadRoster(); loadCurrentRoster(); });
+		document.getElementById('upload-timetable-btn').addEventListener('click', async () => { await uploadTimetable(); loadCurrentTimetables(); });
 		document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+
+		// ================= 右側檢視與複製功能 =================
+		
+		async function loadCurrentRoster() {
+			try {
+				const doc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
+				if (doc.exists && doc.data().students) {
+					const students = doc.data().students;
+					const text = students.map(s => `${s.id},${s.name}`).join('\n');
+					document.getElementById('current-roster-data').value = text;
+				} else {
+					document.getElementById('current-roster-data').value = '目前系統內無名冊資料。';
+				}
+			} catch(e) {
+				document.getElementById('current-roster-data').value = '讀取失敗';
+			}
+		}
+
+		async function loadCurrentTimetables() {
+			try {
+				const snapshot = await db.collection('schools').doc(schoolId).collection('timetables').get();
+				if (snapshot.empty) {
+					document.getElementById('current-timetable-data').value = '目前系統內無教師課表資料。';
+					return;
+				}
+				const PERIOD_NAMES = ['第一節', '第二節', '第三節', '第四節', '第五節', '第六節', '第七節', '第八節'];
+				let csvContent = ""; 
+				
+				snapshot.forEach(doc => {
+					const teacherName = doc.id;
+					const data = doc.data();
+					const title = data.title || '專任教師';
+					const subject = data.subject || '其他';
+					const periods = data.periods || {};
+					
+					for (let i = 0; i < 8; i++) { // 固定輸出 8 節
+						const pData = periods[i] || ["", "", "", "", ""];
+						const mon = pData[0] || "";
+						const tue = pData[1] || "";
+						const wed = pData[2] || "";
+						const thu = pData[3] || "";
+						const fri = pData[4] || "";
+						csvContent += `${teacherName},${title},${subject},${PERIOD_NAMES[i]},${mon},${tue},${wed},${thu},${fri}\n`;
+					}
+				});
+				document.getElementById('current-timetable-data').value = csvContent.trim();
+			} catch(e) {
+				document.getElementById('current-timetable-data').value = '讀取失敗';
+			}
+		}
+
+		function copyToClipboard(elementId, btnId) {
+			const el = document.getElementById(elementId);
+			el.select();
+			el.setSelectionRange(0, 99999); 
+			navigator.clipboard.writeText(el.value).then(() => {
+				const btn = document.getElementById(btnId);
+				const originalText = btn.innerHTML;
+				btn.innerHTML = '✅ 已複製';
+				setTimeout(() => btn.innerHTML = originalText, 2000);
+			}).catch(err => alert("複製失敗: " + err));
+		}
+
+		document.getElementById('copy-roster-btn').addEventListener('click', () => copyToClipboard('current-roster-data', 'copy-roster-btn'));
+		document.getElementById('copy-timetable-btn').addEventListener('click', () => copyToClipboard('current-timetable-data', 'copy-timetable-btn'));
+
+		// ================= AI 提示語複製 =================
+
+		const AI_PROMPT = `【輸入格式規則】
+1. 這是一份csv純文字課表，以教師為單位分塊。
+2. 每個區塊的第一行，第一個欄位是教師姓名。
+3. 教師姓名正下方的第一行，第二個欄位是該教師的「身份頭銜」。
+4. 後續所有第一欄為空白的行，都屬於上方最近的一個教師。
+5. 第二欄為「第X節」的行，代表課表內容，其後五個欄位分別代表週一至週五的課程。
+6. 教學領域共分為：國文、英語、數學、社會、自然、綜合、藝術、健體、科技 共九大領域，請由課表判斷教師的教學領域
+
+【輸出格式規則】
+請將輸入的資料轉換成一個 CSV 格式，包含以下 9 個欄位：
+教師姓名,身份頭銜,教學領域,節次,星期一,星期二,星期三,星期四,星期五
+
+【轉換指令】
+1. 遍歷每一位老師的資料區塊。
+2. 針對每一位老師，都必須產生 7 行資料，分別代表第一節到第七節。
+3. 每一行的「教師姓名」、「身份頭銜」和「教學領域」欄位，都必須填上該老師對應的姓名、頭銜和教學領域。
+4. 如果原始資料中某位老師沒有明確的「身份頭銜」（例如 \`衛生組長\` 下一行直接是課表），請使用 \`專任教師\` 作為預設頭銜。
+5. 如果原始資料判斷不出老師的教學領域，請使用\`其他\`作為預設領域。
+6. 將原始資料中每節課的內容，填入到新格式對應的星期欄位中。如果某個格子是空的，就保留空白。
+7. 班級代號需轉換，請將701轉成101，702轉成102，801轉成201，901轉成301，依此規則轉換班級代號
+8. 請嚴格按照 CSV 格式輸出，不要包含任何額外的說明或註解。`;
+
+		document.getElementById('copy-ai-prompt-btn').addEventListener('click', () => {
+			navigator.clipboard.writeText(AI_PROMPT).then(() => {
+				const btn = document.getElementById('copy-ai-prompt-btn');
+				const originalText = btn.innerHTML;
+				btn.innerHTML = '✅ 已複製提示語';
+				setTimeout(() => btn.innerHTML = originalText, 2000);
+			});
+		});
 		
 		document.getElementById('reset-semester-btn').addEventListener('click', async () => {
 			const btn = document.getElementById('reset-semester-btn');

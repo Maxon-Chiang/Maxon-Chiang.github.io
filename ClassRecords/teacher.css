@@ -162,8 +162,13 @@ main {
 	padding: 1.5rem;
 }
 .class-grid {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+.grade-row {
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 	gap: 1rem;
 }
 .class-block {
@@ -832,7 +837,13 @@ body.modal-open { overflow: hidden; }
 	.header-right-panel .user-profile, .header-right-panel .dropdown { flex-shrink: 0; }
 	.user-profile { font-size: 0.8em; }
 	main { padding: 1rem; width: 100%; box-sizing: border-box; overflow-x: hidden; }
-	.class-grid { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.8rem; }
+	.class-grid { gap: 1rem; }
+	.grade-row { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+	.class-block { min-height: 70px; }
+	.class-block-title { font-size: 1.1em; padding: 4px 2px 2px 2px; }
+	.class-total-score { font-size: 0.75em; padding: 3px 0; }
+	.class-block-actions { padding: 4px 2px; }
+	.class-block-actions a, .class-block-actions button { padding: 2px; font-size: 1.15em; margin: 0 2px; }
 	.class-block { min-height: 90px; }
 	.class-block-title { font-size: 1.4em; }
 	.class-total-score { font-size: 0.9em; }

@@ -756,42 +756,66 @@ document.addEventListener('DOMContentLoaded', function() {
 			appContainer.innerHTML = '<h3>沒有設定要顯示的班級。請點擊下拉選單中的「班級顯示設定」。</h3>';
 			return;
 		}
+
+		// 依據字首(年段)分群
+		const gradeGroups = {};
 		classesToRender.forEach(className => {
-			const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
-			const scoreColor = getClassBlockColor(totalScore);
-			const gradeColor = getGradeColor(className);
-			const classBlock = document.createElement('div');
-			classBlock.className = 'class-block';
-			classBlock.style.backgroundColor = scoreColor;
-			classBlock.style.setProperty('--grade-color', gradeColor);
-			classBlock.dataset.classId = className;
-			const titleDiv = document.createElement('div');
-			titleDiv.className = 'class-block-title';
-			titleDiv.textContent = `${className} 班`;
-			titleDiv.title = '點擊以紀錄班級共同事件';
-			titleDiv.addEventListener('click', () => openModal(className, 'class', 'main'));
-			const scoreDiv = document.createElement('div');
-			scoreDiv.className = 'class-total-score';
-			scoreDiv.textContent = `總分: ${totalScore.toFixed(1)}`;
-			const actionsDiv = document.createElement('div');
-			actionsDiv.className = 'class-block-actions';
-			const studentBtn = document.createElement('button');
-			studentBtn.innerHTML = '🧑‍🎓';
-			studentBtn.title = '開啟學生名單';
-			studentBtn.addEventListener('click', () => openStudentRosterModal(className, 'main'));
-			const gradesLink = document.createElement('a');
-			gradesLink.href = `./grades.html?class=${className}`;
-			gradesLink.innerHTML = '📋';
-			gradesLink.title = '前往成績登錄';
-			actionsDiv.appendChild(studentBtn);
-			actionsDiv.appendChild(gradesLink);
-			classBlock.appendChild(titleDiv);
-			classBlock.appendChild(scoreDiv);
-			classBlock.appendChild(actionsDiv);
-			appContainer.appendChild(classBlock);
+			const grade = className.charAt(0);
+			if (!gradeGroups[grade]) gradeGroups[grade] = [];
+			gradeGroups[grade].push(className);
+		});
+
+		const sortedGrades = Object.keys(gradeGroups).sort();
+
+		// 將不同年段分別放到獨立的列 (Row) 裡面
+		sortedGrades.forEach(grade => {
+			const gradeRow = document.createElement('div');
+			gradeRow.className = 'grade-row';
+
+			gradeGroups[grade].forEach(className => {
+				const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
+				const scoreColor = getClassBlockColor(totalScore);
+				const gradeColor = getGradeColor(className);
+				
+				const classBlock = document.createElement('div');
+				classBlock.className = 'class-block';
+				classBlock.style.backgroundColor = scoreColor;
+				classBlock.style.setProperty('--grade-color', gradeColor);
+				classBlock.dataset.classId = className;
+				
+				const titleDiv = document.createElement('div');
+				titleDiv.className = 'class-block-title';
+				titleDiv.textContent = `${className} 班`;
+				titleDiv.title = '點擊以紀錄班級共同事件';
+				titleDiv.addEventListener('click', () => openModal(className, 'class', 'main'));
+				
+				const scoreDiv = document.createElement('div');
+				scoreDiv.className = 'class-total-score';
+				scoreDiv.textContent = `總分: ${totalScore.toFixed(1)}`;
+				
+				const actionsDiv = document.createElement('div');
+				actionsDiv.className = 'class-block-actions';
+				
+				const studentBtn = document.createElement('button');
+				studentBtn.innerHTML = '🧑‍🎓';
+				studentBtn.title = '開啟學生名單';
+				studentBtn.addEventListener('click', () => openStudentRosterModal(className, 'main'));
+				
+				const gradesLink = document.createElement('a');
+				gradesLink.href = `./grades.html?class=${className}`;
+				gradesLink.innerHTML = '📋';
+				gradesLink.title = '前往成績登錄';
+				
+				actionsDiv.appendChild(studentBtn);
+				actionsDiv.appendChild(gradesLink);
+				classBlock.appendChild(titleDiv);
+				classBlock.appendChild(scoreDiv);
+				classBlock.appendChild(actionsDiv);
+				gradeRow.appendChild(classBlock);
+			});
+			appContainer.appendChild(gradeRow);
 		});
 	}
-
 	function updateSortButtonDisplay(state, downArrowEl, upArrowEl, activeColor, type) {
 		if (state === 0) {
 			downArrowEl.classList.remove('active');
