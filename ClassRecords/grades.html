@@ -177,8 +177,8 @@
 						// 防呆：如果日期格式錯誤，預設顯示以免資料遺失
 						if (isNaN(aDate.getTime())) return true;
 
-						if (userData.sysStartDate && aDate < new Date(userData.sysStartDate + 'T00:00:00')) return false;
-						if (userData.sysEndDate && aDate > new Date(userData.sysEndDate + 'T23:59:59.999')) return false;
+						if (userData.gradesStartDate && aDate < new Date(userData.gradesStartDate + 'T00:00:00')) return false;
+						if (userData.gradesEndDate && aDate > new Date(userData.gradesEndDate + 'T23:59:59.999')) return false;
 						return true;
 					});
 

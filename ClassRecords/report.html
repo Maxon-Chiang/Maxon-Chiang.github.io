@@ -537,8 +537,9 @@
 		});
 
 		async function initializeReportPage(cacheUser) {
-			const sysStart = cacheUser.userData.sysStartDate;
-			const sysEnd = cacheUser.userData.sysEndDate;
+			// 報告頁面的起訖日輸入框，預設給予「表現紀錄」的日期區間
+			const sysStart = cacheUser.userData.perfStartDate;
+			const sysEnd = cacheUser.userData.perfEndDate;
 			const today = new Date().toLocaleDateString('en-CA');
 			document.getElementById('start-date').value = sysStart || today;
 			document.getElementById('end-date').value = sysEnd || today;
@@ -630,7 +631,9 @@
 				assignmentsSnapshot.forEach(doc => {
 					let data = doc.data({ serverTimestamps: 'estimate' }); // 加入預估時間防呆
 					let include = true;
-					if (sysStart || sysEnd) {
+					const gStart = cacheUser.userData.gradesStartDate;
+					const gEnd = cacheUser.userData.gradesEndDate;
+					if (gStart || gEnd) {
 						let aDate;
 						if (!data.date) {
 							aDate = new Date();
@@ -643,8 +646,8 @@
 						}
 
 						if (!isNaN(aDate.getTime())) {
-							if (sysStart && aDate < new Date(sysStart + 'T00:00:00')) include = false;
-							if (sysEnd && aDate > new Date(sysEnd + 'T23:59:59.999')) include = false;
+							if (gStart && aDate < new Date(gStart + 'T00:00:00')) include = false;
+							if (gEnd && aDate > new Date(gEnd + 'T23:59:59.999')) include = false;
 						}
 					}
 					if (include) {
@@ -794,23 +797,25 @@
 						sortAndRenderPerfStats();
 					} else if (sumTarget === 'student') {
 						const stats = {};
-						const studentsToProcess = studentsData.filter(s => {
+						// 建立 mapping: sysId -> 當前學生的完整資料
+						const sysIdMap = new Map();
+						studentsData.forEach(s => {
 							const grade = getGradeLevelFromClassId(s.id.substring(0, 3));
-							return grade && selectedGrades.includes(grade);
-						}).map(s => s.id);
-						studentsToProcess.forEach(sId => {
-							const student = studentMap.get(sId);
-							stats[sId] = { studentId: sId, className: student.id.substring(0, 3), name: student.name, total: 0, positive: 0, negative: 0, count: 0 };
+							if (grade && selectedGrades.includes(grade)) {
+								sysIdMap.set(s.sysId, s);
+								stats[s.sysId] = { studentId: s.id, className: s.id.substring(0, 3), name: s.name, total: 0, positive: 0, negative: 0, count: 0 };
+							}
 						});
+						
 						allRecordsInRange.forEach(record => {
-							const studentId = record.entityId || record.studentId;
-							if (record.entityType !== 'class' && studentsToProcess.includes(studentId)) {
-								if (stats[studentId]) {
+							const recordSysId = record.entityId || record.studentId;
+							if (record.entityType !== 'class' && sysIdMap.has(recordSysId)) {
+								if (stats[recordSysId]) {
 									const points = record.points || 0;
-									stats[studentId].count++;
-									stats[studentId].total += points;
-									if (points > 0) stats[studentId].positive += points;
-									if (points < 0) stats[studentId].negative += points;
+									stats[recordSysId].count++;
+									stats[recordSysId].total += points;
+									if (points > 0) stats[recordSysId].positive += points;
+									if (points < 0) stats[recordSysId].negative += points;
 								}
 							}
 						});
@@ -1309,8 +1314,8 @@
 				const dir = gradesStudentSortState.direction === 'asc' ? 1 : -1;
 
 				sortedStudents.sort((a, b) => {
-					const scoreAInfo = data[aId] && data[aId].scores[a.id];
-					const scoreBInfo = data[aId] && data[aId].scores[b.id];
+					const scoreAInfo = data[aId] && data[aId].scores[a.sysId];
+					const scoreBInfo = data[aId] && data[aId].scores[b.sysId];
 					// 缺考/未輸入分數視為 -Infinity，讓他們沉在底部
 					const scoreA = (scoreAInfo && scoreAInfo.score !== undefined && scoreAInfo.score !== null) ? scoreAInfo.score : -Infinity;
 					const scoreB = (scoreBInfo && scoreBInfo.score !== undefined && scoreBInfo.score !== null) ? scoreBInfo.score : -Infinity;
@@ -1354,7 +1359,7 @@
 				const count = assignments.length;
 				assignments.forEach(assign => {
 					const assignmentData = data[assign.id];
-					const scoreInfo = assignmentData && assignmentData.scores[student.id];
+					const scoreInfo = assignmentData && assignmentData.scores[student.sysId]; // 撈取成績改用 sysId
 					let cellContent = '';
 					let score = 0;
 					if (scoreInfo && scoreInfo.score !== undefined && scoreInfo.score !== null) {

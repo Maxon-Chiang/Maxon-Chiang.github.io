@@ -288,15 +288,20 @@
 		<div class="modal-content" style="max-width: 400px;">
 			<span class="close-btn" data-modal="date-range-modal">&times;</span>
 			<h2>資料期間設定</h2>
-			<p style="font-size: 0.9em; color: #666;">設定後，系統只會載入此日期區間內的「表現紀錄」與「成績項目」。留空表示不限制。<br><span style="color:red;">此設定會同步至您的帳號，跨裝置生效。</span></p>
-			<div style="margin: 15px 0;">
-				<label style="display:block; margin-bottom:5px; font-weight:bold;">開始日期：</label>
-				<input type="date" id="sys-start-date" style="width:100%; padding:8px;">
+			<p style="font-size: 0.9em; color: #666;">將成績與表現紀錄的過濾期間分開，方便跨學年檢視。</p>
+			
+			<div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #eee;">
+				<h3 style="margin-top: 0; font-size: 1.1em; color: #d0021b;">📝 表現紀錄區間 (建議：學年)</h3>
+				<div><label>開始：</label><input type="date" id="sys-perf-start" style="width:100%; padding:5px;"></div>
+				<div style="margin-top:5px;"><label>結束：</label><input type="date" id="sys-perf-end" style="width:100%; padding:5px;"></div>
 			</div>
-			<div style="margin: 15px 0;">
-				<label style="display:block; margin-bottom:5px; font-weight:bold;">結束日期：</label>
-				<input type="date" id="sys-end-date" style="width:100%; padding:8px;">
+
+			<div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ddd;">
+				<h3 style="margin-top: 0; font-size: 1.1em; color: #4a90e2;">📊 成績登錄區間 (建議：學期)</h3>
+				<div><label>開始：</label><input type="date" id="sys-grades-start" style="width:100%; padding:5px;"></div>
+				<div style="margin-top:5px;"><label>結束：</label><input type="date" id="sys-grades-end" style="width:100%; padding:5px;"></div>
 			</div>
+
 			<button id="save-date-range-btn" style="width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:4px; font-size:1.1em; cursor:pointer;">儲存並重新載入</button>
 			<button id="clear-date-range-btn" style="width:100%; padding:10px; background:#dc3545; color:white; border:none; border-radius:4px; margin-top:10px; font-size:1.1em; cursor:pointer;">清除限制 (載入全部)</button>
 		</div>

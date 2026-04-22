@@ -154,8 +154,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	function getClassBlockColor(totalScore) {
 		if (totalScore < 0) return '#D9E2E9';
-		else if (totalScore < 10) return '#D4EDDA';
-		else if (totalScore < 20) return '#FFFACD';
+		else if (totalScore <=30) return '#D4EDDA';
+		else if (totalScore <=60) return '#FFFACD';
 		else return '#F8D7DA';
 	}
 
@@ -527,11 +527,12 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (!loadedFromCache || force) {
 			try {
 				let query = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
-				if (currentUserData && currentUserData.sysStartDate) {
-					query = query.where('timestamp', '>=', new Date(currentUserData.sysStartDate + 'T00:00:00'));
+				// 套用專屬的 perfStartDate / perfEndDate
+				if (currentUserData && currentUserData.perfStartDate) {
+					query = query.where('timestamp', '>=', new Date(currentUserData.perfStartDate + 'T00:00:00'));
 				}
-				if (currentUserData && currentUserData.sysEndDate) {
-					query = query.where('timestamp', '<=', new Date(currentUserData.sysEndDate + 'T23:59:59.999'));
+				if (currentUserData && currentUserData.perfEndDate) {
+					query = query.where('timestamp', '<=', new Date(currentUserData.perfEndDate + 'T23:59:59.999'));
 				}
 				const snapshot = await query.get();
 				lastPerformanceFetch = new Date().getTime();
@@ -551,32 +552,30 @@ document.addEventListener('DOMContentLoaded', function() {
 		records.forEach(r => {
 			const p = r.points || 0;
 			const type = r.entityType || 'student';
-			const id = r.entityId || r.studentId;
+			const id = r.entityId || r.studentId; // 這裡的 id 現在是 sysId
 			if (!id) return;
 			if (type === 'student') {
-				const studentId = id;
-				if (!allPerformanceScores[studentId]) allPerformanceScores[studentId] = 0;
-				allPerformanceScores[studentId] += p;
+				if (!allPerformanceScores[id]) allPerformanceScores[id] = 0;
+				allPerformanceScores[id] += p;
 			} else if (type === 'class') {
-				const classId = id;
-				if (!classTotalScores[classId]) classTotalScores[classId] = 0;
-				classTotalScores[classId] += p;
+				if (!classTotalScores[id]) classTotalScores[id] = 0;
+				classTotalScores[id] += p;
 			}
 		});
 		studentsData.forEach(student => {
-			const studentId = student.id;
-			const className = studentId.substring(0, 3);
-			const score = allPerformanceScores[studentId] || 0;
+			const studentSysId = student.sysId; // 使用系統追蹤碼
+			const className = student.id.substring(0, 3);
+			const score = allPerformanceScores[studentSysId] || 0;
 			classTotalScores[className] = (classTotalScores[className] || 0) + score;
 		});
 		studentsData.forEach(student => {
-			const studentRecords = records.filter(r => (r.entityId === student.id || r.studentId === student.id) && (r.entityType === 'student' || !r.entityType)).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-			studentLatestRecords[student.id] = null;
+			const studentRecords = records.filter(r => (r.entityId === student.sysId || r.studentId === student.sysId) && (r.entityType === 'student' || !r.entityType)).sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+			studentLatestRecords[student.sysId] = null;
 			for (const record of studentRecords) {
 				const hasText = record.text && record.text.trim() !== '';
 				const hasNoPoints = (record.points === undefined || record.points === null || record.points === 0);
 				if (hasText) {
-					studentLatestRecords[student.id] = { latestComment: record.text, needsHighlight: hasNoPoints };
+					studentLatestRecords[student.sysId] = { latestComment: record.text, needsHighlight: hasNoPoints };
 					break;
 				}
 			}
@@ -889,7 +888,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			studentsToRender.forEach(student => {
 				const studentBlock = document.createElement('div');
 				studentBlock.title = `點擊以紀錄 ${student.name} 的表現`;
-				const score = allPerformanceScores[student.id] || 0;
+				const score = allPerformanceScores[student.sysId] || 0;
 				let scoreClass = '';
 				if (score < 0) {
 					scoreClass = 'score-negative';
@@ -899,7 +898,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					scoreClass = 'score-positive-high';
 				}
 				studentBlock.className = 'student-block ' + scoreClass;
-				const latestRecordInfo = studentLatestRecords[student.id];
+				const latestRecordInfo = studentLatestRecords[student.sysId];
 				let latestCommentHtml = '';
 				if (latestRecordInfo) {
 					if (latestRecordInfo.needsHighlight) {
@@ -917,7 +916,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					${latestCommentHtml}`;
 				studentBlock.addEventListener('click', () => {
 					document.getElementById('student-roster-modal').style.display = 'none';
-					openModal(student.id, 'student', 'roster');
+					openModal(student.sysId, 'student', 'roster'); // 傳遞 sysId
 				});
 				studentGridContainer.appendChild(studentBlock);
 			});
@@ -1092,8 +1091,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		resetPerformanceForm();
 		let titleText = '';
 		if (type === 'student') {
-			const student = studentsData.find(s => s.id === id);
-			const displayId = student ? `${student.id.substring(0,3)}${student.id.substring(3)}` : 'N/A';
+			const student = studentsData.find(s => s.sysId === id);
+			const displayId = student ? student.id : 'N/A'; // 用 sysId 找人，但顯示當前的座號
 			titleText = student ? `${student.name} (${displayId}) 的紀錄` : `學生紀錄 (${id})`;
 		} else {
 			titleText = `班級事件紀錄 (${id} 班)`;
@@ -1797,34 +1796,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	function updateDateRangeDisplay() {
 		if (!sysDateDisplay || !currentUserData) return;
-		const start = currentUserData.sysStartDate;
-		const end = currentUserData.sysEndDate;
-		if (start && end) sysDateDisplay.textContent = `📅 ${start.replace(/-/g,'/')} ~ ${end.replace(/-/g,'/')}`;
-		else if (start) sysDateDisplay.textContent = `📅 ${start.replace(/-/g,'/')} 起`;
-		else if (end) sysDateDisplay.textContent = `📅 至 ${end.replace(/-/g,'/')}`;
-		else sysDateDisplay.textContent = '📅 全部期間';
+		// 簡化顯示，只要有任何設定就顯示為已設定
+		const hasSettings = currentUserData.perfStartDate || currentUserData.perfEndDate || currentUserData.gradesStartDate || currentUserData.gradesEndDate;
+		sysDateDisplay.textContent = hasSettings ? '📅 期間已設定' : '📅 全部期間';
 	}
 
 	if (dateRangeSettingsBtn && dateRangeModal) {
 		dateRangeSettingsBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
-			document.getElementById('sys-start-date').value = currentUserData.sysStartDate || '';
-			document.getElementById('sys-end-date').value = currentUserData.sysEndDate || '';
+			document.getElementById('sys-perf-start').value = currentUserData.perfStartDate || '';
+			document.getElementById('sys-perf-end').value = currentUserData.perfEndDate || '';
+			document.getElementById('sys-grades-start').value = currentUserData.gradesStartDate || '';
+			document.getElementById('sys-grades-end').value = currentUserData.gradesEndDate || '';
 			document.body.classList.add('modal-open');
 			dateRangeModal.style.display = 'flex';
 		});
 		if (sysDateDisplay) sysDateDisplay.addEventListener('click', () => dateRangeSettingsBtn.click());
-		const syncDateRangeToDB = async (start, end) => {
+		const syncDateRangeToDB = async (pStart, pEnd, gStart, gEnd) => {
 			try {
 				const updateData = {
-					sysStartDate: start ? start : firebase.firestore.FieldValue.delete(),
-					sysEndDate: end ? end : firebase.firestore.FieldValue.delete()
+					perfStartDate: pStart ? pStart : firebase.firestore.FieldValue.delete(),
+					perfEndDate: pEnd ? pEnd : firebase.firestore.FieldValue.delete(),
+					gradesStartDate: gStart ? gStart : firebase.firestore.FieldValue.delete(),
+					gradesEndDate: gEnd ? gEnd : firebase.firestore.FieldValue.delete()
 				};
 				await db.collection('users').doc(currentUser.uid).update(updateData);
 				const cachedAuthData = JSON.parse(localStorage.getItem(USER_AUTH_KEY));
 				if(cachedAuthData) {
-					if (start) cachedAuthData.userData.sysStartDate = start; else delete cachedAuthData.userData.sysStartDate;
-					if (end) cachedAuthData.userData.sysEndDate = end; else delete cachedAuthData.userData.sysEndDate;
+					if (pStart) cachedAuthData.userData.perfStartDate = pStart; else delete cachedAuthData.userData.perfStartDate;
+					if (pEnd) cachedAuthData.userData.perfEndDate = pEnd; else delete cachedAuthData.userData.perfEndDate;
+					if (gStart) cachedAuthData.userData.gradesStartDate = gStart; else delete cachedAuthData.userData.gradesStartDate;
+					if (gEnd) cachedAuthData.userData.gradesEndDate = gEnd; else delete cachedAuthData.userData.gradesEndDate;
 					localStorage.setItem(USER_AUTH_KEY, JSON.stringify(cachedAuthData));
 				}
 				localStorage.removeItem(DYNAMIC_CACHE_KEY);
@@ -1836,11 +1838,16 @@ document.addEventListener('DOMContentLoaded', function() {
 		};
 		saveDateRangeBtn.addEventListener('click', () => {
 			saveDateRangeBtn.textContent = '儲存中...';
-			syncDateRangeToDB(document.getElementById('sys-start-date').value, document.getElementById('sys-end-date').value);
+			syncDateRangeToDB(
+				document.getElementById('sys-perf-start').value,
+				document.getElementById('sys-perf-end').value,
+				document.getElementById('sys-grades-start').value,
+				document.getElementById('sys-grades-end').value
+			);
 		});
 		clearDateRangeBtn.addEventListener('click', () => {
 			clearDateRangeBtn.textContent = '清除中...';
-			syncDateRangeToDB(null, null);
+			syncDateRangeToDB(null, null, null, null);
 		});
 	}
 

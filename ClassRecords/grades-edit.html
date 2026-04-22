@@ -355,9 +355,9 @@
 			let missingCount = 0; // 新增：計算未輸入成績的人數
 
 			studentsInClass.forEach(student => {
-				const studentId = student.id;
-				const studentSeat = studentId.substring(3);
-				const existingScoreEntry = currentGradesData[studentId] || {};
+				const studentSysId = student.sysId; // 改用系統ID對接成績庫
+				const studentSeat = student.id.substring(3); // 畫面上依然顯示目前的座號
+				const existingScoreEntry = currentGradesData[studentSysId] || {};
 				const existingScore = existingScoreEntry.score !== undefined && existingScoreEntry.score !== null ? existingScoreEntry.score : '';
 				const existingComment = existingScoreEntry.comment || '';
 				const rawDate = existingScoreEntry.scoreEntryDate;
@@ -368,22 +368,17 @@
 
 				const studentDiv = document.createElement('div');
 				studentDiv.className = 'score-entry-grid score-columns';
-				
-				// 新增：若為檢視模式且未輸入成績，加上醒目的紅色底色樣式
-				if (isViewMode && isMissing) {
-					studentDiv.className += ' missing-score-row';
-				}
-
-				studentDiv.dataset.id = studentId;
+				if (isViewMode && isMissing) { studentDiv.className += ' missing-score-row'; }
+				studentDiv.dataset.id = studentSysId; // 綁定為 sysId
 				const disabledAttr = isViewMode ? 'disabled' : '';
 				studentDiv.innerHTML = `
 					<div class="student-id-cell">${studentSeat}</div>
 					<div class="student-name-cell">${student.name}</div>
 					<div class="score-input-cell">
-						<input type="number" step="0.5" min="0" max="100" class="student-score-input" data-id="${studentId}" value="${existingScore}" placeholder="分數" ${disabledAttr}>
+						<input type="number" step="0.5" min="0" max="100" class="student-score-input" data-id="${studentSysId}" value="${existingScore}" placeholder="分數" ${disabledAttr}>
 					</div>
 					<div class="comment-input-cell">
-						<input type="text" class="student-comment-input" data-id="${studentId}" value="${existingComment}" placeholder="備註 (選填)" ${disabledAttr}>
+						<input type="text" class="student-comment-input" data-id="${studentSysId}" value="${existingComment}" placeholder="備註 (選填)" ${disabledAttr}>
 					</div>
 					<div class="score-date-display" style="text-align: center; font-size: 0.7em; color: #555; white-space: nowrap;">${existingDate}</div>
 				`;
@@ -405,17 +400,17 @@
 			const commentInputs = Array.from(document.querySelectorAll('.student-comment-input'));
 			const inputMap = {};
 			studentsInClass.forEach(student => {
-				inputMap[student.id] = {
-					score: document.querySelector(`.student-score-input[data-id="${student.id}"]`),
-					comment: document.querySelector(`.student-comment-input[data-id="${student.id}"]`)
+				inputMap[student.sysId] = {
+					score: document.querySelector(`.student-score-input[data-id="${student.sysId}"]`),
+					comment: document.querySelector(`.student-comment-input[data-id="${student.sysId}"]`)
 				};
 			});
 			const allInputs = [...scoreInputs, ...commentInputs];
 			allInputs.forEach((input) => {
 				input.addEventListener('keydown', (e) => {
-					const studentId = input.dataset.id;
+					const studentSysId = input.dataset.id;
 					const isScoreInput = input.classList.contains('student-score-input');
-					const currentIndexInStudents = studentsInClass.findIndex(s => s.id === studentId);
+					const currentIndexInStudents = studentsInClass.findIndex(s => s.sysId === studentSysId);
 					let nextIndexInStudents = -1;
 					const targetInputType = isScoreInput ? 'score' : 'comment';
 					if (e.key === 'Enter' || e.key === 'ArrowDown') {
@@ -428,7 +423,7 @@
 						return;
 					}
 					if (nextIndexInStudents >= 0 && nextIndexInStudents < studentsInClass.length) {
-						const nextStudentId = studentsInClass[nextIndexInStudents].id;
+						const nextStudentId = studentsInClass[nextIndexInStudents].sysId;
 						if (inputMap[nextStudentId] && inputMap[nextStudentId][targetInputType]) {
 							inputMap[nextStudentId][targetInputType].focus();
 						}
@@ -460,11 +455,11 @@
 			const existingScores = currentGradesData || {};
 
 			studentsInClass.forEach(student => {
-				const scoreInput = document.querySelector(`.student-score-input[data-id="${student.id}"]`);
-				const commentInput = document.querySelector(`.student-comment-input[data-id="${student.id}"]`);
+				const scoreInput = document.querySelector(`.student-score-input[data-id="${student.sysId}"]`);
+				const commentInput = document.querySelector(`.student-comment-input[data-id="${student.sysId}"]`);
 				const scoreValue = scoreInput.value.trim();
 				const commentValue = commentInput.value.trim();
-				const existingScoreEntry = existingScores[student.id] || {};
+				const existingScoreEntry = existingScores[student.sysId] || {};
 				let score = null;
 				if (scoreValue !== '') {
 					score = parseFloat(scoreValue);
@@ -487,7 +482,7 @@
 					if (entryDate) {
 						scoreObject.scoreEntryDate = entryDate;
 					}
-					scoresToSave[student.id] = scoreObject;
+					scoresToSave[student.sysId] = scoreObject;
 				}
 			});
 			if (invalidScoreError) {

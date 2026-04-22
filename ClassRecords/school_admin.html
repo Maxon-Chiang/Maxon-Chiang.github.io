@@ -45,6 +45,17 @@
 			.two-col-layout { grid-template-columns: 1fr; }
 			.col-box textarea { min-height: 150px; }
 		}
+		.conflict-modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+		.conflict-content { background-color: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+		.conflict-item { border: 1px solid var(--border-color); padding: 10px; margin-bottom: 10px; border-radius: 4px; background-color: #f9f9f9; }
+		.conflict-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+		.conflict-options label { background-color: white; padding: 8px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background-color 0.2s; }
+		.conflict-options label:hover { background-color: #e9ecef; }
+		.conflict-options input[type="radio"] { margin: 0; transform: scale(1.2); }
+		#ghost-list { max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #fff; margin-bottom: 10px; }
+		.ghost-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+		.ghost-item:last-child { border-bottom: none; }
+		.ghost-del-btn { background-color: #dc3545; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }		
 	</style>
 </head>
 <body>
@@ -60,7 +71,7 @@
 		<div id="announcement-content">載入中...</div>
 		<div id="announcement-meta"></div>
 	</div>
-	<div class="section">
+<div class="section">
 		<h2>學期資料設定與上傳</h2>
 		<p class="info-box">請將每項資料貼上/設定完成後，點擊該區塊的「上傳」按鈕獨立更新。必要資料：課程時間 → 學生名冊 → 教師課表。</p>
 		
@@ -88,7 +99,10 @@
 				<div class="col-box">
 					<label for="roster-data"><strong>📥 上傳 / 更新資料區</strong></label>
 					<textarea id="roster-data" placeholder="格式: 班級座號,姓名 (一行一筆)&#10;10101,陳宥炘&#10;10102,廖翊暟"></textarea>
-					<button id="upload-roster-btn" class="upload-btn" data-type="roster">上傳 / 覆蓋學生名冊</button>
+					<div style="display: flex; gap: 10px;">
+						<button id="merge-roster-btn" class="upload-btn" style="flex: 1; background-color: #0d6efd;">新增 / 異動 (保留舊生)</button>
+						<button id="upload-roster-btn" class="upload-btn" style="flex: 1; background-color: #dc3545;" data-type="roster">全面覆蓋 (危險)</button>
+					</div>
 				</div>
 				<div class="col-box">
 					<div style="display:flex; justify-content:space-between; align-items:center;">
@@ -143,6 +157,15 @@
 		</div>
 		<div id="progress-log" style="margin-top: 15px; font-family: monospace; font-size: 0.9em; color: #555; max-height: 100px; overflow-y: auto; background: #f8f9fa; padding: 10px; border: 1px solid #ddd; display: none;"></div>
 	</div>
+	<div class="section" style="border-left: 5px solid #fd7e14;">
+		<h2>👻 離校生 / 幽靈資料清理</h2>
+		<p class="info-box">
+			系統會掃描全校老師的成績與表現紀錄，並比對「目前的學生名冊」。若發現有學生的紀錄存在，但人已經不在名冊上（例如畢業或轉學），就會列在下方。<br>
+			<span style="color: #dc3545;">點擊「永久刪除」將會把該學生的所有過往紀錄從全校資料庫中抹除，釋放空間。(無法復原)</span>
+		</p>
+		<button id="scan-ghost-btn" style="background-color: #fd7e14; margin-bottom: 10px;">🔍 開始掃描幽靈資料</button>
+		<div id="ghost-list" style="display: none;"></div>
+	</div>
 	<div class="section danger-zone">
 		<h2>學期重設 (危險操作)</h2>
 		<p class="info-box">
@@ -156,6 +179,17 @@
 			</span>
 		</p>
 		<button id="reset-semester-btn">執行學期重設</button>
+	</div>
+	<div id="conflict-modal" class="conflict-modal">
+		<div class="conflict-content">
+			<h2 style="color: #dc3545; margin-top: 0;">⚠️ 發現同名同姓衝突</h2>
+			<p>在上傳的新名單中發現以下學生與舊資料有多筆同名紀錄。請手動指定他們是誰，或設定為新生：</p>
+			<div id="conflict-list-container"></div>
+			<div style="text-align: right; margin-top: 20px;">
+				<button id="cancel-upload-btn" style="background-color: #6c757d; margin-right: 10px;">取消上傳</button>
+				<button id="resolve-conflict-btn" style="background-color: #28a745;">確認並繼續上傳</button>
+			</div>
+		</div>
 	</div>
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -185,13 +219,20 @@
 			{ period: 7, start: '15:10', duration: 50 },
 			{ period: 8, start: '16:10', duration: 50 }
 		];
+		
 		auth.onAuthStateChanged(async (user) => {
 			if (user) {
 				currentUser = user;
 				const userDoc = await db.collection('users').doc(user.uid).get();
 				const data = userDoc.exists ? userDoc.data() : {};
 				const roles = data.roles || (data.role ? [data.role] : []);
+				
 				if (userDoc.exists && roles.includes('school_admin')) {
+					// 【自動修復腳本】：確保使用者的 document 內必定有符合 Security Rules 檢查的 role 字串
+					if (data.role !== 'school_admin') {
+						try { await db.collection('users').doc(user.uid).update({ role: 'school_admin' }); } catch(e) {}
+					}
+
 					const userData = userDoc.data();
 					schoolId = userData.schoolId;
 					if (!schoolId) {
@@ -200,6 +241,7 @@
 					}
 					document.getElementById('admin-email').textContent = userData.displayName || user.email;
 					document.getElementById('admin-panel').style.display = 'block';
+					
 					loadLatestAnnouncement();
 					await loadPeriodsData();
 					renderPeriodsTable();
@@ -348,9 +390,12 @@
 				}));
 				const confirmationMessage = `確認上傳 ${periodsToUpload.length} 節課程時間表？`;
 				if (!confirm(confirmationMessage)) return alert('操作已取消。');
+				
 				const schoolRef = db.collection('schools').doc(schoolId);
 				const periodsRef = schoolRef.collection('periods').doc('current');
+				// 回退使用原生 JS Date，避免安全規則誤擋
 				await periodsRef.set({ times: periodsToUpload, uploadedAt: new Date() });
+				
 				alert('課程時間表已成功上傳/更新！');
 				renderPeriodsTable();
 			} catch (error) {
@@ -358,20 +403,158 @@
 			}
 		}
 
-		async function uploadRoster() {
+		function generateSysId() {
+			return 'sys_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+		}
+
+		async function uploadRoster(mode) {
 			const text = document.getElementById('roster-data').value;
 			if (!text) return alert('請貼上學生名冊資料！');
+			
+			const btnId = mode === 'replace' ? 'upload-roster-btn' : 'merge-roster-btn';
+			const btn = document.getElementById(btnId);
+			const originalText = btn.textContent;
+			btn.disabled = true;
+			btn.textContent = "比對中...";
+
 			try {
-				const students = parseRoster(text);
-				const confirmationMessage = `確認上傳 ${students.length} 筆學生名冊資料？這將覆蓋現有資料。`;
-				if (!confirm(confirmationMessage)) return alert('操作已取消。');
+				const newStudentsRaw = parseRoster(text); 
+				
 				const schoolRef = db.collection('schools').doc(schoolId);
 				const rosterRef = schoolRef.collection('rosters').doc('current');
-				await rosterRef.set({ students: students, uploadedAt: new Date() });
-				alert('學生名冊已成功上傳/更新！');
+				const rosterDoc = await rosterRef.get();
+				let oldStudents = rosterDoc.exists ? (rosterDoc.data().students || []) : [];
+				
+				oldStudents.forEach(s => { if (!s.sysId) s.sysId = s.id; });
+
+				let finalStudents = [];
+				let unclaimedOld = [...oldStudents]; 
+				let conflicts = []; 
+
+				// Pass 1: 完美命中 (建立純淨的物件避免夾帶原型的髒屬性)
+				let pass1RemainingNew = [];
+				newStudentsRaw.forEach(newStu => {
+					const exactMatchIdx = unclaimedOld.findIndex(old => old.id === newStu.id && old.name === newStu.name);
+					if (exactMatchIdx !== -1) {
+						finalStudents.push({ id: newStu.id, name: newStu.name, sysId: unclaimedOld[exactMatchIdx].sysId });
+						unclaimedOld.splice(exactMatchIdx, 1); 
+					} else {
+						pass1RemainingNew.push(newStu);
+					}
+				});
+
+				// Pass 2: 姓名命中 / 新生判斷
+				let pass2RemainingNew = [];
+				pass1RemainingNew.forEach(newStu => {
+					const nameMatches = unclaimedOld.filter(old => old.name === newStu.name);
+					if (nameMatches.length === 1) {
+						finalStudents.push({ id: newStu.id, name: newStu.name, sysId: nameMatches[0].sysId });
+						const idx = unclaimedOld.findIndex(old => old.sysId === nameMatches[0].sysId);
+						unclaimedOld.splice(idx, 1);
+					} else if (nameMatches.length > 1) {
+						conflicts.push({ newStu, options: nameMatches });
+					} else {
+						if (mode === 'merge') {
+							const seatMatchIdx = unclaimedOld.findIndex(old => old.id === newStu.id);
+							if (seatMatchIdx !== -1) {
+								finalStudents.push({ id: newStu.id, name: newStu.name, sysId: unclaimedOld[seatMatchIdx].sysId });
+								unclaimedOld.splice(seatMatchIdx, 1);
+							} else {
+								finalStudents.push({ id: newStu.id, name: newStu.name, sysId: generateSysId() });
+							}
+						} else {
+							finalStudents.push({ id: newStu.id, name: newStu.name, sysId: generateSysId() });
+						}
+					}
+				});
+
+				if (conflicts.length > 0) {
+					await resolveConflictsViaUI(conflicts, finalStudents, unclaimedOld);
+				}
+
+				if (mode === 'merge') {
+					finalStudents = finalStudents.concat(unclaimedOld);
+					finalStudents.sort((a, b) => a.id.localeCompare(b.id));
+				} 
+
+				const confirmMsg = mode === 'replace' 
+					? `比對完成！\n\n準備覆蓋上傳 ${finalStudents.length} 名學生。\n\n確定要【全面覆蓋】現有名冊嗎？(未在清單上的學生將轉為幽靈資料)`
+					: `比對完成！\n\n名冊總數將更新為 ${finalStudents.length} 名。\n\n確定要【新增 / 更新】嗎？`;
+
+				if (!confirm(confirmMsg)) {
+					btn.disabled = false;
+					btn.textContent = originalText;
+					return;
+				}
+
+				// 使用原生 JS Date，避免安全規則誤擋
+				await rosterRef.set({ students: finalStudents, uploadedAt: new Date() });
+				alert('✅ 學生名冊已成功更新！');
+				loadCurrentRoster(); 
+
 			} catch (error) {
-				alert('上傳學生名冊時發生錯誤：\n' + error.message);
+				if (error.message !== "UserCancelled") {
+					alert('上傳學生名冊時發生錯誤：\n' + error.message);
+				}
+			} finally {
+				btn.disabled = false;
+				btn.textContent = originalText;
 			}
+		}
+
+		function resolveConflictsViaUI(conflicts, finalStudents, unclaimedOld) {
+			return new Promise((resolve, reject) => {
+				const modal = document.getElementById('conflict-modal');
+				const container = document.getElementById('conflict-list-container');
+				if(!modal || !container) return reject(new Error("找不到比對視窗元素"));
+				container.innerHTML = '';
+
+				conflicts.forEach((conflict, index) => {
+					const newStu = conflict.newStu;
+					let html = `<div class="conflict-item" data-index="${index}">
+						<strong>新名單學生：${newStu.id} ${newStu.name}</strong>
+						<div class="conflict-options">`;
+					
+					conflict.options.forEach(old => {
+						html += `<label>
+							<input type="radio" name="conflict_${index}" value="${old.sysId}">
+							這是以前的「${old.id} ${old.name}」 (保留成績與紀錄)
+						</label>`;
+					});
+					
+					html += `<label>
+						<input type="radio" name="conflict_${index}" value="new_student" checked>
+						都不是，他是同名同姓的「新生」 (建立全新紀錄)
+					</label>`;
+					
+					html += `</div></div>`;
+					container.innerHTML += html;
+				});
+
+				modal.style.display = 'flex';
+
+				document.getElementById('cancel-upload-btn').onclick = () => {
+					modal.style.display = 'none';
+					reject(new Error("UserCancelled"));
+				};
+
+				document.getElementById('resolve-conflict-btn').onclick = () => {
+					conflicts.forEach((conflict, index) => {
+						const newStu = conflict.newStu;
+						const selectedValue = document.querySelector(`input[name="conflict_${index}"]:checked`).value;
+						
+						if (selectedValue === 'new_student') {
+							finalStudents.push({ id: newStu.id, name: newStu.name, sysId: generateSysId() });
+						} else {
+							finalStudents.push({ id: newStu.id, name: newStu.name, sysId: selectedValue });
+							const oldIdx = unclaimedOld.findIndex(old => old.sysId === selectedValue);
+							if (oldIdx !== -1) unclaimedOld.splice(oldIdx, 1);
+						}
+					});
+					modal.style.display = 'none';
+					resolve();
+				};
+			});
 		}
 
 		function parseTimetable(text) {
@@ -489,42 +672,172 @@
 					}
 				}
 				await batch.commit();
-				alert(`🎉 成功！已同步 ${teacherCount} 位教師的資料。\n所有老師皆已歸類至單一主要領域。`);
+				alert(`🎉 成功！已同步 ${teacherCount} 位教師的資料。`);
 			} catch (error) {
 				alert('❌ 上傳失敗：' + error.message);
 			} finally {
 				btn.disabled = false;
-				btn.textContent = "上傳教師課表";
+				btn.textContent = "上傳 / 覆蓋教師課表";
 			}
 		}
 
 		document.getElementById('upload-periods-btn').addEventListener('click', uploadPeriods);
-		document.getElementById('upload-roster-btn').addEventListener('click', async () => { await uploadRoster(); loadCurrentRoster(); });
+		document.getElementById('upload-roster-btn').addEventListener('click', async () => { await uploadRoster('replace'); loadCurrentRoster(); });
+		document.getElementById('merge-roster-btn').addEventListener('click', async () => { await uploadRoster('merge'); loadCurrentRoster(); });
 		document.getElementById('upload-timetable-btn').addEventListener('click', async () => { await uploadTimetable(); loadCurrentTimetables(); });
 		document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+
+		// ================= 幽靈資料清理工具 =================
+		
+		document.getElementById('scan-ghost-btn').addEventListener('click', async () => {
+			const btn = document.getElementById('scan-ghost-btn');
+			const listDiv = document.getElementById('ghost-list');
+			btn.disabled = true;
+			btn.textContent = "掃描中，請稍候...";
+			listDiv.innerHTML = '<p>正在從全校資料庫撈取比對中...</p>';
+			listDiv.style.display = 'block';
+
+			try {
+				const rosterDoc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
+				const currentStudents = rosterDoc.exists ? (rosterDoc.data().students || []) : [];
+				const validIds = new Set();
+				currentStudents.forEach(s => {
+					validIds.add(s.id);
+					if (s.sysId) validIds.add(s.sysId);
+				});
+
+				db.collection('users').where('schoolId', '==', schoolId).get();
+				const teachersSnap = await db.collection('users').where('schoolId', '==', schoolId).get();
+				const teacherUids = [];
+				teachersSnap.forEach(doc => {
+					const d = doc.data();
+					if ((d.roles && d.roles.includes('teacher')) || d.role === 'teacher') teacherUids.push(doc.id);
+				});
+
+				const ghostSet = new Set();
+				
+				for (const uid of teacherUids) {
+					const perfSnap = await db.collection('performanceRecords').doc(uid).collection('records').get();
+					perfSnap.forEach(doc => {
+						const data = doc.data();
+						const sid = data.studentId || data.entityId;
+						if (sid && (data.entityType === 'student' || !data.entityType)) {
+							if (!validIds.has(sid)) ghostSet.add(sid);
+						}
+					});
+
+					const gradeSnap = await db.collection('gradebooks').doc(uid).collection('assignments').get();
+					gradeSnap.forEach(doc => {
+						const scores = doc.data().scores || {};
+						Object.keys(scores).forEach(sid => {
+							if (!validIds.has(sid)) ghostSet.add(sid);
+						});
+					});
+				}
+
+				if (ghostSet.size === 0) {
+					listDiv.innerHTML = '<p style="color: green;">🎉 太棒了！目前資料庫非常乾淨，沒有發現任何幽靈資料。</p>';
+				} else {
+					listDiv.innerHTML = `<p style="color: #dc3545;">⚠️ 掃描完成。發現 <strong>${ghostSet.size}</strong> 筆已不在現有名冊上的幽靈學生ID。</p>`;
+					ghostSet.forEach(ghostId => {
+						listDiv.innerHTML += `
+							<div class="ghost-item" id="ghost-row-${ghostId}">
+								<span>幽靈 ID: <strong>${ghostId}</strong></span>
+								<button class="ghost-del-btn" onclick="deleteGhostData('${ghostId}')">永久刪除</button>
+							</div>
+						`;
+					});
+				}
+
+			} catch (error) {
+				listDiv.innerHTML = `<p style="color: red;">掃描失敗：${error.message}</p>`;
+			} finally {
+				btn.disabled = false;
+				btn.textContent = "🔍 重新掃描幽靈資料";
+			}
+		});
+
+		window.deleteGhostData = async function(ghostId) {
+			if (!confirm(`確定要從全校資料庫中，徹底抹除 ID 為 [${ghostId}] 的所有成績與日常表現紀錄嗎？\n\n警告：此操作無法復原！`)) return;
+			
+			const btn = document.querySelector(`#ghost-row-${ghostId} button`);
+			btn.disabled = true;
+			btn.textContent = "刪除中...";
+
+			try {
+				// 取出全校帳號，由前端判斷身分，相容陣列與字串格式
+				const teachersSnap = await db.collection('users').where('schoolId', '==', schoolId).get();
+				const teacherUids = [];
+				teachersSnap.forEach(doc => {
+					const d = doc.data();
+					if ((d.roles && d.roles.includes('teacher')) || d.role === 'teacher') teacherUids.push(doc.id);
+				});
+				let batch = db.batch();
+				let count = 0;
+
+				for (const uid of teacherUids) {
+					const perfSnap = await db.collection('performanceRecords').doc(uid).collection('records').where('entityId', '==', ghostId).get();
+					perfSnap.forEach(doc => { batch.delete(doc.ref); count++; });
+					
+					const perfSnap2 = await db.collection('performanceRecords').doc(uid).collection('records').where('studentId', '==', ghostId).get();
+					perfSnap2.forEach(doc => { batch.delete(doc.ref); count++; });
+
+					const gradeSnap = await db.collection('gradebooks').doc(uid).collection('assignments').get();
+					gradeSnap.forEach(doc => {
+						const scores = doc.data().scores || {};
+						if (scores[ghostId]) {
+							const updateData = {};
+							updateData[`scores.${ghostId}`] = firebase.firestore.FieldValue.delete();
+							batch.update(doc.ref, updateData);
+							count++;
+						}
+					});
+
+					if (count > 400) {
+						await batch.commit();
+						batch = db.batch();
+						count = 0;
+					}
+				}
+				
+				if (count > 0) await batch.commit();
+				
+				document.getElementById(`ghost-row-${ghostId}`).remove();
+				alert(`✅ 清理完成！成功刪除了全校與 [${ghostId}] 相關的紀錄。`);
+				
+			} catch (error) {
+				alert("刪除失敗：" + error.message);
+				btn.disabled = false;
+				btn.textContent = "永久刪除";
+			}
+		};
 
 		// ================= 右側檢視與複製功能 =================
 		
 		async function loadCurrentRoster() {
+			const el = document.getElementById('current-roster-data');
+			if (!el) return; 
 			try {
 				const doc = await db.collection('schools').doc(schoolId).collection('rosters').doc('current').get();
 				if (doc.exists && doc.data().students) {
 					const students = doc.data().students;
 					const text = students.map(s => `${s.id},${s.name}`).join('\n');
-					document.getElementById('current-roster-data').value = text;
+					el.value = text;
 				} else {
-					document.getElementById('current-roster-data').value = '目前系統內無名冊資料。';
+					el.value = '目前系統內無名冊資料。';
 				}
 			} catch(e) {
-				document.getElementById('current-roster-data').value = '讀取失敗';
+				el.value = '讀取失敗: ' + e.message;
 			}
 		}
 
 		async function loadCurrentTimetables() {
+			const el = document.getElementById('current-timetable-data');
+			if (!el) return; 
 			try {
 				const snapshot = await db.collection('schools').doc(schoolId).collection('timetables').get();
 				if (snapshot.empty) {
-					document.getElementById('current-timetable-data').value = '目前系統內無教師課表資料。';
+					el.value = '目前系統內無教師課表資料。';
 					return;
 				}
 				const PERIOD_NAMES = ['第一節', '第二節', '第三節', '第四節', '第五節', '第六節', '第七節', '第八節'];
@@ -537,28 +850,24 @@
 					const subject = data.subject || '其他';
 					const periods = data.periods || {};
 					
-					for (let i = 0; i < 8; i++) { // 固定輸出 8 節
+					for (let i = 0; i < 8; i++) {
 						const pData = periods[i] || ["", "", "", "", ""];
-						const mon = pData[0] || "";
-						const tue = pData[1] || "";
-						const wed = pData[2] || "";
-						const thu = pData[3] || "";
-						const fri = pData[4] || "";
-						csvContent += `${teacherName},${title},${subject},${PERIOD_NAMES[i]},${mon},${tue},${wed},${thu},${fri}\n`;
+						csvContent += `${teacherName},${title},${subject},${PERIOD_NAMES[i]},${pData[0]||""},${pData[1]||""},${pData[2]||""},${pData[3]||""},${pData[4]||""}\n`;
 					}
 				});
-				document.getElementById('current-timetable-data').value = csvContent.trim();
+				el.value = csvContent.trim();
 			} catch(e) {
-				document.getElementById('current-timetable-data').value = '讀取失敗';
+				el.value = '讀取失敗: ' + e.message;
 			}
 		}
 
 		function copyToClipboard(elementId, btnId) {
 			const el = document.getElementById(elementId);
+			const btn = document.getElementById(btnId);
+			if(!el || !btn) return;
 			el.select();
 			el.setSelectionRange(0, 99999); 
 			navigator.clipboard.writeText(el.value).then(() => {
-				const btn = document.getElementById(btnId);
 				const originalText = btn.innerHTML;
 				btn.innerHTML = '✅ 已複製';
 				setTimeout(() => btn.innerHTML = originalText, 2000);
@@ -567,8 +876,6 @@
 
 		document.getElementById('copy-roster-btn').addEventListener('click', () => copyToClipboard('current-roster-data', 'copy-roster-btn'));
 		document.getElementById('copy-timetable-btn').addEventListener('click', () => copyToClipboard('current-timetable-data', 'copy-timetable-btn'));
-
-		// ================= AI 提示語複製 =================
 
 		const AI_PROMPT = `【輸入格式規則】
 1. 這是一份csv純文字課表，以教師為單位分塊。
@@ -600,7 +907,15 @@
 				setTimeout(() => btn.innerHTML = originalText, 2000);
 			});
 		});
-		
+
+		// 學期重設與備份還原邏輯
+		const logDiv = document.getElementById('progress-log');
+		function logMsg(msg) {
+			logDiv.style.display = 'block';
+			logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+			logDiv.scrollTop = logDiv.scrollHeight;
+		}
+
 		document.getElementById('reset-semester-btn').addEventListener('click', async () => {
 			const btn = document.getElementById('reset-semester-btn');
 			const firstConfirm = confirm('警告：此操作將會刪除「本校」所有老師的：\n1. 成績紀錄\n2. 日常表現紀錄\n3. 成績計算規則\n4. 所有調代課紀錄\n\n此操作無法復原！確定要繼續嗎？');
@@ -616,11 +931,16 @@
 			logDiv.style.display = 'block';
 			try {
 				logMsg("步驟 1/5: 取得本校教師名單...");
-				const usersSnapshot = await db.collection('users').where('schoolId', '==', schoolId).where('role', '==', 'teacher').get();
-				if (usersSnapshot.empty) {
+				// 取出全校帳號，由前端判斷身分，相容陣列與字串格式
+				const usersSnapshot = await db.collection('users').where('schoolId', '==', schoolId).get();
+				const teachers = [];
+				usersSnapshot.forEach(doc => {
+					const d = doc.data();
+					if ((d.roles && d.roles.includes('teacher')) || d.role === 'teacher') teachers.push(doc.id);
+				});
+				if (teachers.length === 0) {
 					logMsg("警告：找不到本校教師資料，將僅清除全域資料。");
 				}
-				const teachers = usersSnapshot.docs.map(doc => doc.id);
 				if (teachers.length > 0) {
 					logMsg(`找到 ${teachers.length} 位教師，準備刪除個人資料...`);
 				}
@@ -689,24 +1009,24 @@
 			}
 		});
 
-		const logDiv = document.getElementById('progress-log');
-		function logMsg(msg) {
-			logDiv.style.display = 'block';
-			logDiv.innerHTML += `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>`;
-			logDiv.scrollTop = logDiv.scrollHeight;
-		}
-
 		document.getElementById('backup-teachers-btn').addEventListener('click', async () => {
 			const btn = document.getElementById('backup-teachers-btn');
 			btn.disabled = true;
 			logDiv.innerHTML = '';
 			try {
 				logMsg("開始掃描本校教師名單...");
-				const usersSnapshot = await db.collection('users').where('schoolId', '==', schoolId).where('role', '==', 'teacher').get();
-				if (usersSnapshot.empty) {
+				// 取出全校帳號，由前端判斷身分，相容陣列與字串格式
+				const usersSnapshot = await db.collection('users').where('schoolId', '==', schoolId).get();
+				const teachers = [];
+				usersSnapshot.forEach(doc => {
+					const d = doc.data();
+					if ((d.roles && d.roles.includes('teacher')) || d.role === 'teacher') {
+						teachers.push({ uid: doc.id, ...d });
+					}
+				});
+				if (teachers.length === 0) {
 					throw new Error("找不到本校的任何教師帳號。");
 				}
-				const teachers = [];
 				usersSnapshot.forEach(doc => teachers.push({ uid: doc.id, ...doc.data() }));
 				logMsg(`共找到 ${teachers.length} 位教師。開始下載資料...`);
 				const backupData = {

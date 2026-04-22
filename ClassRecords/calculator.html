@@ -238,9 +238,9 @@
 					const data = JSON.parse(cachedDynamic);
 					if (data.uid === currentUser.uid && data.performanceRecords && studentsData.length > 0) {
 						const tempPerformance = {};
-						studentsData.forEach(s => tempPerformance[s.id] = 0);
+						studentsData.forEach(s => tempPerformance[s.sysId] = 0);
 						data.performanceRecords.forEach(r => {
-							const studentId = r.entityId || r.studentId;
+							const studentId = r.entityId || r.studentId; // 這是 sysId
 							if ((r.entityType === 'student' || !r.entityType) && studentId && tempPerformance.hasOwnProperty(studentId)) {
 								tempPerformance[studentId] += (r.points || 0);
 							}
@@ -289,7 +289,7 @@
 					assignmentsSnapshot.forEach(doc => {
 						const data = doc.data({ serverTimestamps: 'estimate' }); // 加入預估時間防呆
 						let include = true;
-						if (userData.sysStartDate || userData.sysEndDate) {
+						if (userData.gradesStartDate || userData.gradesEndDate) {
 							let aDate;
 							if (!data.date) {
 								aDate = new Date();
@@ -302,8 +302,8 @@
 							}
 
 							if (!isNaN(aDate.getTime())) {
-								if (userData.sysStartDate && aDate < new Date(userData.sysStartDate + 'T00:00:00')) include = false;
-								if (userData.sysEndDate && aDate > new Date(userData.sysEndDate + 'T23:59:59.999')) include = false;
+								if (userData.gradesStartDate && aDate < new Date(userData.gradesStartDate + 'T00:00:00')) include = false;
+								if (userData.gradesEndDate && aDate > new Date(userData.gradesEndDate + 'T23:59:59.999')) include = false;
 							}
 						}
 						if (include) {
@@ -317,11 +317,11 @@
 			if (!perfDataLoaded) {
 				fetchPromises.push((async () => {
 					let pQuery = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
-					if (userData.sysStartDate) pQuery = pQuery.where('timestamp', '>=', new Date(userData.sysStartDate + 'T00:00:00'));
-					if (userData.sysEndDate) pQuery = pQuery.where('timestamp', '<=', new Date(userData.sysEndDate + 'T23:59:59.999'));
+					if (userData.perfStartDate) pQuery = pQuery.where('timestamp', '>=', new Date(userData.perfStartDate + 'T00:00:00'));
+					if (userData.perfEndDate) pQuery = pQuery.where('timestamp', '<=', new Date(userData.perfEndDate + 'T23:59:59.999'));
 					const perfSnapshot = await pQuery.get();
 					const tempPerformance = {};
-					studentsData.forEach(s => tempPerformance[s.id] = 0);
+					studentsData.forEach(s => tempPerformance[s.sysId] = 0);
 					perfSnapshot.forEach(doc => {
 						const r = doc.data();
 						const studentId = r.entityId || r.studentId;
@@ -567,25 +567,26 @@
 			let tableHTML = `<table><thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>最終成績</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th></tr></thead><tbody>`;
 			students.forEach(student => {
 				const studentClassId = student.id.substring(0, 3);
+				const studentSysId = student.sysId;
 				const assigns = allAssignments[studentClassId] ||[];
 				let s1 = 0, s2 = 0, s2T = 0, s2C = 0;
 				for (const name in rule.step1) {
 					const a = assigns.find(x => x.assignmentName === name);
-					const sc = (a && a.scores[student.id]?.score !== undefined) ? a.scores[student.id].score : rule.defaultMissingScore;
+					const sc = (a && a.scores[studentSysId]?.score !== undefined) ? a.scores[studentSysId].score : rule.defaultMissingScore;
 					s1 += sc * rule.step1[name];
 				}
 				rule.step2.assignments.forEach(name => {
 					const a = assigns.find(x => x.assignmentName === name);
-					s2T += (a && a.scores[student.id]?.score !== undefined) ? a.scores[student.id].score : rule.defaultMissingScore;
+					s2T += (a && a.scores[studentSysId]?.score !== undefined) ? a.scores[studentSysId].score : rule.defaultMissingScore;
 					s2C++;
 				});
 				if (s2C > 0) s2 = (s2T / s2C) * rule.step2.multiplier;
 				const used =[...Object.keys(rule.step1), ...rule.step2.assignments];
-				const scs = assigns.filter(x => !used.includes(x.assignmentName)).map(x => (x.scores[student.id]?.score !== undefined) ? x.scores[student.id].score : rule.defaultMissingScore).sort((a,b) => b-a);
+				const scs = assigns.filter(x => !used.includes(x.assignmentName)).map(x => (x.scores[studentSysId]?.score !== undefined) ? x.scores[studentSysId].score : rule.defaultMissingScore).sort((a,b) => b-a);
 				let s3 = 0, s3T = 0, n = rule.step3.n;
 				for(let i=0; i < n; i++) s3T += scs[i] || rule.defaultMissingScore;
 				if (n > 0) s3 = (s3T / n) * rule.step3.multiplier;
-				const s4 = (allPerformanceScores[student.id] || 0) * rule.step4.multiplier;
+				const s4 = (allPerformanceScores[studentSysId] || 0) * rule.step4.multiplier;
 				const final = s1 + s2 + s3 + s4;
 				tableHTML += `<tr><td>${studentClassId}</td><td>${student.id.substring(3)}</td><td>${student.name}</td><td><strong>${final.toFixed(2)}</strong></td><td>${s1.toFixed(2)}</td><td>${s2.toFixed(2)}</td><td>${s3.toFixed(2)}</td><td>${s4.toFixed(2)}</td></tr>`;
 			});
