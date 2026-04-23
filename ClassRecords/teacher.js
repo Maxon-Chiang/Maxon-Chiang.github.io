@@ -1887,5 +1887,108 @@ document.addEventListener('DOMContentLoaded', function() {
 		await originalInit(userData, forceReload, forceItem);
 		updateDateRangeDisplay();
 	};
+	const SEARCH_HISTORY_KEY = 'teacher_student_search_history_v1';
+	const searchBtn = document.getElementById('student-search-btn');
+	const searchModal = document.getElementById('student-search-modal');
+	const searchInput = document.getElementById('student-search-input');
+	const resultsArea = document.getElementById('search-results-area');
+	const historyArea = document.getElementById('search-history-area');
+	const resultsList = document.getElementById('search-results-list');
+	const historyList = document.getElementById('search-history-list');
+
+	function getSearchHistory() {
+		try { return JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY)) || []; }
+		catch { return []; }
+	}
+
+	function saveSearchHistory(history) {
+		localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(history));
+	}
+
+	function addToHistory(sysId) {
+		let history = getSearchHistory();
+		history = history.filter(id => id !== sysId); // 移除重複
+		history.unshift(sysId); // 塞到最前面
+		if (history.length > 20) history = history.slice(0, 20); // 最多 20 筆
+		saveSearchHistory(history);
+	}
+
+	function renderSearchList(studentSysIds, container, isHistory = false) {
+		container.innerHTML = '';
+		
+		// 將傳入的 sysId 陣列，轉換成最新的學生實體資料 (過濾掉已離校的)
+		const validStudents = [];
+		studentSysIds.forEach(sysId => {
+			const stu = studentsData.find(s => s.sysId === sysId);
+			if (stu) validStudents.push(stu);
+		});
+
+		if (validStudents.length === 0) {
+			container.innerHTML = `<div style="padding: 15px; color: #999; text-align: center;">${isHistory ? '尚無查詢紀錄' : '找不到符合的學生'}</div>`;
+			return;
+		}
+
+		validStudents.forEach(stu => {
+			const currentScore = allPerformanceScores[stu.sysId] || 0;
+			const className = stu.id.substring(0, 3);
+			const seatNum = stu.id.substring(3);
+
+			const div = document.createElement('div');
+			div.className = 'search-list-item';
+			div.innerHTML = `
+				<div class="search-list-info">
+					<span class="search-list-class">${className}班 ${seatNum}號</span> 
+					${stu.name}
+				</div>
+				<div class="search-list-score">${currentScore.toFixed(1)}</div>
+			`;
+			
+			// 點擊後：加入歷史、關閉搜尋窗、直接打開該生紀錄視窗
+			div.onclick = () => {
+				addToHistory(stu.sysId);
+				searchModal.style.display = 'none';
+				document.body.classList.remove('modal-open');
+				openModal(stu.sysId, 'student', 'main');
+			};
+			container.appendChild(div);
+		});
+	}
+
+	if (searchBtn && searchModal) {
+		// 開啟搜尋視窗
+		searchBtn.addEventListener('click', () => {
+			document.getElementById('dropdown-menu').classList.remove('show');
+			searchInput.value = '';
+			resultsArea.style.display = 'none';
+			historyArea.style.display = 'block';
+			
+			renderSearchList(getSearchHistory(), historyList, true);
+			
+			document.body.classList.add('modal-open');
+			searchModal.style.display = 'flex';
+			setTimeout(() => searchInput.focus(), 100);
+		});
+
+		// 輸入關鍵字即時比對
+		searchInput.addEventListener('input', (e) => {
+			const keyword = e.target.value.trim().toLowerCase();
+			if (!keyword) {
+				resultsArea.style.display = 'none';
+				historyArea.style.display = 'block';
+				renderSearchList(getSearchHistory(), historyList, true);
+				return;
+			}
+			
+			historyArea.style.display = 'none';
+			resultsArea.style.display = 'block';
+			
+			// 找出名字包含關鍵字的學生，並抽取他們的 sysId
+			const matchedIds = studentsData
+				.filter(s => s.name.toLowerCase().includes(keyword))
+				.map(s => s.sysId);
+				
+			renderSearchList(matchedIds, resultsList, false);
+		});
+	}
 
 });

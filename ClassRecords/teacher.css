@@ -819,6 +819,15 @@ body.modal-open { overflow: hidden; }
 	line-height: 1.6;
 	box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
+.sys-switch-text { display: inline; }
+.btn-text-mobile-hide { display: inline; }
+.search-list-container { max-height: 40vh; overflow-y: auto; border: 1px solid #ddd; border-radius: 5px; background: #fff; }
+.search-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
+.search-list-item:hover { background-color: #f0f8ff; }
+.search-list-item:last-child { border-bottom: none; }
+.search-list-info { font-size: 1.1em; font-weight: bold; color: #333; }
+.search-list-class { font-size: 0.85em; color: #666; margin-right: 8px; font-weight: normal; }
+.search-list-score { font-size: 1.1em; font-weight: bold; color: #d0021b; background: #fff3cd; padding: 3px 8px; border-radius: 4px; }
 @media (max-width: 768px) {
 	header { flex-direction: column; align-items: center; padding-bottom: 5px; width: 100%; box-sizing: border-box; }
 	.header-left-panel { width: 100%; justify-content: center; padding-bottom: 5px; gap: 0px; }
@@ -831,7 +840,16 @@ body.modal-open { overflow: hidden; }
 	.system-switcher-container { position: relative; flex-shrink: 0; }
 	.sys-switch-btn { width: auto !important; height: 36px; padding: 0 10px !important; font-size: 0.9em !important; display: flex; justify-content: center; align-items: center; border-radius: 4px; gap: 5px; }
 	.sys-switch-btn::before { content: none !important; }
-	.sys-switch-content { position: absolute; top: 100%; left: 0; min-width: max-content !important; width: auto !important; right: auto; z-index: 9999; }
+	.sys-switch-content { 
+		position: absolute; 
+		top: 100%; 
+		left: 50% !important; 
+		right: auto !important; 
+		transform: translateX(-50%); 
+		min-width: 220px !important; 
+		width: max-content !important; 
+		z-index: 9999; 
+	}
 	#my-timetable-icon-btn { font-size: 1.4em !important; padding-left: 5px; }
 	#reload-cache-btn { margin-left: 5px; margin-right: 5px; }
 	.header-right-panel .user-profile, .header-right-panel .dropdown { flex-shrink: 0; }
@@ -881,10 +899,17 @@ body.modal-open { overflow: hidden; }
 	#my-timetable-modal .modal-title-container { width: 100%; text-align: center; margin-bottom: 8px; }
 	#my-timetable-modal .modal-week-nav { width: 100%; margin-top: 0; justify-content: space-around; padding: 2px 0; gap: 5px; }
 	#my-timetable-modal .modal-week-nav button { padding: 2px; font-size: 0.85em; }
-	.sys-item, .sys-link { font-size: 13px !important; padding: 8px 12px !important; }
+	.sys-item { padding: 5px 10px !important; gap: 8px; }
+	.sys-link { font-size: 13px !important; padding: 5px 0 !important; }
+	.sys-home-icon { margin-left: 0 !important; font-size: 1.2em !important; }
 	.sys-home-icon { font-size: 1.1em !important; margin-left: 8px !important; }
 	.class-block-actions { padding: 5px; }
 	.class-block-actions a, .class-block-actions button { padding: 2px 5px; }
+	.sys-switch-text { display: none; }
+	.btn-text-mobile-hide { display: none; }
+	#sys-switch-btn { width: 36px !important; height: 36px; padding: 0 !important; font-size: 1.3em !important; display: flex; justify-content: center; align-items: center; }
+	#student-search-btn { width: 36px !important; height: 36px; padding: 0 !important; font-size: 1.2em !important; display: flex; justify-content: center; align-items: center; margin-left: 0; }
+	.header-right-panel { gap: 3px; }
 }
 .system-switcher-container { position: relative; display: inline-block; margin-right: 10px; }
 .sys-switch-btn {
@@ -901,9 +926,9 @@ body.modal-open { overflow: hidden; }
 .sys-switch-content {
 	display: none;
 	position: absolute;
-	top: 100%; left: 0;
+	top: 100%; right: 0; left: auto; /* 改為向左展開，避免超出螢幕右邊界 */
 	background-color: #fff;
-	min-width: 300px;
+	min-width: 250px; /* 稍微縮小電腦版的預設寬度 */
 	box-shadow: 0 8px 16px rgba(0,0,0,0.2);
 	z-index: 2000;
 	border-radius: 4px;
