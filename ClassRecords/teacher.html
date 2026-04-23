@@ -21,8 +21,11 @@
 			</div>
 		</div>
 		<div class="header-right-panel">
-			<!-- 新增學生搜尋按鈕 -->
+			<!-- 原有的學生搜尋按鈕 -->
 			<button id="student-search-btn" class="icon-btn-main" style="background-color: rgba(255,255,255,0.2); border-color: transparent;" title="學生查詢">🔍<span class="btn-text-mobile-hide"> 查詢</span></button>
+			
+			<!-- 新增：最近紀錄按鈕 -->
+			<button id="recent-records-btn" class="icon-btn-main" style="background-color: rgba(255,255,255,0.2); border-color: transparent;" title="最近紀錄">🕒<span class="btn-text-mobile-hide"> 最近紀錄</span></button>
 			
 			<div class="main-actions">
 				<a href="calculator.html"><button>成績計算</button></a>
@@ -325,6 +328,14 @@
 				<h3 style="font-size: 1em; color: #666; margin-bottom: 5px; border: none; padding: 0;">最近查詢紀錄</h3>
 				<div id="search-history-list" class="search-list-container"></div>
 			</div>
+		</div>
+	</div>
+	<div id="recent-students-modal" class="modal">
+		<div class="modal-content" style="max-width: 500px; padding-top: 35px; max-height: 90vh; display: flex; flex-direction: column;">
+			<span class="close-btn" data-modal="recent-students-modal">&times;</span>
+			<h2 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">🕒 最近登記紀錄</h2>
+			<p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">顯示最近 20 筆有新增表現紀錄的學生</p>
+			<div id="recent-students-list" class="search-list-container"></div>
 		</div>
 	</div>
 	<script src="teacher.js?v=3.0"></script>

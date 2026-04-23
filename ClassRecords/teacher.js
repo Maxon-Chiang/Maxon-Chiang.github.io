@@ -1930,14 +1930,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 		validStudents.forEach(stu => {
 			const currentScore = allPerformanceScores[stu.sysId] || 0;
-			const className = stu.id.substring(0, 3);
-			const seatNum = stu.id.substring(3);
-
+			
 			const div = document.createElement('div');
 			div.className = 'search-list-item';
 			div.innerHTML = `
 				<div class="search-list-info">
-					<span class="search-list-class">${className}班 ${seatNum}號</span> 
+					<span class="search-list-class">${stu.id}</span> 
 					${stu.name}
 				</div>
 				<div class="search-list-score">${currentScore.toFixed(1)}</div>
@@ -1988,6 +1986,91 @@ document.addEventListener('DOMContentLoaded', function() {
 				.map(s => s.sysId);
 				
 			renderSearchList(matchedIds, resultsList, false);
+		});
+	}
+	// ==========================================
+	// 最近登記紀錄學生列表功能
+	// ==========================================
+	const recentRecordsBtn = document.getElementById('recent-records-btn');
+	const recentStudentsModal = document.getElementById('recent-students-modal');
+	const recentStudentsList = document.getElementById('recent-students-list');
+
+	if (recentRecordsBtn && recentStudentsModal) {
+		recentRecordsBtn.addEventListener('click', () => {
+			document.getElementById('dropdown-menu').classList.remove('show');
+			
+			// 1. 從 allPerformanceRecords 提取最近的學生 sysId (去重複)
+			const uniqueRecentSysIds = new Set();
+			
+			// 確保紀錄有按時間由新到舊排序
+			const sortedRecords = [...allPerformanceRecords].sort((a, b) => {
+				const tA = a.timestamp?.seconds || a.timestamp?.toMillis?.() / 1000 || 0;
+				const tB = b.timestamp?.seconds || b.timestamp?.toMillis?.() / 1000 || 0;
+				return tB - tA;
+			});
+
+			for (const r of sortedRecords) {
+				const sysId = r.entityId || r.studentId;
+				const type = r.entityType || 'student';
+				// 只抓學生，過濾掉「班級共同紀錄」
+				if (type === 'student' && sysId) {
+					uniqueRecentSysIds.add(sysId);
+				}
+				if (uniqueRecentSysIds.size >= 20) break; // 達到 20 筆就停止
+			}
+
+			// 2. 渲染列表
+			recentStudentsList.innerHTML = '';
+			if (uniqueRecentSysIds.size === 0) {
+				recentStudentsList.innerHTML = '<div style="padding: 15px; color: #999; text-align: center;">尚無任何學生紀錄</div>';
+			} else {
+				uniqueRecentSysIds.forEach(sysId => {
+					// 找尋現有學籍資料 (如果學生已畢業被清掉，就略過)
+					const stu = studentsData.find(s => s.sysId === sysId);
+					if (!stu) return; 
+
+					const currentScore = allPerformanceScores[stu.sysId] || 0;
+					const className = stu.id.substring(0, 3);
+					const seatNum = stu.id.substring(3);
+					
+					// 找出該生最近一次的紀錄文字 (顯示在副標題提示用)
+					const latestRecord = sortedRecords.find(r => (r.entityId === sysId || r.studentId === sysId));
+					if (!latestRecord) return; // 雖然理論上不會發生，防呆用
+
+					const latestTextRaw = latestRecord.text || '';
+					let latestText = latestTextRaw.trim();
+					// 如果超過5個字，加上省略號
+					if (latestText.length > 5) {
+						latestText = latestText.substring(0, 5) + '...';
+					}
+
+					// 顯示該事件的加扣分 (而非總分)，如果是加分加上 + 號
+					const eventPoints = latestRecord.points || 0;
+					const pointsDisplay = eventPoints > 0 ? `+${eventPoints}` : eventPoints;
+
+					const div = document.createElement('div');
+					div.className = 'search-list-item';
+					div.innerHTML = `
+						<div class="search-list-info" style="flex-grow: 1;">
+							<span class="search-list-class">${stu.id}</span> 
+							<span style="flex-shrink: 0;">${stu.name}</span>
+							<span class="search-list-recent-text">${latestText}</span>
+						</div>
+						<div class="search-list-score" style="margin-left: 10px;">${pointsDisplay}</div>
+					`;
+					
+					// 點擊後開啟個人紀錄視窗
+					div.onclick = () => {
+						recentStudentsModal.style.display = 'none';
+						document.body.classList.remove('modal-open');
+						openModal(stu.sysId, 'student', 'main');
+					};
+					recentStudentsList.appendChild(div);
+				});
+			}
+
+			document.body.classList.add('modal-open');
+			recentStudentsModal.style.display = 'flex';
 		});
 	}
 
