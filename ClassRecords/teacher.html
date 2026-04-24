@@ -338,10 +338,15 @@
 		</div>
 	</div>
 	<div id="recent-students-modal" class="modal">
-		<div class="modal-content" style="max-width: 500px; padding-top: 35px; max-height: 90vh; display: flex; flex-direction: column;">
-			<span class="close-btn" data-modal="recent-students-modal">&times;</span>
-			<h2 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">🕒 最近登記紀錄</h2>
-			<p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">顯示最近 20 筆有新增表現紀錄的學生</p>
+		<div class="modal-content" style="max-width: 500px; padding: 15px; max-height: 90vh; display: flex; flex-direction: column;">
+			<span class="close-btn" data-modal="recent-students-modal" style="top: 8px; right: 15px;">&times;</span>
+			<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; padding-right: 25px;">
+				<h2 style="margin: 0; font-size: 1.2em; display: flex; align-items: center; gap: 10px;">🕒 最近登記紀錄</h2>
+				<button id="recent-sort-btn" title="切換排序方式" style="background: none; border: none; cursor: pointer; padding: 5px; position: relative; width: 1.5em; height: 1.2em; color: #999; line-height: 1; font-size: 1.2em; display: block;">
+					<span class="roster-sort-arrow" id="recent-sort-up-arrow" style="position: absolute; left: 50%; transform: translateX(-50%); top: 0; font-size: 0.7em;">▲</span>
+					<span class="roster-sort-arrow" id="recent-sort-down-arrow" style="position: absolute; left: 50%; transform: translateX(-50%); top: 50%; font-size: 0.7em;">▼</span>
+				</button>
+			</div>
 			<div id="recent-students-list" class="search-list-container"></div>
 		</div>
 	</div>

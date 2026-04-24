@@ -1061,22 +1061,47 @@ document.addEventListener('DOMContentLoaded', function() {
 		const refreshAndClose = () => {
 			const originalEntityId = currentEntity ? currentEntity.id : null;
 			const originalType = currentEntity ? currentEntity.type : null;
+			const currentModalOrigin = modalOrigin; // 先把來源存起來，因為後面清除了
 			currentEntity = null;
+			modalOrigin = null;
 			resetPerformanceForm();
-			if (modalOrigin === 'roster' && originalEntityId) {
-				const className = originalType === 'student' ? originalEntityId.substring(0, 3) : originalEntityId;
-				if (rosterModalOrigin === 'timetable') {
-					rosterModalOrigin = null;
-					openStudentRosterModal(className, 'timetable', currentRosterViewMode);
+			
+			// 如果是從班級名單(roster)進來的，關閉後回去該班名單
+			if (currentModalOrigin === 'roster' && originalEntityId) {
+				// 注意：如果原先是學生，originalEntityId 會是 sysId。我們必須透過 studentsData 反查出他的班級
+				let className = '';
+				if (originalType === 'student') {
+					const stu = studentsData.find(s => s.sysId === originalEntityId);
+					if (stu) className = stu.id.substring(0, 3);
 				} else {
-					openStudentRosterModal(className, 'main', currentRosterViewMode);
+					className = originalEntityId;
 				}
-			} else {
+				
+				if (className) {
+					if (rosterModalOrigin === 'timetable') {
+						rosterModalOrigin = null;
+						openStudentRosterModal(className, 'timetable', currentRosterViewMode);
+					} else {
+						openStudentRosterModal(className, 'main', currentRosterViewMode);
+					}
+				}
+			} 
+			// 如果是從「最近紀錄(recent)」進來的，關閉後重新觸發該按鈕
+			else if (currentModalOrigin === 'recent') {
+				renderLayout();
+				highlightCurrentClass();
+				const recentBtn = document.getElementById('recent-records-btn');
+				if (recentBtn) {
+					// 延遲一點點點擊，確保前一個 modal 完全關閉
+					setTimeout(() => recentBtn.click(), 50); 
+				}
+			} 
+			// 如果是從首頁網格進來的，就單純重繪首頁
+			else {
 				renderLayout();
 				highlightCurrentClass();
 				document.body.classList.remove('modal-open');
 			}
-			modalOrigin = null;
 		};
 		refreshAndClose();
 	}
@@ -2139,14 +2164,102 @@ document.addEventListener('DOMContentLoaded', function() {
 	const recentStudentsModal = document.getElementById('recent-students-modal');
 	const recentStudentsList = document.getElementById('recent-students-list');
 
-	if (recentRecordsBtn && recentStudentsModal) {
+if (recentRecordsBtn && recentStudentsModal) {
+		let recentSortState = 0; // 0: 座號遞增, 1: 座號遞減, 2: 最近時間
+		let currentRecentStudents = []; // 暫存撈出的 20 筆資料
+
+		function updateRecentSortArrow() {
+			const upArrow = document.getElementById('recent-sort-up-arrow');
+			const downArrow = document.getElementById('recent-sort-down-arrow');
+			if (!upArrow || !downArrow) return;
+			
+			upArrow.classList.remove('active');
+			downArrow.classList.remove('active');
+			upArrow.style.color = '#999';
+			downArrow.style.color = '#999';
+			
+			if (recentSortState === 0) {
+				upArrow.classList.add('active');
+				upArrow.style.color = '#ff9800'; // 座號升冪 (亮上箭頭)
+			} else if (recentSortState === 1) {
+				downArrow.classList.add('active');
+				downArrow.style.color = '#ff9800'; // 座號降冪 (亮下箭頭)
+			}
+			// 狀態 2 (時間序) 兩者皆灰，表示原始時間狀態
+		}
+
+		function renderRecentStudentsList() {
+			recentStudentsList.innerHTML = '';
+			if (currentRecentStudents.length === 0) {
+				recentStudentsList.innerHTML = '<div style="padding: 15px; color: #999; text-align: center;">尚無任何學生紀錄</div>';
+				return;
+			}
+
+			let listToRender = [...currentRecentStudents];
+			const isSortedByClass = recentSortState === 0 || recentSortState === 1;
+			
+			if (recentSortState === 0) {
+				listToRender.sort((a, b) => a.studentId.localeCompare(b.studentId));
+			} else if (recentSortState === 1) {
+				listToRender.sort((a, b) => b.studentId.localeCompare(a.studentId));
+			} else {
+				listToRender.sort((a, b) => a.originIndex - b.originIndex);
+			}
+
+			let currentClassTracker = '';
+
+			listToRender.forEach(item => {
+				const stuClass = item.studentId.substring(0, 3);
+				
+				// 如果是依照座號排序，且遇到不同的班級，就插入一條班級分隔列
+				if (isSortedByClass && stuClass !== currentClassTracker) {
+					currentClassTracker = stuClass;
+					const divider = document.createElement('div');
+					divider.className = 'search-list-class-divider';
+					// 讓班級標題變成可點擊的按鈕外觀
+					divider.innerHTML = `<span style="cursor: pointer; display: flex; align-items: center; gap: 5px;" title="點擊進入班級紀錄">▶ ${stuClass} 班 <span style="font-size: 0.8em; color: #888; font-weight: normal;">(點擊進入班級)</span></span>`;
+					
+					divider.querySelector('span').onclick = (e) => {
+						e.stopPropagation();
+						recentStudentsModal.style.display = 'none';
+						document.body.classList.remove('modal-open');
+						// 打開班級紀錄，並標記來源為 'recent'
+						openModal(stuClass, 'class', 'recent');
+					};
+					recentStudentsList.appendChild(divider);
+				}
+
+				const div = document.createElement('div');
+				div.className = 'search-list-item';
+				
+				// 若已經有分班標題，名單內的座號就可以精簡，只顯示末兩碼 (例如: 10105 -> 05)
+				// 若是時間排序 (混班)，則顯示完整五碼
+				const displaySeat = isSortedByClass ? item.studentId.substring(3) : item.studentId;
+
+				div.innerHTML = `
+					<div class="search-list-info" style="flex-grow: 1;">
+						<span class="search-list-class" style="${isSortedByClass ? 'width: 20px; text-align: right;' : ''}">${displaySeat}</span> 
+						<span style="flex-shrink: 0;">${item.studentName}</span>
+						<span class="search-list-recent-text">${item.latestText}</span>
+					</div>
+					<div class="search-list-score" style="margin-left: 10px;">${item.pointsDisplay}</div>
+				`;
+				
+				div.onclick = () => {
+					recentStudentsModal.style.display = 'none';
+					document.body.classList.remove('modal-open');
+					// 打開學生紀錄，並標記來源為 'recent'
+					openModal(item.sysId, 'student', 'recent');
+				};
+				recentStudentsList.appendChild(div);
+			});
+		}
+
 		recentRecordsBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
 			
 			// 1. 從 allPerformanceRecords 提取最近的學生 sysId (去重複)
 			const uniqueRecentSysIds = new Set();
-			
-			// 確保紀錄有按時間由新到舊排序
 			const sortedRecords = [...allPerformanceRecords].sort((a, b) => {
 				const tA = a.timestamp?.seconds || a.timestamp?.toMillis?.() / 1000 || 0;
 				const tB = b.timestamp?.seconds || b.timestamp?.toMillis?.() / 1000 || 0;
@@ -2156,66 +2269,56 @@ document.addEventListener('DOMContentLoaded', function() {
 			for (const r of sortedRecords) {
 				const sysId = r.entityId || r.studentId;
 				const type = r.entityType || 'student';
-				// 只抓學生，過濾掉「班級共同紀錄」
 				if (type === 'student' && sysId) {
 					uniqueRecentSysIds.add(sysId);
 				}
-				if (uniqueRecentSysIds.size >= 20) break; // 達到 20 筆就停止
+				if (uniqueRecentSysIds.size >= 20) break;
 			}
 
-			// 2. 渲染列表
-			recentStudentsList.innerHTML = '';
-			if (uniqueRecentSysIds.size === 0) {
-				recentStudentsList.innerHTML = '<div style="padding: 15px; color: #999; text-align: center;">尚無任何學生紀錄</div>';
-			} else {
-				uniqueRecentSysIds.forEach(sysId => {
-					// 找尋現有學籍資料 (如果學生已畢業被清掉，就略過)
-					const stu = studentsData.find(s => s.sysId === sysId);
-					if (!stu) return; 
+			// 2. 統整資料為陣列，方便排序
+			currentRecentStudents = [];
+			let originIdx = 0; // 記錄原始的時間順序
 
-					const currentScore = allPerformanceScores[stu.sysId] || 0;
-					const className = stu.id.substring(0, 3);
-					const seatNum = stu.id.substring(3);
-					
-					// 找出該生最近一次的紀錄文字 (顯示在副標題提示用)
-					const latestRecord = sortedRecords.find(r => (r.entityId === sysId || r.studentId === sysId));
-					if (!latestRecord) return; // 雖然理論上不會發生，防呆用
+			uniqueRecentSysIds.forEach(sysId => {
+				const stu = studentsData.find(s => s.sysId === sysId);
+				if (!stu) return; 
 
-					const latestTextRaw = latestRecord.text || '';
-					let latestText = latestTextRaw.trim();
-					// 如果超過5個字，加上省略號
-					if (latestText.length > 5) {
-						latestText = latestText.substring(0, 5) + '...';
-					}
+				const latestRecord = sortedRecords.find(r => (r.entityId === sysId || r.studentId === sysId));
+				if (!latestRecord) return; 
 
-					// 顯示該事件的加扣分 (而非總分)，如果是加分加上 + 號
-					const eventPoints = latestRecord.points || 0;
-					const pointsDisplay = eventPoints > 0 ? `+${eventPoints}` : eventPoints;
+				let latestText = (latestRecord.text || '').trim();
+				if (latestText.length > 5) latestText = latestText.substring(0, 5) + '...';
 
-					const div = document.createElement('div');
-					div.className = 'search-list-item';
-					div.innerHTML = `
-						<div class="search-list-info" style="flex-grow: 1;">
-							<span class="search-list-class">${stu.id}</span> 
-							<span style="flex-shrink: 0;">${stu.name}</span>
-							<span class="search-list-recent-text">${latestText}</span>
-						</div>
-						<div class="search-list-score" style="margin-left: 10px;">${pointsDisplay}</div>
-					`;
-					
-					// 點擊後開啟個人紀錄視窗
-					div.onclick = () => {
-						recentStudentsModal.style.display = 'none';
-						document.body.classList.remove('modal-open');
-						openModal(stu.sysId, 'student', 'main');
-					};
-					recentStudentsList.appendChild(div);
+				const eventPoints = latestRecord.points || 0;
+				const pointsDisplay = eventPoints > 0 ? `+${eventPoints}` : eventPoints;
+
+				currentRecentStudents.push({
+					sysId: sysId,
+					studentId: stu.id,
+					studentName: stu.name,
+					latestText: latestText,
+					pointsDisplay: pointsDisplay,
+					originIndex: originIdx++
 				});
-			}
+			});
+
+			// 預設開啟時套用「座號遞增(0)」排序
+			recentSortState = 0; 
+			updateRecentSortArrow();
+			renderRecentStudentsList();
 
 			document.body.classList.add('modal-open');
 			recentStudentsModal.style.display = 'flex';
 		});
-	}
 
+		// 綁定排序按鈕點擊事件
+		const recentSortBtn = document.getElementById('recent-sort-btn');
+		if (recentSortBtn) {
+			recentSortBtn.addEventListener('click', () => {
+				recentSortState = (recentSortState + 1) % 3;
+				updateRecentSortArrow();
+				renderRecentStudentsList();
+			});
+		}
+	}
 });
