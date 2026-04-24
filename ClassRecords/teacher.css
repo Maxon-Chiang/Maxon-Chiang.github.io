@@ -171,6 +171,19 @@ main {
 	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 	gap: 1rem;
 }
+.class-grid.unified-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 1rem;
+}
+/* 拖曳時的原地半透明殘影 */
+.sortable-ghost {
+	opacity: 0.4;
+	transform: scale(0.95);
+	border: 2px dashed var(--primary-color);
+}
+.class-block { cursor: grab; }
+.class-block:active { cursor: grabbing; }
 .class-block {
 	border-radius: 10px;
 	border: 1px solid rgba(0, 0, 0, 0.1);
@@ -264,38 +277,24 @@ main {
 	display: flex;
 	flex-direction: column;
 }
-#student-roster-modal .modal-content h2 {
+#roster-header-container {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding-right: 35px;
-	text-align: left;
-	flex-wrap: wrap;
-	min-height: 40px;
-}
-.roster-title-text {
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	flex-grow: 1;
-	min-width: 0;
+	padding-right: 30px; /* 留空間給關閉按鈕 */
+	padding-bottom: 8px;
+	margin-bottom: 8px;
+	border-bottom: 1px solid #eee;
 }
 .roster-title-clickable {
 	cursor: pointer;
-	padding: 5px 0;
-	white-space: nowrap;
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
 }
-.roster-title-text h3 {
-	margin: 0;
-	font-size: 1.2em;
-	font-weight: bold;
-	color: #333;
-}
-.roster-title-text .score-display {
-	font-size: 0.9em;
-	font-weight: normal;
-	color: #555;
-	margin-top: 2px;
+.roster-title-clickable:hover #roster-class-name {
+	color: var(--primary-color);
+	text-decoration: underline;
 }
 #roster-sort-btn {
 	background: none;
@@ -328,7 +327,8 @@ main {
 	top: 50%;
 }
 .roster-sort-arrow.active {
-	color: var(--primary-color);
+	color: #ff9800; /* 使用亮橘色，讓排序狀態非常醒目 */
+	text-shadow: 0 0 2px rgba(255, 152, 0, 0.4);
 }
 .roster-sort-arrow.inactive {
 	color: #aaa;
@@ -677,8 +677,8 @@ main {
 	color: white;
 	border-radius: 4px;
 	cursor: pointer;
-	font-size: 1.2em;
-	padding: 2px 8px;
+	font-size: 1em;          /* 統一字體大小 */
+	padding: 6px 12px;       /* 統一內距，讓按鈕高度一致 */
 	line-height: 1.2;
 }
 #welcome-modal .modal-content { max-width: 500px; }
@@ -834,13 +834,20 @@ body.modal-open { overflow: hidden; }
 	.header-left-panel { width: 100%; justify-content: center; padding-bottom: 5px; gap: 0px; }
 	header h1 { text-align: center; font-size: 1.2em; }
 	.header-right-panel { width: 100%; display: flex; justify-content: center; align-items: center; flex-wrap: nowrap; gap: 5px; }
-	.main-actions { flex-shrink: 0; display: flex; gap: 5px; }
-	.main-actions button, .main-actions a button { padding: 0; width: 36px; height: 36px; font-size: 0 !important; display: flex; justify-content: center; align-items: center; border-radius: 4px; }
-	.main-actions a:nth-child(1) button::before { content: "🧮"; font-size: 1.4rem; visibility: visible; }
-	.main-actions a:nth-child(2) button::before { content: "📊"; font-size: 1.4rem; visibility: visible; }
+	.main-actions { flex-shrink: 0; display: flex; gap: 3px; }
 	.system-switcher-container { position: relative; flex-shrink: 0; }
-	.sys-switch-btn { width: auto !important; height: 36px; padding: 0 10px !important; font-size: 0.9em !important; display: flex; justify-content: center; align-items: center; border-radius: 4px; gap: 5px; }
-	.sys-switch-btn::before { content: none !important; }
+	
+	/* 讓手機版的五顆按鈕大小完全一致 */
+	.icon-btn-main, .sys-switch-btn { 
+		width: 36px !important; 
+		height: 36px !important; 
+		padding: 0 !important; 
+		font-size: 1.3em !important; 
+		display: flex; 
+		justify-content: center; 
+		align-items: center; 
+		margin-left: 0;
+	}
 	.sys-switch-content { 
 		position: absolute; 
 		top: 100%; 
@@ -857,7 +864,7 @@ body.modal-open { overflow: hidden; }
 	.user-profile { font-size: 0.8em; }
 	main { padding: 1rem; width: 100%; box-sizing: border-box; overflow-x: hidden; }
 	.class-grid { gap: 1rem; }
-	.grade-row { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+	.grade-row, .class-grid.unified-grid { grid-template-columns: repeat(4, 1fr); gap: 6px; }
 	.class-block { min-height: 70px; }
 	.class-block-title { font-size: 1.1em; padding: 4px 2px 2px 2px; }
 	.class-total-score { font-size: 0.75em; padding: 3px 0; }
@@ -908,18 +915,16 @@ body.modal-open { overflow: hidden; }
 	.class-block-actions a, .class-block-actions button { padding: 2px 5px; }
 	.sys-switch-text { display: none; }
 	.btn-text-mobile-hide { display: none; }
-	#sys-switch-btn { width: 36px !important; height: 36px; padding: 0 !important; font-size: 1.3em !important; display: flex; justify-content: center; align-items: center; }
-	#student-search-btn { width: 36px !important; height: 36px; padding: 0 !important; font-size: 1.2em !important; display: flex; justify-content: center; align-items: center; margin-left: 0; }
-	#recent-records-btn { width: 36px !important; height: 36px; padding: 0 !important; font-size: 1.3em !important; display: flex; justify-content: center; align-items: center; margin-left: 0; }
 	.header-right-panel { gap: 3px; }
 }
 .system-switcher-container { position: relative; display: inline-block; margin-right: 10px; }
 .sys-switch-btn {
 	background-color: rgba(255, 255, 255, 0.2);
 	color: white;
-	padding: 6px 12px;
-	font-size: 1em;
-	border: 1px solid rgba(255,255,255,0.5);
+	padding: 6px 12px;       /* 確保與 icon-btn-main 相同 */
+	font-size: 1em;          /* 統一字體大小 */
+	line-height: 1.2;        /* 統一高度基準 */
+	border: 1px solid transparent; /* 統一邊框風格 */
 	border-radius: 4px;
 	cursor: pointer;
 	transition: background-color 0.2s;
@@ -1048,3 +1053,46 @@ body.modal-open { overflow: hidden; }
 	-webkit-appearance: none;
 	margin: 0;
 }
+#student-grid-container.student-list-container {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	padding: 0;
+}
+.student-list-item {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 4px 10px;
+	border-bottom: 1px solid #eee;
+	cursor: pointer;
+	height: 38px;
+	box-sizing: border-box;
+	background-color: #fff;
+	transition: background-color 0.2s;
+}
+.student-list-item:nth-child(even) { background-color: #fcfcfc; }
+.student-list-item:hover { background-color: #eef3f8; }
+.student-list-info {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-grow: 1;
+	overflow: hidden;
+}
+.student-list-seat { color: #666; font-size: 0.9em; width: 22px; flex-shrink: 0; text-align: right; }
+.student-list-name { font-weight: bold; font-size: 1.05em; flex-shrink: 0; }
+.student-list-text { font-size: 0.85em; color: #dc3545; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;}
+.student-list-score { font-weight: bold; font-size: 1.1em; flex-shrink: 0; margin-left: 10px; }
+.student-list-item.highlight-no-score { border-left: 3px solid var(--primary-color); background-color: #f0f8ff; }
+
+/* 壓縮名單視窗的標題與邊距，挪出更多空間給清單 */
+#student-roster-modal .modal-content { padding: 15px 15px 5px 15px; transition: max-width 0.2s; }
+#student-roster-modal h2 { margin-bottom: 5px; padding-bottom: 5px; min-height: 30px; border-bottom: 1px solid #eee; }
+.roster-title-text h3 { font-size: 1.1em; margin-bottom: 2px; }
+.roster-title-text .score-display { font-size: 0.85em; }
+
+/* 當視窗處於條列模式時，限縮電腦版寬度，使其看起來緊湊 */
+#student-roster-modal.is-list-view .modal-content { max-width: 320px; margin: auto; }
+/* 條列模式下不顯示事件文字，保持乾淨 */
+.student-list-text { display: none; }

@@ -28,8 +28,16 @@
 			<button id="recent-records-btn" class="icon-btn-main" style="background-color: rgba(255,255,255,0.2); border-color: transparent;" title="最近紀錄">🕒<span class="btn-text-mobile-hide"> 最近紀錄</span></button>
 			
 			<div class="main-actions">
-				<a href="calculator.html"><button>成績計算</button></a>
-				<a href="report.html"><button>數據報告</button></a>
+				<a href="calculator.html" style="text-decoration: none;">
+					<button class="icon-btn-main" style="background-color: rgba(255,255,255,0.2); border-color: transparent;" title="成績計算">
+						🧮<span class="btn-text-mobile-hide"> 成績計算</span>
+					</button>
+				</a>
+				<a href="report.html" style="text-decoration: none;">
+					<button class="icon-btn-main" style="background-color: rgba(255,255,255,0.2); border-color: transparent;" title="數據報告">
+						📊<span class="btn-text-mobile-hide"> 數據報告</span>
+					</button>
+				</a>
 			</div>
 			<div class="system-switcher-container">
 				<!-- 用 span 包住文字，方便手機版隱藏 -->
@@ -53,6 +61,7 @@
 				<div id="dropdown-menu" class="dropdown-content">
 					<button id="class-settings-btn">班級顯示設定</button>
 					<button id="date-range-settings-btn">📅 期間設定</button>
+					<button id="reset-layout-btn">🔄 重設班級排版</button>
 					<button id="toggle-direct-entry-btn">⚡ 直進上課班級 (檢查中...)</button>
 					<button id="change-password-btn">修改密碼</button>
 					<button id="tutorial-btn">操作說明</button>
@@ -252,18 +261,16 @@
 	<div id="student-roster-modal" class="modal">
 		<div class="modal-content">
 			<span class="close-btn" data-modal="student-roster-modal">&times;</span>
-			<h2 id="student-roster-title">
-				<div class="roster-title-text" id="roster-title-text-container">
-					<div id="roster-click-area" class="roster-title-clickable">
-						<h3 id="roster-class-name"></h3>
-						<div class="score-display" id="roster-total-score-display"></div>
-					</div>
+			<div id="roster-header-container">
+				<div id="roster-click-area" class="roster-title-clickable">
+					<span id="roster-class-name" style="font-size: 1.3em; font-weight: bold; color: #333;"></span>
+					<span class="score-display" id="roster-total-score-display" style="font-size: 1em; color: #555; margin-left: 8px;"></span>
 				</div>
 				<button id="roster-sort-btn" title="切換排序方式">
 					<span class="roster-sort-arrow" id="roster-sort-up-arrow">▲</span>
 					<span class="roster-sort-arrow" id="roster-sort-down-arrow">▼</span>
 				</button>
-			</h2>
+			</div>
 			<div id="student-grid-container"></div>
 		</div>
 	</div>
@@ -338,6 +345,7 @@
 			<div id="recent-students-list" class="search-list-container"></div>
 		</div>
 	</div>
+	<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 	<script src="teacher.js?v=3.0"></script>
 </body>
 </html>

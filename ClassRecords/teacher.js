@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	let rosterSortState = 0;
 	let classSortState = 0;
 	let currentRosterClassId = null;
+	let currentRosterViewMode = 'grid'; // 紀錄目前是網格還是條列式
 	let currentEntity = null;
 	let editingRecordId = null;
 	let PERIOD_TIMES = [];
@@ -741,79 +742,140 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	};
 
+	function createClassBlock(className) {
+		const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
+		const scoreColor = getClassBlockColor(totalScore);
+		const gradeColor = getGradeColor(className);
+		
+		const classBlock = document.createElement('div');
+		classBlock.className = 'class-block';
+		classBlock.style.backgroundColor = scoreColor;
+		classBlock.style.setProperty('--grade-color', gradeColor);
+		classBlock.dataset.classId = className;
+		
+		const titleDiv = document.createElement('div');
+		titleDiv.className = 'class-block-title';
+		titleDiv.textContent = `${className} 班`;
+		titleDiv.title = '點擊以紀錄班級共同事件';
+		titleDiv.addEventListener('click', () => openModal(className, 'class', 'main'));
+		
+		const scoreDiv = document.createElement('div');
+		scoreDiv.className = 'class-total-score';
+		scoreDiv.textContent = `總分: ${totalScore.toFixed(1)}`;
+		scoreDiv.title = '點擊以條列式檢視全班成績';
+		scoreDiv.style.cursor = 'pointer';
+		scoreDiv.addEventListener('click', (e) => {
+			e.stopPropagation(); // 避免觸發格子的其他事件
+			openStudentRosterModal(className, 'main', 'list');
+		});
+		
+		const actionsDiv = document.createElement('div');
+		actionsDiv.className = 'class-block-actions';
+		
+		const studentBtn = document.createElement('button');
+		studentBtn.innerHTML = '🧑‍🎓';
+		studentBtn.title = '開啟學生名單';
+		studentBtn.addEventListener('click', () => openStudentRosterModal(className, 'main'));
+		
+		const gradesLink = document.createElement('a');
+		gradesLink.href = `./grades.html?class=${className}`;
+		gradesLink.innerHTML = '📋';
+		gradesLink.title = '前往成績登錄';
+		
+		actionsDiv.appendChild(studentBtn);
+		actionsDiv.appendChild(gradesLink);
+		classBlock.appendChild(titleDiv);
+		classBlock.appendChild(scoreDiv);
+		classBlock.appendChild(actionsDiv);
+		
+		return classBlock;
+	}
+
+	function initSortable(container, isUnified) {
+		if (typeof Sortable !== 'undefined') {
+			new Sortable(container, {
+				group: 'classes', // 允許跨年段列拖曳
+				animation: 150,
+				delay: 150, // 手機版長按 150ms 才能拖曳，避免與手指上下滑動衝突
+				delayOnTouchOnly: true,
+				ghostClass: 'sortable-ghost',
+				onEnd: function (evt) {
+					if (classSortState !== 0) return; // 分數排序模式下不存檔
+					
+					// 抓取畫面上由上到下、由左到右所有的班級格子順序
+					const blocks = document.querySelectorAll('.class-block');
+					const order = Array.from(blocks).map(b => b.dataset.classId);
+					localStorage.setItem('custom_class_order_v1', JSON.stringify(order));
+					
+					// 如果原本是分列顯示，拖拉後立刻重繪成單一桌面網格
+					if (!isUnified) {
+						renderLayout();
+					}
+				}
+			});
+		}
+	}
+
 	function renderLayout() {
 		appContainer.innerHTML = '';
+		appContainer.className = 'class-grid'; // 重置容器
 		let classesToRender = allClassList.filter(className => visibleClassList.includes(className));
+		
+		// 讀取自訂順序
+		let customOrder = null;
+		try { customOrder = JSON.parse(localStorage.getItem('custom_class_order_v1')); } catch (e) {}
+
+		// 排序邏輯
 		if (classSortState === 1) {
 			classesToRender.sort((a, b) => (classTotalScores[b] || 0) - (classTotalScores[a] || 0) || a.localeCompare(b));
 		} else if (classSortState === 2) {
 			classesToRender.sort((a, b) => (classTotalScores[a] || 0) - (classTotalScores[b] || 0) || a.localeCompare(b));
+		} else if (customOrder && customOrder.length > 0) {
+			// 套用自訂拖曳順序 (未在紀錄中的新班級排到最後面)
+			classesToRender.sort((a, b) => {
+				let indexA = customOrder.indexOf(a);
+				let indexB = customOrder.indexOf(b);
+				if (indexA === -1) indexA = 999;
+				if (indexB === -1) indexB = 999;
+				return indexA - indexB;
+			});
 		} else {
 			classesToRender.sort((a, b) => a.localeCompare(b));
 		}
+
 		if (classesToRender.length === 0 && allClassList.length > 0) {
 			appContainer.innerHTML = '<h3>沒有設定要顯示的班級。請點擊下拉選單中的「班級顯示設定」。</h3>';
 			return;
 		}
 
-		// 依據字首(年段)分群
-		const gradeGroups = {};
-		classesToRender.forEach(className => {
-			const grade = className.charAt(0);
-			if (!gradeGroups[grade]) gradeGroups[grade] = [];
-			gradeGroups[grade].push(className);
-		});
-
-		const sortedGrades = Object.keys(gradeGroups).sort();
-
-		// 將不同年段分別放到獨立的列 (Row) 裡面
-		sortedGrades.forEach(grade => {
-			const gradeRow = document.createElement('div');
-			gradeRow.className = 'grade-row';
-
-			gradeGroups[grade].forEach(className => {
-				const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
-				const scoreColor = getClassBlockColor(totalScore);
-				const gradeColor = getGradeColor(className);
-				
-				const classBlock = document.createElement('div');
-				classBlock.className = 'class-block';
-				classBlock.style.backgroundColor = scoreColor;
-				classBlock.style.setProperty('--grade-color', gradeColor);
-				classBlock.dataset.classId = className;
-				
-				const titleDiv = document.createElement('div');
-				titleDiv.className = 'class-block-title';
-				titleDiv.textContent = `${className} 班`;
-				titleDiv.title = '點擊以紀錄班級共同事件';
-				titleDiv.addEventListener('click', () => openModal(className, 'class', 'main'));
-				
-				const scoreDiv = document.createElement('div');
-				scoreDiv.className = 'class-total-score';
-				scoreDiv.textContent = `總分: ${totalScore.toFixed(1)}`;
-				
-				const actionsDiv = document.createElement('div');
-				actionsDiv.className = 'class-block-actions';
-				
-				const studentBtn = document.createElement('button');
-				studentBtn.innerHTML = '🧑‍🎓';
-				studentBtn.title = '開啟學生名單';
-				studentBtn.addEventListener('click', () => openStudentRosterModal(className, 'main'));
-				
-				const gradesLink = document.createElement('a');
-				gradesLink.href = `./grades.html?class=${className}`;
-				gradesLink.innerHTML = '📋';
-				gradesLink.title = '前往成績登錄';
-				
-				actionsDiv.appendChild(studentBtn);
-				actionsDiv.appendChild(gradesLink);
-				classBlock.appendChild(titleDiv);
-				classBlock.appendChild(scoreDiv);
-				classBlock.appendChild(actionsDiv);
-				gradeRow.appendChild(classBlock);
+		// 渲染邏輯：如果用分數排序，或已有自訂排版，統一用「App單一桌面」渲染
+		if (classSortState !== 0 || (customOrder && customOrder.length > 0)) {
+			appContainer.classList.add('unified-grid');
+			classesToRender.forEach(className => {
+				appContainer.appendChild(createClassBlock(className));
 			});
-			appContainer.appendChild(gradeRow);
-		});
+			// 只有在預設代碼排序下才啟動拖曳，分數排序時鎖定
+			if (classSortState === 0) initSortable(appContainer, true);
+		} else {
+			// 預設狀態且無自訂排版：維持「一個年段一列」
+			const gradeGroups = {};
+			classesToRender.forEach(className => {
+				const grade = className.charAt(0);
+				if (!gradeGroups[grade]) gradeGroups[grade] = [];
+				gradeGroups[grade].push(className);
+			});
+
+			const sortedGrades = Object.keys(gradeGroups).sort();
+			sortedGrades.forEach(grade => {
+				const gradeRow = document.createElement('div');
+				gradeRow.className = 'grade-row';
+				gradeGroups[grade].forEach(className => {
+					gradeRow.appendChild(createClassBlock(className));
+				});
+				appContainer.appendChild(gradeRow);
+				initSortable(gradeRow, false); // 每列獨立綁定，但 group 相同可互拖
+			});
+		}
 	}
 	function updateSortButtonDisplay(state, downArrowEl, upArrowEl, activeColor, type) {
 		if (state === 0) {
@@ -835,11 +897,15 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	function toggleRosterSort() {
-		const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
 		rosterSortState = (rosterSortState + 1) % 3;
-		updateSortButtonDisplay(rosterSortState, rosterSortDownArrow, rosterSortUpArrow, activeColor, 'roster');
 		if (document.getElementById('student-roster-modal').style.display === 'flex' && currentRosterClassId) {
 			renderStudentRoster(currentRosterClassId);
+		}
+		// 重繪完名單後，動態抓取最新元素套用顏色
+		const upArrow = document.getElementById('roster-sort-up-arrow');
+		const downArrow = document.getElementById('roster-sort-down-arrow');
+		if (upArrow && downArrow) {
+			updateSortButtonDisplay(rosterSortState, downArrow, upArrow, '#ff9800', 'roster');
 		}
 	}
 
@@ -850,17 +916,28 @@ document.addEventListener('DOMContentLoaded', function() {
 		highlightCurrentClass();
 	}
 
-	function openStudentRosterModal(className, origin = 'main') {
+	function openStudentRosterModal(className, origin = 'main', viewMode = 'grid') {
 		rosterModalOrigin = origin;
+		currentRosterViewMode = viewMode; // 儲存目前的視圖模式
+		
+		const modalEl = document.getElementById('student-roster-modal');
+		if (viewMode === 'list') {
+			modalEl.classList.add('is-list-view');
+		} else {
+			modalEl.classList.remove('is-list-view');
+		}
+
 		document.body.classList.add('modal-open');
 		currentRosterClassId = className;
-		if (origin !== 'timetable') {
+		
+		// 每次初次從外部開啟視窗時，重置排序
+		if (origin !== 'timetable' && !modalEl.style.display || modalEl.style.display === 'none') {
 			rosterSortState = 0;
 		}
-		updateSortButtonDisplay(rosterSortState, rosterSortDownArrow, rosterSortUpArrow, 'var(--primary-color)', 'roster');
+		
 		const totalScore = classTotalScores[className] !== undefined ? classTotalScores[className] : 0;
-		rosterClassName.textContent = `${className} 班 學生名單`;
-		document.getElementById('roster-total-score-display').textContent = `(累積總分: ${totalScore.toFixed(1)})`;
+		rosterClassName.textContent = `${className} 班`;
+		document.getElementById('roster-total-score-display').textContent = `(總分: ${totalScore.toFixed(1)})`;
 		rosterClickArea.title = '點擊以紀錄班級共同事件';
 		rosterClickArea.onclick = (e) => {
 			if (!e.target.closest('#roster-sort-btn')) {
@@ -868,23 +945,78 @@ document.addEventListener('DOMContentLoaded', function() {
 				openModal(className, 'class', 'roster');
 			}
 		};
+		
 		renderStudentRoster(className);
-		document.getElementById('student-roster-modal').style.display = 'flex';
+		
+		// 在渲染完成後，動態抓取最新元素強制套用顏色
+		const upArrow = document.getElementById('roster-sort-up-arrow');
+		const downArrow = document.getElementById('roster-sort-down-arrow');
+		if (upArrow && downArrow) {
+			updateSortButtonDisplay(rosterSortState, downArrow, upArrow, '#ff9800', 'roster');
+		}
+		
+		modalEl.style.display = 'flex';
 	}
 
 	function renderStudentRoster(className) {
 		studentGridContainer.innerHTML = '';
 		let studentsToRender = studentsData.filter(s => s.id.startsWith(className));
 		if (rosterSortState === 1) {
-			studentsToRender.sort((a, b) => (allPerformanceScores[b.id] || 0) - (allPerformanceScores[a.id] || 0) || a.id.localeCompare(b.id));
+			studentsToRender.sort((a, b) => (allPerformanceScores[b.sysId] || 0) - (allPerformanceScores[a.sysId] || 0) || a.id.localeCompare(b.id));
 		} else if (rosterSortState === 2) {
-			studentsToRender.sort((a, b) => (allPerformanceScores[a.id] || 0) - (allPerformanceScores[b.id] || 0) || a.id.localeCompare(b.id));
+			studentsToRender.sort((a, b) => (allPerformanceScores[a.sysId] || 0) - (allPerformanceScores[b.sysId] || 0) || a.id.localeCompare(b.id));
 		} else {
 			studentsToRender.sort((a, b) => a.id.localeCompare(b.id));
 		}
+		
 		if (studentsToRender.length === 0) {
 			studentGridContainer.innerHTML = '<p>此班級查無學生。</p>';
+			studentGridContainer.className = ''; // 查無資料時清除佈局設定
+			return;
+		}
+
+		if (currentRosterViewMode === 'list') {
+			// ================= 條列式視圖 (雙擊格子觸發) =================
+			studentGridContainer.className = 'student-list-container';
+			
+			studentsToRender.forEach(student => {
+				const score = allPerformanceScores[student.sysId] || 0;
+				const latestRecordInfo = studentLatestRecords[student.sysId];
+				
+				let latestText = latestRecordInfo && latestRecordInfo.latestComment ? latestRecordInfo.latestComment : '';
+				if (latestText.length > 12) latestText = latestText.substring(0, 12) + '...';
+
+				let scoreColor = '#333';
+				if (score < 0) scoreColor = '#d0021b';
+				else if (score >= 5) scoreColor = '#007bff';
+				else if (score > 0) scoreColor = '#28a745';
+
+				const itemDiv = document.createElement('div');
+				itemDiv.className = 'student-list-item';
+				if (latestRecordInfo && latestRecordInfo.needsHighlight) {
+					itemDiv.classList.add('highlight-no-score');
+				}
+
+				itemDiv.innerHTML = `
+					<div class="student-list-info">
+						<span class="student-list-seat">${student.id.substring(3)}</span>
+						<span class="student-list-name">${student.name}</span>
+						<span class="student-list-text">${latestText}</span>
+					</div>
+					<div class="student-list-score" style="color: ${scoreColor};">${score.toFixed(1)}</div>
+				`;
+				
+				itemDiv.addEventListener('click', () => {
+					document.getElementById('student-roster-modal').style.display = 'none';
+					openModal(student.sysId, 'student', 'roster');
+				});
+				studentGridContainer.appendChild(itemDiv);
+			});
+
 		} else {
+			// ================= 網格式視圖 (點擊頭像按鈕觸發) =================
+			studentGridContainer.className = 'student-grid-container'; // 保持原本的網格佈局
+			
 			studentsToRender.forEach(student => {
 				const studentBlock = document.createElement('div');
 				studentBlock.title = `點擊以紀錄 ${student.name} 的表現`;
@@ -916,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					${latestCommentHtml}`;
 				studentBlock.addEventListener('click', () => {
 					document.getElementById('student-roster-modal').style.display = 'none';
-					openModal(student.sysId, 'student', 'roster'); // 傳遞 sysId
+					openModal(student.sysId, 'student', 'roster');
 				});
 				studentGridContainer.appendChild(studentBlock);
 			});
@@ -935,9 +1067,9 @@ document.addEventListener('DOMContentLoaded', function() {
 				const className = originalType === 'student' ? originalEntityId.substring(0, 3) : originalEntityId;
 				if (rosterModalOrigin === 'timetable') {
 					rosterModalOrigin = null;
-					openStudentRosterModal(className, 'timetable');
+					openStudentRosterModal(className, 'timetable', currentRosterViewMode);
 				} else {
-					openStudentRosterModal(className);
+					openStudentRosterModal(className, 'main', currentRosterViewMode);
 				}
 			} else {
 				renderLayout();
@@ -1281,7 +1413,19 @@ document.addEventListener('DOMContentLoaded', function() {
 	selectAllVisibleClasses.addEventListener('change', (e) => { document.querySelectorAll('.visible-class-checkbox').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
 	document.getElementById('class-settings-modal').querySelector('.close-btn').addEventListener('click', () => { document.body.classList.remove('modal-open'); document.getElementById('class-settings-modal').style.display = 'none'; });
 	saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); document.getElementById('class-settings-modal').querySelector('.close-btn').click(); alert('設定已儲存！'); } catch(error) { alert("儲存失敗"); } });
-
+	const resetLayoutBtn = document.getElementById('reset-layout-btn');
+	if (resetLayoutBtn) {
+		resetLayoutBtn.addEventListener('click', () => {
+			document.getElementById('dropdown-menu').classList.remove('show');
+			if (confirm('確定要清除自訂的班級排版，恢復預設的「依年段分列」顯示嗎？')) {
+				localStorage.removeItem('custom_class_order_v1');
+				classSortState = 0; // 強制切回預設排序
+				const activeColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+				updateSortButtonDisplay(classSortState, mainSortDownArrow, mainSortUpArrow, '#f4d03f', 'main');
+				renderLayout();
+			}
+		});
+	}
 	function openInfoModal() {
 		document.body.classList.add('modal-open');
 		document.getElementById('info-modal').style.display = 'flex';
