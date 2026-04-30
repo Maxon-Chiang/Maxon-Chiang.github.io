@@ -129,15 +129,25 @@
 					</div>
 					
 					<!-- 底部第二行：附加檔案區塊 -->
-					<div class="attachment-wrapper" style="display: flex; align-items: center; gap: 10px; width: 100%; background: #f8f9fa; padding: 6px 10px; border-radius: 6px; box-sizing: border-box; border: 1px dashed #ccc;">
+					<div class="attachment-wrapper" style="display: flex; align-items: center; gap: 8px; width: 100%; background: #f8f9fa; padding: 6px 10px; border-radius: 6px; box-sizing: border-box; border: 1px dashed #ccc; flex-wrap: wrap;">
+						
+						<!-- 隱藏的輸入框：一般檔案、拍照、錄影 -->
 						<input type="file" id="record-attachment" style="display: none;" accept="image/*,audio/*,video/*,application/pdf">
-						<button type="button" id="btn-select-attachment" style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 4px; border: none; font-size: 0.9em; flex-shrink: 0; cursor: pointer;">📎 附加檔案</button>
+						<input type="file" id="record-camera-photo" style="display: none;" accept="image/*" capture="environment">
+						<input type="file" id="record-camera-video" style="display: none;" accept="video/*" capture="environment">
 						
-						<!-- 檔名顯示區 (設定 flex-grow: 1 填滿剩下空間，並隱藏超出的文字變為 ...) -->
-						<span id="attachment-name-display" style="font-size: 0.85em; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;"></span>
+						<!-- 按鈕群組 -->
+						<div style="display: flex; gap: 5px; flex-shrink: 0;">
+							<button type="button" id="btn-select-attachment" style="background-color: #6c757d; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer;" title="從裝置選擇檔案">📎 檔案</button>
+							<button type="button" id="btn-camera-photo" style="background-color: #17a2b8; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer;" title="開啟相機拍照">📷 拍照</button>
+							<button type="button" id="btn-camera-video" style="background-color: #e83e8c; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer;" title="開啟相機錄影">🎥 錄影</button>
+						</div>
 						
-						<!-- 移除按鈕 (設定 flex-shrink: 0 確保不會被長檔名擠壓) -->
-						<button type="button" id="btn-clear-attachment" style="display: none; background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.2em; padding: 0 5px; flex-shrink: 0;" title="移除選擇的檔案">✖</button>
+						<!-- 檔名顯示區 -->
+						<span id="attachment-name-display" style="font-size: 0.85em; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1; min-width: 50px;"></span>
+						
+						<!-- 移除按鈕 -->
+						<button type="button" id="btn-clear-attachment" style="display: none; background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.2em; padding: 0 5px; flex-shrink: 0;" title="移除選擇的檔案/媒體">✖</button>
 					</div>
 					<datalist id="recent-texts-list"></datalist>
 				</form>

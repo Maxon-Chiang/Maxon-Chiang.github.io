@@ -90,10 +90,14 @@ document.addEventListener('DOMContentLoaded', function() {
 	const TRANSFER_KEY = 'initialActiveChanges';
 	const CACHE_LIFETIME = 45 * 60 * 1000;
 	const recordAttachmentInput = document.getElementById('record-attachment');
+	const recordCameraPhotoInput = document.getElementById('record-camera-photo');
+	const recordCameraVideoInput = document.getElementById('record-camera-video');
 	const btnSelectAttachment = document.getElementById('btn-select-attachment');
+	const btnCameraPhoto = document.getElementById('btn-camera-photo');
+	const btnCameraVideo = document.getElementById('btn-camera-video');
 	const attachmentNameDisplay = document.getElementById('attachment-name-display');
 	const btnClearAttachment = document.getElementById('btn-clear-attachment');
-	let selectedFile = null; // 用來暫存選擇的檔案
+	let selectedFile = null;
 
 	function checkAndTriggerDirectEntry() {
 		if (localStorage.getItem(DIRECT_ENTRY_KEY) !== 'true') return false;
@@ -2204,31 +2208,56 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 	
 	if (btnSelectAttachment) {
+		// 綁定三個按鈕的點擊事件，觸發對應的隱藏 input
 		btnSelectAttachment.addEventListener('click', () => recordAttachmentInput.click());
-		recordAttachmentInput.addEventListener('change', (e) => {
+		btnCameraPhoto.addEventListener('click', () => recordCameraPhotoInput.click());
+		btnCameraVideo.addEventListener('click', () => recordCameraVideoInput.click());
+
+		// 建立共用的檔案處理函式
+		const handleFileSelection = (e) => {
 			if (e.target.files.length > 0) {
 				selectedFile = e.target.files[0];
 				
-				// 檢查檔案大小 (限制 20MB)
-				if (selectedFile.size > 20 * 1024 * 1024) {
-					alert('檔案大小不能超過 20MB！');
+				// 檢查檔案大小 (限制 10MB)
+				if (selectedFile.size > 10 * 1024 * 1024) {
+					alert('檔案大小不能超過 10MB！');
 					clearAttachmentSelection();
 					return;
+				}
+
+				// 手機原生相機拍出來的檔名通常是固定的 (如 image.jpg)，幫它重新命名
+				let displayName = selectedFile.name;
+				if (e.target.id.includes('camera') || displayName.toLowerCase() === 'image.jpg' || displayName.toLowerCase() === 'video.mp4') {
+					const ext = selectedFile.type.includes('video') ? 'mp4' : 'jpg';
+					const prefix = selectedFile.type.includes('video') ? '即時錄影' : '即時照片';
+					const timeString = new Date().toLocaleTimeString('zh-TW', { hour12: false }).replace(/:/g, '');
+					displayName = `${prefix}_${timeString}.${ext}`;
+					
+					// 使用新的檔名重建 File 物件
+					selectedFile = new File([selectedFile], displayName, { type: selectedFile.type });
 				}
 				
 				attachmentNameDisplay.textContent = selectedFile.name;
 				attachmentNameDisplay.style.color = '#555';
 				btnClearAttachment.style.display = 'inline-block';
 			}
-		});
+		};
+
+		// 三個 input 共用同一個 change 事件
+		recordAttachmentInput.addEventListener('change', handleFileSelection);
+		recordCameraPhotoInput.addEventListener('change', handleFileSelection);
+		recordCameraVideoInput.addEventListener('change', handleFileSelection);
+
 		btnClearAttachment.addEventListener('click', clearAttachmentSelection);
 	}
 
 	function clearAttachmentSelection() {
 		selectedFile = null;
-		recordAttachmentInput.value = '';
-		attachmentNameDisplay.textContent = '';
-		btnClearAttachment.style.display = 'none';
+		if (recordAttachmentInput) recordAttachmentInput.value = '';
+		if (recordCameraPhotoInput) recordCameraPhotoInput.value = '';
+		if (recordCameraVideoInput) recordCameraVideoInput.value = '';
+		if (attachmentNameDisplay) attachmentNameDisplay.textContent = '';
+		if (btnClearAttachment) btnClearAttachment.style.display = 'none';
 	}
 	
 	initialize = async function(userData, forceReload = false, forceItem = 0) {
