@@ -2209,46 +2209,33 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 	
+	let mediaRecorder = null;
+	let audioChunks = [];
+	let recordInterval = null;
+	let recordSeconds = 0;
+
 	if (btnSelectAttachment) {
-		// 綁定按鈕的點擊事件，觸發對應的隱藏 input
+		// 1. 檔案與相機 (透過 input)
 		btnSelectAttachment.addEventListener('click', () => recordAttachmentInput.click());
 		btnCameraPhoto.addEventListener('click', () => recordCameraPhotoInput.click());
 		btnCameraVideo.addEventListener('click', () => recordCameraVideoInput.click());
-		btnCameraAudio.addEventListener('click', () => recordCameraAudioInput.click());
 
-		// 建立共用的檔案處理函式
 		const handleFileSelection = (e) => {
 			if (e.target.files.length > 0) {
 				selectedFile = e.target.files[0];
 				
-				// 檢查檔案大小 (限制 10MB)
 				if (selectedFile.size > 10 * 1024 * 1024) {
 					alert('檔案大小不能超過 10MB！');
 					clearAttachmentSelection();
 					return;
 				}
 
-				// 手機原生媒體拍出來的檔名通常是固定的，幫它重新命名
 				let displayName = selectedFile.name;
 				if (e.target.id.includes('camera') || displayName.toLowerCase() === 'image.jpg' || displayName.toLowerCase() === 'video.mp4') {
-					
-					let prefix = '即時檔案';
-					if (selectedFile.type.includes('video')) prefix = '即時錄影';
-					else if (selectedFile.type.includes('audio')) prefix = '即時錄音';
-					else if (selectedFile.type.includes('image')) prefix = '即時照片';
-
-					// 抓取原本的副檔名，若無則預設 (影片 mp4, 聲音 m4a, 圖片 jpg)
-					let ext = selectedFile.name.split('.').pop();
-					if (ext === selectedFile.name) { 
-						if (selectedFile.type.includes('video')) ext = 'mp4';
-						else if (selectedFile.type.includes('audio')) ext = 'm4a';
-						else ext = 'jpg';
-					}
-					
+					const ext = selectedFile.type.includes('video') ? 'mp4' : 'jpg';
+					const prefix = selectedFile.type.includes('video') ? '即時錄影' : '即時照片';
 					const timeString = new Date().toLocaleTimeString('zh-TW', { hour12: false }).replace(/:/g, '');
 					displayName = `${prefix}_${timeString}.${ext}`;
-					
-					// 使用新的檔名重建 File 物件
 					selectedFile = new File([selectedFile], displayName, { type: selectedFile.type });
 				}
 				
@@ -2258,13 +2245,73 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		};
 
-		// 所有 input 共用同一個 change 事件
 		recordAttachmentInput.addEventListener('change', handleFileSelection);
 		recordCameraPhotoInput.addEventListener('change', handleFileSelection);
 		recordCameraVideoInput.addEventListener('change', handleFileSelection);
-		recordCameraAudioInput.addEventListener('change', handleFileSelection);
-
 		btnClearAttachment.addEventListener('click', clearAttachmentSelection);
+
+		// 2. 網頁錄音 API 實作
+		const btnStopAudio = document.getElementById('btn-stop-audio');
+		const recordTimer = document.getElementById('record-timer');
+
+		btnCameraAudio.addEventListener('click', async () => {
+			try {
+				// 請求麥克風權限
+				const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				mediaRecorder = new MediaRecorder(stream);
+				audioChunks = [];
+
+				mediaRecorder.ondataavailable = e => {
+					if (e.data.size > 0) audioChunks.push(e.data);
+				};
+
+				mediaRecorder.onstop = () => {
+					// 錄音結束，組合檔案
+					const audioBlob = new Blob(audioChunks, { type: 'audio/mp4' });
+					const timeString = new Date().toLocaleTimeString('zh-TW', { hour12: false }).replace(/:/g, '');
+					const displayName = `即時錄音_${timeString}.m4a`;
+					
+					selectedFile = new File([audioBlob], displayName, { type: 'audio/mp4' });
+
+					// 更新 UI
+					attachmentNameDisplay.textContent = selectedFile.name;
+					attachmentNameDisplay.style.color = '#555';
+					btnClearAttachment.style.display = 'inline-block';
+
+					// 釋放麥克風資源
+					stream.getTracks().forEach(track => track.stop());
+				};
+
+				// 開始錄音
+				mediaRecorder.start();
+
+				// UI 切換：隱藏錄音按鈕，顯示停止按鈕並開始計時
+				btnCameraAudio.style.display = 'none';
+				btnStopAudio.style.display = 'inline-block';
+				recordSeconds = 0;
+				recordTimer.textContent = '00:00';
+				
+				recordInterval = setInterval(() => {
+					recordSeconds++;
+					const m = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+					const s = String(recordSeconds % 60).padStart(2, '0');
+					recordTimer.textContent = `${m}:${s}`;
+				}, 1000);
+
+			} catch (err) {
+				alert('無法開啟麥克風！請確認您已允許瀏覽器使用麥克風權限。\n' + err.message);
+			}
+		});
+
+		// 點擊停止錄音
+		btnStopAudio.addEventListener('click', () => {
+			if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+				mediaRecorder.stop();
+			}
+			clearInterval(recordInterval);
+			btnStopAudio.style.display = 'none';
+			btnCameraAudio.style.display = 'inline-block';
+		});
 	}
 
 	function clearAttachmentSelection() {
@@ -2272,9 +2319,16 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (recordAttachmentInput) recordAttachmentInput.value = '';
 		if (recordCameraPhotoInput) recordCameraPhotoInput.value = '';
 		if (recordCameraVideoInput) recordCameraVideoInput.value = '';
-		if (recordCameraAudioInput) recordCameraAudioInput.value = '';
 		if (attachmentNameDisplay) attachmentNameDisplay.textContent = '';
 		if (btnClearAttachment) btnClearAttachment.style.display = 'none';
+		
+		// 如果正在錄音卻被關閉視窗，強迫停止
+		if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+			mediaRecorder.stop();
+			clearInterval(recordInterval);
+			document.getElementById('btn-stop-audio').style.display = 'none';
+			btnCameraAudio.style.display = 'inline-block';
+		}
 	}
 	
 	initialize = async function(userData, forceReload = false, forceItem = 0) {

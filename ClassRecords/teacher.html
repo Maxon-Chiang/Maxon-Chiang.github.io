@@ -131,18 +131,20 @@
 					<!-- 底部第二行：附加檔案區塊 -->
 					<div class="attachment-wrapper" style="display: flex; align-items: center; gap: 8px; width: 100%; background: #f8f9fa; padding: 6px 10px; border-radius: 6px; box-sizing: border-box; border: 1px dashed #ccc; flex-wrap: wrap;">
 						
-						<!-- 隱藏的輸入框：一般檔案、拍照、錄影、錄音 -->
+						<!-- 隱藏的輸入框：一般檔案、拍照、錄影 (移除了無效的 audio input) -->
 						<input type="file" id="record-attachment" style="display: none;" accept="image/*,audio/*,video/*,application/pdf">
 						<input type="file" id="record-camera-photo" style="display: none;" accept="image/*" capture="environment">
 						<input type="file" id="record-camera-video" style="display: none;" accept="video/*" capture="environment">
-						<input type="file" id="record-camera-audio" style="display: none;" accept="audio/*" capture>
 						
 						<!-- 按鈕群組 -->
-						<div style="display: flex; gap: 5px; flex-shrink: 0;">
+						<div style="display: flex; gap: 5px; flex-shrink: 0; align-items: center;">
 							<button type="button" id="btn-select-attachment" style="background-color: #6c757d; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer;" title="從裝置選擇檔案">📎 檔案</button>
 							<button type="button" id="btn-camera-photo" style="background-color: #17a2b8; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer;" title="開啟相機拍照">📷 拍照</button>
 							<button type="button" id="btn-camera-video" style="background-color: #e83e8c; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer;" title="開啟相機錄影">🎥 錄影</button>
-							<button type="button" id="btn-camera-audio" style="background-color: #fd7e14; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer;" title="開啟錄音機">🎤 錄音</button>
+							
+							<!-- 網頁原生錄音按鈕 與 隱藏的停止按鈕 -->
+							<button type="button" id="btn-camera-audio" style="background-color: #fd7e14; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer;" title="開啟網頁錄音">🎤 錄音</button>
+							<button type="button" id="btn-stop-audio" style="display: none; background-color: #dc3545; color: white; padding: 5px 8px; border-radius: 4px; border: none; font-size: 0.9em; cursor: pointer; animation: pulse-record 1.5s infinite;" title="停止錄音">⏹ 停止 (<span id="record-timer">00:00</span>)</button>
 						</div>
 						
 						<!-- 檔名顯示區 -->
@@ -151,6 +153,8 @@
 						<!-- 移除按鈕 -->
 						<button type="button" id="btn-clear-attachment" style="display: none; background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.2em; padding: 0 5px; flex-shrink: 0;" title="移除選擇的檔案/媒體">✖</button>
 					</div>
+					<!-- 加入錄音按鈕閃爍動畫 -->
+					<style>@keyframes pulse-record { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }</style>
 					<datalist id="recent-texts-list"></datalist>
 				</form>
 			</div>
