@@ -92,9 +92,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	const recordAttachmentInput = document.getElementById('record-attachment');
 	const recordCameraPhotoInput = document.getElementById('record-camera-photo');
 	const recordCameraVideoInput = document.getElementById('record-camera-video');
+	const recordCameraAudioInput = document.getElementById('record-camera-audio');
 	const btnSelectAttachment = document.getElementById('btn-select-attachment');
 	const btnCameraPhoto = document.getElementById('btn-camera-photo');
 	const btnCameraVideo = document.getElementById('btn-camera-video');
+	const btnCameraAudio = document.getElementById('btn-camera-audio');
 	const attachmentNameDisplay = document.getElementById('attachment-name-display');
 	const btnClearAttachment = document.getElementById('btn-clear-attachment');
 	let selectedFile = null;
@@ -2208,10 +2210,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 	
 	if (btnSelectAttachment) {
-		// 綁定三個按鈕的點擊事件，觸發對應的隱藏 input
+		// 綁定按鈕的點擊事件，觸發對應的隱藏 input
 		btnSelectAttachment.addEventListener('click', () => recordAttachmentInput.click());
 		btnCameraPhoto.addEventListener('click', () => recordCameraPhotoInput.click());
 		btnCameraVideo.addEventListener('click', () => recordCameraVideoInput.click());
+		btnCameraAudio.addEventListener('click', () => recordCameraAudioInput.click());
 
 		// 建立共用的檔案處理函式
 		const handleFileSelection = (e) => {
@@ -2225,11 +2228,23 @@ document.addEventListener('DOMContentLoaded', function() {
 					return;
 				}
 
-				// 手機原生相機拍出來的檔名通常是固定的 (如 image.jpg)，幫它重新命名
+				// 手機原生媒體拍出來的檔名通常是固定的，幫它重新命名
 				let displayName = selectedFile.name;
 				if (e.target.id.includes('camera') || displayName.toLowerCase() === 'image.jpg' || displayName.toLowerCase() === 'video.mp4') {
-					const ext = selectedFile.type.includes('video') ? 'mp4' : 'jpg';
-					const prefix = selectedFile.type.includes('video') ? '即時錄影' : '即時照片';
+					
+					let prefix = '即時檔案';
+					if (selectedFile.type.includes('video')) prefix = '即時錄影';
+					else if (selectedFile.type.includes('audio')) prefix = '即時錄音';
+					else if (selectedFile.type.includes('image')) prefix = '即時照片';
+
+					// 抓取原本的副檔名，若無則預設 (影片 mp4, 聲音 m4a, 圖片 jpg)
+					let ext = selectedFile.name.split('.').pop();
+					if (ext === selectedFile.name) { 
+						if (selectedFile.type.includes('video')) ext = 'mp4';
+						else if (selectedFile.type.includes('audio')) ext = 'm4a';
+						else ext = 'jpg';
+					}
+					
 					const timeString = new Date().toLocaleTimeString('zh-TW', { hour12: false }).replace(/:/g, '');
 					displayName = `${prefix}_${timeString}.${ext}`;
 					
@@ -2243,10 +2258,11 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		};
 
-		// 三個 input 共用同一個 change 事件
+		// 所有 input 共用同一個 change 事件
 		recordAttachmentInput.addEventListener('change', handleFileSelection);
 		recordCameraPhotoInput.addEventListener('change', handleFileSelection);
 		recordCameraVideoInput.addEventListener('change', handleFileSelection);
+		recordCameraAudioInput.addEventListener('change', handleFileSelection);
 
 		btnClearAttachment.addEventListener('click', clearAttachmentSelection);
 	}
@@ -2256,6 +2272,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (recordAttachmentInput) recordAttachmentInput.value = '';
 		if (recordCameraPhotoInput) recordCameraPhotoInput.value = '';
 		if (recordCameraVideoInput) recordCameraVideoInput.value = '';
+		if (recordCameraAudioInput) recordCameraAudioInput.value = '';
 		if (attachmentNameDisplay) attachmentNameDisplay.textContent = '';
 		if (btnClearAttachment) btnClearAttachment.style.display = 'none';
 	}
