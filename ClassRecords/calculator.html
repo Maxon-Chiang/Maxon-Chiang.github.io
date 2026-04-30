@@ -97,7 +97,7 @@
 						<select id="calc-rule-select" disabled><option value="">請先選擇計算對象</option></select>
 					</div>
 				</div>
-				<h2>計算結果</h2>
+				<h2 id="calc-result-title">計算結果</h2>
 				<p>請選擇計算對象和規則後，點擊按鈕開始計算。</p>
 				<div id="results-container"></div>
 			</div>
@@ -162,7 +162,24 @@
 								<label for="step4-multiplier">表現總分乘數:</label>
 								<input type="number" class="input-decimal" id="step4-multiplier" min="0" max="1" step="0.01" value="1.0">
 							</div>
+							<p style="font-size: 0.8em; color: #666; margin-top: 5px;">*扣分事件若含「兌換」二字將不倒扣</p>
 						</div>
+					</div>
+					<!-- 新增：步驟5 最後調整 -->
+					<div class="step-card" style="margin-top: 15px;">
+						<h4>步驟5: 最終成績微調 (選填)</h4>
+						<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+							<select id="step5-operator" style="padding: 4px; height: auto;">
+								<option value="+">＋ 加</option>
+								<option value="-">－ 減</option>
+								<option value="*">× 乘</option>
+								<option value="/">÷ 除</option>
+								<option value="sqrt">√ 開根號</option>
+							</select>
+							<input type="number" id="step5-val" style="width: 70px; padding: 4px; height: auto;" value="10" step="0.1">
+							<button id="add-step5-btn" style="padding: 4px 10px; background-color: #17a2b8; border-radius: 4px;">加入調整</button>
+						</div>
+						<ul id="step5-list" style="margin-top: 10px; padding-left: 20px; font-size: 0.9em; color: #333;"></ul>
 					</div>
 				</div>
 			</div>
@@ -468,6 +485,24 @@
 			step1Container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', handleCheckboxChange));
 			step2Container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.addEventListener('change', handleCheckboxChange));
 		}
+		let currentStep5Rules = []; // 暫存目前的步驟5規則陣列
+
+		function renderStep5List() {
+			const list = document.getElementById('step5-list');
+			list.innerHTML = '';
+			currentStep5Rules.forEach((rule, idx) => {
+				const li = document.createElement('li');
+				let text = rule.op === 'sqrt' ? '先開根號' : `再 ${rule.op} ${rule.val}`;
+				li.innerHTML = `${text} <span style="color:red; cursor:pointer; margin-left:10px;" onclick="removeStep5(${idx})">(x 刪除)</span>`;
+				list.appendChild(li);
+			});
+		}
+
+		window.removeStep5 = function(idx) {
+			currentStep5Rules.splice(idx, 1);
+			renderStep5List();
+		};
+
 		function clearRuleForm() {
 			document.getElementById('rule-default-score').value = 0;
 			document.querySelectorAll('#rule-config-panel input[type="checkbox"]').forEach(cb => { cb.checked = false; cb.disabled = false; });
@@ -476,6 +511,8 @@
 			document.getElementById('step3-n').value = 5;
 			document.getElementById('step3-multiplier').value = 1.0;
 			document.getElementById('step4-multiplier').value = 1.0;
+			currentStep5Rules = [];
+			renderStep5List();
 		}
 		function getRuleFromForm() {
 			const ruleData = {
@@ -485,7 +522,8 @@
 				step1: {},
 				step2: { assignments:[], multiplier: parseFloat(document.getElementById('step2-multiplier').value) },
 				step3: { n: parseInt(document.getElementById('step3-n').value), multiplier: parseFloat(document.getElementById('step3-multiplier').value) },
-				step4: { multiplier: parseFloat(document.getElementById('step4-multiplier').value) }
+				step4: { multiplier: parseFloat(document.getElementById('step4-multiplier').value) },
+				step5: currentStep5Rules // 存入陣列
 			};
 			document.querySelectorAll('#step1-assignments input:checked').forEach(cb => {
 				ruleData.step1[cb.dataset.name] = parseFloat(cb.nextElementSibling.nextElementSibling.value);
@@ -495,6 +533,7 @@
 			});
 			return ruleData;
 		}
+
 		function loadRuleIntoForm(rule) {
 			clearRuleForm();
 			document.getElementById('rule-name').value = rule.ruleName;
@@ -519,6 +558,10 @@
 				document.getElementById('step3-multiplier').value = rule.step3.multiplier;
 			}
 			if(rule.step4) document.getElementById('step4-multiplier').value = rule.step4.multiplier;
+			if(rule.step5) {
+				currentStep5Rules = [...rule.step5];
+				renderStep5List();
+			}
 		}
 		async function saveRule() {
 			const ruleId = document.getElementById('rule-select').value;
@@ -529,18 +572,21 @@
 			ruleData.teacherId = currentUser.uid;
 			try {
 				if (ruleId === 'new') {
-					const docRef = await db.collection('calculationRules').add(ruleData);
-					await loadAllRules();
-					populateRulesForGrade(gradeLevel);
-					document.getElementById('rule-select').value = docRef.id;
+					await db.collection('calculationRules').add(ruleData);
 				} else {
 					await db.collection('calculationRules').doc(ruleId).set(ruleData);
-					await loadAllRules();
-					populateRulesForGrade(gradeLevel);
-					document.getElementById('rule-select').value = ruleId;
 				}
+				
+				await loadAllRules();
+				populateRulesForGrade(gradeLevel);
 				localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify({ allRules, allAssignments, uid: currentUser.uid, lastUpdated: Date.now() }));
 				alert('儲存成功');
+				
+				// 儲存後，將選單退回「建立新規則」並清空表單
+				document.getElementById('rule-select').value = 'new';
+				clearRuleForm();
+				document.getElementById('rule-name').value = '';
+				
 			} catch(e) { alert('失敗'); }
 		}
 		async function deleteRule() {
@@ -564,6 +610,20 @@
 			const classes = isGrade ? gradeLevels[grade] :[target];
 			const students = studentsData.filter(s => classes.includes(s.id.substring(0, 3))).sort((a,b) => a.id.localeCompare(b.id));
 			const container = document.getElementById('results-container');
+
+			// --- 新增：將步驟 5 的調整公式顯示在標題右側 ---
+			let formulaStr = '';
+			if (rule.step5 && rule.step5.length > 0) {
+				const formulas = rule.step5.map(step => {
+					if (step.op === 'sqrt') return '√';
+					return `${step.op}${step.val}`;
+				});
+				formulaStr = ` <span style="font-size:0.8em; color:#e83e8c; font-weight:normal; margin-left:15px; background:#f8d7da; padding:2px 8px; border-radius:4px;">(微調公式: ${formulas.join(', ')})</span>`;
+			}
+			const resultHeader = document.getElementById('calc-result-title');
+			if (resultHeader) {
+				resultHeader.innerHTML = `計算結果${formulaStr}`;
+			}
 			let tableHTML = `<table><thead><tr><th>班級</th><th>座號</th><th>姓名</th><th>最終成績</th><th>S1</th><th>S2</th><th>S3</th><th>S4</th></tr></thead><tbody>`;
 			students.forEach(student => {
 				const studentClassId = student.id.substring(0, 3);
@@ -586,14 +646,56 @@
 				let s3 = 0, s3T = 0, n = rule.step3.n;
 				for(let i=0; i < n; i++) s3T += scs[i] || rule.defaultMissingScore;
 				if (n > 0) s3 = (s3T / n) * rule.step3.multiplier;
-				const s4 = (allPerformanceScores[studentSysId] || 0) * rule.step4.multiplier;
-				const final = s1 + s2 + s3 + s4;
+				
+				// 重新計算 s4，排除含有「兌換」二字的扣分
+				let purePerformanceScore = 0;
+				const cachedDynamic = JSON.parse(localStorage.getItem(DYNAMIC_CACHE_KEY) || '{}');
+				if (cachedDynamic && cachedDynamic.performanceRecords) {
+					cachedDynamic.performanceRecords.forEach(r => {
+						const rSysId = r.entityId || r.studentId;
+						if (rSysId === studentSysId && (r.entityType === 'student' || !r.entityType)) {
+							let pts = r.points || 0;
+							// 【兌換豁免機制】：如果是扣分，且文字包含「兌換」，就不扣分
+							if (pts < 0 && r.text && r.text.includes('兌換')) {
+								pts = 0; 
+							}
+							purePerformanceScore += pts;
+						}
+					});
+				}
+				const s4 = purePerformanceScore * rule.step4.multiplier;
+				
+				let final = s1 + s2 + s3 + s4;
+
+				// 執行步驟 5 的管線運算
+				if (rule.step5 && rule.step5.length > 0) {
+					rule.step5.forEach(step => {
+						if (step.op === '+') final += step.val;
+						else if (step.op === '-') final -= step.val;
+						else if (step.op === '*') final *= step.val;
+						else if (step.op === '/') { if (step.val !== 0) final /= step.val; }
+						else if (step.op === 'sqrt') {
+							if (final >= 0) final = Math.sqrt(final);
+						}
+					});
+				}
+
 				tableHTML += `<tr><td>${studentClassId}</td><td>${student.id.substring(3)}</td><td>${student.name}</td><td><strong>${final.toFixed(2)}</strong></td><td>${s1.toFixed(2)}</td><td>${s2.toFixed(2)}</td><td>${s3.toFixed(2)}</td><td>${s4.toFixed(2)}</td></tr>`;
 			});
 			container.innerHTML = tableHTML + `</tbody></table>`;
 		}
 		document.getElementById('manual-reload-btn').addEventListener('click', () => {
 			if(confirm('重新下載？')) { localStorage.removeItem(CALCULATOR_DYNAMIC_CACHE_KEY); localStorage.removeItem(STATIC_CACHE_KEY); localStorage.removeItem(DYNAMIC_CACHE_KEY); window.location.reload(); }
+		});
+		document.getElementById('step5-operator').addEventListener('change', (e) => {
+			document.getElementById('step5-val').disabled = e.target.value === 'sqrt';
+		});
+		document.getElementById('add-step5-btn').addEventListener('click', () => {
+			const op = document.getElementById('step5-operator').value;
+			const val = parseFloat(document.getElementById('step5-val').value);
+			if (op !== 'sqrt' && isNaN(val)) return alert('請輸入數字');
+			currentStep5Rules.push({ op, val: isNaN(val) ? 0 : val });
+			renderStep5List();
 		});
 		document.getElementById('logout-btn').addEventListener('click', () => { auth.signOut().then(() => { window.location.href = 'login.html'; }); });
 	</script>

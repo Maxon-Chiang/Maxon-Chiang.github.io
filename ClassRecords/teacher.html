@@ -6,6 +6,7 @@
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+	<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
 	<link rel="stylesheet" href="teacher.css">
 </head>
 <body>
@@ -106,19 +107,37 @@
 						<span id="record-count-display">事件數: 0</span>
 						<span id="record-total-score-display">總分: 0.0</span>
 					</div>
-					<button type="button" id="save-record-btn" style="background-color: var(--success-color);">新增</button>
-					<button type="button" id="btn-cancel-edit" style="display:none; background-color:#6c757d;">取消</button>
-				</div>
-				<form id="add-record-form" novalidate>
-					<!-- 把按鈕跟輸入框包在一起 -->
-					<div class="score-spinner-wrapper">
-						<button type="button" class="score-adjust-btn" id="score-minus-btn" disabled>-</button>
-						<input type="number" id="record-points" placeholder="分數" disabled>
-						<button type="button" class="score-adjust-btn" id="score-plus-btn" disabled>+</button>
+					<div style="display: flex; align-items: center; gap: 15px;">
+						<!-- 新增：兌換捷徑 -->
+						<a href="#" id="insert-redeem-link" style="color: var(--primary-color); font-size: 0.9em; text-decoration: underline; font-weight: bold;">兌換</a>
+						<button type="button" id="save-record-btn" style="background-color: var(--success-color);">新增</button>
+						<button type="button" id="btn-cancel-edit" style="display:none; background-color:#6c757d;">取消</button>
 					</div>
-					<div class="input-wrapper">
-						<input type="text" id="record-text" placeholder="文字紀錄 (選填)" list="recent-texts-list" autocomplete="off">
-						<span id="clear-text-btn" title="清除文字">X</span>
+				</div>
+				<form id="add-record-form" novalidate style="display: block;">
+					<!-- 頂部第一行：分數與文字輸入 -->
+					<div style="display: flex; gap: 10px; width: 100%; align-items: center; margin-bottom: 10px;">
+						<div class="score-spinner-wrapper" style="flex-shrink: 0;">
+							<button type="button" class="score-adjust-btn" id="score-minus-btn" disabled>-</button>
+							<input type="number" id="record-points" placeholder="分數" disabled>
+							<button type="button" class="score-adjust-btn" id="score-plus-btn" disabled>+</button>
+						</div>
+						<div class="input-wrapper" style="margin: 0; flex-grow: 1; min-width: 0;">
+							<input type="text" id="record-text" placeholder="文字紀錄 (選填)" list="recent-texts-list" autocomplete="off" style="margin: 0;">
+							<span id="clear-text-btn" title="清除文字">X</span>
+						</div>
+					</div>
+					
+					<!-- 底部第二行：附加檔案區塊 -->
+					<div class="attachment-wrapper" style="display: flex; align-items: center; gap: 10px; width: 100%; background: #f8f9fa; padding: 6px 10px; border-radius: 6px; box-sizing: border-box; border: 1px dashed #ccc;">
+						<input type="file" id="record-attachment" style="display: none;" accept="image/*,audio/*,video/*,application/pdf">
+						<button type="button" id="btn-select-attachment" style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 4px; border: none; font-size: 0.9em; flex-shrink: 0; cursor: pointer;">📎 附加檔案</button>
+						
+						<!-- 檔名顯示區 (設定 flex-grow: 1 填滿剩下空間，並隱藏超出的文字變為 ...) -->
+						<span id="attachment-name-display" style="font-size: 0.85em; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-grow: 1;"></span>
+						
+						<!-- 移除按鈕 (設定 flex-shrink: 0 確保不會被長檔名擠壓) -->
+						<button type="button" id="btn-clear-attachment" style="display: none; background: none; border: none; color: #dc3545; cursor: pointer; font-size: 1.2em; padding: 0 5px; flex-shrink: 0;" title="移除選擇的檔案">✖</button>
 					</div>
 					<datalist id="recent-texts-list"></datalist>
 				</form>

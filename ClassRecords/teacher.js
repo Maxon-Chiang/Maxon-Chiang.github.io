@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	firebase.initializeApp(firebaseConfig);
 	const db = firebase.firestore();
 	const auth = firebase.auth();
+	const storage = firebase.storage();
 	const DIRECT_ENTRY_KEY = 'pref_direct_class_entry';
 	const toggleDirectEntryBtn = document.getElementById('toggle-direct-entry-btn');
 	let currentUser = null, studentsData = [], allPerformanceScores = {}, allClassList = [], visibleClassList = [], modalOrigin = null, rosterModalOrigin = null;
@@ -88,6 +89,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	const resetWelcomePrefsBtn = document.getElementById('reset-welcome-prefs-btn');
 	const TRANSFER_KEY = 'initialActiveChanges';
 	const CACHE_LIFETIME = 45 * 60 * 1000;
+	const recordAttachmentInput = document.getElementById('record-attachment');
+	const btnSelectAttachment = document.getElementById('btn-select-attachment');
+	const attachmentNameDisplay = document.getElementById('attachment-name-display');
+	const btnClearAttachment = document.getElementById('btn-clear-attachment');
+	let selectedFile = null; // 用來暫存選擇的檔案
 
 	function checkAndTriggerDirectEntry() {
 		if (localStorage.getItem(DIRECT_ENTRY_KEY) !== 'true') return false;
@@ -1124,42 +1130,150 @@ document.addEventListener('DOMContentLoaded', function() {
 		const t = recordTextInput.value.trim();
 		const sid = currentEntity;
 		const docRef = db.collection('performanceRecords').doc(currentUser.uid).collection('records');
-		let data = {
-			entityId: sid.id,
-			entityType: sid.type,
-			text: t,
-			teacherId: currentUser.uid,
-			studentId: sid.type === 'student' ? sid.id : null
-		};
+		
+		saveRecordBtn.disabled = true;
+		const originalBtnText = saveRecordBtn.textContent;
+		saveRecordBtn.textContent = '儲存中...';
+
+		let uploadOverlay = null; // 宣告提示畫面變數
+
 		try {
+			let attachmentUrl = null;
+			let attachmentName = null;
+			
+			// ============================================
+			// 如果有選擇檔案，先產生並顯示「上傳中」提示畫面
+			// ============================================
+			if (selectedFile) {
+				uploadOverlay = document.createElement('div');
+				// 設定全螢幕半透明遮罩與置中樣式
+				uploadOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-size:1.2em;backdrop-filter:blur(3px);transition:opacity 0.3s;';
+				uploadOverlay.innerHTML = `
+					<div class="spinner-container" style="border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid #fff; border-radius: 50%; width: 50px; height: 50px; animation: spin-upload 1s linear infinite; margin-bottom: 20px;"></div>
+					<div id="upload-status-text" style="font-weight:bold; letter-spacing: 1px;">檔案上傳中，請稍候...</div>
+					<style>@keyframes spin-upload { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+				`;
+				document.body.appendChild(uploadOverlay);
+
+				saveRecordBtn.textContent = '上傳中...';
+				const fileExt = selectedFile.name.split('.').pop();
+				const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}.${fileExt}`;
+				const fileRef = storage.ref(`performance_attachments/${currentUser.uid}/${fileName}`);
+				
+				// 執行上傳
+				await fileRef.put(selectedFile);
+				attachmentUrl = await fileRef.getDownloadURL();
+				attachmentName = selectedFile.name;
+
+				// 上傳完成，更改提示文字準備寫入資料庫
+				if (uploadOverlay) {
+					uploadOverlay.querySelector('#upload-status-text').textContent = '檔案處理完成，儲存紀錄中...';
+				}
+			}
+
+			let data = {
+				entityId: sid.id,
+				entityType: sid.type,
+				text: t,
+				teacherId: currentUser.uid,
+				studentId: sid.type === 'student' ? sid.id : null
+			};
+
+			// ============================================
+			// 寫入資料庫邏輯 (區分 更新 或 新增)
+			// ============================================
 			if (editingRecordId) {
 				const originalRecord = allPerformanceRecords.find(r => r.id === editingRecordId);
 				if (!originalRecord) {
 					alert('更新紀錄失敗: 找不到原始記錄');
+					if(uploadOverlay) document.body.removeChild(uploadOverlay); 
 					return;
 				}
 				data.points = originalRecord.points;
-				if (t === '') {
-					alert('更新紀錄時，文字描述不可為空！');
+				if (t === '' && !attachmentUrl && !originalRecord.attachmentUrl) {
+					alert('更新紀錄時，文字描述或附件不可為空！');
+					if(uploadOverlay) document.body.removeChild(uploadOverlay); 
 					return;
 				}
+
+				// 如果有上傳新檔案，刪除舊檔案並寫入新網址
+				if (attachmentUrl) {
+					data.attachmentUrl = attachmentUrl;
+					data.attachmentName = attachmentName;
+					if (originalRecord.attachmentUrl) {
+						try { await storage.refFromURL(originalRecord.attachmentUrl).delete(); } catch(err){}
+					}
+				}
+
 				await docRef.doc(editingRecordId).set(data, { merge: true });
-				alert('紀錄已更新！');
+				
+				// 成功提示
+				if (uploadOverlay) {
+					uploadOverlay.innerHTML = '<div style="font-size:3.5em; margin-bottom:10px;">✅</div><div style="font-weight:bold;">紀錄已更新！</div>';
+				} else {
+					alert('紀錄已更新！');
+				}
 			} else {
 				const rawPoints = parseFloat(recordPointsInput.value) || 0;
 				const p = Math.round(rawPoints * 10) / 10;
-				if (p === 0 && t === '') return;
+				// 防呆：如果沒分數、沒文字、也沒檔案，就取消操作
+				if (p === 0 && t === '' && !attachmentUrl) {
+					saveRecordBtn.disabled = false;
+					saveRecordBtn.textContent = originalBtnText;
+					if(uploadOverlay) document.body.removeChild(uploadOverlay);
+					return;
+				}
+				
 				data.points = p;
 				data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+				if (attachmentUrl) {
+					data.attachmentUrl = attachmentUrl;
+					data.attachmentName = attachmentName;
+				}
+				
 				await docRef.add(data);
-				alert('紀錄已新增！');
+				
+				// 成功提示
+				if (uploadOverlay) {
+					uploadOverlay.innerHTML = '<div style="font-size:3.5em; margin-bottom:10px;">✅</div><div style="font-weight:bold;">紀錄已新增！</div>';
+				} else {
+					alert('紀錄已新增！');
+				}
 			}
+			
+			// ============================================
+			// 結尾收尾與重新載入
+			// ============================================
 			allPerformanceRecords = [];
 			await fetchAllScores(true);
 			saveCacheDynamic();
-			closeModal();
+
+			// 如果有顯示遮罩，延遲 0.8 秒讓使用者看見 ✅，然後淡出關閉
+			if (uploadOverlay) {
+				setTimeout(() => {
+					uploadOverlay.style.opacity = '0';
+					setTimeout(() => {
+						if(uploadOverlay.parentNode) document.body.removeChild(uploadOverlay);
+						closeModal();
+					}, 300); // 配合 CSS transition 0.3s
+				}, 800);
+			} else {
+				closeModal(); // 無附件直接關閉
+			}
+
 		} catch (err) {
-			alert((editingRecordId ? '更新' : '新增') + '紀錄失敗: ' + err.message);
+			// 錯誤處理：若有遮罩，直接顯示 ❌ 與錯誤訊息
+			if (uploadOverlay) {
+				uploadOverlay.innerHTML = `<div style="font-size:3.5em; margin-bottom:10px;">❌</div><div style="font-weight:bold; color:#ffb3b3;">處理失敗</div><div style="font-size:0.85em; margin-top:10px; padding: 0 20px; text-align: center;">${err.message}</div>`;
+				setTimeout(() => {
+					if(uploadOverlay.parentNode) document.body.removeChild(uploadOverlay);
+				}, 2500); // 錯誤訊息停留 2.5 秒後消失
+			} else {
+				alert((editingRecordId ? '更新' : '新增') + '紀錄失敗: ' + err.message);
+			}
+		} finally {
+			saveRecordBtn.disabled = false;
+			saveRecordBtn.textContent = originalBtnText;
 		}
 	}
 
@@ -1191,6 +1305,16 @@ document.addEventListener('DOMContentLoaded', function() {
 	async function handleDeleteRecord(rid) {
 		if (confirm('確定刪除？')) {
 			try {
+				// 刪除前先檢查是否有附件，若有則先從 Storage 刪除檔案
+				const recordToDelete = allPerformanceRecords.find(r => r.id === rid);
+				if (recordToDelete && recordToDelete.attachmentUrl) {
+					try {
+						await storage.refFromURL(recordToDelete.attachmentUrl).delete();
+					} catch (storageErr) {
+						console.warn('刪除附加檔案失敗或檔案已不存在', storageErr);
+					}
+				}
+
 				await db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(rid).delete();
 				if (editingRecordId === rid) {
 					resetPerformanceForm();
@@ -1220,8 +1344,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		saveRecordBtn.style.backgroundColor = 'var(--success-color)';
 		btnCancelEdit.textContent = '取消';
 		btnCancelEdit.style.display = 'none';
-	}
 
+		// 新增：清除附件選擇狀態
+		if (typeof clearAttachmentSelection === 'function') clearAttachmentSelection();
+	}
+	
 	function editRecord(recordId) {
 		const record = allPerformanceRecords.find(r => r.id === recordId);
 		if (!record) return;
@@ -1238,6 +1365,14 @@ document.addEventListener('DOMContentLoaded', function() {
 		scoreMinusBtn.disabled = true;
 		
 		recordTextInput.value = record.text || '';
+		
+		// 新增：提示此紀錄已有附件
+		if (typeof clearAttachmentSelection === 'function') clearAttachmentSelection();
+		if (record.attachmentUrl) {
+			attachmentNameDisplay.textContent = '(已有附件，上傳新檔將覆蓋原檔)';
+			attachmentNameDisplay.style.color = '#0d6efd';
+		}
+
 		modalTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
 
@@ -1314,10 +1449,26 @@ document.addEventListener('DOMContentLoaded', function() {
 				const rawText = record.text || '';
 				const escapedText = rawText.replace(/"/g, '&quot;');
 				const displayText = rawText || '無文字註記';
+				
+				// ▼▼▼ 判斷與生成附件 HTML ▼▼▼
+				let attachmentHtml = '';
+				if (record.attachmentUrl) {
+					let icon = '📎';
+					let fName = (record.attachmentName || '').toLowerCase();
+					if (fName.endsWith('.pdf')) icon = '📄';
+					else if (fName.match(/\.(jpg|jpeg|png|gif)$/)) icon = '🖼️';
+					else if (fName.match(/\.(mp3|wav|m4a)$/)) icon = '🎵';
+					else if (fName.match(/\.(mp4|mov)$/)) icon = '🎞️';
+					
+					attachmentHtml = `<a href="${record.attachmentUrl}" target="_blank" class="record-attachment-link" title="開啟/下載: ${record.attachmentName || '附件'}">${icon} 附件</a>`;
+				}
+				// ▲▲▲ 判斷與生成附件 HTML ▲▲▲
+
 				recordItem.innerHTML = `
 					<div class="record-content">
 						<span class="record-points record-points-area edit-trigger ${pClass}" data-id="${record.id}" title="點擊修改此紀錄">${record.points || 0}分</span>
 						<span class="record-text record-text-area copy-trigger" data-text="${escapedText}" title="點擊複製文字到輸入框">${displayText}</span>
+						${attachmentHtml} <!-- 加入附件 HTML -->
 					</div>
 					<div class="record-timestamp">${timestamp}</div>
 					<button class="delete-btn" data-id="${record.id}" title="刪除紀錄">🗑️</button>
@@ -2052,6 +2203,34 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	}
 	
+	if (btnSelectAttachment) {
+		btnSelectAttachment.addEventListener('click', () => recordAttachmentInput.click());
+		recordAttachmentInput.addEventListener('change', (e) => {
+			if (e.target.files.length > 0) {
+				selectedFile = e.target.files[0];
+				
+				// 檢查檔案大小 (限制 20MB)
+				if (selectedFile.size > 20 * 1024 * 1024) {
+					alert('檔案大小不能超過 20MB！');
+					clearAttachmentSelection();
+					return;
+				}
+				
+				attachmentNameDisplay.textContent = selectedFile.name;
+				attachmentNameDisplay.style.color = '#555';
+				btnClearAttachment.style.display = 'inline-block';
+			}
+		});
+		btnClearAttachment.addEventListener('click', clearAttachmentSelection);
+	}
+
+	function clearAttachmentSelection() {
+		selectedFile = null;
+		recordAttachmentInput.value = '';
+		attachmentNameDisplay.textContent = '';
+		btnClearAttachment.style.display = 'none';
+	}
+	
 	initialize = async function(userData, forceReload = false, forceItem = 0) {
 		await originalInit(userData, forceReload, forceItem);
 		updateDateRangeDisplay();
@@ -2163,6 +2342,21 @@ document.addEventListener('DOMContentLoaded', function() {
 	const recentRecordsBtn = document.getElementById('recent-records-btn');
 	const recentStudentsModal = document.getElementById('recent-students-modal');
 	const recentStudentsList = document.getElementById('recent-students-list');
+	const insertRedeemLink = document.getElementById('insert-redeem-link');
+	if (insertRedeemLink) {
+		insertRedeemLink.addEventListener('click', (e) => {
+			e.preventDefault();
+			const input = document.getElementById('record-text');
+			
+			// 直接取代內容為「兌換」，確保符合兌換豁免規則
+			input.value = '兌換';
+			
+			input.focus();
+			// 視覺回饋
+			input.style.backgroundColor = '#d1e7dd';
+			setTimeout(() => input.style.backgroundColor = '', 300);
+		});
+	}
 
 if (recentRecordsBtn && recentStudentsModal) {
 		let recentSortState = 0; // 0: 座號遞增, 1: 座號遞減, 2: 最近時間
@@ -2236,13 +2430,27 @@ if (recentRecordsBtn && recentStudentsModal) {
 				// 若是時間排序 (混班)，則顯示完整五碼
 				const displaySeat = isSortedByClass ? item.studentId.substring(3) : item.studentId;
 
+				let attachmentHtml = '';
+				if (item.attachmentUrl) {
+					let icon = '📎';
+					let fName = (item.attachmentName || '').toLowerCase();
+					if (fName.endsWith('.pdf')) icon = '📄';
+					else if (fName.match(/\.(jpg|jpeg|png|gif)$/)) icon = '🖼️';
+					else if (fName.match(/\.(mp3|wav|m4a)$/)) icon = '🎵';
+					else if (fName.match(/\.(mp4|mov)$/)) icon = '🎞️';
+					
+					// onclick 加上 event.stopPropagation() 防止點擊附件時觸發進入學生紀錄的動作
+					attachmentHtml = `<a href="${item.attachmentUrl}" target="_blank" title="開啟附件: ${item.attachmentName}" style="text-decoration: none; margin-left: 5px; font-size: 1.1em; flex-shrink: 0; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));" onclick="event.stopPropagation();">${icon}</a>`;
+				}
+
 				div.innerHTML = `
-					<div class="search-list-info" style="flex-grow: 1;">
-						<span class="search-list-class" style="${isSortedByClass ? 'width: 20px; text-align: right;' : ''}">${displaySeat}</span> 
+					<div class="search-list-info" style="flex-grow: 1; min-width: 0;">
+						<span class="search-list-class" style="${isSortedByClass ? 'width: 20px; text-align: right;' : ''} flex-shrink: 0;">${displaySeat}</span> 
 						<span style="flex-shrink: 0;">${item.studentName}</span>
-						<span class="search-list-recent-text">${item.latestText}</span>
+						<span class="search-list-recent-text" style="max-width: none; flex-grow: 1;">${item.latestText}</span>
+						${attachmentHtml}
 					</div>
-					<div class="search-list-score" style="margin-left: 10px;">${item.pointsDisplay}</div>
+					<div class="search-list-score" style="margin-left: 10px; flex-shrink: 0;">${item.pointsDisplay}</div>
 				`;
 				
 				div.onclick = () => {
@@ -2287,8 +2495,8 @@ if (recentRecordsBtn && recentStudentsModal) {
 				if (!latestRecord) return; 
 
 				let latestText = (latestRecord.text || '').trim();
-				if (latestText.length > 5) latestText = latestText.substring(0, 5) + '...';
-
+				// 移除 5 個字的強制截斷，交給 CSS 自動處理版面
+				
 				const eventPoints = latestRecord.points || 0;
 				const pointsDisplay = eventPoints > 0 ? `+${eventPoints}` : eventPoints;
 
@@ -2297,6 +2505,8 @@ if (recentRecordsBtn && recentStudentsModal) {
 					studentId: stu.id,
 					studentName: stu.name,
 					latestText: latestText,
+					attachmentUrl: latestRecord.attachmentUrl || null,   // 新增：提取附件網址
+					attachmentName: latestRecord.attachmentName || null, // 新增：提取附件名稱
 					pointsDisplay: pointsDisplay,
 					originIndex: originIdx++
 				});
