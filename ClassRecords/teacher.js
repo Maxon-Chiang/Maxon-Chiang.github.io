@@ -1709,6 +1709,196 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		updateHomeIcons();
 	};
+	const backupDataBtn = document.getElementById('backup-data-btn');
+	const restoreDataBtn = document.getElementById('restore-data-btn');
+	const restoreFileInput = document.getElementById('restore-file-input');
+
+	if (backupDataBtn && restoreDataBtn && restoreFileInput) {
+		
+		// --- 1. 備份 (匯出 JSON) ---
+		backupDataBtn.addEventListener('click', async () => {
+			document.getElementById('dropdown-menu').classList.remove('show');
+			
+			if (!confirm('準備備份您的所有「成績」與「表現紀錄」資料。\n此動作可能需要幾秒鐘，確定要開始嗎？')) return;
+			
+			// 建立一個全螢幕遮罩防止亂點
+			const loadingOverlay = document.createElement('div');
+			loadingOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;color:white;font-size:1.5em;';
+			loadingOverlay.innerHTML = '正在打包您的資料，請稍候...';
+			document.body.appendChild(loadingOverlay);
+
+			try {
+				const backupData = {
+					metadata: {
+						type: "teacher_personal_backup",
+						teacherUid: currentUser.uid,
+						teacherEmail: currentUser.email,
+						timestamp: new Date().toISOString()
+					},
+					gradebooks: [],
+					performanceRecords: []
+				};
+
+				// 撈取成績
+				const gradesSnap = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').get();
+				gradesSnap.forEach(doc => backupData.gradebooks.push({ id: doc.id, data: doc.data() }));
+
+				// 撈取表現紀錄
+				const perfSnap = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+				perfSnap.forEach(doc => backupData.performanceRecords.push({ id: doc.id, data: doc.data() }));
+
+				// 轉為 JSON 並下載
+				const dataStr = JSON.stringify(backupData, null, 2);
+				const blob = new Blob([dataStr], { type: "application/json" });
+				const url = URL.createObjectURL(blob);
+				
+				const link = document.createElement('a');
+				const dateStr = new Date().toISOString().slice(0,10).replace(/-/g, "");
+				link.href = url;
+				link.download = `My_Records_Backup_${dateStr}.json`;
+				document.body.appendChild(link);
+				link.click();
+				document.body.removeChild(link);
+
+				alert('✅ 備份完成！請妥善保存下載的 JSON 檔案。');
+			} catch (error) {
+				alert('❌ 備份失敗：' + error.message);
+			} finally {
+				if(loadingOverlay.parentNode) document.body.removeChild(loadingOverlay);
+			}
+		});
+
+		// --- 2. 還原 (挑選檔案) ---
+		restoreDataBtn.addEventListener('click', () => {
+			document.getElementById('dropdown-menu').classList.remove('show');
+			
+			if (!confirm('⚠️ 【嚴重警告】 ⚠️\n\n執行還原將會【徹底清空】您目前雲端上的所有「成績」與「表現紀錄」，然後以備份檔的資料【完全覆蓋】。\n\n目前的資料將無法找回！您確定要繼續嗎？')) return;
+			
+			// 觸發隱藏的 input 挑選檔案
+			restoreFileInput.click();
+		});
+
+		// --- 3. 執行還原 (讀取並寫入 Firestore) ---
+		restoreFileInput.addEventListener('change', (e) => {
+			const file = e.target.files[0];
+			if (!file) return;
+
+			const reader = new FileReader();
+			reader.onload = async (event) => {
+				const loadingOverlay = document.createElement('div');
+				loadingOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;font-size:1.2em;';
+				loadingOverlay.innerHTML = '<div style="margin-bottom:15px; color:#ff4d4d; font-weight:bold;">⚠️ 正在覆蓋還原資料，請勿關閉視窗！</div><div id="restore-status">解析檔案中...</div>';
+				document.body.appendChild(loadingOverlay);
+				const statusEl = loadingOverlay.querySelector('#restore-status');
+
+				try {
+					const jsonContent = JSON.parse(event.target.result);
+					
+					// 基本格式檢查
+					if (jsonContent.metadata?.type !== "teacher_personal_backup") {
+						throw new Error("檔案格式不符！這不是老師個人的備份檔。");
+					}
+					// 防呆：檢查 UID
+					if (jsonContent.metadata.teacherUid !== currentUser.uid) {
+						if (!confirm(`這份備份檔是由其他帳號 (${jsonContent.metadata.teacherEmail || '未知'}) 建立的。\n\n您確定要將別人的資料還原到您的帳號下嗎？`)) {
+							throw new Error("使用者取消還原。");
+						}
+					}
+
+					let batch = db.batch();
+					let operationCount = 0;
+					
+					// 輔助函式：當 Batch 累積到 400 筆時送出
+					const commitBatchIfFull = async () => {
+						if (operationCount >= 400) {
+							await batch.commit();
+							batch = db.batch();
+							operationCount = 0;
+						}
+					};
+
+					// --- 階段 A：清空現有資料 ---
+					statusEl.textContent = '階段 1/2：正在清空現有資料...';
+					
+					const oldGradesSnap = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').get();
+					for (const doc of oldGradesSnap.docs) {
+						batch.delete(doc.ref);
+						operationCount++;
+						await commitBatchIfFull();
+					}
+
+					const oldPerfSnap = await db.collection('performanceRecords').doc(currentUser.uid).collection('records').get();
+					for (const doc of oldPerfSnap.docs) {
+						batch.delete(doc.ref);
+						operationCount++;
+						await commitBatchIfFull();
+					}
+
+					// 提交清空的 Batch
+					if (operationCount > 0) {
+						await batch.commit();
+						batch = db.batch();
+						operationCount = 0;
+					}
+
+					// --- 階段 B：寫入備份檔資料 ---
+					statusEl.textContent = '階段 2/2：正在寫入備份資料...';
+
+					if (jsonContent.gradebooks && jsonContent.gradebooks.length > 0) {
+						for (const item of jsonContent.gradebooks) {
+							const ref = db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(item.id);
+							// 還原 timestamp
+							if (item.data.date && item.data.date.seconds) {
+								item.data.date = new firebase.firestore.Timestamp(item.data.date.seconds, item.data.date.nanoseconds);
+							}
+							batch.set(ref, item.data);
+							operationCount++;
+							await commitBatchIfFull();
+						}
+					}
+
+					if (jsonContent.performanceRecords && jsonContent.performanceRecords.length > 0) {
+						for (const item of jsonContent.performanceRecords) {
+							const ref = db.collection('performanceRecords').doc(currentUser.uid).collection('records').doc(item.id);
+							// 還原 timestamp
+							if (item.data.timestamp && item.data.timestamp.seconds) {
+								item.data.timestamp = new firebase.firestore.Timestamp(item.data.timestamp.seconds, item.data.timestamp.nanoseconds);
+							}
+							batch.set(ref, item.data);
+							operationCount++;
+							await commitBatchIfFull();
+						}
+					}
+
+					// 提交最後的寫入
+					if (operationCount > 0) {
+						await batch.commit();
+					}
+
+					// 清除快取，強制重新抓取
+					localStorage.removeItem(DYNAMIC_CACHE_KEY);
+					localStorage.removeItem('teacher_grades_list_cache_v1');
+					localStorage.removeItem('calculator_cache_v1');
+					localStorage.removeItem('report_cache_v1');
+
+					statusEl.innerHTML = '<span style="color:#28a745; font-size:1.5em;">✅ 還原成功！即將重新載入系統...</span>';
+					setTimeout(() => {
+						window.location.reload();
+					}, 1500);
+
+				} catch (error) {
+					if (error.message !== "使用者取消還原。") {
+						alert('❌ 還原失敗：' + error.message);
+					}
+					if(loadingOverlay.parentNode) document.body.removeChild(loadingOverlay);
+				} finally {
+					// 重置 input，讓下次選同一個檔案也能觸發 change 事件
+					restoreFileInput.value = '';
+				}
+			};
+			reader.readAsText(file);
+		});
+	}
 
 	function updateHomeIcons() {
 		const currentDefault = localStorage.getItem('defaultSystemPage') || 'teacher.html';
