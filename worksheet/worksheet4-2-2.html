@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>機構設計與製作學習單</title>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #27ae60; --bg: #ffffff; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background-color: #f4f4f4; padding: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; background: var(--bg); padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary); text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .info { display: flex; justify-content: space-between; background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-bottom: 20px; }
+        .info input { border: 1px solid #ccc; padding: 5px; width: 120px; }
+        .section-title { background: #eee; padding: 8px; font-weight: bold; margin-top: 25px; border-left: 5px solid var(--primary); }
+        .q-item { margin: 15px 0; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+        .q-text { font-weight: bold; }
+        .options label { display: block; margin: 5px 0; cursor: pointer; }
+        textarea { width: 100%; height: 60px; margin-top: 5px; border: 1px solid #ccc; padding: 8px; box-sizing: border-box; }
+        .fill-blank { border: none; border-bottom: 1px solid #000; width: 100px; text-align: center; font-size: 16px; }
+        .btn-box { text-align: center; margin-top: 30px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; border-radius: 4px; border: none; font-weight: bold; margin: 0 10px; }
+        .calc-btn { background: var(--secondary); color: white; }
+        .save-btn { background: var(--primary); color: white; }
+        #score-display { font-size: 22px; color: #e74c3c; font-weight: bold; text-align: center; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="worksheet-content">
+    <h1>機構設計與製作 - 專題學習單</h1>
+    
+    <div class="info">
+        <label>班級：<input type="text" id="class_name"></label>
+        <label>座號：<input type="text" id="seat_no"></label>
+        <label>姓名：<input type="text" id="user_name"></label>
+    </div>
+
+    <div class="section-title">一、 單選題 (每題 4 分，共 40 分)</div>
+    <div class="q-item" data-ans="A">
+        <p class="q-text">1. 能傳遞運動與力，並產生預定相對運動的裝置稱為？</p>
+        <div class="options">
+            <label><input type="radio" name="q1" value="A"> (A) 機構</label>
+            <label><input type="radio" name="q1" value="B"> (B) 結構</label>
+            <label><input type="radio" name="q1" value="C"> (C) 材料</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="B">
+        <p class="q-text">2. 四連桿機構中，能繞固定軸旋轉 360 度的桿件稱為？</p>
+        <div class="options">
+            <label><input type="radio" name="q2" value="A"> (A) 搖桿</label>
+            <label><input type="radio" name="q2" value="B"> (B) 曲柄</label>
+            <label><input type="radio" name="q2" value="C"> (C) 固定桿</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="C">
+        <p class="q-text">3. 若大齒輪帶動小齒輪，主要目的是為了？</p>
+        <div class="options">
+            <label><input type="radio" name="q3" value="A"> (A) 增加動力</label>
+            <label><input type="radio" name="q3" value="B"> (B) 改變旋轉方向</label>
+            <label><input type="radio" name="q3" value="C"> (C) 增加轉速</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="B">
+        <p class="q-text">4. 哪種齒輪可用於兩軸心成 90 度交錯的動力傳達？</p>
+        <div class="options">
+            <label><input type="radio" name="q4" value="A"> (A) 正齒輪</label>
+            <label><input type="radio" name="q4" value="B"> (B) 斜齒輪</label>
+            <label><input type="radio" name="q4" value="C"> (C) 齒條</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="A">
+        <p class="q-text">5. 下列何者不屬於四連桿機構的組成元件？</p>
+        <div class="options">
+            <label><input type="radio" name="q5" value="A"> (A) 凸輪</label>
+            <label><input type="radio" name="q5" value="B"> (B) 連接桿</label>
+            <label><input type="radio" name="q5" value="C"> (C) 固定桿</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="C">
+        <p class="q-text">6. 鏈條傳動與皮帶傳動相比，最大的優點是？</p>
+        <div class="options">
+            <label><input type="radio" name="q6" value="A"> (A) 安靜</label>
+            <label><input type="radio" name="q6" value="B"> (B) 成本低</label>
+            <label><input type="radio" name="q6" value="C"> (C) 不會產生打滑現象</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="B">
+        <p class="q-text">7. 將旋轉運動轉化為預定規律往復運動的機構是？</p>
+        <div class="options">
+            <label><input type="radio" name="q7" value="A"> (A) 鏈條</label>
+            <label><input type="radio" name="q7" value="B"> (B) 凸輪</label>
+            <label><input type="radio" name="q7" value="C) 齒輪</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="A">
+        <p class="q-text">8. 腳踏車的傳動系統主要屬於？</p>
+        <div class="options">
+            <label><input type="radio" name="q8" value="A"> (A) 鏈條傳動</label>
+            <label><input type="radio" name="q8" value="B"> (B) 皮帶傳動</label>
+            <label><input type="radio" name="q8" value="C"> (C) 齒輪傳動</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="B">
+        <p class="q-text">9. 齒輪轉速計算：主動輪 40 齒帶動被動輪 20 齒，轉速比為何？</p>
+        <div class="options">
+            <label><input type="radio" name="q9" value="A"> (A) 1:2 (減速)</label>
+            <label><input type="radio" name="q9" value="B"> (B) 2:1 (加速)</label>
+            <label><input type="radio" name="q9" value="C"> (C) 1:1 (等速)</label>
+        </div>
+    </div>
+    <div class="q-item" data-ans="C">
+        <p class="q-text">10. 在工程設計中，最後一個步驟通常是？</p>
+        <div class="options">
+            <label><input type="radio" name="q10" value="A"> (A) 蒐集資料</label>
+            <label><input type="radio" name="q10" value="B"> (B) 製作模型</label>
+            <label><input type="radio" name="q10" value="C"> (C) 測試與修正</label>
+        </div>
+    </div>
+
+    <div class="section-title">二、 填充題 (每題 4 分，共 20 分)</div>
+    <div class="q-item"><p>11. 機構在運作過程中，無法受力推動的位置稱為 <input type="text" class="score-input" data-ans="死點">。</p></div>
+    <div class="q-item"><p>12. 透過增加 <input type="text" class="score-input" data-ans="飛輪"> 可以利用慣性讓機構順暢轉過死點。</p></div>
+    <div class="q-item"><p>13. 汽車雨刷運作時，主要利用的是 <input type="text" class="score-input" data-ans="曲柄搖桿"> 機構。</p></div>
+    <div class="q-item"><p>14. 兩個軸心平行且接觸傳達動力的圓盤元件稱為 <input type="text" class="score-input" data-ans="正齒輪">。</p></div>
+    <div class="q-item"><p>15. 設計流程中，在實作前必須先進行 <input type="text" class="score-input" data-ans="資料蒐集"> 或方案發展。</p></div>
+
+    <div class="section-title">三、 是非題 (每題 4 分，共 20 分)</div>
+    <div class="q-item" data-ans="O"><p>16. ( ) 雙曲柄機構是指兩個相對的連桿都可以作 360 度旋轉。<br><label><input type="radio" name="q16" value="O"> 是 (O)</label> <label><input type="radio" name="q16" value="X"> 否 (X)</label></p></div>
+    <div class="q-item" data-ans="X"><p>17. ( ) 結構與機構的主要差別在於，結構強調運動的靈活性。<br><label><input type="radio" name="q17" value="O"> 是 (O)</label> <label><input type="radio" name="q17" value="X"> 否 (X)</label></p></div>
+    <div class="q-item" data-ans="O"><p>18. ( ) 蝸輪機構通常具備「自鎖功能」，可防止重物逆向滑動。<br><label><input type="radio" name="q18" value="O"> 是 (O)</label> <label><input type="radio" name="q18" value="X"> 否 (X)</label></p></div>
+    <div class="q-item" data-ans="O"><p>19. ( ) 皮帶傳動雖然容易打滑，但具有過載保護與安靜的特性。<br><label><input type="radio" name="q19" value="O"> 是 (O)</label> <label><input type="radio" name="q19" value="X"> 否 (X)</label></p></div>
+    <div class="q-item" data-ans="X"><p>20. ( ) 設計出一個好的機構，首要條件是外觀美妙，其次才是功能。<br><label><input type="radio" name="q20" value="O"> 是 (O)</label> <label><input type="radio" name="q20" value="X"> 否 (X)</label></p></div>
+
+    <div class="section-title">四、 專題反思與加分題 (共 5 題，不計分)</div>
+    <div class="q-item"><p>21. 請描述在製作機構模型時，你遇到過最大的阻礙是什麼？</p><textarea></textarea></div>
+    <div class="q-item"><p>22. 針對「摩擦力」問題，你會如何改進你的模型？</p><textarea></textarea></div>
+    <div class="q-item"><p>23. 你認為機構設計與自動化機械有什麼關聯？</p><textarea></textarea></div>
+    <div class="q-item"><p>24. 觀察生活中的一件物品，寫下它使用了什麼機構？</p><textarea></textarea></div>
+    <div class="q-item"><p>25. 這次學習中，你最有成就感的部分在哪裡？</p><textarea></textarea></div>
+
+    <div class="btn-box">
+        <button class="calc-btn" onclick="calculateScore()">計算總分 (滿分80)</button>
+        <button class="save-btn" onclick="saveAsHTML()">下載作答結果</button>
+    </div>
+    <div id="score-display"></div>
+</div>
+
+<script>
+    function calculateScore() {
+        let score = 0;
+        // 選擇與是非評分
+        document.querySelectorAll('.q-item[data-ans]').forEach(q => {
+            const selected = q.querySelector('input[type="radio"]:checked');
+            if (selected && selected.value === q.getAttribute('data-ans')) score += 4;
+        });
+        // 填充評分
+        document.querySelectorAll('.score-input').forEach(input => {
+            if (input.value.trim() === input.getAttribute('data-ans')) score += 4;
+        });
+        document.getElementById('score-display').innerText = "您的得分：" + score + " / 80";
+        alert("批改完成！");
+    }
+
+    function saveAsHTML() {
+        // 同步 input 內容到屬性以利導出
+        document.querySelectorAll('input[type="text"], textarea').forEach(el => {
+            el.setAttribute('value', el.value);
+            if (el.tagName === 'TEXTAREA') el.innerHTML = el.value;
+        });
+        document.querySelectorAll('input[type="radio"]').forEach(el => {
+            if (el.checked) el.setAttribute('checked', 'checked');
+            else el.removeAttribute('checked');
+        });
+
+        const blob = new Blob([document.documentElement.outerHTML], {type: 'text/html'});
+        const a = document.createElement('a');
+        const name = document.getElementById('user_name').value || 'student';
+        a.href = URL.createObjectURL(blob);
+        a.download = `機構學習單_作答_${name}.html`;
+        a.click();
+    }
+</script>
+</body>
+</html>
