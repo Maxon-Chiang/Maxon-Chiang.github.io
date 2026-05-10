@@ -2,43 +2,58 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>教師答案卷</title>
+    <title>2-2 機構設計 答案卷</title>
     <style>
-        body { font-family: sans-serif; background: #eee; padding: 40px; }
-        .box { max-width: 700px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; border-top: 10px solid #2980b9; }
-        h1 { color: #2980b9; text-align: center; }
-        .ans-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .ans-table th, .ans-table td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        .ans-table th { background: #f4f4f4; }
-        .red-text { color: #c0392b; font-weight: bold; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #fdfdfd; padding: 40px; line-height: 1.8; color: #333; }
+        .box { max-width: 800px; margin: auto; background: white; padding: 40px; border-radius: 10px; border-top: 12px solid #21618c; border: 1px solid #ddd; }
+        h1 { color: #21618c; text-align: center; border-bottom: 2px solid #21618c; padding-bottom: 10px; }
+        h3 { color: #21618c; border-left: 5px solid #21618c; padding-left: 10px; margin-top: 30px; }
+        .ans-group { background: #f2f4f4; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .blue { color: #21618c; font-weight: bold; }
+        .ref-ans { color: #34495e; background: #f7f9f9; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; margin-top: 5px; font-size: 0.95em; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #f2f4f4; }
     </style>
 </head>
 <body>
 <div class="box">
-    <h1>教師專用答案卷 (總分 80 分)</h1>
-    
-    <h3>一、 選擇題 (40分)</h3>
-    <table class="ans-table">
-        <tr><th>1-5</th><td class="red-text">A, B, C, B, A</td></tr>
-        <tr><th>6-10</th><td class="red-text">C, B, A, B, C</td></tr>
+    <h1>2-2 機構設計 答案卷 (總分 100)</h1>
+
+    <h3>一、 單選題 (計 40 分，每題 4 分)</h3>
+    <table>
+        <tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr>
+        <tr class="blue"><td>A</td><td>B</td><td>C</td><td>A</td><td>B</td><td>C</td><td>A</td><td>B</td><td>C</td><td>A</td></tr>
     </table>
 
-    <h3>二、 填充題 (20分)</h3>
-    <table class="ans-table">
-        <tr><th>11</th><td>無法推動位置：<span class="red-text">死點</span></td></tr>
-        <tr><th>12</th><td>慣性帶過：<span class="red-text">飛輪</span></td></tr>
-        <tr><th>13</th><td>雨刷機構：<span class="red-text">曲柄搖桿</span></td></tr>
-        <tr><th>14</th><td>平行圓盤：<span class="red-text">正齒輪</span></td></tr>
-        <tr><th>15</th><td>設計前置：<span class="red-text">資料蒐集 (或 蒐集資料)</span></td></tr>
+    <h3>二、 填充與是非題 (計 40 分，每題 4 分)</h3>
+    <div class="ans-group">
+        11. <span class="blue">正齒輪</span>&nbsp;&nbsp;
+        12. <span class="blue">運動規律</span>&nbsp;&nbsp;
+        13. <span class="blue">3:1</span>&nbsp;&nbsp;
+        20. <span class="blue">準確</span>
+    </div>
+    <table>
+        <tr><th>14</th><th>15</th><th>16</th><th>17</th><th>18</th><th>19</th></tr>
+        <tr class="blue"><td>O</td><td>O</td><td>X</td><td>O</td><td>X</td><td>O</td></tr>
     </table>
 
-    <h3>三、 是非題 (20分)</h3>
-    <table class="ans-table">
-        <tr><th>16-20</th><td class="red-text">O, X, O, O, X</td></tr>
-    </table>
+    <h3>三、 應用簡答題 (教師評閱：每題 4 分，共 20 分)</h3>
 
-    <h3>四、 反思題批改建議</h3>
-    <p>此部分（21-25 題）無固定標準答案，建議針對學生的思考邏輯、實作觀察以及對力學原理的理解度，給予彈性評分或加分回饋。</p>
+    <p class="q-text">21. 請說明「曲柄搖桿機構」在自動雨刷系統中的角色。</p>
+    <div class="ref-ans"><span class="blue">參考答案：</span>馬達提供連續的「圓周旋轉運動」（曲柄），透過連桿傳動給雨刷臂，使其產生定角度的「週期搖擺運動」（搖桿），進而達成刷除雨水的功能。</div>
+
+    <p class="q-text">22. 為什麼齒輪需要添加潤滑油？若不添加會發生什麼問題？</p>
+    <div class="ref-ans"><span class="blue">參考答案：</span>齒輪嚙合時會產生摩擦。添加潤滑油可降低磨耗與熱能產生、降低噪音。若不添加，會導致溫度升高、零件損壞加速，並造成傳動能量損耗。</div>
+
+    <p class="q-text">23. 當你需要設計一個「極度省力但不在乎速度」的機構時，你會選擇齒輪比大還是小？為什麼？</p>
+    <div class="ref-ans"><span class="blue">參考答案：</span>應選擇較大的齒輪比（主動輪小齒，被動輪大齒）。因為根據功的原理，增加被動輪轉矩（省力）必然會犧牲速度。齒輪比越大，動力放大效果越明顯。</div>
+
+    <p class="q-text">24. 描述「死點」發生的原因，並舉出一個生活中克服死點的案例。</p>
+    <div class="ref-ans"><span class="blue">參考答案：</span>原因在於連桿與曲柄重合為一直線，導致主動件無法對被動件施加有效力矩。生活案例：腳踏車起步時若踏板在垂直位置（最高或最低）會很難踩動，通常靠另一腳施力或起步後的慣性飛輪來克服。</div>
+
+    <p class="q-text">25. 你如何理解「機構設計是為了解決生活中的問題」這句話？舉例說明。</p>
+    <div class="ref-ans"><span class="blue">參考答案：</span>機構設計是利用物理規律來節省人力或提升效率。例如：使用「螺桿機構」可以讓一個人力輕鬆舉起沉重的汽車（千斤頂），解決了人類體力無法達成的高負荷工作。</div>
 </div>
 </body>
 </html>

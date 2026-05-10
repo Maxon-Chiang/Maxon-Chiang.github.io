@@ -2,48 +2,58 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <title>答案卷 - 結構與機構設計</title>
+    <title>2-1 結構設計 答案卷</title>
     <style>
-        body { font-family: sans-serif; padding: 40px; background: #eee; }
-        .key-container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; }
-        .ans { color: red; font-weight: bold; }
-        h2 { border-left: 5px solid red; padding-left: 10px; }
-        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: #f2f4f4; padding: 40px; line-height: 1.8; color: #333; }
+        .box { max-width: 800px; margin: auto; background: white; padding: 40px; border-radius: 10px; border-top: 12px solid #1a5276; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { color: #1a5276; text-align: center; border-bottom: 2px solid #1a5276; padding-bottom: 10px; }
+        h3 { color: #1a5276; border-left: 5px solid #1a5276; padding-left: 10px; margin-top: 30px; }
+        .ans-group { background: #f9f9f9; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .red { color: #c0392b; font-weight: bold; }
+        .ref-ans { color: #2c3e50; background: #eaf2f8; padding: 10px; border-radius: 4px; margin-top: 5px; font-size: 0.95em; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #f2f4f4; }
     </style>
 </head>
 <body>
-<div class="key-container">
-    <h1>教師答案卷 (總分 80 分)</h1>
-    
-    <h2>一、單選題</h2>
+<div class="box">
+    <h1>2-1 結構設計 答案卷 (總分 100)</h1>
+
+    <h3>一、 選擇題 (計 40 分，每題 4 分)</h3>
     <table>
-        <tr><th>1. 結構定義</th><td>(A) 結構</td></tr>
-        <tr><th>2. 抵抗張力</th><td>(B) 吊橋</td></tr>
-        <tr><th>3. 支承定義</th><td>(C) 支承</td></tr>
-        <tr><th>4. 桁架形狀</th><td>(A) 三角形</td></tr>
-        <tr><th>5. 挫曲現象</th><td>(B) 挫曲</td></tr>
-        <tr><th>6. 固定支承</th><td>(C) 固定支承</td></tr>
-        <tr><th>7. 抵抗側向位移</th><td>(B) 剪力牆</td></tr>
-        <tr><th>8. ΣM = 0</th><td>(A) 力矩平衡</td></tr>
+        <tr><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th></tr>
+        <tr class="red"><td>A</td><td>B</td><td>C</td><td>A</td><td>B</td><td>C</td><td>A</td><td>B</td><td>C</td><td>A</td></tr>
     </table>
 
-    <h2>二、填充題</h2>
-    <ul>
-        <li>9. 連接處：<span class="ans">節點</span></li>
-        <li>10. 負重比公式：<span class="ans">自身重量</span></li>
-        <li>11. 無相對轉動：<span class="ans">剛接</span></li>
-        <li>12. 梁受力：<span class="ans">剪力</span></li>
-    </ul>
+    <h3>二、 填充與是非題 (計 40 分，每題 4 分)</h3>
+    <div class="ans-group">
+        11. <span class="red">節點</span>&nbsp;&nbsp;
+        12. <span class="red">壓力</span>&nbsp;&nbsp;
+        13. <span class="red">滾支承</span>&nbsp;&nbsp;
+        20. <span class="red">0</span>
+    </div>
+    <table>
+        <tr><th>14</th><th>15</th><th>16</th><th>17</th><th>18</th><th>19</th></tr>
+        <tr class="red"><td>O</td><td>X</td><td>O</td><td>O</td><td>X</td><td>O</td></tr>
+    </table>
 
-    <h2>三、是非題</h2>
-    <p>13. <span class="ans">O</span> | 14. <span class="ans">X</span> (不能抵抗水平力) | 15. <span class="ans">O</span> | 16. <span class="ans">X</span> (壓力桿件最怕挫曲)</p>
+    <h3>三、 簡答與分析 (教師評閱：每題 4 分，共 20 分)</h3>
+    
+    <p class="q-text">21. 請解釋為什麼多數的高壓電塔都採用桁架結構設計？</p>
+    <div class="ref-ans"><span class="red">參考答案：</span>桁架結構具有良好的「強度重量比」，能以較輕的材料支撐巨大荷重。此外，其鏤空設計可大幅降低受風面積，減少強風對電塔造成的側向壓力。</div>
 
-    <h2>四、流程排序</h2>
-    <p>順序應為：<span class="ans">1. 確定需求 -> 2. 蒐集資料 -> 3. 製作模型 -> 4. 測試修正</span></p>
+    <p class="q-text">22. 觀察生活中的建築，舉出一種使用「拱形」設計的範例並說明其優點。</p>
+    <div class="ref-ans"><span class="red">參考答案：</span>例如「拱橋」或「古城門」。優點在於拱形能將上方的垂直壓力轉化為沿著弧面傳導的斜向壓力，最後傳至兩側支承，有效將壓力分散，適合跨越較大空間。</div>
 
-    <h2>五、反思題評分建議</h2>
-    <p>此部分依據學生回答的邏輯性與實作體驗給予鼓勵分數或評語，不計入 80 分內。</p>
+    <p class="q-text">23. 當一個結構達到「靜力平衡」時，必須滿足哪三種受力條件？</p>
+    <div class="ref-ans"><span class="red">參考答案：</span>必須滿足：(1) 水平合力為零 (ΣFx=0)；(2) 垂直合力為零 (ΣFy=0)；(3) 合力矩為零 (ΣM=0)。</div>
+
+    <p class="q-text">24. 什麼是「挫曲」？如何避免細長桿件發生挫曲破壞？</p>
+    <div class="ref-ans"><span class="red">參考答案：</span>挫曲是指細長桿件受到軸向壓力時，突然發生側向彎曲導致結構失效。避免方法包含增加桿件的橫截面積、減少桿件長度，或在中間增加支撐點以縮短有效長度。</div>
+
+    <p class="q-text">25. 為什麼大型體育場的屋頂常使用「薄殼結構」或「張力結構」而非重型鋼筋混凝土？</p>
+    <div class="ref-ans"><span class="red">參考答案：</span>因為體育場跨距極大，鋼筋混凝土自重太重，易導致自身結構崩塌。薄殼或張力結構利用幾何形狀穩定度或薄膜拉力支撐，重量極輕，能達成大空間無柱設計。</div>
 </div>
 </body>
 </html>
