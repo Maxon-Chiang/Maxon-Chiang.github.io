@@ -3,50 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>全螢幕數學編輯器 (超強擴充修復版)</title>
-    
+    <title>全螢幕數學編輯器 (極簡安全版)</title>
     <script defer src="https://unpkg.com/mathlive"></script>
-
     <style>
-        body, html {
-            margin: 0; padding: 0; height: 100%;
-            background-color: #f2f2f7; 
-            font-family: sans-serif; overflow: hidden; 
-        }
-        .app-container {
-            display: flex; flex-direction: column; height: 100dvh; 
-            padding: 15px; box-sizing: border-box;
-        }
-        .editor-wrapper {
-            flex: 1; background: #ffffff; border: 2px solid #007aff; 
-            border-radius: 12px; padding: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative;
-            display: flex; align-items: flex-start;
-        }
-        math-field {
-            font-size: 26px; width: 100%; border: none;
-            outline: none; background: transparent;
-        }
-        math-field::part(menu-toggle),
-        math-field::part(virtual-keyboard-toggle) {
-            display: none !important; 
-        }
-        .copy-btn {
-            position: absolute; bottom: 15px; right: 15px;
-            background-color: #007aff; color: white; border: none;
-            border-radius: 8px; padding: 10px 16px;
-            font-size: 15px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,122,255,0.3); z-index: 100;
-        }
+        body, html { margin: 0; padding: 0; height: 100%; background-color: #f2f2f7; font-family: sans-serif; overflow: hidden; }
+        .app-container { display: flex; flex-direction: column; height: 100dvh; padding: 15px; box-sizing: border-box; gap: 10px; }
+        .top-bar { display: flex; justify-content: flex-end; align-items: center; }
+        .copy-btn { background-color: #007aff; color: white; border: none; border-radius: 8px; padding: 10px 18px; font-size: 15px; font-weight: bold; cursor: pointer; box-shadow: 0 3px 8px rgba(0,122,255,0.3); }
         .copy-btn:active { background-color: #0056b3; transform: scale(0.95); }
+        .editor-wrapper { flex: 1; background: #ffffff; border: 2px solid #007aff; border-radius: 12px; padding: 15px; position: relative; display: flex; }
+        math-field { font-size: 26px; width: 100%; border: none; outline: none; background: transparent; }
+        math-field::part(menu-toggle), math-field::part(virtual-keyboard-toggle) { display: none !important; }
     </style>
 </head>
 <body>
 
     <div class="app-container">
+        <div class="top-bar">
+            <button class="copy-btn" onclick="copyLatex()">📋 複製全部 LaTeX</button>
+        </div>
         <div class="editor-wrapper">
             <math-field id="mf"></math-field>
-            <button class="copy-btn" onclick="copyLatex()">複製 LaTeX</button>
         </div>
     </div>
 
@@ -54,99 +31,41 @@
         customElements.whenDefined('math-field').then(() => {
             const mf = document.getElementById('mf');
             
-            // ==========================================
-            // 【擴充一】矩陣與聯立方程式面板
-            // ==========================================
-            const matrixLayout = {
-                label: "矩陣/聯立",
-                tooltip: "各式矩陣與聯立方程式",
+            // 【極簡擴充】只放矩陣、聯立、微積分的核心框架，按鈕用最簡單的安全文字
+            const advancedLayout = {
+                label: "進階", 
+                tooltip: "矩陣與微積分",
                 rows: [
                     [
-                        { class: "keycap", latex: "\\begin{bmatrix}#?&#?\\\\#?&#?\\end{bmatrix}", label: "[ ] 2x2" },
-                        { class: "keycap", latex: "\\begin{pmatrix}#?&#?\\\\#?&#?\\end{pmatrix}", label: "( ) 2x2" },
-                        { class: "keycap", latex: "\\begin{vmatrix}#?&#?\\\\#?&#?\\end{vmatrix}", label: "| | 2x2" },
-                        { class: "keycap", latex: "\\begin{cases}#?\\\\#?\\end{cases}", label: "聯立(2行)" }
+                        { class: "keycap", label: "[■] 2x2", latex: "\\begin{bmatrix}#?&#?\\\\#?&#?\\end{bmatrix}" },
+                        { class: "keycap", label: "(■) 2x2", latex: "\\begin{pmatrix}#?&#?\\\\#?&#?\\end{pmatrix}" },
+                        { class: "keycap", label: "{ 聯立", latex: "\\begin{cases}#?\\\\#?\\end{cases}" },
+                        { class: "keycap", label: "∫ 定積分", latex: "\\int_{#?}^{#?} #? \\, dx" }
                     ],
                     [
-                        { class: "keycap", latex: "\\begin{bmatrix}#?&#?&#?\\\\#?&#?&#?\\\\#?&#?&#?\\end{bmatrix}", label: "[ ] 3x3" },
-                        { class: "keycap", latex: "\\begin{pmatrix}#?&#?&#?\\\\#?&#?&#?\\\\#?&#?&#?\\end{pmatrix}", label: "( ) 3x3" },
-                        { class: "keycap", latex: "\\begin{vmatrix}#?&#?&#?\\\\#?&#?&#?\\\\#?&#?&#?\\end{vmatrix}", label: "| | 3x3" },
-                        { class: "keycap", latex: "\\begin{cases}#?\\\\#?\\\\#?\\end{cases}", label: "聯立(3行)" }
-                    ],
-                    [
-                        { class: "keycap", latex: "\\begin{pmatrix}#?\\\\#?\\end{pmatrix}", label: "(直)向量" },
-                        { class: "keycap", latex: "\\vec{#?}", label: "向量符號" },
-                        { class: "keycap", latex: "\\overline{#?}", label: "上橫線" },
-                        { class: "keycap", latex: "\\text{#?}", label: "中文字" }
+                        { class: "keycap", label: "[■] 3x3", latex: "\\begin{bmatrix}#?&#?&#?\\\\#?&#?&#?\\\\#?&#?&#?\\end{bmatrix}" },
+                        { class: "keycap", label: "(■) 3x3", latex: "\\begin{pmatrix}#?&#?&#?\\\\#?&#?&#?\\\\#?&#?&#?\\end{pmatrix}" },
+                        { class: "keycap", label: "lim 極限", latex: "\\lim_{#? \\to #?} #?" },
+                        { class: "keycap", label: "d/dx 微分", latex: "\\frac{d}{dx}\\left( #? \\right)" }
                     ]
                 ]
             };
 
-            // ==========================================
-            // 【擴充二】微積分與進階符號面板
-            // ==========================================
-            const calculusLayout = {
-                label: "微積/進階",
-                tooltip: "微積分與進階運算符號",
-                rows: [
-                    [
-                        { class: "keycap", latex: "\\int_{#?}^{#?} #? \\, dx", label: "∫ 定積分" },
-                        { class: "keycap", latex: "\\iint_{#?} #? \\, dA", label: "∬ 雙重" },
-                        { class: "keycap", latex: "\\lim_{#? \\to #?} #?", label: "lim 極限" },
-                        { class: "keycap", latex: "\\sum_{i=#?}^{#?} #?", label: "∑ 連加" }
-                    ],
-                    [
-                        { class: "keycap", latex: "\\frac{d}{dx}\\left( #? \\right)", label: "d/dx 微分" },
-                        { class: "keycap", latex: "\\frac{\\partial #?}{\\partial #?}", label: "∂ 偏微分" },
-                        { class: "keycap", latex: "\\prod_{i=#?}^{#?} #?", label: "∏ 連乘" },
-                        { class: "keycap", latex: "\\infty", label: "∞ 無窮" }
-                    ],
-                    [
-                        { class: "keycap", latex: "\\nabla #?", label: "∇ Nabla" },
-                        { class: "keycap", latex: "\\Delta #?", label: "Δ Delta" },
-                        { class: "keycap", latex: "\\left| #? \\right|", label: "| | 絕對值" },
-                        { class: "keycap", latex: "\\left\\| #? \\right\\|", label: "|| || 範數" }
-                    ]
-                ]
-            };
-
-            // ==========================================
-            // 【關鍵修復】: 取得系統現有的預設鍵盤，然後把我們的自訂面板「附加」到最後面！
-            // 這樣就不會因為寫錯系統名稱而導致 undefined 崩潰了。
-            // ==========================================
-            const defaultLayouts = window.mathVirtualKeyboard.layouts;
             window.mathVirtualKeyboard.layouts = [
-                ...defaultLayouts, 
-                matrixLayout, 
-                calculusLayout
+                ...window.mathVirtualKeyboard.layouts, 
+                advancedLayout
             ];
 
-            // 預設公式
             mf.value = "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}";
-            
-            // 自動顯示鍵盤
-            setTimeout(() => {
-                mf.focus();
-                mf.executeCommand('moveToMathFieldEnd');
-                window.mathVirtualKeyboard.show();
-            }, 300);
-            
-            document.querySelector('.editor-wrapper').addEventListener('click', () => {
-                mf.focus();
-                window.mathVirtualKeyboard.show();
-            });
+            setTimeout(() => { mf.focus(); mf.executeCommand('moveToMathFieldEnd'); window.mathVirtualKeyboard.show(); }, 300);
+            document.querySelector('.editor-wrapper').addEventListener('click', () => { mf.focus(); window.mathVirtualKeyboard.show(); });
         });
 
-        // 複製 LaTeX 功能
         function copyLatex() {
-            const mf = document.getElementById('mf');
-            navigator.clipboard.writeText(mf.value).then(() => {
-                alert("✅ 已成功複製 LaTeX 語法：\n\n" + mf.value);
-            }).catch(err => {
-                alert("❌ 複製失敗，請手動選取複製");
-            });
+            const fullLatex = document.getElementById('mf').value; 
+            if (!fullLatex) return alert("畫布是空的！");
+            navigator.clipboard.writeText(fullLatex).then(() => alert("✅ 已成功複製：\n\n" + fullLatex)).catch(() => alert("❌ 複製失敗"));
         }
     </script>
-
 </body>
 </html>
