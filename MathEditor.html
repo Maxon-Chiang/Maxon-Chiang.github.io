@@ -4,101 +4,122 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>全螢幕數學編輯器</title>
-    <!-- 引入 MathLive -->
+    
+    <!-- 引入 MathLive 核心套件 -->
     <script defer src="https://unpkg.com/mathlive"></script>
 
     <style>
-        /* 讓網頁全螢幕，消除預設邊距 */
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
-            background-color: #ffffff;
+            background-color: #f2f2f7; 
             font-family: sans-serif;
-            overflow: hidden; /* 防止整個網頁出現滾動條 */
+            overflow: hidden; 
         }
 
-        /* 整個應用的容器 */
         .app-container {
             display: flex;
             flex-direction: column;
-            height: 100vh; /* 填滿視窗高度 */
+            height: 100dvh; 
+            padding: 15px;
+            box-sizing: border-box;
         }
 
-        /* 數學輸入區，設定 flex-grow: 1 讓它自動占滿鍵盤以上的全部空間 */
+        .editor-wrapper {
+            flex: 1;
+            background: #ffffff;
+            border: 2px solid #007aff; 
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+        }
+
         math-field {
-            flex-grow: 1;
-            font-size: 20px; /* 字體調小 */
-            padding: 20px;
+            font-size: 26px; 
+            width: 100%;
             border: none;
             outline: none;
             background: transparent;
         }
 
-        /* 右上角漂浮的複製按鈕 */
+        /* 
+         * 【關鍵解法 1】 
+         * 不去動 JS 的底層設定，單純用 CSS 把「三條線」和「鍵盤圖示」徹底隱藏！
+         * 這樣既不會擋住畫面，又不會破壞鍵盤的連線功能。
+         */
+        math-field::part(menu-toggle),
+        math-field::part(virtual-keyboard-toggle) {
+            display: none !important; 
+        }
+
         .copy-btn {
             position: absolute;
-            top: 15px;
+            bottom: 15px; 
             right: 15px;
             background-color: #007aff;
             color: white;
             border: none;
-            border-radius: 6px;
-            padding: 8px 12px;
-            font-size: 14px;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 15px;
+            font-weight: bold;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 3px 8px rgba(0,122,255,0.3);
             z-index: 100;
         }
         .copy-btn:active {
             background-color: #0056b3;
+            transform: scale(0.95);
         }
     </style>
 </head>
 <body>
 
-    <!-- 漂浮在右上角的複製按鈕 -->
-    <button class="copy-btn" onclick="copyLatex()">複製 LaTeX</button>
-
     <div class="app-container">
-        <!-- 
-            math-virtual-keyboard-policy="manual"：這個官方屬性會徹底關閉預設的「三條線」按鈕。
-            我們將完全透過 JavaScript 來控制鍵盤顯示。
-        -->
-        <math-field id="mf" math-virtual-keyboard-policy="manual">x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}</math-field>
+        <div class="editor-wrapper">
+            <!-- 恢復預設狀態，讓套件自己管理 -->
+            <math-field id="mf"></math-field>
+            <button class="copy-btn" onclick="copyLatex()">複製 LaTeX</button>
+        </div>
     </div>
 
     <script>
-        const mf = document.getElementById('mf');
-
-        // 【關鍵修復】：等待 MathLive 核心完全載入並定義好標籤後，再執行動作
-        // 這可以解決你截圖中出現 undefined 的問題
         customElements.whenDefined('math-field').then(() => {
+            const mf = document.getElementById('mf');
             
-            // 確保鍵盤物件存在
-            if (window.mathVirtualKeyboard) {
-                // 1. 網頁一載入，就強制顯示鍵盤
+            // 寫入預設公式
+            mf.value = "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}";
+            
+            setTimeout(() => {
+                // 1. 先讓輸入框取得焦點
+                mf.focus();
+                
+                // 2. 【關鍵解法 2】
+                // 把游標強制移動到公式的「最右邊」，避免全選導致按鍵覆蓋清空！
+                mf.executeCommand('moveToMathFieldEnd');
+                
+                // 3. 顯示鍵盤
                 window.mathVirtualKeyboard.show();
-
-                // 2. 確保只要點擊輸入區，鍵盤一定會彈出來
-                mf.addEventListener('focusin', () => {
-                    window.mathVirtualKeyboard.show();
-                });
-            }
+            }, 300);
             
-            // 讓輸入框自動取得焦點
-            mf.focus();
+            // 確保每次點擊空白處，鍵盤都會彈出來
+            document.querySelector('.editor-wrapper').addEventListener('click', () => {
+                mf.focus();
+                window.mathVirtualKeyboard.show();
+            });
         });
 
-        // 複製 LaTeX 語法到剪貼簿的功能
+        // 複製 LaTeX 語法
         function copyLatex() {
-            // mf.value 預設就是取得 LaTeX 字串
-            const latexString = mf.value;
-            
-            navigator.clipboard.writeText(latexString).then(() => {
-                alert("已複製 LaTeX 語法：\n" + latexString);
+            const mf = document.getElementById('mf');
+            navigator.clipboard.writeText(mf.value).then(() => {
+                alert("✅ 已成功複製 LaTeX 語法：\n\n" + mf.value);
             }).catch(err => {
-                alert("複製失敗，請手動選取複製");
+                alert("❌ 複製失敗，請手動選取複製");
             });
         }
     </script>
