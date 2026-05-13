@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Editor to LaTeX</title>
+    <!-- 引入 MathLive 核心套件 -->
+    <script defer src="https://unpkg.com/mathlive"></script>
+
+    <style>
+        :root {
+            --bg-color: #f2f2f7;
+            --btn-bg: #ffffff;
+            --btn-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            --btn-active: #e5e5ea;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 400px; /* 模擬手機寬度 */
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 上方編輯區 */
+        .editor-section {
+            padding: 20px;
+            border-bottom: 1px solid #e5e5ea;
+        }
+
+        /* MathLive 編輯器元件樣式 */
+        math-field {
+            font-size: 24px;
+            width: 100%;
+            padding: 15px 10px;
+            border: none;
+            outline: none;
+            background: transparent;
+            /* 隱藏 MathLive 預設的虛擬鍵盤按鈕，我們自己做 */
+            --keyboard-toggle-background: transparent; 
+        }
+        math-field::part(virtual-keyboard-toggle) {
+            display: none; 
+        }
+
+        /* 下方輸出的 LaTeX */
+        .output-section {
+            padding: 15px 20px;
+            background: #fafafa;
+            border-bottom: 1px solid #e5e5ea;
+        }
+        
+        .output-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        textarea {
+            width: 100%;
+            height: 60px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: none;
+            box-sizing: border-box;
+        }
+
+        /* 自訂按鍵區 (仿造你的圖片) */
+        .keyboard-section {
+            background-color: #d1d5db;
+            padding: 10px;
+        }
+
+        .key-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .key-btn {
+            background-color: var(--btn-bg);
+            border: none;
+            border-radius: 6px;
+            padding: 12px 0;
+            font-size: 18px;
+            box-shadow: var(--btn-shadow);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .key-btn:active {
+            background-color: var(--btn-active);
+        }
+
+        .key-btn.action { background-color: #abb2bf; color: black; }
+        .key-btn.action:active { background-color: #9299a6; }
+        .key-btn.blue { background-color: #007aff; color: white; }
+        .key-btn.blue:active { background-color: #0056b3; }
+
+        /* 隱藏原生捲軸 */
+        ::-webkit-scrollbar { width: 0px; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- 輸入區 -->
+    <div class="editor-section">
+        <math-field id="mf">x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}</math-field>
+    </div>
+
+    <!-- LaTeX 輸出區 -->
+    <div class="output-section">
+        <h3>LaTeX 語法輸出：</h3>
+        <textarea id="latex-output" readonly></textarea>
+    </div>
+
+    <!-- 模擬你的鍵盤區 -->
+    <div class="keyboard-section">
+        <div class="key-grid">
+            <!-- 第一排：變數與特殊符號 -->
+            <button class="key-btn" onclick="insertLatex('x')">𝑥</button>
+            <button class="key-btn" onclick="insertLatex('y')">𝑦</button>
+            <button class="key-btn" onclick="insertLatex('\\frac{#0}{#?}')">□/□</button>
+            <button class="key-btn" onclick="insertLatex('^2')">□²</button>
+            <button class="key-btn" onclick="insertLatex('^{#?}')">□^□</button>
+
+            <!-- 第二排：數字與根號 -->
+            <button class="key-btn" onclick="insertLatex('7')">7</button>
+            <button class="key-btn" onclick="insertLatex('8')">8</button>
+            <button class="key-btn" onclick="insertLatex('9')">9</button>
+            <button class="key-btn" onclick="insertLatex('\\sqrt{#0}')">√□</button>
+            <button class="key-btn" onclick="insertLatex('\\pi')">π</button>
+
+            <!-- 第三排：數字與運算符號 -->
+            <button class="key-btn" onclick="insertLatex('4')">4</button>
+            <button class="key-btn" onclick="insertLatex('5')">5</button>
+            <button class="key-btn" onclick="insertLatex('6')">6</button>
+            <button class="key-btn" onclick="insertLatex('\\times')">×</button>
+            <button class="key-btn" onclick="insertLatex('\\div')">÷</button>
+
+            <!-- 第四排：數字與加減 -->
+            <button class="key-btn" onclick="insertLatex('1')">1</button>
+            <button class="key-btn" onclick="insertLatex('2')">2</button>
+            <button class="key-btn" onclick="insertLatex('3')">3</button>
+            <button class="key-btn" onclick="insertLatex('+')">+</button>
+            <button class="key-btn" onclick="insertLatex('-')">-</button>
+
+            <!-- 第五排：其他與控制 -->
+            <button class="key-btn" onclick="insertLatex('0')">0</button>
+            <button class="key-btn" onclick="insertLatex('.')">.</button>
+            <button class="key-btn" onclick="insertLatex('=')">=</button>
+            <button class="key-btn action" onclick="executeCommand('deleteBackward')">⌫</button>
+            <button class="key-btn blue" onclick="executeCommand('moveToNextChar')">➔</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 取得元件
+    const mf = document.getElementById('mf');
+    const latexOutput = document.getElementById('latex-output');
+
+    // 監聽輸入事件，當編輯器內容改變時，即時更新下方的 LaTeX 語法
+    mf.addEventListener('input', (ev) => {
+        latexOutput.value = mf.value;
+    });
+
+    // 頁面載入時先執行一次，顯示預設的 LaTeX
+    latexOutput.value = mf.value;
+
+    // 自訂按鈕插入 LaTeX 的函式
+    // 使用 #0 代表目前游標選取內容， #? 代表插入後游標停留的位置
+    function insertLatex(latexString) {
+        mf.insert(latexString);
+        mf.focus(); // 保持焦點在編輯器上
+    }
+
+    // 執行特殊指令 (如刪除、移動游標)
+    function executeCommand(command) {
+        mf.executeCommand(command);
+        mf.focus();
+    }
+</script>
+
+</body>
+</html>
