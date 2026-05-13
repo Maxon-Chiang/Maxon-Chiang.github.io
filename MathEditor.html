@@ -3,111 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Math Editor to LaTeX</title>
-    <!-- 引入 MathLive 核心套件 -->
+    <title>全螢幕數學編輯器</title>
+    <!-- 引入 MathLive -->
     <script defer src="https://unpkg.com/mathlive"></script>
 
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f2f2f7;
+        /* 讓網頁全螢幕，消除預設邊距 */
+        body, html {
             margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+            padding: 0;
+            height: 100%;
+            background-color: #ffffff;
+            font-family: sans-serif;
+            overflow: hidden; /* 防止整個網頁出現滾動條 */
         }
 
+        /* 整個應用的容器 */
         .app-container {
-            width: 100%;
-            max-width: 600px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
             display: flex;
             flex-direction: column;
+            height: 100vh; /* 填滿視窗高度 */
         }
 
-        /* 上方編輯區 */
-        .editor-section {
-            padding: 30px 20px;
-            border-bottom: 1px solid #e5e5ea;
-        }
-
-        /* MathLive 編輯器元件樣式 */
+        /* 數學輸入區，設定 flex-grow: 1 讓它自動占滿鍵盤以上的全部空間 */
         math-field {
-            font-size: 28px;
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            background: #fff;
-            box-sizing: border-box;
-        }
-
-        /* 隱藏 MathLive 右側預設的「三條線/鍵盤」開關按鈕，讓畫面更乾淨 */
-        math-field::part(virtual-keyboard-toggle) {
-            display: none !important; 
-        }
-
-        /* 下方輸出的 LaTeX */
-        .output-section {
+            flex-grow: 1;
+            font-size: 20px; /* 字體調小 */
             padding: 20px;
-            background: #fafafa;
-        }
-        
-        .output-section h3 {
-            margin: 0 0 10px 0;
-            font-size: 15px;
-            color: #333;
+            border: none;
+            outline: none;
+            background: transparent;
         }
 
-        textarea {
-            width: 100%;
-            height: 80px;
-            border: 1px solid #ccc;
+        /* 右上角漂浮的複製按鈕 */
+        .copy-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #007aff;
+            color: white;
+            border: none;
             border-radius: 6px;
-            padding: 10px;
-            font-family: monospace;
-            font-size: 16px;
-            resize: none;
-            box-sizing: border-box;
-            background-color: #fff;
+            padding: 8px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 100;
+        }
+        .copy-btn:active {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <!-- 輸入區 -->
-    <div class="editor-section">
-        <math-field id="mf">x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}</math-field>
+    <!-- 漂浮在右上角的複製按鈕 -->
+    <button class="copy-btn" onclick="copyLatex()">複製 LaTeX</button>
+
+    <div class="app-container">
+        <!-- 
+            math-virtual-keyboard-policy="manual"：這個官方屬性會徹底關閉預設的「三條線」按鈕。
+            我們將完全透過 JavaScript 來控制鍵盤顯示。
+        -->
+        <math-field id="mf" math-virtual-keyboard-policy="manual">x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}</math-field>
     </div>
 
-    <!-- LaTeX 輸出區 -->
-    <div class="output-section">
-        <h3>LaTeX 語法輸出：</h3>
-        <textarea id="latex-output" readonly></textarea>
-    </div>
-</div>
+    <script>
+        const mf = document.getElementById('mf');
 
-<script>
-    const mf = document.getElementById('mf');
-    const latexOutput = document.getElementById('latex-output');
+        // 【關鍵修復】：等待 MathLive 核心完全載入並定義好標籤後，再執行動作
+        // 這可以解決你截圖中出現 undefined 的問題
+        customElements.whenDefined('math-field').then(() => {
+            
+            // 確保鍵盤物件存在
+            if (window.mathVirtualKeyboard) {
+                // 1. 網頁一載入，就強制顯示鍵盤
+                window.mathVirtualKeyboard.show();
 
-    // 1. 同步 LaTeX 輸出
-    mf.addEventListener('input', () => {
-        latexOutput.value = mf.value;
-    });
-    // 初始載入時顯示預設值
-    latexOutput.value = mf.value;
+                // 2. 確保只要點擊輸入區，鍵盤一定會彈出來
+                mf.addEventListener('focusin', () => {
+                    window.mathVirtualKeyboard.show();
+                });
+            }
+            
+            // 讓輸入框自動取得焦點
+            mf.focus();
+        });
 
-    // 2. 強制行為：無論電腦或手機，只要點擊輸入框，就強制彈出內建的黑色虛擬鍵盤
-    mf.addEventListener('focusin', () => {
-        // 呼叫 MathLive 的全域物件來顯示鍵盤
-        mathVirtualKeyboard.show();
-    });
-</script>
+        // 複製 LaTeX 語法到剪貼簿的功能
+        function copyLatex() {
+            // mf.value 預設就是取得 LaTeX 字串
+            const latexString = mf.value;
+            
+            navigator.clipboard.writeText(latexString).then(() => {
+                alert("已複製 LaTeX 語法：\n" + latexString);
+            }).catch(err => {
+                alert("複製失敗，請手動選取複製");
+            });
+        }
+    </script>
 
 </body>
 </html>
