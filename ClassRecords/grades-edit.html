@@ -310,14 +310,14 @@
 			}
 			// ----------------------------------------------------
 
-			loadAssignmentNameSuggestions(classId);
+			loadAssignmentNameSuggestions(classId, userData);
 			renderStudentScores();
 			appContainer.style.display = 'block';
 			document.getElementById('user-email').style.display = 'none';
 			document.getElementById('logout-btn').style.display = 'none';
 		}
 
-		async function loadAssignmentNameSuggestions(currentClassId) {
+		async function loadAssignmentNameSuggestions(currentClassId, userData) {
 			if (!currentClassId) return;
 			const gradeLevel = currentClassId.charAt(0);
 			const datalist = document.getElementById('existing-assignment-names');
@@ -325,19 +325,52 @@
 			try {
 				const snapshot = await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').get();
 				const uniqueNames = new Set();
+				
+				// 取得使用者的成績期間設定
+				const gStart = userData && userData.gradesStartDate ? userData.gradesStartDate : null;
+				const gEnd = userData && userData.gradesEndDate ? userData.gradesEndDate : null;
+
 				snapshot.forEach(doc => {
-					const data = doc.data();
-					if (data.className && data.className.charAt(0) === gradeLevel && data.assignmentName) {
+					// 加上 { serverTimestamps: 'estimate' } 防止新資料還沒同步到時間
+					const data = doc.data({ serverTimestamps: 'estimate' });
+					
+					let include = true;
+					
+					// 如果有設定期間，進行日期過濾
+					if (gStart || gEnd) {
+						let aDate;
+						if (!data.date) {
+							aDate = new Date();
+						} else if (typeof data.date.toDate === 'function') {
+							aDate = data.date.toDate();
+						} else if (data.date.seconds) {
+							aDate = new Date(data.date.seconds * 1000);
+						} else {
+							aDate = new Date(data.date);
+						}
+
+						// 確保時間格式正確再比較
+						if (!isNaN(aDate.getTime())) {
+							if (gStart && aDate < new Date(gStart + 'T00:00:00')) include = false;
+							if (gEnd && aDate > new Date(gEnd + 'T23:59:59.999')) include = false;
+						}
+					}
+
+					// 如果在時間範圍內，且年段相符，才加入建議清單
+					if (include && data.className && data.className.charAt(0) === gradeLevel && data.assignmentName) {
 						uniqueNames.add(data.assignmentName.trim());
 					}
 				});
+				
 				const sortedNames = Array.from(uniqueNames).sort();
 				sortedNames.forEach(name => {
 					const option = document.createElement('option');
 					option.value = name;
 					datalist.appendChild(option);
 				});
-			} catch (error) {}
+			} catch (error) {
+				console.error("載入建議名稱失敗", error);
+			}
 		}
 
 		function renderStudentScores() {
