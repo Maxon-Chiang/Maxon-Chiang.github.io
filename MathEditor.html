@@ -2,69 +2,41 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>數學編輯器 (穩定版)</title>
+    <!-- 加入 user-scalable=no 徹底防止手機誤判雙擊放大 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>數學編輯器</title>
     
-    <!-- 引入 MathLive -->
     <script defer src="https://unpkg.com/mathlive"></script>
 
     <style>
-        /* 移除鎖死螢幕的設定，讓網頁可以自然滑動 */
         body { 
-            margin: 0; 
-            padding: 20px; 
-            background-color: #f2f2f7; 
-            font-family: sans-serif; 
+            margin: 0; padding: 20px; background-color: #f2f2f7; font-family: sans-serif; 
+            /* 最佳化 1：消除整個網頁的點擊延遲 */
+            touch-action: manipulation; 
         }
 
-        .container {
-            max-width: 800px; /* 限制電腦版最大寬度 */
-            margin: 0 auto;   /* 置中 */
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px;
-        }
-
-        .top-bar { 
-            display: flex; 
-            justify-content: flex-end; 
-        }
-
+        .container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; }
+        .top-bar { display: flex; justify-content: flex-end; }
         .copy-btn { 
-            background-color: #007aff; 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            padding: 10px 18px; 
-            font-size: 15px; 
-            font-weight: bold; 
-            cursor: pointer; 
+            background-color: #007aff; color: white; border: none; border-radius: 8px; 
+            padding: 10px 18px; font-size: 15px; font-weight: bold; cursor: pointer; 
             box-shadow: 0 3px 8px rgba(0,122,255,0.3); 
+            /* 最佳化 2：防止按鈕上的文字被意外反白選取 */
+            user-select: none; 
         }
-
         .copy-btn:active { transform: scale(0.95); }
 
         .editor-wrapper { 
-            background: #ffffff; 
-            border: 2px solid #007aff; 
-            border-radius: 12px; 
-            padding: 15px; 
-            min-height: 150px; /* 給定一個基本高度 */
+            background: #ffffff; border: 2px solid #007aff; border-radius: 12px; 
+            padding: 15px; min-height: 150px; 
+            /* 最佳化 3：確保點擊區塊不會產生預設的藍色高光閃爍 */
+            -webkit-tap-highlight-color: transparent;
         }
 
         math-field { 
-            font-size: 26px; 
-            width: 100%; 
-            border: none; 
-            outline: none; 
-            background: transparent; 
+            font-size: 26px; width: 100%; border: none; outline: none; background: transparent; 
         }
-
-        /* 隱藏預設的三條線選單 */
-        math-field::part(menu-toggle), 
-        math-field::part(virtual-keyboard-toggle) { 
-            display: none !important; 
-        }
+        math-field::part(menu-toggle), math-field::part(virtual-keyboard-toggle) { display: none !important; }
     </style>
 </head>
 <body>
@@ -81,11 +53,9 @@
     <script>
         customElements.whenDefined('math-field').then(() => {
             const mf = document.getElementById('mf');
-            
-            // 【進階鍵盤擴充】保留最實用的矩陣與微積分
+            /*
             const advancedLayout = {
-                label: "進階", 
-                tooltip: "矩陣與微積分",
+                label: "進階", tooltip: "矩陣與微積分",
                 rows: [
                     [
                         { class: "keycap", label: "[■] 2x2", latex: "\\begin{bmatrix}#?&#?\\\\#?&#?\\end{bmatrix}" },
@@ -102,38 +72,26 @@
                 ]
             };
 
-            // 附加到系統鍵盤
             window.mathVirtualKeyboard.layouts = [
                 ...window.mathVirtualKeyboard.layouts, 
                 advancedLayout
             ];
-
-            // 載入預設公式
+            */
             mf.value = "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}";
             
-            // 【移除】會引發報錯的 executeCommand
-            // 改成讓使用者自己點擊輸入框時，才顯示鍵盤
+            // 【最佳化 4】只保留最單純的喚醒機制，不干擾 MathLive 內部邏輯
             mf.addEventListener('focusin', () => {
                 window.mathVirtualKeyboard.show();
             });
-            
-            // 如果點到框框外的空白處，也確保鍵盤會出來
-            document.querySelector('.editor-wrapper').addEventListener('click', () => {
-                mf.focus();
-            });
+            // (已經移除了 click wrapper 就強制 focus 的干擾程式碼)
         });
 
         function copyLatex() {
             const fullLatex = document.getElementById('mf').value; 
-            if (!fullLatex) {
-                alert("畫布是空的！");
-                return;
-            }
-            navigator.clipboard.writeText(fullLatex).then(() => {
-                alert("✅ 已成功複製 LaTeX：\n\n" + fullLatex);
-            }).catch(() => {
-                alert("❌ 複製失敗。由於您是從電腦硬碟 (C槽/G槽) 直接打開網頁，瀏覽器安全機制可能會阻擋複製功能。請改用上傳到網站，或手動反白複製。");
-            });
+            if (!fullLatex) return alert("畫布是空的！");
+            navigator.clipboard.writeText(fullLatex)
+                .then(() => alert("✅ 已成功複製 LaTeX：\n\n" + fullLatex))
+                .catch(() => alert("❌ 複製失敗"));
         }
     </script>
 </body>
