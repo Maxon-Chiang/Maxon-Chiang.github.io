@@ -2,7 +2,6 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- 加入 user-scalable=no 徹底防止手機誤判雙擊放大 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>數學編輯器</title>
     
@@ -11,7 +10,6 @@
     <style>
         body { 
             margin: 0; padding: 20px; background-color: #f2f2f7; font-family: sans-serif; 
-            /* 最佳化 1：消除整個網頁的點擊延遲 */
             touch-action: manipulation; 
         }
 
@@ -21,7 +19,6 @@
             background-color: #007aff; color: white; border: none; border-radius: 8px; 
             padding: 10px 18px; font-size: 15px; font-weight: bold; cursor: pointer; 
             box-shadow: 0 3px 8px rgba(0,122,255,0.3); 
-            /* 最佳化 2：防止按鈕上的文字被意外反白選取 */
             user-select: none; 
         }
         .copy-btn:active { transform: scale(0.95); }
@@ -29,7 +26,6 @@
         .editor-wrapper { 
             background: #ffffff; border: 2px solid #007aff; border-radius: 12px; 
             padding: 15px; min-height: 150px; 
-            /* 最佳化 3：確保點擊區塊不會產生預設的藍色高光閃爍 */
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -53,37 +49,67 @@
     <script>
         customElements.whenDefined('math-field').then(() => {
             const mf = document.getElementById('mf');
-            /*
+            mf.value = "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}";
+            
+            // 【擴充需求】：自訂一個「矩陣與進階數學」的鍵盤面板
             const advancedLayout = {
-                label: "進階", tooltip: "矩陣與微積分",
+                label: '進階/矩陣',
+                tooltip: '矩陣、聯立方程式與進階符號',
                 rows: [
+                    // 第一排：2x2 矩陣、2個聯立、向量等
                     [
-                        { class: "keycap", label: "[■] 2x2", latex: "\\begin{bmatrix}#?&#?\\\\#?&#?\\end{bmatrix}" },
-                        { class: "keycap", label: "(■) 2x2", latex: "\\begin{pmatrix}#?&#?\\\\#?&#?\\end{pmatrix}" },
-                        { class: "keycap", label: "{ 聯立", latex: "\\begin{cases}#?\\\\#?\\end{cases}" },
-                        { class: "keycap", label: "∫ 定積分", latex: "\\int_{#?}^{#?} #? \\, dx" }
+                        { latex: '\\begin{pmatrix} \\cdot & \\cdot \\\\ \\cdot & \\cdot \\end{pmatrix}', insert: '\\begin{pmatrix} #? & #? \\\\ #? & #? \\end{pmatrix}' },
+                        { latex: '\\begin{bmatrix} \\cdot & \\cdot \\\\ \\cdot & \\cdot \\end{bmatrix}', insert: '\\begin{bmatrix} #? & #? \\\\ #? & #? \\end{bmatrix}' },
+                        { latex: '\\begin{cases} \\cdot \\\\ \\cdot \\end{cases}', insert: '\\begin{cases} #? \\\\ #? \\end{cases}' },
+                        { latex: '\\vec{v}', insert: '\\vec{#?}' },
+                        { latex: '\\overline{AB}', insert: '\\overline{#?}' },
+                        { latex: '\\int', insert: '\\int_{#?}^{#?}' },
+                        { latex: '\\sum', insert: '\\sum_{#?}^{#?}' }
                     ],
+                    // 第二排：3x3 矩陣、3個聯立、極限等
                     [
-                        { class: "keycap", label: "[■] 3x3", latex: "\\begin{bmatrix}#?&#?&#?\\\\#?&#?&#?\\\\#?&#?&#?\\end{bmatrix}" },
-                        { class: "keycap", label: "(■) 3x3", latex: "\\begin{pmatrix}#?&#?&#?\\\\#?&#?&#?\\\\#?&#?&#?\\end{pmatrix}" },
-                        { class: "keycap", label: "lim 極限", latex: "\\lim_{#? \\to #?} #?" },
-                        { class: "keycap", label: "d/dx 微分", latex: "\\frac{d}{dx}\\left( #? \\right)" }
+                        { latex: '\\begin{pmatrix} \\cdot & \\cdot & \\cdot \\\\ \\cdot & \\cdot & \\cdot \\\\ \\cdot & \\cdot & \\cdot \\end{pmatrix}', insert: '\\begin{pmatrix} #? & #? & #? \\\\ #? & #? & #? \\\\ #? & #? & #? \\end{pmatrix}' },
+                        { latex: '\\begin{bmatrix} \\cdot & \\cdot & \\cdot \\\\ \\cdot & \\cdot & \\cdot \\\\ \\cdot & \\cdot & \\cdot \\end{bmatrix}', insert: '\\begin{bmatrix} #? & #? & #? \\\\ #? & #? & #? \\\\ #? & #? & #? \\end{bmatrix}' },
+                        { latex: '\\begin{cases} \\cdot \\\\ \\cdot \\\\ \\cdot \\end{cases}', insert: '\\begin{cases} #? \\\\ #? \\\\ #? \\end{cases}' },
+                        { latex: '\\widehat{A}', insert: '\\widehat{#?}' },
+                        { latex: '\\binom{n}{k}', insert: '\\binom{#?}{#?}' },
+                        { latex: '\\lim', insert: '\\lim_{#? \\to #?}' },
+                        { latex: '\\prod', insert: '\\prod_{#?}^{#?}' }
+                    ],
+                    // 第三排：幾何與邏輯符號
+                    [
+                        { latex: '\\triangle', insert: '\\triangle' },
+                        { latex: '\\angle', insert: '\\angle' },
+                        { latex: '\\because', insert: '\\because' },
+                        { latex: '\\therefore', insert: '\\therefore' },
+                        { latex: '\\approx', insert: '\\approx' },
+                        { latex: '\\sim', insert: '\\sim' },
+                        { latex: '\\cong', insert: '\\cong' }
+                    ],
+                    // 第四排：系統預設的方向鍵與刪除鍵
+                    [
+                        "[left]", "[right]", "[up]", "[down]", "[backspace]", "[return]"
                     ]
                 ]
             };
 
+            // 設定鍵盤的 Tab (保留原本的 4 個，加上我們自訂的 1 個)
             window.mathVirtualKeyboard.layouts = [
-                ...window.mathVirtualKeyboard.layouts, 
-                advancedLayout
+                'numeric',      // 123
+                'symbols',      // 符號
+                'alphabetic',   // abc
+                'greek',        // 希臘字母
+                advancedLayout  // 自訂的矩陣與進階鍵盤
             ];
-            */
-            mf.value = "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}";
-            
-            // 【最佳化 4】只保留最單純的喚醒機制，不干擾 MathLive 內部邏輯
-            mf.addEventListener('focusin', () => {
-                window.mathVirtualKeyboard.show();
+
+            // 【問題修復】：改變喚醒機制
+            // 使用 pointerdown 代替 focusin，並判斷鍵盤是否已經顯示，徹底解決按鍵沒反應的問題
+            mf.addEventListener('pointerdown', () => {
+                if (!window.mathVirtualKeyboard.visible) {
+                    window.mathVirtualKeyboard.show();
+                }
             });
-            // (已經移除了 click wrapper 就強制 focus 的干擾程式碼)
+
         });
 
         function copyLatex() {
