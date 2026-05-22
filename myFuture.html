@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的未來跑馬燈 - AI 影片腳本產生器</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 30px;
+        }
+        .section {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-main);
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #334155;
+        }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        select {
+            margin-bottom: 8px;
+            background-color: #f1f5f9;
+            cursor: pointer;
+        }
+        input[type="text"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.25rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-top: 30px;
+        }
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+        #result-area {
+            display: none;
+            margin-top: 30px;
+        }
+        .success-msg {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            box-sizing: border-box;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>我的未來跑馬燈</h1>
+    <div class="subtitle">國中生生涯發展 AI 影片腳本產生器</div>
+
+    <form id="survey-form">
+        <div id="form-content"></div>
+        <button type="button" onclick="generatePrompt()">🎬 生成提示詞並自動複製</button>
+    </form>
+
+    <div id="result-area">
+        <div class="success-msg">✅ 提示詞已成功生成並複製到剪貼簿！您可以直接貼上給 ChatGPT 或 Claude。</div>
+        <textarea id="prompt-output" readonly></textarea>
+    </div>
+</div>
+
+<script>
+    // 定義所有問題與預設選項
+    const surveyData = [
+        {
+            category: "基本學業與學習狀態",
+            items: [
+                { id: "q1", label: "學業成績表現", options: ["校排前10%", "中等偏下", "嚴重偏科只愛動手實作不愛看書", "因為學校的補救教學才勉強跟上基本學力"] },
+                { id: "q2", label: "學習態度與專注力", options: ["容易分心", "對沒興趣的科目完全放棄上課睡覺", "上課都在畫畫或看輕小說", "死讀書但抓不到重點"] },
+                { id: "q3", label: "面對考試與挫折的反應", options: ["考不好會哭著自責", "完全不在乎成績單直接丟掉", "會作弊逃避父母責罵", "遇到挫折就直接擺爛"] }
+            ]
+        },
+        {
+            category: "興趣、專長與課外活動",
+            items: [
+                { id: "q4", label: "真正的興趣愛好", options: ["每天花 4 小時打手遊或看短影音/抖音", "熱衷於參與地方陣頭與廟會活動", "喜歡看 VTuber 實況", "熱愛拆解機械與玩創客設備"] },
+                { id: "q5", label: "展現出的特殊專長", options: ["很會模仿別人搞笑", "畫畫很有個人風格", "對程式邏輯或硬體操作上手極快", "體能與運動神經極佳", "沒有任何資源培養才藝"] },
+                { id: "q6", label: "參與的社團或活動", options: ["熱舞社", "學校的機器人或技藝專班", "放學就必須回家幫忙沒有參與任何課外活動"] }
+            ]
+        },
+        {
+            category: "人際交往與群體關係",
+            items: [
+                { id: "q7", label: "朋友圈狀態", options: ["朋友很多是校園風雲人物", "只有一兩個邊緣人知心好友", "經常被排擠", "在學校孤立但在網路遊戲中是萬人迷公會長"] },
+                { id: "q8", label: "溝通與表達能力", options: ["講話很衝容易引發衝突", "善於察言觀色討好別人", "在匿名社群很活躍但在現實中結巴"] },
+                { id: "q9", label: "戀愛與性別認知", options: ["極度渴望交男女朋友", "對異性感到恐懼", "已經有私下交往的對象甚至跨校網戀"] }
+            ]
+        },
+        {
+            category: "家庭結構與主要照顧者",
+            items: [
+                { id: "q10", label: "主要照顧者組成", options: ["傳統雙薪家庭", "單親且家長在外縣市工作只能週末見面", "隔代教養由阿公阿嬤帶大（觀念落差極大）", "新住民/外籍配偶家庭（面臨文化或語言隔閡）"] },
+                { id: "q11", label: "家庭氣氛與管教方式", options: ["父母是虎媽虎爸要求極高", "完全放任不管的鑰匙兒童", "家暴或常吵架家庭氣氛冷漠", "長輩過度溺愛導致缺乏自理能力"] },
+                { id: "q12", label: "照顧者對未來的期望", options: ["期望孩子繼承家業或務農", "只要孩子平安健康就好不要求成績", "期望孩子考上頂大翻轉階級"] }
+            ]
+        },
+        {
+            category: "經濟狀況與城鄉資源",
+            items: [
+                { id: "q13", label: "家庭經濟狀況", options: ["家境優渥不愁吃穿", "經濟弱勢靠補助度日", "家中突然面臨債務危機"] },
+                { id: "q14", label: "城鄉與學習資源落差", options: ["位於偏鄉，放學只能等客運或夜輔", "家裡沒網路或電腦，只能用手機做功課", "必須打工或幫忙家裡務農/做生意", "資源豐富，有參加各種校外補習"] }
+            ]
+        },
+        {
+            category: "個人特質與當前價值觀",
+            items: [
+                { id: "q15", label: "性格優缺點", options: ["重義氣但容易被煽動", "善良但沒主見", "固執且自傲", "極度自卑但心思細膩且具備生存韌性"] },
+                { id: "q16", label: "目前對未來的想像", options: ["想當百萬 YouTuber 或電競選手", "覺得未來沒有希望的「躺平族」", "渴望提早出社會賺錢脫離原生家庭", "對大城市充滿幻想"] },
+                { id: "q17", label: "最害怕或逃避的事物", options: ["害怕被同儕看不起", "逃避任何需要長時間思考的任務", "害怕無法回應家人的期待"] }
+            ]
+        }
+    ];
+
+    // 動態產生表單 HTML
+    const formContent = document.getElementById('form-content');
+    
+    surveyData.forEach(section => {
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'section';
+        
+        const sectionTitle = document.createElement('h2');
+        sectionTitle.className = 'section-title';
+        sectionTitle.textContent = `[${section.category}]`;
+        sectionDiv.appendChild(sectionTitle);
+
+        section.items.forEach(item => {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'form-group';
+            
+            const label = document.createElement('label');
+            label.textContent = item.label;
+            
+            // 下拉選單
+            const select = document.createElement('select');
+            select.innerHTML = `<option value="">-- 請選擇常見情境 或 直接在下方手動輸入 --</option>`;
+            item.options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt;
+                option.textContent = opt;
+                select.appendChild(option);
+            });
+
+            // 手動輸入框
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = item.id;
+            input.placeholder = '請手動輸入或從上方選單選擇以自動帶入...';
+
+            // 連動機制：選擇下拉選單後自動填入輸入框
+            select.addEventListener('change', function() {
+                if(this.value !== "") {
+                    input.value = this.value;
+                }
+            });
+
+            groupDiv.appendChild(label);
+            groupDiv.appendChild(select);
+            groupDiv.appendChild(input);
+            sectionDiv.appendChild(groupDiv);
+        });
+
+        formContent.appendChild(sectionDiv);
+    });
+
+    // 產生提示詞邏輯
+    function generatePrompt() {
+        // 取得所有輸入值
+        const vals = {};
+        for(let i = 1; i <= 17; i++) {
+            const val = document.getElementById(`q${i}`).value.trim();
+            vals[`q${i}`] = val ? val : "未提供資訊";
+        }
+
+        // 完整提示詞模板 (包含所有禁令與設定)
+        const template = `【系統設定與角色扮演】
+你現在是一位具備「頂尖社會學家」、「資深生涯發展諮商師」以及「寫實派電影導演」三重身分的 AI 專家。你的任務是接收一位國中學生的全面性生涯調查資料，並推演出他未來 20歲、30歲、40歲、50歲、60歲 的人生發展軌跡。
+這份推演必須高度寫實，請捨棄傳統的「從此過著幸福快樂日子」的童話濾鏡。你必須基於因果邏輯，大膽預測可能發生的挫折、迷惘、職業倦怠、階級複製的掙扎或是悲慘的低谷。最後，將這條充滿高低起伏的人生軌跡，轉化為可以直接輸入給 AI 影片生成工具（如 Kling, Runway, Sora）的電影級分鏡腳本。
+
+【核心推演演算法：寫實與蝴蝶效應】
+1. 因果邏輯連結：如果學生目前的資源匱乏但具備極強的生存韌性，20歲時可能會提早社會化；如果在偏鄉缺乏文化刺激且沉迷網路，30歲時可能面臨嚴重的求職或轉型困難。請依據輸入的「強項」、「弱點」與「環境資源」進行合理放大。
+2. 隨機性與時代變遷：將未來的科技變遷、產業轉型（如 AI 取代勞動力）考量進去。某些現有的技職專長在未來可能被淘汰或升級，導致 40 歲或 50 歲時面臨失業危機或階級翻轉。
+3. 拒絕強行勵志：允許某些年齡階段（甚至最終結局）是平庸、充滿遺憾或孤獨的。真實人生充滿妥協，腳本的氛圍應該時而壓抑、時而溫馨，具備真實的重量感與宿命感。
+
+【國中生生涯調查輸入區】
+
+[基本學業與學習狀態]
+- 學業成績表現：${vals.q1}
+- 學習態度與專注力：${vals.q2}
+- 面對考試與挫折的反應：${vals.q3}
+
+[興趣、專長與課外活動]
+- 真正的興趣愛好：${vals.q4}
+- 展現出的特殊專長：${vals.q5}
+- 參與的社團或活動：${vals.q6}
+
+[人際交往與群體關係]
+- 朋友圈狀態：${vals.q7}
+- 溝通與表達能力：${vals.q8}
+- 戀愛與性別認知：${vals.q9}
+
+[家庭結構與主要照顧者]
+- 主要照顧者組成：${vals.q10}
+- 家庭氣氛與管教方式：${vals.q11}
+- 照顧者對未來的期望：${vals.q12}
+
+[經濟狀況與城鄉資源]
+- 家庭經濟狀況：${vals.q13}
+- 城鄉與學習資源落差：${vals.q14}
+
+[個人特質與當前價值觀]
+- 性格優缺點：${vals.q15}
+- 目前對未來的想像：${vals.q16}
+- 最害怕或逃避的事物：${vals.q17}
+
+【視覺與 AI 影片生成絕對禁令（嚴格防呆機制）】
+為了確保影片生成工具能產出高品質、不崩壞的畫面，你提供的所有「AI 影片生成英文提示詞 (Video AI Prompt)」必須嚴格遵守以下 4 大禁令：
+1. 絕對禁止文字生成：不允許要求 AI 在畫面上生成任何具體的文字、數字、招牌、書本內容或介面字幕。若有看書或看螢幕的畫面，請描述為「發光的數據流」、「模糊的排版」或「抽象的圖表」。
+2. 絕對禁止俗套獎勵畫面：不論主角獲得多大成就，【禁止出現任何拿獎盃、頒獎典禮、掛獎牌】的畫面。成就感應透過「主角自信的神情」、「寬敞的辦公環境」或「精密的專業操作」來呈現，不要多此一舉。
+3. 絕對禁止不合理的空拍機運鏡：室內場景（如房間、教室、辦公室、科展會場）絕對禁止使用「空拍機視角 (Drone shot)」。請使用寫實的平視、微距鏡頭 (Macro lens)、越肩視角或緩慢的滑軌平移。
+4. 場景寫實不浮誇：背景必須符合物理現實。遵守輸入設定去建立場景，絕對不能自行延伸加入超現實的畫面（例如：在書桌前思考，背景就是寫實的房間，絕對禁止出現「把桌面變成海水」這類荒謬的奇幻變化）。
+
+【分鏡結構：五個年齡階段的人生切片】
+請依序生成以下 5 個階段的影片腳本（模擬至 60 歲為止）：
+1. 20歲的掙扎與成型：大學或剛踏入社會的狀態。可能充滿理想，也可能因為國中的選擇或家庭資源匱乏而在底層打拚。
+2. 30歲的現實碰撞：事業與責任的壓力。可能是職場的意氣風發，也可能是深陷負債、人際背叛或工作過勞的慘況。
+3. 40歲的轉折或定型：人生的分水嶺。可能面臨中年危機、健康亮紅燈，或是經歷巨大的轉行與家庭變故。
+4. 50歲的收穫與代價：展現主角一路走來所累積的成果，以及為此失去的東西（例如獲得金錢但失去健康/家人，或一無所有但內心平靜）。
+5. 60歲的倒數與回望：即將退休或仍在勞動的狀態。這是影片的終局，畫面應呈現歲月的痕跡，可能是孤單但堅毅的背影，或是將經驗傳承給下一代的瞬間。
+
+【最終輸出格式要求】
+請先簡短用一段話總結你推演出來的「人生基調」。接著以表格形式輸出分鏡腳本：
+
+表格欄位：
+1. 年齡段 (Age)
+2. 人生狀態解析 (Life Status)：說明這個階段發生的具體事件、職業、挫折與心理狀態。
+3. 繁體中文畫面描述 (Visual Description)：詳細描述場景、人物外貌變化與光影氛圍。
+4. AI 影片生成英文提示詞 (Video AI Prompt)：可以直接複製貼上的英文 Prompt。語法：[Subject] + [Action/Environment] + [Realistic Camera Movement] + [Lighting/Cinematic Style]。再次確認嚴格遵守上述【視覺禁令】。
+5. 旁白音軌 (Voiceover)：一段適合該年齡心境的繁體中文獨白，具備戲劇張力與反思。`;
+
+        // 顯示結果
+        const resultArea = document.getElementById('result-area');
+        const outputBox = document.getElementById('prompt-output');
+        outputBox.value = template;
+        resultArea.style.display = 'block';
+
+        // 自動複製到剪貼簿
+        navigator.clipboard.writeText(template).then(() => {
+            // 平滑滾動到結果區塊
+            resultArea.scrollIntoView({ behavior: 'smooth' });
+        }).catch(err => {
+            console.error('複製失敗: ', err);
+            alert('自動複製失敗，請手動全選下方文字複製。');
+        });
+    }
+</script>
+
+</body>
+</html>
