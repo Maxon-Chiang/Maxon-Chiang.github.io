@@ -1,3 +1,16 @@
+1.	座標系與置中機制 (Auto-Centering)
+	o	「請注意：繪圖座標 cx, cy 預設可直接使用 (0, 0) 為中心來發展圖形。系統底層的 PracticeEngine 會自動計算所有圖形的 Bounding Box，並將其自動置中偏移到對話框的正確位置，因此不需要寫死絕對螢幕座標（如 400, 300）。」
+2.	drawObjects 支援的圖形與屬性
+	o	「請嚴格使用以下 type 來建構物件：line, circle, polygon, polyline, rect, path, text。」
+	o	「屬性規範：支援 stroke, strokeWidth, fill, dash (對應 stroke-dasharray)。若使用 text，其文字內容請放入 text 屬性中，字體大小為 fontSize，文字顏色為 color。」
+3.	文字與數學式的渲染
+	o	「注意：PracticeEngine 底層會自動為 type: 'text' 的內容加上 $ 符號進行 MathJax 渲染，因此在傳入 text 屬性時，不需要手動外包錢字號。」
+	o	「但在 questionTpl (題目文字) 或 generateChoices (選擇題選項) 中，請務必使用 $ 包裝數學變數與公式。」
+4.	亂數與整數控制
+	o	「為了讓學生好計算，使用 Math.random() 時請務必搭配 Math.floor 或 Math.round 確保產生的變數為漂亮且合理的整數。」
+
+完整範例如下：
+
 {
   id: 'alg_absolute_equation',
   title: '絕對值方程式應用',
