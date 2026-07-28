@@ -31,8 +31,11 @@
 
 【模式 B：靜態學習單 / 講義排版 / 圖形素材 (Static Layout & SVG)】
 適用於：要求設計A4講義、學習單、或產生單純不變動的精確幾何圖形/考卷。
+請務必依據題目要求判斷並回傳正確的畫布寬高 (`canvasWidth`, `canvasHeight`)。例如 A4直向為 794x1123，A4橫向為 1123x794。
 {
   "type": "MathEditor_Questions_Backup",
+  "canvasWidth": 794,
+  "canvasHeight": 1123,
   "items": [
     {
       "title": "講義標題或題號",
