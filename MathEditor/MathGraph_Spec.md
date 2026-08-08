@@ -157,3 +157,33 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
      'rect': { x, y, width, height }
      'text': { text: 'A', x, y, color, fontSize } (不用包 $ 符號，底層會自動加)
    - 通用屬性: stroke, strokeWidth, fill, dash。
+
+5. 完整的物件結構範例 (必須遵照此格式)：
+```javascript
+{
+  id: 'template_01',
+  title: '標題',
+  hasAdvanced: false,
+  hasLiteracy: false,
+  generateVars: (level) => { 
+    return { vars: {a:1, b:2, options:['(1) 3, (2) 30°','(1) 4, (2) 45°']}, ans: 0, type: 'choice' }; 
+  },
+  questionTpl: (vars) => { 
+    return `求 ${vars.a} + ${vars.b} 以及角度？`; 
+  },
+  generateChoices: (ans, vars) => { 
+    return vars.options.map(opt => ({ text: opt })); 
+  },
+  drawObjects: (vars, askKey) => { 
+    return [{type:'polygon', points:'0,0 100,0 50,50', stroke:'black', fill:'none'}]; 
+  },
+  explanationTpl: (vars) => { 
+    return `<b>【解題步驟】</b><br>1. 根據題意計算邊長...<br>2. 故答案為 ${vars.a + vars.b}`; 
+  },
+  drawExplanationObjects: (vars, askKey) => {
+    // (極度重要) 必須回傳解說時需「疊加上去」的幾何物件陣列（如紅色輔助線、直角標記、特別塗色的重點三角形）。
+    // 系統會自動將它與 drawObjects 的原圖重疊對位顯示！
+    return [{type:'line', x1:0, y1:0, x2:50, y2:50, stroke:'red', dash:'5,5'}]; 
+  }
+}
+```
