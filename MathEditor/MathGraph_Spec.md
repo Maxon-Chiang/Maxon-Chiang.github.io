@@ -147,6 +147,7 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
 
 3. questionTpl(vars) & explanationTpl(vars): 回傳題目與詳解的 HTML 字串。
    必須使用 ES6 樣板字面值 (Template Literals ` `)。數學式需用 $ 包裝。
+   ⚠️ 選擇題選項絕對不要加入 (A)(B)(C)(D) 或 (1)(2)(3)(4) 等選項編號，系統會自動在畫面上加上標號。
 
 4. drawObjects(vars) & drawExplanationObjects(vars): 回傳陣列，定義要畫的幾何物件。
    - 系統底層會自動將所有圖形置中，不需計算絕對畫面座標。
@@ -159,14 +160,13 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
    - 通用屬性: stroke, strokeWidth, fill, dash。
 
 5. 完整的物件結構範例 (必須遵照此格式)：
-```javascript
 {
   id: 'template_01',
   title: '標題',
   hasAdvanced: false,
   hasLiteracy: false,
   generateVars: (level) => { 
-    return { vars: {a:1, b:2, options:['(1) 3, (2) 30°','(1) 4, (2) 45°']}, ans: 0, type: 'choice' }; 
+    return { vars: {a:1, b:2, options:['3, 30°','4, 45°']}, ans: 0, type: 'choice' }; 
   },
   questionTpl: (vars) => { 
     return `求 ${vars.a} + ${vars.b} 以及角度？`; 
@@ -186,4 +186,3 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
     return [{type:'line', x1:0, y1:0, x2:50, y2:50, stroke:'red', dash:'5,5'}]; 
   }
 }
-```
