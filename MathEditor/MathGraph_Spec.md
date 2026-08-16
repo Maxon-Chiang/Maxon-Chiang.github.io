@@ -60,10 +60,18 @@
    請直接給予所有圖形與文字絕對坐標 (x, y)，嚴禁在最外層使用 <g transform="..."> 進行平移排版。
    例如第一題在 y='100'，第二題在 y='400'，請直接計算好每個圖形與文字的絕對 x,y 座標並填入。
 
-3. 文字排版框與防爆框 (Text Block Layout & Overflow Prevention)：
-   為了精確排版長篇文字並防止超出邊界，請必須使用 <foreignObject> 進行區塊排版，且**高度請務必給予充足空間 (例如 height='350' 或以上)**。
-   <foreignObject x='50' y='100' width='694' height='350' class='shape math-obj' data-tool='text' data-font-size='16' fill='#000000'>
-       <div xmlns='http://www.w3.org/1999/xhtml' class='math-content' style='font-size:16px !important; color:#000000; width:100% !important; height:100% !important; box-sizing:border-box !important; white-space:pre-wrap !important; word-break:break-word !important; line-height:1.5 !important;'>
+3. 文字排版與外框一體化 (Text Box Layout & Border Integration - 極度重要)：
+   為了防止文字超出背景框，**絕對禁止使用獨立的 `<rect>` 來畫文字的背景！**
+   請直接在 `<foreignObject>` 標籤上使用以下屬性來定義外框與底色，系統會自動讓框線完美包覆文字：
+   - `data-bg-color`: 背景顏色 (例如 '#f9f9f9' 或 'none')
+   - `data-border-color`: 框線顏色 (例如 '#34495e' 或 'transparent')
+   - `data-border-width`: 框線粗細 (整數，如 '2')
+   - `data-border-style`: 框線樣式 ('solid', 'dashed', 'dotted')
+   - `data-border-radius`: 圓角大小 (整數，如 '8')
+   
+   範例寫法：
+   <foreignObject x='50' y='100' width='694' height='350' class='shape math-obj' data-tool='text' data-font-size='16' fill='#000000' data-bg-color='#f9f9f9' data-border-color='#34495e' data-border-width='2' data-border-style='solid' data-border-radius='8'>
+       <div xmlns='http://www.w3.org/1999/xhtml' class='math-content' style='font-size:16px !important; color:#000000; width:100% !important; height:100% !important; box-sizing:border-box !important; white-space:pre-wrap !important; word-break:break-word !important; line-height:1.8 !important;'>
            1. 已知直角 $\triangle ABC$ 中，$\angle B = 90^{\circ}$。求 $\overline{AC}$ 的長度。
        </div>
    </foreignObject>
