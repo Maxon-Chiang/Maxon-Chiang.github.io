@@ -166,6 +166,7 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
      'rect': { x, y, width, height }
      'text': { text: 'A', x, y, color, fontSize } (不用包 $ 符號，底層會自動加)
    - 通用屬性: stroke, strokeWidth, fill, dash。
+   - ⚠️ 標註極度重要：頂點名稱、變數邊長、角度值，必須明確使用 type: 'text' 放入陣列中畫出來！直角記號等輔助圖形可用 polyline 或 line 繪製。
 
 5. 完整的物件結構範例 (必須遵照此格式)：
 {
@@ -183,7 +184,11 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
     return vars.options.map(opt => ({ text: opt })); 
   },
   drawObjects: (vars, askKey) => { 
-    return [{type:'polygon', points:'0,0 100,0 50,50', stroke:'black', fill:'none'}]; 
+    return [
+      {type:'polygon', points:'0,0 100,0 50,50', stroke:'black', fill:'none'},
+      {type:'text', text:'A', x:0, y:-15, color:'black', fontSize:18},
+      {type:'text', text:vars.a, x:50, y:-15, color:'blue', fontSize:18}
+    ]; 
   },
   explanationTpl: (vars) => { 
     return `<b>【解題步驟】</b><br>1. 根據題意計算邊長...<br>2. 故答案為 ${vars.a + vars.b}`; 
@@ -194,3 +199,4 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
     return [{type:'line', x1:0, y1:0, x2:50, y2:50, stroke:'red', dash:'5,5'}]; 
   }
 }
+
