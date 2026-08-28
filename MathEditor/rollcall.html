@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>即時多人點名系統</title>
+    <title>即時點名系統</title>
     <style>
         :root {
             --primary: #2980b9;
@@ -284,11 +284,10 @@
                 <thead>
                     <tr>
                         <th style="width: 25px;">序</th>
-                        <th style="width: 40px;">部門</th>
-                        <th style="width: 55px;">姓名</th>
+                        <th style="width: 50px;">部門</th>
+                        <th style="width: 65px;">姓名</th>
                         <th style="width: 110px;">操作</th>
-                        <th style="width: 35px;">備</th>
-                        <th style="width: 35px;">態</th>
+                        <th style="width: 40px;">備註</th>
                     </tr>
                 </thead>
                 <tbody id="active-table-body"></tbody>
@@ -845,14 +844,13 @@
                     : 'padding: 2px 6px; font-size: 12px; background:white; color:#ccc; border-color:#eee;';
                 const rmkIcon = currentRemark ? '📝' : '💬';
 
-                // 狀態 Emoji
-                const statusEmoji = p.updatedBy ? '✅' : '⚪';
+                // 移除 statusEmoji 變數
 
                 tbody.innerHTML += `
                     <tr class="${bgClass}" id="tr-${pId}">
                         <td style="color:#777; font-size:11px;">${idx + 1}</td>
                         <td class="col-dept"><span class="dept-badge" style="background:#eee;">${p.department}</span></td>
-                        <td class="col-name" style="font-weight:bold;">${p.name}</td>
+                        <td class="col-name" style="font-weight:bold; cursor:pointer; color:var(--primary); text-decoration:underline;" onclick="showUpdateInfo('${pId}')" title="點擊查看點名時間與人員">${p.name}</td>
                         <td>
                             <button class="btn btn-status ${btnPresClass}" onclick="markLocalStatus('${pId}', 'present')" title="出席">✔</button>
                             <button class="btn btn-status ${btnAbsClass}" style="${btnAbsStyle}" onclick="markLocalStatus('${pId}', 'absent')" title="缺席">✖</button>
@@ -860,9 +858,6 @@
                         </td>
                         <td>
                             <button class="btn btn-outline" id="btn-rmk-${pId}" style="${rmkBtnStyle}" onclick="promptRemark('${pId}', '${p.name}')">${rmkIcon}</button>
-                        </td>
-                        <td style="cursor:pointer;" onclick="showUpdateInfo('${pId}')" title="點擊查看詳細時間與人員">
-                            ${statusEmoji}
                         </td>
                     </tr>
                 `;
