@@ -284,10 +284,10 @@
                 <thead>
                     <tr>
                         <th style="width: 25px;">序</th>
-                        <th style="width: 50px;">部門</th>
-                        <th style="width: 65px;">姓名</th>
-                        <th style="width: 110px;">操作</th>
-                        <th style="width: 40px;">備註</th>
+                        <th style="width: 45px;">部門</th>
+                        <th style="width: 50px;">姓名</th>
+                        <th style="width: 105px;">操作</th>
+                        <th>備註</th>
                     </tr>
                 </thead>
                 <tbody id="active-table-body"></tbody>
@@ -838,13 +838,11 @@
                 const btnAbsStyle = currentStatus === 'absent' ? 'color:white;' : 'color:var(--danger); border-color:var(--danger);';
                 const btnPendStyle = currentStatus === 'pending' ? 'background:#bdc3c7; color:white; border-color:#bdc3c7;' : 'color:#777; border-color:#ccc; background:white;';
 
-                // 備註按鈕樣式
-                const rmkBtnStyle = currentRemark 
-                    ? 'padding: 2px 6px; font-size: 12px; background:#f1c40f; color:white; border-color:#f1c40f;' 
-                    : 'padding: 2px 6px; font-size: 12px; background:white; color:#ccc; border-color:#eee;';
-                const rmkIcon = currentRemark ? '📝' : '💬';
-
-                // 移除 statusEmoji 變數
+               // 備註文字與樣式 (加入 max-width 強制溢出隱藏)
+                const rmkText = currentRemark ? currentRemark : '<span style="color:#ccc">➕</span>';
+                const rmkStyle = currentRemark 
+                    ? 'background:#fef9e7; border:1px solid #f1c40f; color:#d35400;' 
+                    : 'background:white; border:1px dashed #ccc; color:#aaa;';
 
                 tbody.innerHTML += `
                     <tr class="${bgClass}" id="tr-${pId}">
@@ -856,8 +854,10 @@
                             <button class="btn btn-status ${btnAbsClass}" style="${btnAbsStyle}" onclick="markLocalStatus('${pId}', 'absent')" title="缺席">✖</button>
                             <button class="btn btn-status btn-outline" style="${btnPendStyle}" onclick="markLocalStatus('${pId}', 'pending')" title="重置">↺</button>
                         </td>
-                        <td>
-                            <button class="btn btn-outline" id="btn-rmk-${pId}" style="${rmkBtnStyle}" onclick="promptRemark('${pId}', '${p.name}')">${rmkIcon}</button>
+                        <td style="text-align:center;">
+                            <div id="btn-rmk-${pId}" style="cursor:pointer; padding:2px 4px; border-radius:4px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:85px; display:inline-block; ${rmkStyle}" onclick="promptRemark('${pId}', '${p.name}')" title="${currentRemark}">
+                                ${rmkText}
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -925,15 +925,17 @@
         document.getElementById('btn-save-all').innerText = '⚠️ 點擊統一儲存';
         document.getElementById('btn-save-all').classList.add('btn-danger');
 
-        // 更新按鈕外觀
+        // 更新備註區塊外觀
         const btn = document.getElementById(`btn-rmk-${pId}`);
         if(btn) {
             if(remark) {
-                btn.innerHTML = '📝';
-                btn.style.cssText = 'padding: 2px 6px; font-size: 12px; background:#f1c40f; color:white; border-color:#f1c40f;';
+                btn.innerText = remark;
+                btn.title = remark;
+                btn.style.cssText = 'cursor:pointer; padding:2px 4px; border-radius:4px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:85px; background:#fef9e7; border:1px solid #f1c40f; color:#d35400; display:inline-block;';
             } else {
-                btn.innerHTML = '💬';
-                btn.style.cssText = 'padding: 2px 6px; font-size: 12px; background:white; color:#ccc; border-color:#eee;';
+                btn.innerHTML = '<span style="color:#ccc">➕</span>';
+                btn.title = '';
+                btn.style.cssText = 'cursor:pointer; padding:2px 4px; border-radius:4px; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:85px; background:white; border:1px dashed #ccc; color:#aaa; display:inline-block;';
             }
         }
     };
