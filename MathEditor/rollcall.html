@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即時多人點名系統</title>
+    <style>
+        :root {
+            --primary: #2980b9;
+            --success: #27ae60;
+            --danger: #c0392b;
+            --warning: #f39c12;
+            --bg: #f5f6fa;
+            --text: #2c3e50;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 8px; margin-bottom: 20px; }
+        h1, h2, h3 { margin: 0; }
+        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: #2471a3; }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #219150; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #a93226; }
+        .btn-outline { background: white; color: var(--primary); border: 1px solid var(--primary); }
+        input, textarea, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; font-family: inherit; }
+        
+        /* 視圖切換 */
+        .view { display: none; animation: fadeIn 0.3s; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* 卡片與表單 */
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+
+        /* 點名列表網格 */
+        .grid-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .person-card { background: white; border: 1px solid #ddd; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; transition: 0.2s; }
+        .person-card.status-pending { border-left: 5px solid #bdc3c7; }
+        .person-card.status-present { border-left: 5px solid var(--success); background: #eafaf1; }
+        .person-card.status-absent { border-left: 5px solid var(--danger); background: #fdedec; }
+        
+        .person-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #ccc; padding-bottom: 8px; }
+        .person-info { font-size: 12px; color: #7f8c8d; display: flex; flex-direction: column; gap: 3px; }
+        .actions { display: flex; gap: 5px; margin-top: auto; }
+        .actions button { flex: 1; padding: 6px; font-size: 13px; }
+
+        /* 管理後台表格 */
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #34495e; color: white; }
+        tr:hover { background: #f9f9f9; }
+        
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; }
+        .badge-pending { background: #bdc3c7; }
+        .badge-present { background: var(--success); }
+        .badge-absent { background: var(--danger); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2>📝 即時多人點名系統</h2>
+        <div id="user-info" style="display: none; align-items: center; gap: 10px;">
+            <span id="current-user" style="font-weight: bold; color: var(--primary);"></span>
+            <button class="btn btn-outline" onclick="switchView('view-home')">🏠 首頁</button>
+            <button class="btn btn-danger" onclick="logout()">登出</button>
+        </div>
+    </div>
+
+    <!-- 視圖 1：登入 -->
+    <div id="view-login" class="view active card" style="max-width: 400px; margin: 50px auto; text-align: center;">
+        <h3>請輸入您的帳號</h3>
+        <p style="font-size: 13px; color: #777;">點名時將以此帳號作為紀錄</p>
+        <div class="form-group">
+            <input type="text" id="login-account" placeholder="例如：teacher_wang" onkeydown="if(event.key==='Enter') login()">
+        </div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="login()">進入系統</button>
+    </div>
+
+    <!-- 視圖 2：首頁 (選擇模式) -->
+    <div id="view-home" class="view">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div class="card" style="text-align: center; cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='transparent'" onclick="switchView('view-caller-select')">
+                <div style="font-size: 50px;">📱</div>
+                <h3>前台：進行點名</h3>
+                <p style="color: #777; font-size: 14px;">進入即時多人點名介面</p>
+            </div>
+            <div class="card" style="text-align: center; cursor: pointer; border: 2px solid transparent;" onmouseover="this.style.borderColor='var(--danger)'" onmouseout="this.style.borderColor='transparent'" onclick="loadAdminList()">
+                <div style="font-size: 50px;">⚙️</div>
+                <h3>後台：系統管理</h3>
+                <p style="color: #777; font-size: 14px;">建立、刪除點名表與查看報表</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 視圖 3：管理後台列表 -->
+    <div id="view-admin-list" class="view">
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3>📊 點名表管理</h3>
+            <button class="btn btn-success" onclick="switchView('view-admin-create')">➕ 建立新點名表</button>
+        </div>
+        <table>
+            <thead><tr><th>名稱</th><th>建立時間</th><th>點名權限(帳號)</th><th>操作</th></tr></thead>
+            <tbody id="admin-table-body"></tbody>
+        </table>
+    </div>
+
+    <!-- 視圖 4：管理後台 - 建立點名表 -->
+    <div id="view-admin-create" class="view card">
+        <h3>➕ 建立新點名表</h3>
+        <div class="form-group" style="margin-top: 15px;">
+            <label>群組 / 班級 / 活動名稱：</label>
+            <input type="text" id="create-name" placeholder="例如：112學年員工大會">
+        </div>
+        <div class="form-group">
+            <label>可點名人員帳號 (選填，用逗號隔開。留空則所有人皆可點)：</label>
+            <input type="text" id="create-callers" placeholder="例如：teacher_wang, admin_lee">
+        </div>
+        <div class="form-group">
+            <label>人員名單 (大量匯入)：</label>
+            <p style="font-size: 12px; color: #e67e22; margin-top: 0;">※ 格式：每一列一位人員。<b>部門</b>與<b>姓名</b>之間請使用「空白」或「Tab」隔開。</p>
+            <textarea id="create-participants" rows="10" placeholder="研發部 王大明&#10;行銷部 李小華&#10;業務部 張三"></textarea>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button class="btn btn-outline" onclick="loadAdminList()">取消</button>
+            <button class="btn btn-primary" onclick="createRollCall()" id="btn-create">確定建立</button>
+        </div>
+    </div>
+
+    <!-- 視圖 5：管理後台 - 查看報表 -->
+    <div id="view-admin-report" class="view">
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 id="report-title">報表</h3>
+            <button class="btn btn-outline" onclick="loadAdminList()">返回列表</button>
+        </div>
+        <table>
+            <thead><tr><th>部門</th><th>姓名</th><th>狀態</th><th>最後點名時間</th><th>點名人員</th><th>備註</th></tr></thead>
+            <tbody id="report-table-body"></tbody>
+        </table>
+    </div>
+
+    <!-- 視圖 6：前台 - 選擇點名表 -->
+    <div id="view-caller-select" class="view card">
+        <h3>📱 選擇要進行的點名表</h3>
+        <p style="font-size: 13px; color: #777;">僅顯示您有權限參與的點名活動</p>
+        <div class="grid-list" id="caller-select-list" style="margin-top: 15px;"></div>
+    </div>
+
+    <!-- 視圖 7：前台 - 即時點名介面 -->
+    <div id="view-caller-active" class="view">
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;">
+            <div>
+                <h3 id="active-title">點名中...</h3>
+                <div id="active-stats" style="font-size: 13px; color: #777; margin-top: 5px;"></div>
+            </div>
+            <button class="btn btn-outline" onclick="exitActiveRollCall()">離開</button>
+        </div>
+        <div class="grid-list" id="active-grid"></div>
+    </div>
+
+</div>
+
+<!-- Firebase SDK 匯入 -->
+<script type="importmap">
+  {
+    "imports": {
+      "@google/generative-ai": "https://esm.run/@google/generative-ai",
+      "firebase/app": "https://www.gstatic.com/firebasejs/10.10.0/firebase-app.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js"
+    }
+  }
+</script>
+
+<script type="module">
+    import { initializeApp } from "firebase/app";
+    import { getFirestore, collection, addDoc, getDocs, getDoc, setDoc, updateDoc, query, orderBy, serverTimestamp, deleteDoc, doc, writeBatch, onSnapshot } from "firebase/firestore";
+
+    // 🚨 請確認這裡使用的是您數學系統同一組的 Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyDi-Lh4O9sU7E4u3pT4yhx_6I9HUmB45y0",
+        authDomain: "mathgroup-67503.firebaseapp.com",
+        projectId: "mathgroup-67503",
+        storageBucket: "mathgroup-67503.firebasestorage.app",
+        messagingSenderId: "845228009261",
+        appId: "1:845228009261:web:f0c870d9d2ab56170715a4"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 全域變數
+    let currentUser = null;
+    let unsubscribeCurrentRollCall = null;
+    let currentRollCallId = null;
+
+    // --- 工具與 UI 切換 ---
+    window.switchView = function(viewId) {
+        document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+    };
+
+    window.formatTime = function(timestamp) {
+        if (!timestamp) return "尚未點名";
+        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+        return date.toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' });
+    };
+
+    // --- 登入系統 ---
+    window.login = function() {
+        const acc = document.getElementById('login-account').value.trim();
+        if (!acc) { alert("請輸入帳號！"); return; }
+        currentUser = acc;
+        document.getElementById('current-user').innerText = `👤 ${currentUser}`;
+        document.getElementById('user-info').style.display = 'flex';
+        switchView('view-home');
+    };
+
+    window.logout = function() {
+        currentUser = null;
+        document.getElementById('login-account').value = '';
+        document.getElementById('user-info').style.display = 'none';
+        exitActiveRollCall();
+        switchView('view-login');
+    };
+
+    // ==========================================
+    // 後台管理系統 (Admin Mode)
+    // ==========================================
+
+    window.loadAdminList = async function() {
+        switchView('view-admin-list');
+        const tbody = document.getElementById('admin-table-body');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">載入中...</td></tr>';
+        
+        try {
+            const q = query(collection(db, "rollcalls"), orderBy("createdAt", "desc"));
+            const snap = await getDocs(q);
+            tbody.innerHTML = '';
+            
+            if (snap.empty) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">尚無點名表</td></tr>';
+                return;
+            }
+
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const timeStr = data.createdAt ? data.createdAt.toDate().toLocaleString() : '';
+                const callersStr = data.callers && data.callers.length > 0 ? data.callers.join(', ') : '公開 (不限制)';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold; color:var(--primary);">${data.name}</td>
+                        <td>${timeStr}</td>
+                        <td style="font-size:12px;">${callersStr}</td>
+                        <td>
+                            <button class="btn btn-primary" style="padding:4px 8px; font-size:12px;" onclick="viewReport('${docSnap.id}', '${data.name}')">報表</button>
+                            <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRollCall('${docSnap.id}', '${data.name}')">刪除</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        } catch (e) {
+            console.error(e);
+            tbody.innerHTML = `<tr><td colspan="4" style="color:red; text-align:center;">載入失敗: ${e.message}</td></tr>`;
+        }
+    };
+
+    window.createRollCall = async function() {
+        const name = document.getElementById('create-name').value.trim();
+        const callersRaw = document.getElementById('create-callers').value;
+        const text = document.getElementById('create-participants').value.trim();
+
+        if (!name) { alert("請填寫點名表名稱！"); return; }
+        if (!text) { alert("請輸入名單！"); return; }
+
+        const callers = callersRaw ? callersRaw.split(',').map(s => s.trim()).filter(s => s) : [];
+        const lines = text.split('\n');
+        
+        const participants = [];
+        const nameSet = new Set();
+        let errorMsg = "";
+
+        // 解析名單並自動檢查重複
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            // 使用正則表達式，以 1個以上的 空白 或 Tab 進行分割
+            const parts = line.split(/[\t ]+/);
+            if (parts.length < 2) {
+                errorMsg += `第 ${i+1} 行格式錯誤 (缺少部門或姓名)：${line}\n`;
+                continue;
+            }
+
+            const dept = parts[0];
+            const pName = parts.slice(1).join(' '); // 如果名字中有空白，將其接回
+
+            if (nameSet.has(pName)) {
+                errorMsg += `第 ${i+1} 行姓名重複：${pName}\n`;
+                continue;
+            }
+
+            nameSet.add(pName);
+            participants.push({ department: dept, name: pName });
+        }
+
+        if (errorMsg) {
+            alert("⚠️ 名單有誤，請修正後再試：\n\n" + errorMsg);
+            return;
+        }
+
+        const btn = document.getElementById('btn-create');
+        btn.disabled = true;
+        btn.innerText = "寫入資料庫中...";
+
+        try {
+            // 1. 建立主表
+            const rollcallRef = await addDoc(collection(db, "rollcalls"), {
+                name: name,
+                callers: callers,
+                createdAt: serverTimestamp(),
+                createdBy: currentUser
+            });
+
+            // 2. 批次寫入人員子集合 (Batch Write)
+            const batch = writeBatch(db);
+            participants.forEach(p => {
+                // 使用姓名作為 Document ID 防止物理重複，或讓 Firebase 自動產生
+                // 這裡我們直接用自動產生的 ID，但存入相同的結構
+                const pRef = doc(collection(db, `rollcalls/${rollcallRef.id}/participants`));
+                batch.set(pRef, {
+                    department: p.department,
+                    name: p.name,
+                    status: 'pending', // pending(未點), present(出席), absent(缺席)
+                    remark: '',
+                    timestamp: null,
+                    updatedBy: ''
+                });
+            });
+
+            await batch.commit();
+            alert("✅ 點名表建立成功！共匯入 " + participants.length + " 人。");
+            
+            // 清空表單
+            document.getElementById('create-name').value = '';
+            document.getElementById('create-callers').value = '';
+            document.getElementById('create-participants').value = '';
+            
+            loadAdminList();
+
+        } catch (e) {
+            console.error(e);
+            alert("建立失敗: " + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "確定建立";
+        }
+    };
+
+    window.deleteRollCall = async function(id, name) {
+        if (!confirm(`⚠️ 警告：確定要刪除「${name}」的所有資料嗎？此操作無法復原！`)) return;
+        try {
+            // 注意：Firestore 不支援直接從客戶端刪除包含子集合的文件。
+            // 完美做法是先刪除子集合 participants 內的所有文件，再刪除主文件。
+            const pSnap = await getDocs(collection(db, `rollcalls/${id}/participants`));
+            const batch = writeBatch(db);
+            pSnap.forEach(d => batch.delete(d.ref));
+            batch.delete(doc(db, "rollcalls", id));
+            await batch.commit();
+            
+            alert("✅ 刪除成功");
+            loadAdminList();
+        } catch (e) {
+            alert("刪除失敗: " + e.message);
+        }
+    };
+
+    window.viewReport = async function(id, name) {
+        switchView('view-admin-report');
+        document.getElementById('report-title').innerText = `📊 報表：${name}`;
+        const tbody = document.getElementById('report-table-body');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">載入中...</td></tr>';
+        
+        try {
+            // 依據部門與姓名排序
+            const q = query(collection(db, `rollcalls/${id}/participants`), orderBy("department"), orderBy("name"));
+            const snap = await getDocs(q);
+            tbody.innerHTML = '';
+
+            snap.forEach(d => {
+                const p = d.data();
+                let statusBadge = '';
+                if (p.status === 'present') statusBadge = '<span class="badge badge-present">已出席</span>';
+                else if (p.status === 'absent') statusBadge = '<span class="badge badge-absent">缺席</span>';
+                else statusBadge = '<span class="badge badge-pending">未點名</span>';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.department}</td>
+                        <td style="font-weight:bold;">${p.name}</td>
+                        <td>${statusBadge}</td>
+                        <td style="font-size:12px; color:#555;">${formatTime(p.timestamp)}</td>
+                        <td style="font-size:12px;">${p.updatedBy || '-'}</td>
+                        <td style="font-size:12px; color:#c0392b;">${p.remark || ''}</td>
+                    </tr>
+                `;
+            });
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">載入失敗: ${e.message}</td></tr>`;
+        }
+    };
+
+
+    // ==========================================
+    // 前台點名系統 (Caller Mode)
+    // ==========================================
+
+    document.getElementById('view-caller-select').addEventListener('animationstart', async (e) => {
+        if(e.animationName === 'fadeIn') {
+            const list = document.getElementById('caller-select-list');
+            list.innerHTML = '讀取中...';
+            try {
+                const q = query(collection(db, "rollcalls"), orderBy("createdAt", "desc"));
+                const snap = await getDocs(q);
+                list.innerHTML = '';
+                
+                let count = 0;
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    // 權限檢查：如果 callers 是空的，代表公開；否則必須包含 currentUser
+                    if (!data.callers || data.callers.length === 0 || data.callers.includes(currentUser)) {
+                        count++;
+                        list.innerHTML += `
+                            <div class="card" style="cursor:pointer; border: 2px solid transparent;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='transparent'" onclick="startRollCall('${docSnap.id}', '${data.name}')">
+                                <h3 style="color:var(--primary); margin-bottom:5px;">${data.name}</h3>
+                                <p style="font-size:12px; color:#777; margin:0;">點擊進入點名</p>
+                            </div>
+                        `;
+                    }
+                });
+
+                if (count === 0) list.innerHTML = '<div style="color:#777;">目前沒有您可以參與的點名表。</div>';
+
+            } catch (e) { list.innerHTML = '載入失敗'; console.error(e); }
+        }
+    });
+
+    window.startRollCall = function(id, name) {
+        currentRollCallId = id;
+        switchView('view-caller-active');
+        document.getElementById('active-title').innerText = name;
+        
+        const grid = document.getElementById('active-grid');
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center;">連線同步中...</div>';
+
+        // 🌟 核心即時引擎：使用 onSnapshot 監聽變化
+        const q = query(collection(db, `rollcalls/${id}/participants`), orderBy("department"), orderBy("name"));
+        unsubscribeCurrentRollCall = onSnapshot(q, (snapshot) => {
+            grid.innerHTML = '';
+            let total = 0, present = 0, absent = 0, pending = 0;
+
+            snapshot.forEach(docSnap => {
+                const p = docSnap.data();
+                const pId = docSnap.id;
+                total++;
+                if (p.status === 'present') present++;
+                else if (p.status === 'absent') absent++;
+                else pending++;
+
+                let bgClass = 'status-pending';
+                if (p.status === 'present') bgClass = 'status-present';
+                if (p.status === 'absent') bgClass = 'status-absent';
+
+                grid.innerHTML += `
+                    <div class="person-card ${bgClass}">
+                        <div class="person-header">
+                            <span style="font-weight:bold; font-size:16px;">${p.name}</span>
+                            <span style="font-size:12px; background:#eee; padding:2px 6px; border-radius:4px;">${p.department}</span>
+                        </div>
+                        <div class="person-info">
+                            <div>🕒 狀態更新：${formatTime(p.timestamp)}</div>
+                            <div>👤 點名人員：${p.updatedBy || '-'}</div>
+                            <div style="display:flex; gap:5px; align-items:center; margin-top:5px;">
+                                <input type="text" id="rmk-${pId}" value="${p.remark || ''}" placeholder="新增備註..." style="padding:4px; font-size:12px;">
+                                <button class="btn btn-outline" style="padding:4px 8px; font-size:11px;" onclick="saveRemark('${pId}')">儲存</button>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn ${p.status === 'present' ? 'btn-success' : 'btn-outline'}" onclick="updateStatus('${pId}', 'present')">✔ 出席</button>
+                            <button class="btn ${p.status === 'absent' ? 'btn-danger' : 'btn-outline'}" style="color:${p.status === 'absent' ? 'white' : 'var(--danger)'}; border-color:var(--danger);" onclick="updateStatus('${pId}', 'absent')">✖ 缺席</button>
+                            <button class="btn btn-outline" style="color:#777; border-color:#ccc;" onclick="updateStatus('${pId}', 'pending')">↺ 重置</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('active-stats').innerText = `總人數: ${total} | 🟢 出席: ${present} | 🔴 缺席: ${absent} | ⚪ 未點: ${pending}`;
+        }, (error) => {
+            console.error("即時連線錯誤:", error);
+            grid.innerHTML = '<div style="grid-column: 1/-1; color:red; text-align:center;">與伺服器斷線，請重新整理</div>';
+        });
+    };
+
+    window.updateStatus = async function(personId, newStatus) {
+        try {
+            await updateDoc(doc(db, `rollcalls/${currentRollCallId}/participants`, personId), {
+                status: newStatus,
+                timestamp: serverTimestamp(),
+                updatedBy: currentUser
+            });
+        } catch (e) { alert("更新狀態失敗"); console.error(e); }
+    };
+
+    window.saveRemark = async function(personId) {
+        const rmk = document.getElementById(`rmk-${personId}`).value.trim();
+        try {
+            await updateDoc(doc(db, `rollcalls/${currentRollCallId}/participants`, personId), {
+                remark: rmk,
+                timestamp: serverTimestamp(),
+                updatedBy: currentUser
+            });
+        } catch (e) { alert("備註儲存失敗"); console.error(e); }
+    };
+
+    window.exitActiveRollCall = function() {
+        if (unsubscribeCurrentRollCall) {
+            unsubscribeCurrentRollCall(); // 停止監聽節省資源
+            unsubscribeCurrentRollCall = null;
+        }
+        currentRollCallId = null;
+        switchView('view-home');
+    };
+
+</script>
+</body>
+</html>
