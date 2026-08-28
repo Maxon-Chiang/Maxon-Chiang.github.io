@@ -388,13 +388,24 @@
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">載入中...</td></tr>';
         
         try {
-            // 依據部門與姓名排序
-            const q = query(collection(db, `rollcalls/${id}/participants`), orderBy("department"), orderBy("name"));
+            // 改為只單純抓取資料，不使用雙重 orderBy 避免索引報錯
+            const q = query(collection(db, `rollcalls/${id}/participants`));
             const snap = await getDocs(q);
+            
+            // 將資料轉存到陣列，並使用 JavaScript 在本地端進行雙重排序
+            let participantsList = [];
+            snap.forEach(d => participantsList.push({ id: d.id, ...d.data() }));
+            
+            participantsList.sort((a, b) => {
+                if (a.department === b.department) {
+                    return (a.name || "").localeCompare(b.name || "", 'zh-TW');
+                }
+                return (a.department || "").localeCompare(b.department || "", 'zh-TW');
+            });
+
             tbody.innerHTML = '';
 
-            snap.forEach(d => {
-                const p = d.data();
+            participantsList.forEach(p => {
                 let statusBadge = '';
                 if (p.status === 'present') statusBadge = '<span class="badge badge-present">已出席</span>';
                 else if (p.status === 'absent') statusBadge = '<span class="badge badge-absent">缺席</span>';
@@ -459,15 +470,25 @@
         const grid = document.getElementById('active-grid');
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center;">連線同步中...</div>';
 
-        // 🌟 核心即時引擎：使用 onSnapshot 監聽變化
-        const q = query(collection(db, `rollcalls/${id}/participants`), orderBy("department"), orderBy("name"));
+        // 🌟 核心即時引擎：改為單純抓取資料，避免索引報錯
+        const q = query(collection(db, `rollcalls/${id}/participants`));
         unsubscribeCurrentRollCall = onSnapshot(q, (snapshot) => {
             grid.innerHTML = '';
             let total = 0, present = 0, absent = 0, pending = 0;
 
-            snapshot.forEach(docSnap => {
-                const p = docSnap.data();
-                const pId = docSnap.id;
+            // 將即時資料存入陣列，由前端進行排序
+            let participantsList = [];
+            snapshot.forEach(docSnap => participantsList.push({ id: docSnap.id, ...docSnap.data() }));
+            
+            participantsList.sort((a, b) => {
+                if (a.department === b.department) {
+                    return (a.name || "").localeCompare(b.name || "", 'zh-TW');
+                }
+                return (a.department || "").localeCompare(b.department || "", 'zh-TW');
+            });
+
+            participantsList.forEach(p => {
+                const pId = p.id;
                 total++;
                 if (p.status === 'present') present++;
                 else if (p.status === 'absent') absent++;
