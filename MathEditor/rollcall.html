@@ -68,7 +68,14 @@
         .badge-present { background: var(--success); }
         .badge-absent { background: var(--danger); }
 
-        /* 📱 手機版極致壓縮排版 */
+        /* 列表管理區塊樣式 */
+        .list-group { border: 1px solid #eee; border-radius: 4px; overflow: hidden; margin-bottom: 15px; max-height: 300px; overflow-y: auto; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-bottom: 1px solid #eee; background: #fff; }
+        .list-item:last-child { border-bottom: none; }
+        .list-item:nth-child(even) { background: #fcfcfc; }
+        .list-item input { padding: 4px 8px; font-size: 13px; margin-right: 5px; }
+
+        /* 📱 手機版 RWD 排版 */
         @media (max-width: 768px) {
             .container { padding: 5px; }
             .header { padding: 10px; margin-bottom: 10px; flex-direction: column; align-items: flex-start; gap: 8px; }
@@ -84,26 +91,44 @@
             .view-caller-active-header { padding: 8px 10px !important; flex-direction: column; align-items: flex-start !important; gap: 8px; }
             .view-caller-active-header > div:last-child { width: 100%; justify-content: space-between; }
 
-            /* 表格極致單行壓縮 */
-            .compact-table th, .compact-table td { 
-                padding: 4px 2px; 
-                font-size: 13px; 
-                white-space: nowrap; /* 核心：強制不換行 */
-            }
+            /* 前台點名表格極致單行壓縮 */
+            .compact-table th, .compact-table td { padding: 4px 2px; font-size: 13px; white-space: nowrap; }
             .compact-table th { font-size: 12px; padding: 6px 2px; text-align: center; }
             .compact-table td { text-align: center; }
-            
-            /* 部門與姓名靠左對齊 */
             .compact-table td.col-dept, .compact-table td.col-name { text-align: left; padding-left: 4px; }
             .dept-badge { font-size: 10px; padding: 1px 4px; border-radius: 3px; display: inline-block; max-width: 50px; overflow: hidden; text-overflow: ellipsis; }
-            
-            /* 按鈕極致縮小 */
-            .compact-table .btn-status { 
-                padding: 3px 6px; 
-                font-size: 13px; 
-                margin-right: 1px; 
-                min-width: 32px; 
+            .compact-table .btn-status { padding: 3px 6px; font-size: 13px; margin-right: 1px; min-width: 32px; }
+
+            /* 🔥 後台管理表格轉卡片 (Table to Card) */
+            .rwd-table thead { display: none; }
+            .rwd-table tbody tr { 
+                display: block; 
+                margin-bottom: 10px; 
+                border: 1px solid #ddd; 
+                border-radius: 6px; 
+                padding: 8px; 
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
             }
+            .rwd-table tbody td { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                border-bottom: 1px dashed #eee; 
+                padding: 6px 0; 
+                text-align: right; 
+                white-space: normal;
+                word-break: break-all;
+            }
+            .rwd-table tbody td:last-child { border-bottom: none; }
+            .rwd-table tbody td::before { 
+                content: attr(data-label); 
+                font-weight: bold; 
+                color: #7f8c8d; 
+                margin-right: 15px; 
+                text-align: left; 
+                flex-shrink: 0;
+            }
+            .rwd-table tbody td .btn { margin-left: 4px; }
         }
     </style>
 </head>
@@ -151,7 +176,7 @@
             <h3>📊 點名表管理</h3>
             <button class="btn btn-success" onclick="switchView('view-admin-create')">➕ 建立新點名表</button>
         </div>
-        <table>
+        <table class="rwd-table">
             <thead><tr><th>名稱</th><th>建立時間</th><th>點名權限(帳號)</th><th>操作</th></tr></thead>
             <tbody id="admin-table-body"></tbody>
         </table>
@@ -185,29 +210,53 @@
             <h3 id="report-title">報表</h3>
             <button class="btn btn-outline" onclick="loadAdminList()">返回列表</button>
         </div>
-        <table>
+        <table class="rwd-table">
             <thead><tr><th>部門</th><th>姓名</th><th>狀態</th><th>最後點名時間</th><th>點名人員</th><th>備註</th></tr></thead>
             <tbody id="report-table-body"></tbody>
         </table>
     </div>
 
-    <!-- 視圖 8：管理後台 - 編輯點名表與新增人員 -->
+    <!-- 視圖 8：管理後台 - 編輯點名表與名單 CRUD -->
     <div id="view-admin-edit" class="view card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <h3>✏️ 編輯點名表</h3>
             <button class="btn btn-outline" onclick="loadAdminList()">返回列表</button>
         </div>
-        <div class="form-group">
-            <label>修改點名表名稱：</label>
-            <input type="text" id="edit-name">
+        
+        <!-- 區塊 A: 點名表名稱與權限 -->
+        <div style="background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 20px;">
+            <div class="form-group">
+                <label style="color: var(--primary);">📝 修改點名表名稱：</label>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="edit-name">
+                    <button class="btn btn-primary" onclick="saveEditName()" id="btn-edit-name" style="white-space: nowrap;">更新</button>
+                </div>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label style="color: var(--primary);">🔑 點名權限管理 (帳號)：</label>
+                <div class="list-group" id="edit-callers-list"></div>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="edit-new-caller" placeholder="輸入要新增的帳號..." onkeydown="if(event.key==='Enter') addCaller()">
+                    <button class="btn btn-success" onclick="addCaller()" style="white-space: nowrap;">➕ 新增權限</button>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-            <label>➕ 新增人員名單：</label>
-            <p style="font-size: 12px; color: #e67e22; margin-top: 0;">※ 僅需輸入「要新增」的人員。格式同建立時，系統會自動排除現有重複的姓名。</p>
-            <textarea id="edit-new-participants" rows="8" placeholder="部門A 王小明&#10;部門B 陳小美"></textarea>
-        </div>
-        <div style="text-align: right;">
-            <button class="btn btn-primary" onclick="saveEditRollCall()" id="btn-edit-save">儲存修改與新增人員</button>
+
+        <!-- 區塊 B: 人員名單 CRUD -->
+        <div style="background: #fdfdfd; padding: 15px; border: 1px solid #ddd; border-radius: 6px;">
+            <label style="color: var(--primary); font-weight: bold; font-size: 16px;">👥 點名人員名單管理</label>
+            <p style="font-size: 12px; color: #7f8c8d; margin-bottom: 10px;">可針對單一人員修改資料或刪除。若需新增請在最下方輸入。</p>
+            
+            <div class="list-group" id="edit-participants-list"></div>
+
+            <div style="border-top: 1px dashed #ccc; padding-top: 15px; margin-top: 10px;">
+                <label style="color: var(--success); font-weight: bold;">➕ 批次新增人員：</label>
+                <p style="font-size: 12px; color: #e67e22; margin-top: 5px;">※ 格式同建立時，一列一人 (部門與姓名空白隔開)。系統會自動排除重複的姓名。</p>
+                <textarea id="edit-new-participants" rows="4" placeholder="部門A 王小明&#10;部門B 陳小美"></textarea>
+                <div style="text-align: right; margin-top: 10px;">
+                    <button class="btn btn-success" onclick="batchAddParticipants()" id="btn-edit-batch-add">匯入新名單</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -339,10 +388,10 @@
                 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-weight:bold; color:var(--primary);">${data.name}</td>
-                        <td>${timeStr}</td>
-                        <td style="font-size:12px;">${callersStr}</td>
-                        <td>
+                        <td data-label="名稱" style="font-weight:bold; color:var(--primary);">${data.name}</td>
+                        <td data-label="建立時間">${timeStr}</td>
+                        <td data-label="點名權限" style="font-size:12px;">${callersStr}</td>
+                        <td data-label="操作">
                             <button class="btn btn-primary" style="padding:4px 8px; font-size:12px;" onclick="viewReport('${docSnap.id}', '${data.name}')">報表</button>
                             <button class="btn btn-outline" style="padding:4px 8px; font-size:12px; border-color:#8e44ad; color:#8e44ad;" onclick="openEditRollCall('${docSnap.id}', '${data.name}')">編輯</button>
                             <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRollCall('${docSnap.id}', '${data.name}')">刪除</button>
@@ -498,12 +547,12 @@
 
                 tbody.innerHTML += `
                     <tr>
-                        <td>${p.department}</td>
-                        <td style="font-weight:bold;">${p.name}</td>
-                        <td>${statusBadge}</td>
-                        <td style="font-size:12px; color:#555;">${formatTime(p.timestamp)}</td>
-                        <td style="font-size:12px;">${p.updatedBy || '-'}</td>
-                        <td style="font-size:12px; color:#c0392b;">${p.remark || ''}</td>
+                        <td data-label="部門">${p.department}</td>
+                        <td data-label="姓名" style="font-weight:bold;">${p.name}</td>
+                        <td data-label="狀態">${statusBadge}</td>
+                        <td data-label="時間" style="font-size:12px; color:#555;">${formatTime(p.timestamp)}</td>
+                        <td data-label="人員" style="font-size:12px;">${p.updatedBy || '-'}</td>
+                        <td data-label="備註" style="font-size:12px; color:#c0392b;">${p.remark || ''}</td>
                     </tr>
                 `;
             });
@@ -514,96 +563,194 @@
 
 
     let editingRollCallId = null;
+    let editingCallers = [];
+    let editingParticipants = [];
 
-    window.openEditRollCall = function(id, name) {
+    // 開啟編輯畫面
+    window.openEditRollCall = async function(id, name) {
         editingRollCallId = id;
         document.getElementById('edit-name').value = name;
         document.getElementById('edit-new-participants').value = '';
         switchView('view-admin-edit');
+        await loadEditData();
     };
 
-    window.saveEditRollCall = async function() {
-        const newName = document.getElementById('edit-name').value.trim();
-        const text = document.getElementById('edit-new-participants').value.trim();
-        if (!newName) { alert("點名表名稱不可為空！"); return; }
-
-        const btn = document.getElementById('btn-edit-save');
-        btn.disabled = true;
-        btn.innerText = "儲存中...";
-
+    // 載入該點名表的所有編輯資料 (權限與人員)
+    window.loadEditData = async function() {
         try {
-            // 1. 更新主表名稱
-            await updateDoc(doc(db, "rollcalls", editingRollCallId), { name: newName });
+            // 讀取主表 (取 Callers)
+            const mainDoc = await getDoc(doc(db, "rollcalls", editingRollCallId));
+            editingCallers = mainDoc.data().callers || [];
+            renderCallersList();
 
-            // 2. 如果有新名單，檢查並加入
-            if (text) {
-                // 抓取現有的人員，建立 Set 防重複
-                const existingSnap = await getDocs(query(collection(db, `rollcalls/${editingRollCallId}/participants`)));
-                const existingNames = new Set();
-                existingSnap.forEach(d => existingNames.add(d.data().name));
-
-                const lines = text.split('\n');
-                const participants = [];
-                let errorMsg = "";
-                let skipCount = 0;
-
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (!line) continue;
-                    
-                    const parts = line.split(/[\t ]+/);
-                    if (parts.length < 2) {
-                        errorMsg += `第 ${i+1} 行格式錯誤：${line}\n`;
-                        continue;
-                    }
-
-                    const dept = parts[0];
-                    const pName = parts.slice(1).join(' '); 
-
-                    // 檢查是否與現有資料庫，或這次新輸入的名單重複
-                    if (existingNames.has(pName)) {
-                        skipCount++;
-                        continue;
-                    }
-
-                    existingNames.add(pName); // 加進 Set 避免這次輸入的文字內有重複
-                    participants.push({ department: dept, name: pName });
-                }
-
-                if (errorMsg) {
-                    alert("⚠️ 新增名單部分有誤，請檢查：\n\n" + errorMsg);
-                }
-
-                if (participants.length > 0) {
-                    const batch = writeBatch(db);
-                    participants.forEach(p => {
-                        const pRef = doc(collection(db, `rollcalls/${editingRollCallId}/participants`));
-                        batch.set(pRef, {
-                            department: p.department,
-                            name: p.name,
-                            status: 'pending',
-                            remark: '',
-                            timestamp: null,
-                            updatedBy: ''
-                        });
-                    });
-                    await batch.commit();
-                    alert(`✅ 儲存成功！\n名稱已更新。\n成功新增 ${participants.length} 人 (自動略過 ${skipCount} 位重複人員)。`);
-                } else {
-                    alert(`✅ 名稱已更新。\n(無有效的新增人員，或輸入的人員皆已存在)`);
-                }
-            } else {
-                alert("✅ 點名表名稱已更新。");
-            }
+            // 讀取人員名單
+            const q = query(collection(db, `rollcalls/${editingRollCallId}/participants`));
+            const snap = await getDocs(q);
+            editingParticipants = [];
+            snap.forEach(d => editingParticipants.push({ id: d.id, ...d.data() }));
             
-            loadAdminList();
-        } catch (e) {
-            console.error(e);
-            alert("儲存失敗: " + e.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerText = "儲存修改與新增人員";
+            // 排序
+            editingParticipants.sort((a, b) => {
+                if (a.department === b.department) return (a.name || "").localeCompare(b.name || "", 'zh-TW');
+                return (a.department || "").localeCompare(b.department || "", 'zh-TW');
+            });
+            renderParticipantsList();
+        } catch(e) { console.error(e); }
+    };
+
+    // --- 名稱更新 ---
+    window.saveEditName = async function() {
+        const newName = document.getElementById('edit-name').value.trim();
+        if (!newName) { alert("點名表名稱不可為空！"); return; }
+        const btn = document.getElementById('btn-edit-name');
+        btn.disabled = true; btn.innerText = "...";
+        try {
+            await updateDoc(doc(db, "rollcalls", editingRollCallId), { name: newName });
+            alert("✅ 名稱已更新。");
+        } catch(e) { alert("更新失敗"); } finally { btn.disabled = false; btn.innerText = "更新"; }
+    };
+
+    // --- 權限 CRUD ---
+    window.renderCallersList = function() {
+        const list = document.getElementById('edit-callers-list');
+        list.innerHTML = '';
+        if (editingCallers.length === 0) {
+            list.innerHTML = '<div style="padding:10px; color:#aaa; font-size:12px; text-align:center;">目前為公開，所有人皆可點名</div>';
+            return;
         }
+        editingCallers.forEach((caller, idx) => {
+            list.innerHTML += `
+                <div class="list-item">
+                    <span>👤 ${caller}</span>
+                    <button class="btn btn-danger" style="padding:2px 6px; font-size:12px;" onclick="removeCaller(${idx})">移除</button>
+                </div>
+            `;
+        });
+    };
+    
+    window.addCaller = async function() {
+        const inp = document.getElementById('edit-new-caller');
+        const c = inp.value.trim();
+        if (!c) return;
+        if (editingCallers.includes(c)) { alert("此帳號已在名單中"); return; }
+        
+        editingCallers.push(c);
+        try {
+            await updateDoc(doc(db, "rollcalls", editingRollCallId), { callers: editingCallers });
+            inp.value = '';
+            renderCallersList();
+        } catch(e) { alert("新增失敗"); }
+    };
+
+    window.removeCaller = async function(idx) {
+        if (!confirm("確定要移除此點名人員嗎？")) return;
+        editingCallers.splice(idx, 1);
+        try {
+            await updateDoc(doc(db, "rollcalls", editingRollCallId), { callers: editingCallers });
+            renderCallersList();
+        } catch(e) { alert("移除失敗"); }
+    };
+
+    // --- 人員名單 CRUD ---
+    window.renderParticipantsList = function() {
+        const list = document.getElementById('edit-participants-list');
+        list.innerHTML = '';
+        if (editingParticipants.length === 0) {
+            list.innerHTML = '<div style="padding:10px; color:#aaa; font-size:12px; text-align:center;">目前尚無任何人員</div>';
+            return;
+        }
+        editingParticipants.forEach(p => {
+            list.innerHTML += `
+                <div class="list-item" style="flex-wrap: wrap; gap: 5px;">
+                    <div style="display:flex; flex:1; min-width: 200px;">
+                        <input type="text" id="p-dept-${p.id}" value="${p.department}" placeholder="部門" style="width: 40%;">
+                        <input type="text" id="p-name-${p.id}" value="${p.name}" placeholder="姓名" style="width: 60%;">
+                    </div>
+                    <div style="display:flex; gap: 5px;">
+                        <button class="btn btn-outline" style="padding:4px 8px; font-size:12px; border-color:#2980b9; color:#2980b9;" onclick="updateParticipant('${p.id}')">儲存</button>
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteParticipant('${p.id}', '${p.name}')">刪除</button>
+                    </div>
+                </div>
+            `;
+        });
+    };
+
+    window.updateParticipant = async function(pId) {
+        const dept = document.getElementById(`p-dept-${pId}`).value.trim();
+        const name = document.getElementById(`p-name-${pId}`).value.trim();
+        if (!dept || !name) { alert("部門與姓名皆不可為空！"); return; }
+        
+        try {
+            await updateDoc(doc(db, `rollcalls/${editingRollCallId}/participants`, pId), {
+                department: dept,
+                name: name
+            });
+            // 同步更新記憶體
+            const p = editingParticipants.find(x => x.id === pId);
+            if (p) { p.department = dept; p.name = name; }
+            alert(`✅ ${name} 資料已更新`);
+        } catch(e) { alert("更新失敗"); }
+    };
+
+    window.deleteParticipant = async function(pId, name) {
+        if (!confirm(`確定要刪除「${name}」嗎？此人的點名紀錄也會消失！`)) return;
+        try {
+            await deleteDoc(doc(db, `rollcalls/${editingRollCallId}/participants`, pId));
+            editingParticipants = editingParticipants.filter(x => x.id !== pId);
+            renderParticipantsList();
+        } catch(e) { alert("刪除失敗"); }
+    };
+
+    window.batchAddParticipants = async function() {
+        const text = document.getElementById('edit-new-participants').value.trim();
+        if (!text) { alert("請先在下方輸入要新增的名單"); return; }
+
+        const btn = document.getElementById('btn-edit-batch-add');
+        btn.disabled = true; btn.innerText = "匯入中...";
+
+        // 取出記憶體中現有姓名防重複
+        const existingNames = new Set(editingParticipants.map(p => p.name));
+        const lines = text.split('\n');
+        const newParticipants = [];
+        let skipCount = 0, errorMsg = "";
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+            
+            const parts = line.split(/[\t ]+/);
+            if (parts.length < 2) { errorMsg += `第 ${i+1} 行格式錯誤：${line}\n`; continue; }
+
+            const dept = parts[0];
+            const pName = parts.slice(1).join(' '); 
+
+            if (existingNames.has(pName)) { skipCount++; continue; }
+
+            existingNames.add(pName); 
+            newParticipants.push({ department: dept, name: pName });
+        }
+
+        if (errorMsg) alert("⚠️ 新增名單部分有誤，請檢查：\n\n" + errorMsg);
+
+        if (newParticipants.length > 0) {
+            try {
+                const batch = writeBatch(db);
+                newParticipants.forEach(p => {
+                    const pRef = doc(collection(db, `rollcalls/${editingRollCallId}/participants`));
+                    batch.set(pRef, {
+                        department: p.department, name: p.name,
+                        status: 'pending', remark: '', timestamp: null, updatedBy: ''
+                    });
+                });
+                await batch.commit();
+                alert(`✅ 成功新增 ${newParticipants.length} 人 (自動略過 ${skipCount} 位重複人員)。`);
+                document.getElementById('edit-new-participants').value = '';
+                await loadEditData(); // 重新讀取並渲染畫面
+            } catch(e) { alert("匯入失敗: " + e.message); }
+        } else {
+            alert(`⚠️ 無有效的新增人員，或輸入的人員皆已存在。`);
+        }
+        btn.disabled = false; btn.innerText = "匯入新名單";
     };
 
     // ==========================================
