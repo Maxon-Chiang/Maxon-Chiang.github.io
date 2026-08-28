@@ -49,11 +49,19 @@
         .actions { display: flex; gap: 5px; margin-top: auto; }
         .actions button { flex: 1; padding: 6px; font-size: 13px; }
 
-        /* 管理後台表格 */
+        /* 表格共用 */
         table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
         th { background: #34495e; color: white; }
         tr:hover { background: #f9f9f9; }
+        
+        /* 前台點名專用緊湊表格 */
+        .compact-table th, .compact-table td { padding: 6px 8px; font-size: 13px; vertical-align: middle; border-bottom: 1px solid #ddd; }
+        .compact-table tr:nth-child(even) { background-color: #fcfcfc; }
+        .compact-table tr.bg-present { background-color: #eafaf1; }
+        .compact-table tr.bg-absent { background-color: #fdedec; }
+        .compact-table .btn-status { padding: 4px 10px; font-size: 12px; margin-right: 3px; border-radius: 4px; }
+        .compact-table input[type="text"] { padding: 4px 6px; font-size: 12px; width: 100%; min-width: 100px; }
         
         .badge { padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; }
         .badge-pending { background: #bdc3c7; }
@@ -145,6 +153,26 @@
         </table>
     </div>
 
+    <!-- 視圖 8：管理後台 - 編輯點名表與新增人員 -->
+    <div id="view-admin-edit" class="view card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>✏️ 編輯點名表</h3>
+            <button class="btn btn-outline" onclick="loadAdminList()">返回列表</button>
+        </div>
+        <div class="form-group">
+            <label>修改點名表名稱：</label>
+            <input type="text" id="edit-name">
+        </div>
+        <div class="form-group">
+            <label>➕ 新增人員名單：</label>
+            <p style="font-size: 12px; color: #e67e22; margin-top: 0;">※ 僅需輸入「要新增」的人員。格式同建立時，系統會自動排除現有重複的姓名。</p>
+            <textarea id="edit-new-participants" rows="8" placeholder="部門A 王小明&#10;部門B 陳小美"></textarea>
+        </div>
+        <div style="text-align: right;">
+            <button class="btn btn-primary" onclick="saveEditRollCall()" id="btn-edit-save">儲存修改與新增人員</button>
+        </div>
+    </div>
+
     <!-- 視圖 6：前台 - 選擇點名表 -->
     <div id="view-caller-select" class="view card">
         <h3>📱 選擇要進行的點名表</h3>
@@ -152,16 +180,33 @@
         <div class="grid-list" id="caller-select-list" style="margin-top: 15px;"></div>
     </div>
 
-    <!-- 視圖 7：前台 - 即時點名介面 -->
+    <!-- 視圖 7：前台 - 即時點名介面 (緊湊表格版) -->
     <div id="view-caller-active" class="view">
-        <div class="card" style="display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;">
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; padding: 12px 20px;">
             <div>
                 <h3 id="active-title">點名中...</h3>
                 <div id="active-stats" style="font-size: 13px; color: #777; margin-top: 5px;"></div>
             </div>
-            <button class="btn btn-outline" onclick="exitActiveRollCall()">離開</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-outline" onclick="exitActiveRollCall()">返回</button>
+                <button class="btn btn-primary" onclick="saveAllRollCall()" id="btn-save-all" style="box-shadow: 0 4px 6px rgba(41,128,185,0.3);">💾 統一儲存</button>
+            </div>
         </div>
-        <div class="grid-list" id="active-grid"></div>
+        <div style="overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <table class="compact-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">序</th>
+                        <th style="width: 80px;">部門</th>
+                        <th style="width: 90px;">姓名</th>
+                        <th style="width: 220px;">狀態操作</th>
+                        <th>備註</th>
+                        <th style="width: 120px; font-size: 11px;">最後更新資訊</th>
+                    </tr>
+                </thead>
+                <tbody id="active-table-body"></tbody>
+            </table>
+        </div>
     </div>
 
 </div>
@@ -260,6 +305,7 @@
                         <td style="font-size:12px;">${callersStr}</td>
                         <td>
                             <button class="btn btn-primary" style="padding:4px 8px; font-size:12px;" onclick="viewReport('${docSnap.id}', '${data.name}')">報表</button>
+                            <button class="btn btn-outline" style="padding:4px 8px; font-size:12px; border-color:#8e44ad; color:#8e44ad;" onclick="openEditRollCall('${docSnap.id}', '${data.name}')">編輯</button>
                             <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteRollCall('${docSnap.id}', '${data.name}')">刪除</button>
                         </td>
                     </tr>
@@ -428,6 +474,99 @@
     };
 
 
+    let editingRollCallId = null;
+
+    window.openEditRollCall = function(id, name) {
+        editingRollCallId = id;
+        document.getElementById('edit-name').value = name;
+        document.getElementById('edit-new-participants').value = '';
+        switchView('view-admin-edit');
+    };
+
+    window.saveEditRollCall = async function() {
+        const newName = document.getElementById('edit-name').value.trim();
+        const text = document.getElementById('edit-new-participants').value.trim();
+        if (!newName) { alert("點名表名稱不可為空！"); return; }
+
+        const btn = document.getElementById('btn-edit-save');
+        btn.disabled = true;
+        btn.innerText = "儲存中...";
+
+        try {
+            // 1. 更新主表名稱
+            await updateDoc(doc(db, "rollcalls", editingRollCallId), { name: newName });
+
+            // 2. 如果有新名單，檢查並加入
+            if (text) {
+                // 抓取現有的人員，建立 Set 防重複
+                const existingSnap = await getDocs(query(collection(db, `rollcalls/${editingRollCallId}/participants`)));
+                const existingNames = new Set();
+                existingSnap.forEach(d => existingNames.add(d.data().name));
+
+                const lines = text.split('\n');
+                const participants = [];
+                let errorMsg = "";
+                let skipCount = 0;
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    const parts = line.split(/[\t ]+/);
+                    if (parts.length < 2) {
+                        errorMsg += `第 ${i+1} 行格式錯誤：${line}\n`;
+                        continue;
+                    }
+
+                    const dept = parts[0];
+                    const pName = parts.slice(1).join(' '); 
+
+                    // 檢查是否與現有資料庫，或這次新輸入的名單重複
+                    if (existingNames.has(pName)) {
+                        skipCount++;
+                        continue;
+                    }
+
+                    existingNames.add(pName); // 加進 Set 避免這次輸入的文字內有重複
+                    participants.push({ department: dept, name: pName });
+                }
+
+                if (errorMsg) {
+                    alert("⚠️ 新增名單部分有誤，請檢查：\n\n" + errorMsg);
+                }
+
+                if (participants.length > 0) {
+                    const batch = writeBatch(db);
+                    participants.forEach(p => {
+                        const pRef = doc(collection(db, `rollcalls/${editingRollCallId}/participants`));
+                        batch.set(pRef, {
+                            department: p.department,
+                            name: p.name,
+                            status: 'pending',
+                            remark: '',
+                            timestamp: null,
+                            updatedBy: ''
+                        });
+                    });
+                    await batch.commit();
+                    alert(`✅ 儲存成功！\n名稱已更新。\n成功新增 ${participants.length} 人 (自動略過 ${skipCount} 位重複人員)。`);
+                } else {
+                    alert(`✅ 名稱已更新。\n(無有效的新增人員，或輸入的人員皆已存在)`);
+                }
+            } else {
+                alert("✅ 點名表名稱已更新。");
+            }
+            
+            loadAdminList();
+        } catch (e) {
+            console.error(e);
+            alert("儲存失敗: " + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "儲存修改與新增人員";
+        }
+    };
+
     // ==========================================
     // 前台點名系統 (Caller Mode)
     // ==========================================
@@ -462,99 +601,198 @@
         }
     });
 
+    // 儲存本地編輯狀態 (防衝突設計：尚未按下「儲存」前，資料存在這裡)
+    let localEdits = {};
+
     window.startRollCall = function(id, name) {
         currentRollCallId = id;
+        localEdits = {}; // 重置本地編輯
         switchView('view-caller-active');
         document.getElementById('active-title').innerText = name;
+        document.getElementById('btn-save-all').innerText = '💾 統一儲存';
+        document.getElementById('btn-save-all').classList.remove('btn-danger');
         
-        const grid = document.getElementById('active-grid');
-        grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center;">連線同步中...</div>';
+        const tbody = document.getElementById('active-table-body');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">連線同步中...</td></tr>';
 
-        // 🌟 核心即時引擎：改為單純抓取資料，避免索引報錯
+        // 🌟 核心即時引擎：讀取資料並融合 LocalEdits
         const q = query(collection(db, `rollcalls/${id}/participants`));
         unsubscribeCurrentRollCall = onSnapshot(q, (snapshot) => {
-            grid.innerHTML = '';
+            tbody.innerHTML = '';
             let total = 0, present = 0, absent = 0, pending = 0;
 
-            // 將即時資料存入陣列，由前端進行排序
             let participantsList = [];
             snapshot.forEach(docSnap => participantsList.push({ id: docSnap.id, ...docSnap.data() }));
             
             participantsList.sort((a, b) => {
-                if (a.department === b.department) {
-                    return (a.name || "").localeCompare(b.name || "", 'zh-TW');
-                }
+                if (a.department === b.department) return (a.name || "").localeCompare(b.name || "", 'zh-TW');
                 return (a.department || "").localeCompare(b.department || "", 'zh-TW');
             });
 
-            participantsList.forEach(p => {
+            participantsList.forEach((p, idx) => {
                 const pId = p.id;
+                
+                // 融合判斷：如果我有在本地編輯過，以本地為準，否則以資料庫為準
+                let currentStatus = localEdits[pId] && localEdits[pId].status !== undefined ? localEdits[pId].status : p.status;
+                let currentRemark = localEdits[pId] && localEdits[pId].remark !== undefined ? localEdits[pId].remark : (p.remark || '');
+
+                // 統計數據 (以畫面顯示為準)
                 total++;
-                if (p.status === 'present') present++;
-                else if (p.status === 'absent') absent++;
+                if (currentStatus === 'present') present++;
+                else if (currentStatus === 'absent') absent++;
                 else pending++;
 
-                let bgClass = 'status-pending';
-                if (p.status === 'present') bgClass = 'status-present';
-                if (p.status === 'absent') bgClass = 'status-absent';
+                let bgClass = '';
+                if (currentStatus === 'present') bgClass = 'bg-present';
+                if (currentStatus === 'absent') bgClass = 'bg-absent';
 
-                grid.innerHTML += `
-                    <div class="person-card ${bgClass}">
-                        <div class="person-header">
-                            <span style="font-weight:bold; font-size:16px;">${p.name}</span>
-                            <span style="font-size:12px; background:#eee; padding:2px 6px; border-radius:4px;">${p.department}</span>
-                        </div>
-                        <div class="person-info">
-                            <div>🕒 狀態更新：${formatTime(p.timestamp)}</div>
-                            <div>👤 點名人員：${p.updatedBy || '-'}</div>
-                            <div style="display:flex; gap:5px; align-items:center; margin-top:5px;">
-                                <input type="text" id="rmk-${pId}" value="${p.remark || ''}" placeholder="新增備註..." style="padding:4px; font-size:12px;">
-                                <button class="btn btn-outline" style="padding:4px 8px; font-size:11px;" onclick="saveRemark('${pId}')">儲存</button>
-                            </div>
-                        </div>
-                        <div class="actions">
-                            <button class="btn ${p.status === 'present' ? 'btn-success' : 'btn-outline'}" onclick="updateStatus('${pId}', 'present')">✔ 出席</button>
-                            <button class="btn ${p.status === 'absent' ? 'btn-danger' : 'btn-outline'}" style="color:${p.status === 'absent' ? 'white' : 'var(--danger)'}; border-color:var(--danger);" onclick="updateStatus('${pId}', 'absent')">✖ 缺席</button>
-                            <button class="btn btn-outline" style="color:#777; border-color:#ccc;" onclick="updateStatus('${pId}', 'pending')">↺ 重置</button>
-                        </div>
-                    </div>
+                // 按鈕樣式邏輯
+                const btnPresClass = currentStatus === 'present' ? 'btn-success' : 'btn-outline';
+                const btnAbsClass = currentStatus === 'absent' ? 'btn-danger' : 'btn-outline';
+                const btnAbsStyle = currentStatus === 'absent' ? 'color:white;' : 'color:var(--danger); border-color:var(--danger);';
+                const btnPendStyle = currentStatus === 'pending' ? 'background:#bdc3c7; color:white; border-color:#bdc3c7;' : 'color:#777; border-color:#ccc; background:white;';
+
+                tbody.innerHTML += `
+                    <tr class="${bgClass}" id="tr-${pId}">
+                        <td style="color:#777;">${idx + 1}</td>
+                        <td><span style="font-size:11px; background:#eee; padding:2px 6px; border-radius:4px;">${p.department}</span></td>
+                        <td style="font-weight:bold;">${p.name}</td>
+                        <td>
+                            <button class="btn btn-status ${btnPresClass}" onclick="markLocalStatus('${pId}', 'present')">✔ 出席</button>
+                            <button class="btn btn-status ${btnAbsClass}" style="${btnAbsStyle}" onclick="markLocalStatus('${pId}', 'absent')">✖ 缺席</button>
+                            <button class="btn btn-status btn-outline" style="${btnPendStyle}" onclick="markLocalStatus('${pId}', 'pending')">↺ 未點</button>
+                        </td>
+                        <td>
+                            <input type="text" id="rmk-${pId}" value="${currentRemark}" placeholder="備註..." oninput="markLocalRemark('${pId}', this.value)">
+                        </td>
+                        <td style="font-size:11px; color:#7f8c8d; line-height:1.4;">
+                            ${p.updatedBy ? `<div>👤 ${p.updatedBy}</div>` : ''}
+                            <div>🕒 ${formatTime(p.timestamp)}</div>
+                        </td>
+                    </tr>
                 `;
             });
 
-            document.getElementById('active-stats').innerText = `總人數: ${total} | 🟢 出席: ${present} | 🔴 缺席: ${absent} | ⚪ 未點: ${pending}`;
+            document.getElementById('active-stats').innerHTML = `
+                <span style="margin-right:10px;">總人數: <b>${total}</b></span>
+                <span style="color:var(--success); margin-right:10px;">🟢 出席: <b>${present}</b></span>
+                <span style="color:var(--danger); margin-right:10px;">🔴 缺席: <b>${absent}</b></span>
+                <span style="color:#7f8c8d;">⚪ 未點: <b>${pending}</b></span>
+            `;
         }, (error) => {
-            console.error("即時連線錯誤:", error);
-            grid.innerHTML = '<div style="grid-column: 1/-1; color:red; text-align:center;">與伺服器斷線，請重新整理</div>';
+            tbody.innerHTML = '<tr><td colspan="6" style="color:red; text-align:center;">與伺服器斷線，請重新整理</td></tr>';
         });
     };
 
-    window.updateStatus = async function(personId, newStatus) {
-        try {
-            await updateDoc(doc(db, `rollcalls/${currentRollCallId}/participants`, personId), {
-                status: newStatus,
-                timestamp: serverTimestamp(),
-                updatedBy: currentUser
-            });
-        } catch (e) { alert("更新狀態失敗"); console.error(e); }
+    // 紀錄本地的狀態修改 (只改變數，觸發畫面改變，不送出資料庫)
+    window.markLocalStatus = function(pId, status) {
+        if (!localEdits[pId]) localEdits[pId] = {};
+        localEdits[pId].status = status;
+        
+        // 提示使用者「有未儲存的變更」
+        document.getElementById('btn-save-all').innerText = '⚠️ 點擊統一儲存';
+        document.getElementById('btn-save-all').classList.add('btn-danger');
+
+        // 因為我們有 onSnapshot，所以如果單純改變數不會立刻重繪。
+        // 我們手動觸發一下 DOM 的重構 (簡單作法：透過重新觸發一次全域繪製，或者直接更新 DOM)
+        // 這裡為了效能，我們直接抽換該列的 class 與按鈕狀態
+        const tr = document.getElementById(`tr-${pId}`);
+        if (!tr) return;
+        
+        tr.className = status === 'present' ? 'bg-present' : (status === 'absent' ? 'bg-absent' : '');
+        
+        const btns = tr.querySelectorAll('.btn-status');
+        // 按鈕0: 出席, 按鈕1: 缺席, 按鈕2: 未點
+        btns[0].className = `btn btn-status ${status === 'present' ? 'btn-success' : 'btn-outline'}`;
+        
+        btns[1].className = `btn btn-status ${status === 'absent' ? 'btn-danger' : 'btn-outline'}`;
+        btns[1].style.cssText = status === 'absent' ? 'color:white;' : 'color:var(--danger); border-color:var(--danger);';
+        
+        btns[2].className = `btn btn-status btn-outline`;
+        btns[2].style.cssText = status === 'pending' ? 'background:#bdc3c7; color:white; border-color:#bdc3c7;' : 'color:#777; border-color:#ccc; background:white;';
+        
+        // 重新計算上方的總數文字 (稍微土炮的計算，但很快速)
+        let total = 0, present = 0, absent = 0, pending = 0;
+        document.querySelectorAll('#active-table-body tr').forEach(row => {
+            total++;
+            if (row.classList.contains('bg-present')) present++;
+            else if (row.classList.contains('bg-absent')) absent++;
+            else pending++;
+        });
+        document.getElementById('active-stats').innerHTML = `
+            <span style="margin-right:10px;">總人數: <b>${total}</b></span>
+            <span style="color:var(--success); margin-right:10px;">🟢 出席: <b>${present}</b></span>
+            <span style="color:var(--danger); margin-right:10px;">🔴 缺席: <b>${absent}</b></span>
+            <span style="color:#7f8c8d;">⚪ 未點: <b>${pending}</b></span>
+        `;
     };
 
-    window.saveRemark = async function(personId) {
-        const rmk = document.getElementById(`rmk-${personId}`).value.trim();
+    // 紀錄本地的備註修改
+    window.markLocalRemark = function(pId, remark) {
+        if (!localEdits[pId]) localEdits[pId] = {};
+        localEdits[pId].remark = remark;
+        
+        document.getElementById('btn-save-all').innerText = '⚠️ 點擊統一儲存';
+        document.getElementById('btn-save-all').classList.add('btn-danger');
+    };
+
+    // 💾 將所有本地修改透過 Batch 統一送出
+    window.saveAllRollCall = async function() {
+        const pIds = Object.keys(localEdits);
+        if (pIds.length === 0) {
+            alert("目前沒有任何修改需要儲存。");
+            return;
+        }
+
+        const btn = document.getElementById('btn-save-all');
+        btn.disabled = true;
+        btn.innerText = "寫入中...";
+
         try {
-            await updateDoc(doc(db, `rollcalls/${currentRollCallId}/participants`, personId), {
-                remark: rmk,
-                timestamp: serverTimestamp(),
-                updatedBy: currentUser
+            const batch = writeBatch(db);
+            const ts = serverTimestamp();
+
+            pIds.forEach(pId => {
+                const pRef = doc(db, `rollcalls/${currentRollCallId}/participants`, pId);
+                const updates = {
+                    timestamp: ts,
+                    updatedBy: currentUser
+                };
+                if (localEdits[pId].status !== undefined) updates.status = localEdits[pId].status;
+                if (localEdits[pId].remark !== undefined) updates.remark = localEdits[pId].remark;
+                
+                batch.update(pRef, updates);
             });
-        } catch (e) { alert("備註儲存失敗"); console.error(e); }
+
+            await batch.commit();
+            
+            // 清空本地編輯紀錄，恢復按鈕狀態
+            localEdits = {};
+            btn.classList.remove('btn-danger');
+            btn.innerText = "✅ 儲存成功";
+            setTimeout(() => {
+                btn.innerText = "💾 統一儲存";
+                btn.disabled = false;
+            }, 2000);
+
+        } catch (e) {
+            console.error(e);
+            alert("儲存失敗：" + e.message);
+            btn.disabled = false;
+            btn.innerText = "⚠️ 重新儲存";
+        }
     };
 
     window.exitActiveRollCall = function() {
+        if (Object.keys(localEdits).length > 0) {
+            if (!confirm("您有未儲存的點名紀錄，確定要離開嗎？")) return;
+        }
         if (unsubscribeCurrentRollCall) {
-            unsubscribeCurrentRollCall(); // 停止監聽節省資源
+            unsubscribeCurrentRollCall(); 
             unsubscribeCurrentRollCall = null;
         }
         currentRollCallId = null;
+        localEdits = {};
         switchView('view-home');
     };
 
