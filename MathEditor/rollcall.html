@@ -67,6 +67,44 @@
         .badge-pending { background: #bdc3c7; }
         .badge-present { background: var(--success); }
         .badge-absent { background: var(--danger); }
+
+        /* 📱 手機版極致壓縮排版 */
+        @media (max-width: 768px) {
+            .container { padding: 5px; }
+            .header { padding: 10px; margin-bottom: 10px; flex-direction: column; align-items: flex-start; gap: 8px; }
+            .header h2 { font-size: 16px; }
+            #user-info { width: 100%; justify-content: space-between; }
+            #user-info button { padding: 4px 8px; font-size: 12px; }
+            .card { padding: 8px; margin-bottom: 10px; }
+            
+            /* 點名標題列壓縮 */
+            #active-title { font-size: 15px; margin: 0; }
+            #active-stats { font-size: 11px; margin-top: 2px; }
+            #active-stats span { margin-right: 4px !important; }
+            .view-caller-active-header { padding: 8px 10px !important; flex-direction: column; align-items: flex-start !important; gap: 8px; }
+            .view-caller-active-header > div:last-child { width: 100%; justify-content: space-between; }
+
+            /* 表格極致單行壓縮 */
+            .compact-table th, .compact-table td { 
+                padding: 4px 2px; 
+                font-size: 13px; 
+                white-space: nowrap; /* 核心：強制不換行 */
+            }
+            .compact-table th { font-size: 12px; padding: 6px 2px; text-align: center; }
+            .compact-table td { text-align: center; }
+            
+            /* 部門與姓名靠左對齊 */
+            .compact-table td.col-dept, .compact-table td.col-name { text-align: left; padding-left: 4px; }
+            .dept-badge { font-size: 10px; padding: 1px 4px; border-radius: 3px; display: inline-block; max-width: 50px; overflow: hidden; text-overflow: ellipsis; }
+            
+            /* 按鈕極致縮小 */
+            .compact-table .btn-status { 
+                padding: 3px 6px; 
+                font-size: 13px; 
+                margin-right: 1px; 
+                min-width: 32px; 
+            }
+        }
     </style>
 </head>
 <body>
@@ -182,7 +220,7 @@
 
     <!-- 視圖 7：前台 - 即時點名介面 (緊湊表格版) -->
     <div id="view-caller-active" class="view">
-        <div class="card" style="display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; padding: 12px 20px;">
+        <div class="card view-caller-active-header" style="display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; padding: 12px 20px;">
             <div>
                 <h3 id="active-title">點名中...</h3>
                 <div id="active-stats" style="font-size: 13px; color: #777; margin-top: 5px;"></div>
@@ -196,12 +234,12 @@
             <table class="compact-table">
                 <thead>
                     <tr>
-                        <th style="width: 50px;">序</th>
-                        <th style="width: 80px;">部門</th>
-                        <th style="width: 90px;">姓名</th>
-                        <th style="width: 220px;">狀態操作</th>
-                        <th>備註</th>
-                        <th style="width: 120px; font-size: 11px;">最後更新資訊</th>
+                        <th style="width: 25px;">序</th>
+                        <th style="width: 40px;">部門</th>
+                        <th style="width: 55px;">姓名</th>
+                        <th style="width: 110px;">操作</th>
+                        <th style="width: 35px;">備</th>
+                        <th style="width: 35px;">態</th>
                     </tr>
                 </thead>
                 <tbody id="active-table-body"></tbody>
@@ -243,6 +281,7 @@
     let currentUser = null;
     let unsubscribeCurrentRollCall = null;
     let currentRollCallId = null;
+    window.globalParticipantsMap = {}; // 用於暫存從資料庫拉下來的資料
 
     // --- 工具與 UI 切換 ---
     window.switchView = function(viewId) {
@@ -629,8 +668,9 @@
                 return (a.department || "").localeCompare(b.department || "", 'zh-TW');
             });
 
-            participantsList.forEach((p, idx) => {
+           participantsList.forEach((p, idx) => {
                 const pId = p.id;
+                window.globalParticipantsMap[pId] = p; // 暫存到全域供彈窗讀取
                 
                 // 融合判斷：如果我有在本地編輯過，以本地為準，否則以資料庫為準
                 let currentStatus = localEdits[pId] && localEdits[pId].status !== undefined ? localEdits[pId].status : p.status;
@@ -646,28 +686,36 @@
                 if (currentStatus === 'present') bgClass = 'bg-present';
                 if (currentStatus === 'absent') bgClass = 'bg-absent';
 
-                // 按鈕樣式邏輯
+                // 按鈕樣式邏輯 (移除文字，只留圖示)
                 const btnPresClass = currentStatus === 'present' ? 'btn-success' : 'btn-outline';
                 const btnAbsClass = currentStatus === 'absent' ? 'btn-danger' : 'btn-outline';
                 const btnAbsStyle = currentStatus === 'absent' ? 'color:white;' : 'color:var(--danger); border-color:var(--danger);';
                 const btnPendStyle = currentStatus === 'pending' ? 'background:#bdc3c7; color:white; border-color:#bdc3c7;' : 'color:#777; border-color:#ccc; background:white;';
 
+                // 備註按鈕樣式
+                const rmkBtnStyle = currentRemark 
+                    ? 'padding: 2px 6px; font-size: 12px; background:#f1c40f; color:white; border-color:#f1c40f;' 
+                    : 'padding: 2px 6px; font-size: 12px; background:white; color:#ccc; border-color:#eee;';
+                const rmkIcon = currentRemark ? '📝' : '💬';
+
+                // 狀態 Emoji
+                const statusEmoji = p.updatedBy ? '✅' : '⚪';
+
                 tbody.innerHTML += `
                     <tr class="${bgClass}" id="tr-${pId}">
-                        <td style="color:#777;">${idx + 1}</td>
-                        <td><span style="font-size:11px; background:#eee; padding:2px 6px; border-radius:4px;">${p.department}</span></td>
-                        <td style="font-weight:bold;">${p.name}</td>
+                        <td style="color:#777; font-size:11px;">${idx + 1}</td>
+                        <td class="col-dept"><span class="dept-badge" style="background:#eee;">${p.department}</span></td>
+                        <td class="col-name" style="font-weight:bold;">${p.name}</td>
                         <td>
-                            <button class="btn btn-status ${btnPresClass}" onclick="markLocalStatus('${pId}', 'present')">✔ 出席</button>
-                            <button class="btn btn-status ${btnAbsClass}" style="${btnAbsStyle}" onclick="markLocalStatus('${pId}', 'absent')">✖ 缺席</button>
-                            <button class="btn btn-status btn-outline" style="${btnPendStyle}" onclick="markLocalStatus('${pId}', 'pending')">↺ 未點</button>
+                            <button class="btn btn-status ${btnPresClass}" onclick="markLocalStatus('${pId}', 'present')" title="出席">✔</button>
+                            <button class="btn btn-status ${btnAbsClass}" style="${btnAbsStyle}" onclick="markLocalStatus('${pId}', 'absent')" title="缺席">✖</button>
+                            <button class="btn btn-status btn-outline" style="${btnPendStyle}" onclick="markLocalStatus('${pId}', 'pending')" title="重置">↺</button>
                         </td>
                         <td>
-                            <input type="text" id="rmk-${pId}" value="${currentRemark}" placeholder="備註..." oninput="markLocalRemark('${pId}', this.value)">
+                            <button class="btn btn-outline" id="btn-rmk-${pId}" style="${rmkBtnStyle}" onclick="promptRemark('${pId}', '${p.name}')">${rmkIcon}</button>
                         </td>
-                        <td style="font-size:11px; color:#7f8c8d; line-height:1.4;">
-                            ${p.updatedBy ? `<div>👤 ${p.updatedBy}</div>` : ''}
-                            <div>🕒 ${formatTime(p.timestamp)}</div>
+                        <td style="cursor:pointer;" onclick="showUpdateInfo('${pId}')" title="點擊查看詳細時間與人員">
+                            ${statusEmoji}
                         </td>
                     </tr>
                 `;
@@ -734,6 +782,40 @@
         
         document.getElementById('btn-save-all').innerText = '⚠️ 點擊統一儲存';
         document.getElementById('btn-save-all').classList.add('btn-danger');
+
+        // 更新按鈕外觀
+        const btn = document.getElementById(`btn-rmk-${pId}`);
+        if(btn) {
+            if(remark) {
+                btn.innerHTML = '📝';
+                btn.style.cssText = 'padding: 2px 6px; font-size: 12px; background:#f1c40f; color:white; border-color:#f1c40f;';
+            } else {
+                btn.innerHTML = '💬';
+                btn.style.cssText = 'padding: 2px 6px; font-size: 12px; background:white; color:#ccc; border-color:#eee;';
+            }
+        }
+    };
+
+    // 彈出輸入備註對話框
+    window.promptRemark = function(pId, name) {
+        let currentRemark = localEdits[pId] && localEdits[pId].remark !== undefined 
+            ? localEdits[pId].remark 
+            : (window.globalParticipantsMap[pId]?.remark || '');
+            
+        let newRemark = prompt(`請輸入「${name}」的備註：`, currentRemark);
+        if (newRemark !== null) { 
+            markLocalRemark(pId, newRemark.trim());
+        }
+    };
+
+    // 顯示詳細點名資訊彈窗
+    window.showUpdateInfo = function(pId) {
+        const p = window.globalParticipantsMap[pId];
+        if (p && p.updatedBy) {
+            alert(`👤 點名人員：${p.updatedBy}\n🕒 時間：${formatTime(p.timestamp)}`);
+        } else {
+            alert("尚未有任何點名紀錄");
+        }
     };
 
     // 💾 將所有本地修改透過 Batch 統一送出
