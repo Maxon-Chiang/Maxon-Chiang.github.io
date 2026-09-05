@@ -382,12 +382,16 @@
 				</div>
 				<div id="perf-log-filters">
 					<div class="filter-group" style="margin-top: 20px;">
-						<label>班級 (可複選):</label>
-						<div id="class-filter-container">
-							<div class="class-checkbox">
-								<input type="checkbox" id="select-all-classes" checked>
-								<label for="select-all-classes">全選</label>
+						<!-- 這裡改成只用 flex 排列，並設定一個小間距 -->
+						<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+							<label style="margin-bottom: 0; flex-shrink: 0;">班級 (可複選):</label>
+							<div style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+								<input type="checkbox" id="select-all-classes" checked style="margin: 0; cursor: pointer; width: 16px; height: 16px;">
+								<label for="select-all-classes" style="margin-bottom: 0; font-weight: normal; cursor: pointer; color: var(--primary-color);">全選</label>
 							</div>
+						</div>
+						<div id="class-filter-container">
+							<!-- Individual class checkboxes will be dynamically inserted here by JS -->
 						</div>
 					</div>
 				</div>
