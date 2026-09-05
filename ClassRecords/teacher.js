@@ -1425,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (scoreDisplay) scoreDisplay.textContent = `總分: ${totalCalculatedScore.toFixed(1)}`;
 		
 		// --- 產生快捷輸入文字標籤 (預設 + 歷史去重複) ---
-		const predefinedTexts = ['回答問題', '互動積極', '完成任務', '競賽活動', '兌換獎勵'];
+		const predefinedTexts = ['回答問題', '互動積極', '完成任務', '協助同學', '兌換獎勵'];
 		const historicalTexts = allRecords.map(r => r.text).filter(t => t && t.trim() !== '');
 		const uniqueTexts = [...new Set([...predefinedTexts, ...historicalTexts])]; // 確保文字不重複
 		
@@ -1491,7 +1491,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		recordTextInput.value = '';
 		
 		// 預設的事件選項清單
-		const predefinedTexts = ['回答問題', '互動積極', '完成任務', '競賽活動', '兌換獎勵'];
+		const predefinedTexts = ['回答問題', '互動積極', '完成任務', '協助同學', '兌換獎勵'];
 
 		// 將所有紀錄依時間由新到舊排序
 		const sortedRecords = allPerformanceRecords.slice().sort((a, b) => (b.timestamp?.seconds || b.timestamp?.toMillis() / 1000 || 0) - (a.timestamp?.seconds || a.timestamp?.toMillis() / 1000 || 0));
@@ -1594,7 +1594,47 @@ document.addEventListener('DOMContentLoaded', function() {
 	classSettingsBtn.addEventListener('click', () => { document.body.classList.add('modal-open'); document.getElementById('dropdown-menu').classList.remove('show'); classSettingsList.innerHTML = ''; allClassList.forEach(className => { const isChecked = visibleClassList.includes(className) ? 'checked' : ''; const itemDiv = document.createElement('div'); itemDiv.className = 'class-setting-item'; itemDiv.innerHTML = `<input type="checkbox" id="setting-${className}" value="${className}" class="visible-class-checkbox" ${isChecked}><label for="setting-${className}">${className} 班</label>`; classSettingsList.appendChild(itemDiv); }); selectAllVisibleClasses.checked = allClassList.length > 0 && allClassList.length === visibleClassList.length; document.getElementById('class-settings-modal').style.display = 'flex'; });
 	selectAllVisibleClasses.addEventListener('change', (e) => { document.querySelectorAll('.visible-class-checkbox').forEach(checkbox => { checkbox.checked = e.target.checked; }); });
 	document.getElementById('class-settings-modal').querySelector('.close-btn').addEventListener('click', () => { document.body.classList.remove('modal-open'); document.getElementById('class-settings-modal').style.display = 'none'; });
-	saveClassSettingsBtn.addEventListener('click', async () => { const newVisibleClasses = []; classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { newVisibleClasses.push(checkbox.value); }); try { await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); visibleClassList = newVisibleClasses; renderLayout(); document.getElementById('class-settings-modal').querySelector('.close-btn').click(); alert('設定已儲存！'); } catch(error) { alert("儲存失敗"); } });
+
+	saveClassSettingsBtn.addEventListener('click', async () => { 
+		const newVisibleClasses = []; 
+		classSettingsList.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => { 
+			newVisibleClasses.push(checkbox.value); 
+		}); 
+		
+		try { 
+			// 1. 更新雲端資料庫
+			await db.collection('users').doc(currentUser.uid).update({ visibleClasses: newVisibleClasses }); 
+			
+			// 2. 更新當下記憶體變數
+			visibleClassList = newVisibleClasses; 
+			if (currentUserData) {
+				currentUserData.visibleClasses = newVisibleClasses;
+			}
+			
+			// 3. 👉 修復核心：同步更新 LocalStorage 的使用者快取
+			try {
+				const cachedAuthData = localStorage.getItem(USER_AUTH_KEY);
+				if (cachedAuthData) {
+					const parsedData = JSON.parse(cachedAuthData);
+					if (parsedData.userData) {
+						parsedData.userData.visibleClasses = newVisibleClasses;
+						localStorage.setItem(USER_AUTH_KEY, JSON.stringify(parsedData));
+					}
+				}
+			} catch (cacheErr) {
+				console.warn("快取更新失敗", cacheErr);
+			}
+
+			// 4. 重繪畫面與關閉視窗
+			renderLayout(); 
+			document.getElementById('class-settings-modal').querySelector('.close-btn').click(); 
+			alert('設定已儲存！'); 
+			
+		} catch(error) { 
+			alert("儲存失敗: " + error.message); 
+		} 
+	});
+
 	const resetLayoutBtn = document.getElementById('reset-layout-btn');
 	if (resetLayoutBtn) {
 		resetLayoutBtn.addEventListener('click', () => {
