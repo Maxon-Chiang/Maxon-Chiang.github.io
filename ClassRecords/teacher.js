@@ -2358,12 +2358,52 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	if (dateRangeSettingsBtn && dateRangeModal) {
+		const perfEndManualChk = document.getElementById('sys-perf-end-manual');
+		const perfEndInput = document.getElementById('sys-perf-end');
+		const gradesEndManualChk = document.getElementById('sys-grades-end-manual');
+		const gradesEndInput = document.getElementById('sys-grades-end');
+
+		// Checkbox 切換顯示的互動
+		perfEndManualChk.addEventListener('change', (e) => {
+			perfEndInput.style.display = e.target.checked ? 'block' : 'none';
+			if (e.target.checked && !perfEndInput.value) {
+				perfEndInput.value = new Date().toISOString().split('T')[0]; // 若空值，勾選時預設帶入今天
+			}
+		});
+		gradesEndManualChk.addEventListener('change', (e) => {
+			gradesEndInput.style.display = e.target.checked ? 'block' : 'none';
+			if (e.target.checked && !gradesEndInput.value) {
+				gradesEndInput.value = new Date().toISOString().split('T')[0];
+			}
+		});
+
 		dateRangeSettingsBtn.addEventListener('click', () => {
 			document.getElementById('dropdown-menu').classList.remove('show');
+			
+			// 表現紀錄初始化
 			document.getElementById('sys-perf-start').value = currentUserData.perfStartDate || '';
-			document.getElementById('sys-perf-end').value = currentUserData.perfEndDate || '';
+			if (currentUserData.perfEndDate) {
+				perfEndManualChk.checked = true;
+				perfEndInput.value = currentUserData.perfEndDate;
+				perfEndInput.style.display = 'block';
+			} else {
+				perfEndManualChk.checked = false;
+				perfEndInput.value = '';
+				perfEndInput.style.display = 'none';
+			}
+
+			// 成績登錄初始化
 			document.getElementById('sys-grades-start').value = currentUserData.gradesStartDate || '';
-			document.getElementById('sys-grades-end').value = currentUserData.gradesEndDate || '';
+			if (currentUserData.gradesEndDate) {
+				gradesEndManualChk.checked = true;
+				gradesEndInput.value = currentUserData.gradesEndDate;
+				gradesEndInput.style.display = 'block';
+			} else {
+				gradesEndManualChk.checked = false;
+				gradesEndInput.value = '';
+				gradesEndInput.style.display = 'none';
+			}
+
 			document.body.classList.add('modal-open');
 			dateRangeModal.style.display = 'flex';
 		});
@@ -2392,13 +2432,19 @@ document.addEventListener('DOMContentLoaded', function() {
 				window.location.reload();
 			} catch (e) { alert('設定同步失敗：' + e.message); }
 		};
+
 		saveDateRangeBtn.addEventListener('click', () => {
 			saveDateRangeBtn.textContent = '儲存中...';
+			
+			// 只有在 Checkbox 被勾選時，才抓取輸入框裡的結束時間；沒勾選就帶入 null
+			const perfEndVal = perfEndManualChk.checked ? perfEndInput.value : null;
+			const gradesEndVal = gradesEndManualChk.checked ? gradesEndInput.value : null;
+
 			syncDateRangeToDB(
 				document.getElementById('sys-perf-start').value,
-				document.getElementById('sys-perf-end').value,
+				perfEndVal,
 				document.getElementById('sys-grades-start').value,
-				document.getElementById('sys-grades-end').value
+				gradesEndVal
 			);
 		});
 		clearDateRangeBtn.addEventListener('click', () => {

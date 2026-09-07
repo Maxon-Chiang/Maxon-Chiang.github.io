@@ -343,14 +343,30 @@
 			
 			<div style="background: #f8f9fa; padding: 10px; border-radius: 5px; margin-bottom: 10px; border: 1px solid #eee;">
 				<h3 style="margin-top: 0; font-size: 1.1em; color: #d0021b;">📝 表現紀錄區間 (建議：學年)</h3>
-				<div><label>開始：</label><input type="date" id="sys-perf-start" style="width:100%; padding:5px;"></div>
-				<div style="margin-top:5px;"><label>結束：</label><input type="date" id="sys-perf-end" style="width:100%; padding:5px;"></div>
+				<div><label>開始：</label><input type="date" id="sys-perf-start" style="width:100%; padding:5px; box-sizing: border-box;"></div>
+				<div style="margin-top:5px;">
+					<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+						<label>結束：</label>
+						<label style="font-size: 0.9em; display: flex; align-items: center; cursor: pointer; color: #555;">
+							<input type="checkbox" id="sys-perf-end-manual" style="margin-right: 4px;"> 手動指定
+						</label>
+					</div>
+					<input type="date" id="sys-perf-end" style="width:100%; padding:5px; box-sizing: border-box; display: none;">
+				</div>
 			</div>
 
 			<div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #ddd;">
 				<h3 style="margin-top: 0; font-size: 1.1em; color: #4a90e2;">📊 成績登錄區間 (建議：學期)</h3>
-				<div><label>開始：</label><input type="date" id="sys-grades-start" style="width:100%; padding:5px;"></div>
-				<div style="margin-top:5px;"><label>結束：</label><input type="date" id="sys-grades-end" style="width:100%; padding:5px;"></div>
+				<div><label>開始：</label><input type="date" id="sys-grades-start" style="width:100%; padding:5px; box-sizing: border-box;"></div>
+				<div style="margin-top:5px;">
+					<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;">
+						<label>結束：</label>
+						<label style="font-size: 0.9em; display: flex; align-items: center; cursor: pointer; color: #555;">
+							<input type="checkbox" id="sys-grades-end-manual" style="margin-right: 4px;"> 手動指定
+						</label>
+					</div>
+					<input type="date" id="sys-grades-end" style="width:100%; padding:5px; box-sizing: border-box; display: none;">
+				</div>
 			</div>
 
 			<button id="save-date-range-btn" style="width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:4px; font-size:1.1em; cursor:pointer;">儲存並重新載入</button>
