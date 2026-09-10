@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>1-2 資料數位化 動態挑戰賽</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f0fdf4;
+            background-image: radial-gradient(#bbf7d0 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow-x: hidden;
+        }
+
+        /* 基礎動畫 */
+        .fade-in { animation: fadeIn 0.5s ease-in-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 題目彈出動畫 (Bouncy Pop) */
+        .pop-in {
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes popIn {
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* 選項階層滑入動畫 (Staggered Slide-in) */
+        .slide-in-right {
+            opacity: 0;
+            transform: translateX(30px);
+            animation: slideInRight 0.4s ease-out forwards;
+        }
+        @keyframes slideInRight {
+            to { opacity: 1; transform: translateX(0); }
+        }
+        /* 利用 CSS 變數控制延遲時間 */
+        .stagger-0 { animation-delay: 0.1s; }
+        .stagger-1 { animation-delay: 0.2s; }
+        .stagger-2 { animation-delay: 0.3s; }
+        .stagger-3 { animation-delay: 0.4s; }
+
+        /* 選項按鈕互動 */
+        .option-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .option-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
+            background: rgba(34, 197, 94, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.4s, height 0.4s;
+        }
+        .option-btn:hover:not(:disabled)::after {
+            width: 300px; height: 300px;
+        }
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #4ade80;
+        }
+
+        /* 答對答錯回饋動畫 */
+        .correct-anim { animation: pulse-green 0.6s cubic-bezier(0.4, 0, 0.6, 1); }
+        .wrong-anim { animation: shake-red 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+        
+        @keyframes pulse-green {
+            0%, 100% { transform: scale(1); background-color: #22c55e; color: white; }
+            50% { transform: scale(1.05); background-color: #16a34a; color: white; box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); }
+        }
+        @keyframes shake-red {
+            0%, 100% { transform: translateX(0); background-color: #ef4444; color: white; }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+
+        /* 漂浮圖示動畫 */
+        .float-anim {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- App Container -->
+    <div id="app" class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden min-h-[600px] flex flex-col relative border-4 border-green-100">
+        
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-5 text-center shadow-lg z-10">
+            <h1 class="text-3xl font-black tracking-widest drop-shadow-md">💻 資料數位化 動態挑戰賽</h1>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="flex-grow p-6 md:p-10 flex flex-col justify-center relative overflow-y-auto bg-gray-50/50">
+            
+            <!-- Screen 1: Start Screen -->
+            <div id="start-screen" class="text-center fade-in">
+                <div class="text-7xl mb-6 float-anim">🎮</div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">準備好測試你的數位化知識了嗎？</h2>
+                <p class="text-gray-600 mb-8 max-w-lg mx-auto text-lg leading-relaxed">
+                    本測驗共 <b>10</b> 題，包含正整數二進位轉換、ASCII、Big-5 與 Unicode。<br>
+                    <span class="text-green-600 font-bold">⚠️ 每次遊玩的數字與題目內容都會隨機產生！</span>
+                </p>
+                <button onclick="startQuiz()" class="bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-black py-4 px-10 rounded-full text-xl shadow-xl transform transition hover:-translate-y-2 hover:shadow-2xl">
+                    🚀 開始隨機挑戰
+                </button>
+            </div>
+
+            <!-- Screen 2: Quiz Screen -->
+            <div id="quiz-screen" class="hidden flex-col h-full w-full">
+                <div class="flex justify-between items-center mb-8 border-b-2 border-gray-200 pb-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-bold text-lg shadow-sm" id="q-number">1</div>
+                        <span class="text-gray-500 font-medium">/ 10 題</span>
+                    </div>
+                    <div class="bg-blue-50 px-4 py-2 rounded-xl text-blue-700 font-bold shadow-inner">
+                        <span id="score-display">得分: 0</span>
+                    </div>
+                </div>
+                
+                <div id="question-container" class="mb-8 flex-grow">
+                    <div class="flex items-start mb-8 pop-in" id="q-header">
+                        <span id="q-icon" class="text-5xl mr-4 drop-shadow-md">🤔</span>
+                        <h3 id="question-text" class="text-2xl font-bold text-gray-800 leading-relaxed pt-1"></h3>
+                    </div>
+                    <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Options injected via JS -->
+                    </div>
+                </div>
+
+                <div id="feedback-container" class="hidden text-center py-4 px-6 rounded-2xl font-black text-xl shadow-inner transition-all">
+                    <!-- Feedback injected via JS -->
+                </div>
+
+                <div class="mt-6 text-right h-12">
+                    <button id="next-btn" onclick="nextQuestion()" class="hidden bg-gray-800 hover:bg-black text-white font-bold py-3 px-8 rounded-xl shadow-lg transform transition hover:scale-105">
+                        繼續前進 ➔
+                    </button>
+                </div>
+            </div>
+
+            <!-- Screen 3: Result Screen -->
+            <div id="result-screen" class="hidden flex-col fade-in">
+                <div class="text-center mb-10 bg-white p-8 rounded-3xl shadow-lg border border-gray-100">
+                    <div id="final-icon" class="text-7xl mb-4 float-anim">🏆</div>
+                    <h2 class="text-4xl font-black text-gray-800 mb-2">挑戰完成！</h2>
+                    <p id="final-score" class="text-2xl text-green-600 font-bold mb-6"></p>
+                    <button onclick="startQuiz()" class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:-translate-y-1">
+                        🔄 產生新題目，再玩一次
+                    </button>
+                </div>
+
+                <!-- 解答對照區 -->
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center bg-gray-200 py-2 px-4 rounded-lg w-max">
+                        <span class="mr-2">📝</span> 詳細解答與觀念解析
+                    </h3>
+                    <div id="review-container" class="space-y-6">
+                        <!-- Review items injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 工具函數：將十進位轉二進位並補零
+        function toBinary(num, bits) {
+            return num.toString(2).padStart(bits, '0');
+        }
+
+        // 工具函數：打亂陣列與答案
+        function shuffleOptions(correctStr, wrongArr) {
+            let options = [{text: correctStr, isCorrect: true}];
+            wrongArr.forEach(w => options.push({text: w, isCorrect: false}));
+            options.sort(() => Math.random() - 0.5);
+            let correctIdx = options.findIndex(o => o.isCorrect);
+            return {
+                options: options.map(o => o.text),
+                correctAnswer: correctIdx
+            };
+        }
+
+        // --- 動態題庫生成器 (10種題型) ---
+        const generators = [
+            // 題型 1: 8 位元正整數轉換 (隨機產生 15 ~ 120 的數字)
+            function() {
+                let n = Math.floor(Math.random() * 106) + 15; 
+                let correct = toBinary(n, 8);
+                let w1 = toBinary(n + 1, 8);
+                let w2 = toBinary(n, 8).replace('0', '1'); // 混淆視聽
+                let w3 = toBinary(Math.floor(n / 2), 8);
+                let data = shuffleOptions(correct, [w1, w2, w3]);
+                return {
+                    icon: "🔢",
+                    question: `十進位的數字「${n}」若以 8 位元儲存（未使用的位元補 0），結果為何？`,
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    explanation: `「${n}」的二進位表示為 ${n.toString(2)}。以 8 位元儲存時，前方需補足 0，因此為 ${correct}。`
+                };
+            },
+            // 題型 2: 16 位元正整數轉換 (隨機產生 150 ~ 2000 的數字)
+            function() {
+                let n = Math.floor(Math.random() * 1851) + 150;
+                let correct = toBinary(n, 16);
+                let w1 = toBinary(n, 8).padStart(16, '1'); // 錯誤補1
+                let w2 = toBinary(n + 2, 16);
+                let w3 = toBinary(n, 16).substring(1) + '0';
+                let data = shuffleOptions(correct, [w1, w2, w3]);
+                return {
+                    icon: "🧮",
+                    question: `十進位的數字「${n}」若以 16 位元儲存（未使用的位元補 0），結果為何？`,
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    explanation: `「${n}」的二進位為 ${n.toString(2)}。以 16 位元（2個位元組）儲存時，前方需補足 0，結果為 ${correct}。`
+                };
+            },
+            // 題型 3: 容量狀態計算 (隨機問 7, 8, 16 位元)
+            function() {
+                const types = [
+                    { bits: 7, ans: "128", w: ["7", "256", "65536"] },
+                    { bits: 8, ans: "256", w: ["8", "128", "65536"] },
+                    { bits: 16, ans: "65536", w: ["16", "256", "13060"] }
+                ];
+                let t = types[Math.floor(Math.random() * types.length)];
+                let data = shuffleOptions(`${t.ans} 個`, t.w.map(x => `${x} 個`));
+                return {
+                    icon: "📦",
+                    question: `若以 ${t.bits} 位元的容量來儲存資料，最多共可表示多少種狀態（或正整數）？`,
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    explanation: `${t.bits} 位元共可表示 2 的 ${t.bits} 次方（2^${t.bits}）個狀態，也就是 ${t.ans} 個。`
+                };
+            },
+            // 題型 4: ASCII 大寫轉換 (隨機字母 A-Z)
+            function() {
+                let charCode = Math.floor(Math.random() * 26) + 65; // 65 is 'A'
+                let char = String.fromCharCode(charCode);
+                let correct = toBinary(charCode, 8);
+                let w1 = toBinary(charCode + 32, 8); // 小寫
+                let w2 = toBinary(charCode + 1, 8);
+                let w3 = toBinary(charCode - 1, 8);
+                let data = shuffleOptions(correct, [w1, w2, w3]);
+                return {
+                    icon: "🔠",
+                    question: `根據 ASCII 編碼系統，大寫英文字母「${char}」的二進位編碼為何？(提示：'A'為01000001)`,
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    explanation: `大寫字母按照順序排列，'A' 是十進位 65 (01000001)。'${char}' 的十進位碼為 ${charCode}，轉為二進位 8 位元是 ${correct}。`
+                };
+            },
+            // 題型 5: ASCII 小寫轉換 (隨機字母 a-z)
+            function() {
+                let charCode = Math.floor(Math.random() * 26) + 97; // 97 is 'a'
+                let char = String.fromCharCode(charCode);
+                let correct = toBinary(charCode, 8);
+                let w1 = toBinary(charCode - 32, 8); // 大寫
+                let w2 = toBinary(charCode + 2, 8);
+                let w3 = "010" + toBinary(charCode, 8).substring(3); // 混淆
+                let data = shuffleOptions(correct, [w1, w2, w3]);
+                return {
+                    icon: "🔡",
+                    question: `根據 ASCII 編碼系統，小寫英文字母「${char}」的二進位編碼為何？(提示：'a'為01100001)`,
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    explanation: `小寫字母 'a' 是十進位 97 (01100001)。'${char}' 的十進位為 ${charCode}，轉為 8 位元二進位是 ${correct}。`
+                };
+            },
+            // 題型 6: ASCII 控制字元 (隨機問 BS, CR, CAN, DEL)
+            function() {
+                const ctrls = [
+                    { char: "BS", mean: "退格 (Backspace)", w: ["確認 (Enter)", "取消 (Cancel)", "刪除 (Delete)"] },
+                    { char: "CR", mean: "確認 (Carriage return)", w: ["退格 (Backspace)", "取消 (Cancel)", "刪除 (Delete)"] },
+                    { char: "CAN", mean: "取消 (Cancel)", w: ["退格 (Backspace)", "確認 (Enter)", "刪除 (Delete)"] },
+                    { char: "DEL", mean: "刪除 (Delete)", w: ["退格 (Backspace)", "確認 (Enter)", "取消 (Cancel)"] }
+                ];
+                let c = ctrls[Math.floor(Math.random() * ctrls.length)];
+                let data = shuffleOptions(c.mean, c.w);
+                return {
+                    icon: "⌨️",
+                    question: `在 ASCII 編碼系統中，控制字元「${c.char}」代表的意思是什麼？`,
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    explanation: `根據簡報內容，ASCII 包含控制字元，其中 ${c.char} 代表的是 ${c.mean}。`
+                };
+            },
+            // 題型 7: ASCII 發展史
+            function() {
+                const qTypes = [
+                    { q: "ASCII 編碼系統發展「初期」，是以多少個位元來表示 1 個字元？", a: "7 個位元", w: ["8 個位元", "16 個位元", "32 個位元"], exp: "發展初期以 7 個位元表示，共 128 個字元。" },
+                    { q: "「現今」擴充後的 ASCII 編碼系統，是以多少個位元來表示 1 個字元？", a: "8 個位元", w: ["7 個位元", "16 個位元", "32 個位元"], exp: "現今擴充為 8 個位元，共可表示 256 個字元，適用於所有拉丁文字字母。" }
+                ];
+                let t = qTypes[Math.floor(Math.random() * qTypes.length)];
+                let data = shuffleOptions(t.a, t.w);
+                return {
+                    icon: "📜",
+                    question: t.q, options: data.options, correctAnswer: data.correctAnswer, explanation: t.exp
+                };
+            },
+            // 題型 8: Big-5 觀念
+            function() {
+                const qTypes = [
+                    { q: "由臺灣資策會制定，普及於臺港澳，且收錄 13060 個繁體中文字的編碼為？", a: "Big-5 code (大五碼)", w: ["ASCII", "Unicode (萬國碼)", "ANSI"], exp: "Big-5 code 是專門為繁體中文設計的編碼系統。" },
+                    { q: "採用 Big-5 code 編碼系統時，1 個繁體中文字會佔用多少儲存空間？", a: "16 位元 (2 個位元組)", w: ["8 位元 (1 個位元組)", "32 位元 (4 個位元組)", "7 位元"], exp: "Big-5 為 16 位元編碼，即 2 個位元組表示 1 個中文字。" }
+                ];
+                let t = qTypes[Math.floor(Math.random() * qTypes.length)];
+                let data = shuffleOptions(t.a, t.w);
+                return {
+                    icon: "🇹🇼",
+                    question: t.q, options: data.options, correctAnswer: data.correctAnswer, explanation: t.exp
+                };
+            },
+            // 題型 9: Unicode 觀念
+            function() {
+                let data = shuffleOptions("Unicode (萬國碼)", ["Big-5 code (大五碼)", "ASCII", "ANSI"]);
+                return {
+                    icon: "🌍",
+                    question: "現今的作業系統大多採用哪一種編碼，可以適用於世界上大部分的語言和符號，且每一個字都有獨一無二的編碼？",
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    explanation: "Unicode（萬國碼）常以 16 位元表示 1 個字元，解決了各國語言編碼不相容的問題，現代 OS 皆以此為主。"
+                };
+            },
+            // 題型 10: 檔案容量實戰計算 (隨機字數)
+            function() {
+                let chCount = Math.floor(Math.random() * 50) + 10; // 10~59 中文
+                let enCount = Math.floor(Math.random() * 50) + 10; // 10~59 英文
+                let totalBytes = (chCount * 2) + (enCount * 1);
+                
+                let w1 = (chCount * 1) + (enCount * 1);
+                let w2 = (chCount * 2) + (enCount * 2);
+                let w3 = totalBytes + 8;
+
+                let data = shuffleOptions(`${totalBytes} Bytes`, [`${w1} Bytes`, `${w2} Bytes`, `${w3} Bytes`]);
+                return {
+                    icon: "💾",
+                    question: `情境計算題：有一份文件採用 Big-5 儲存了 ${chCount} 個繁體中文字，並採用擴充後的 ASCII 儲存了 ${enCount} 個英文字母。請問該文件共佔用多少「位元組 (Bytes)」？`,
+                    options: data.options,
+                    correctAnswer: data.correctAnswer,
+                    explanation: `Big-5 中文字每個佔用 2 Bytes (${chCount} × 2 = ${chCount*2})，現今 ASCII 英文字母每個佔用 1 Byte (${enCount} × 1 = ${enCount})。加總為 ${totalBytes} Bytes。`
+                };
+            }
+        ];
+
+        let quizData = [];
+        let currentQuestion = 0;
+        let score = 0;
+        let userAnswers = [];
+
+        const startScreen = document.getElementById('start-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const questionText = document.getElementById('question-text');
+        const qIcon = document.getElementById('q-icon');
+        const optionsContainer = document.getElementById('options-container');
+        const qNumber = document.getElementById('q-number');
+        const scoreDisplay = document.getElementById('score-display');
+        const feedbackContainer = document.getElementById('feedback-container');
+        const nextBtn = document.getElementById('next-btn');
+        const qHeader = document.getElementById('q-header');
+
+        function generateQuizData() {
+            // 每次重新產生 10 題動態題目
+            quizData = generators.map(gen => gen());
+            // 打亂這 10 題的出現順序
+            quizData.sort(() => Math.random() - 0.5);
+        }
+
+        function startQuiz() {
+            generateQuizData();
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            resultScreen.classList.remove('flex');
+            quizScreen.classList.remove('hidden');
+            quizScreen.classList.add('flex');
+            
+            currentQuestion = 0;
+            score = 0;
+            userAnswers = [];
+            updateScore();
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            // 隱藏回饋與按鈕
+            feedbackContainer.classList.add('hidden');
+            feedbackContainer.className = 'hidden text-center py-4 px-6 rounded-2xl font-black text-xl shadow-inner transition-all';
+            nextBtn.classList.add('hidden');
+            optionsContainer.innerHTML = '';
+            
+            // 觸發題目重新彈出的動畫
+            qHeader.classList.remove('pop-in');
+            void qHeader.offsetWidth; 
+            qHeader.classList.add('pop-in');
+
+            const currentQ = quizData[currentQuestion];
+            qNumber.innerText = currentQuestion + 1;
+            qIcon.innerText = currentQ.icon;
+            questionText.innerText = currentQ.question;
+
+            // 產生選項，並加入階層式滑入動畫
+            currentQ.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.innerText = option;
+                // 添加 stagger-X class 來產生依序滑入的效果
+                btn.className = `option-btn slide-in-right stagger-${index} w-full text-left p-5 border-2 border-gray-200 rounded-2xl bg-white text-gray-700 font-bold text-lg focus:outline-none shadow-sm`;
+                btn.onclick = () => selectOption(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(selectedIndex, btnElement) {
+            // 禁用所有按鈕
+            const allBtns = optionsContainer.querySelectorAll('button');
+            allBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.remove('hover:-translate-y-1', 'hover:shadow-xl');
+            });
+
+            const currentQ = quizData[currentQuestion];
+            const isCorrect = selectedIndex === currentQ.correctAnswer;
+            
+            userAnswers.push({
+                questionText: currentQ.question,
+                icon: currentQ.icon,
+                selected: selectedIndex,
+                correct: currentQ.correctAnswer,
+                options: currentQ.options,
+                explanation: currentQ.explanation
+            });
+
+            feedbackContainer.classList.remove('hidden');
+            feedbackContainer.classList.add('pop-in');
+
+            if (isCorrect) {
+                btnElement.classList.add('bg-green-500', 'text-white', 'border-green-600', 'correct-anim');
+                btnElement.classList.remove('bg-white', 'text-gray-700');
+                score += 10; // 每題 10 分，共 100 分
+                updateScore();
+                feedbackContainer.innerHTML = '✨ 答對了！太厲害了！';
+                feedbackContainer.classList.add('bg-green-100', 'text-green-700', 'border-2', 'border-green-400');
+            } else {
+                btnElement.classList.add('bg-red-500', 'text-white', 'border-red-600', 'wrong-anim');
+                btnElement.classList.remove('bg-white', 'text-gray-700');
+                
+                // 標示正確答案
+                allBtns[currentQ.correctAnswer].classList.add('bg-green-100', 'border-green-500', 'text-green-800', 'shadow-inner');
+                
+                feedbackContainer.innerHTML = '❌ 哎呀，答錯了！';
+                feedbackContainer.classList.add('bg-red-100', 'text-red-700', 'border-2', 'border-red-400');
+            }
+
+            nextBtn.classList.remove('hidden');
+            nextBtn.classList.add('pop-in');
+        }
+
+        function updateScore() {
+            scoreDisplay.innerText = `得分: ${score}`;
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            quizScreen.classList.add('hidden');
+            quizScreen.classList.remove('flex');
+            resultScreen.classList.remove('hidden');
+            resultScreen.classList.add('flex');
+
+            const finalScoreEl = document.getElementById('final-score');
+            finalScoreEl.innerText = `你的最終總分是：${score} / 100`;
+
+            const iconEl = document.getElementById('final-icon');
+            if (score === 100) iconEl.innerText = '🥇 完美通關！';
+            else if (score >= 80) iconEl.innerText = '🥈 表現優異！';
+            else if (score >= 60) iconEl.innerText = '🥉 及格過關！';
+            else iconEl.innerText = '💪 再接再厲！';
+
+            generateReview();
+        }
+
+        function generateReview() {
+            const reviewContainer = document.getElementById('review-container');
+            reviewContainer.innerHTML = '';
+
+            userAnswers.forEach((ans, index) => {
+                const isCorrect = ans.selected === ans.correct;
+                const statusColor = isCorrect ? 'text-green-600' : 'text-red-500';
+                const statusIcon = isCorrect ? '✅' : '❌';
+                const bgColor = isCorrect ? 'bg-green-50' : 'bg-red-50';
+                const borderColor = isCorrect ? 'border-green-200' : 'border-red-200';
+                
+                const item = document.createElement('div');
+                item.className = `${bgColor} p-5 rounded-2xl border-2 ${borderColor} shadow-sm`;
+                
+                item.innerHTML = `
+                    <p class="font-bold text-gray-800 mb-3 text-lg flex items-start">
+                        <span class="mr-2">${ans.icon}</span> 
+                        <span>Q${index + 1}: ${ans.questionText}</span>
+                    </p>
+                    <div class="mb-3 space-y-1 bg-white p-3 rounded-xl shadow-inner">
+                        <div class="${statusColor} font-bold flex items-center">
+                            <span class="w-6">${statusIcon}</span> 
+                            你的作答: ${ans.selected !== null ? ans.options[ans.selected] : '未作答'}
+                        </div>
+                        ${!isCorrect ? `
+                        <div class="text-green-600 font-bold flex items-center">
+                            <span class="w-6">💡</span> 
+                            正確解答: ${ans.options[ans.correct]}
+                        </div>` : ''}
+                    </div>
+                    <div class="text-gray-700 bg-blue-50/50 p-4 rounded-xl border border-blue-100 border-l-4 border-l-blue-400">
+                        <strong class="text-blue-800">📌 解析：</strong>${ans.explanation}
+                    </div>
+                `;
+                reviewContainer.appendChild(item);
+            });
+        }
+    </script>
+</body>
+</html>
