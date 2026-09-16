@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聲音數位化 - 2x2 互動測驗</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Nunito', 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            margin: 0;
+        }
+
+        /* 遊戲視窗卡片 */
+        .game-card {
+            background-color: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 800px;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 動畫設定 */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.1); opacity: 0; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
+        }
+
+        .animate-pop { animation: popIn 0.4s ease-out forwards; }
+        .animate-bounce-in { animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        /* 2x2 網格選項按鈕樣式 */
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 1rem;
+            flex-grow: 1;
+        }
+
+        .option-btn {
+            background: #f8fafc;
+            border: 3px solid #e2e8f0;
+            border-radius: 1.5rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-btn:hover:not(:disabled) {
+            transform: translateY(-5px) scale(1.02);
+            border-color: #60a5fa;
+            background: #eff6ff;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-btn:active:not(:disabled) {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* 答對與答錯的樣式 */
+        .btn-correct {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+            color: #166534 !important;
+            animation: bounceIn 0.5s ease-out;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+            z-index: 10;
+        }
+
+        .btn-wrong {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+            color: #991b1b !important;
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .btn-disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-card">
+        
+        <!-- 1. 首頁 -->
+        <div id="screen-start" class="flex flex-col items-center justify-center p-8 h-full flex-grow text-center animate-pop">
+            <div class="text-8xl mb-6 animate-bounce-in">🎵</div>
+            <h1 class="text-4xl md:text-5xl font-black text-blue-600 mb-4 tracking-wide">聲音數位化挑戰</h1>
+            <p class="text-lg text-gray-500 mb-8 max-w-md">
+                點擊選項，立刻對決！<br>不含軟體操作題，專注在聲音的數位化原理。<br>每次重玩題目與數字都會不一樣喔！
+            </p>
+            <button onclick="startGame()" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-12 rounded-full text-2xl shadow-xl transition-transform hover:scale-110 active:scale-95">
+                開始遊戲
+            </button>
+        </div>
+
+        <!-- 2. 測驗頁面 -->
+        <div id="screen-quiz" class="hidden flex-col h-full flex-grow relative p-6">
+            <!-- 頂部資訊列 -->
+            <div class="flex justify-between items-center mb-4 bg-gray-100 p-4 rounded-2xl">
+                <div class="text-blue-600 font-bold text-xl px-4 py-1 bg-blue-100 rounded-full" id="question-counter">Q 1 / 10</div>
+                <!-- 進度條 -->
+                <div class="flex-grow mx-4 h-3 bg-gray-200 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-300 w-0"></div>
+                </div>
+                <div class="text-yellow-600 font-black text-xl px-4 py-1 bg-yellow-100 rounded-full" id="score-display">⭐ 0</div>
+            </div>
+            
+            <!-- 題目區 -->
+            <div class="mb-6 flex-shrink-0 min-h-[100px] flex items-center justify-center text-center px-4">
+                <h2 id="question-text" class="text-2xl md:text-3xl font-bold text-gray-800 leading-snug">載入中...</h2>
+            </div>
+            
+            <!-- 2x2 選項區 -->
+            <div id="options-container" class="option-grid">
+                <!-- JavaScript 動態產生 4 個選項按鈕 -->
+            </div>
+        </div>
+
+        <!-- 3. 結果與解析頁面 -->
+        <div id="screen-result" class="hidden flex-col h-full flex-grow p-6 overflow-y-auto relative">
+            <div class="text-center mb-8 pt-8 animate-bounce-in">
+                <div class="text-6xl mb-4">🎉</div>
+                <h2 class="text-4xl font-black text-blue-600 mb-2">測驗結束！</h2>
+                <p class="text-2xl font-bold text-gray-600">總得分：<span id="final-score" class="text-6xl text-blue-500 mx-2">100</span></p>
+                <button onclick="startGame()" class="mt-6 bg-green-500 hover:bg-green-400 text-white font-bold py-3 px-10 rounded-full text-xl shadow-lg transition-transform hover:scale-105 active:scale-95">
+                    🔄 重新挑戰 (產生新題)
+                </button>
+            </div>
+
+            <!-- 解析區 -->
+            <div class="bg-gray-50 rounded-2xl p-6 border-2 border-gray-100 mt-4">
+                <h3 class="text-2xl font-bold mb-4 text-gray-800 border-b-2 border-gray-200 pb-2">📖 觀念解析對照</h3>
+                <div id="analysis-container" class="flex flex-col gap-4">
+                    <!-- JavaScript 動態產生解析 -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        let userRecords = [];
+        let isAnswering = false;
+
+        // 洗牌小工具
+        function shuffleArray(array) {
+            let shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // 產生動態 10 題 (無軟體題，專注聲音數位化原理)
+        function generateDynamicQuestions() {
+            let questions = [];
+
+            // Q1. 聲音三要素 (隨機抽考響度、音調或音色)
+            const elements = [
+                { q: "聲波的「振幅」越大", a: "響度 (音量)越大", w: ["音調越高", "音色越好", "頻率越高"], exp: "響度為聲音的大小，聲波的振幅越大、音量越大[cite: 2]。" },
+                { q: "聲波的「振動頻率」越高", a: "音調越高", w: ["響度 (音量)越大", "音色越好", "振幅越大"], exp: "音調為聲音的高低，聲波的振動頻率越高、音調越高[cite: 2]。" },
+                { q: "由聲波的「波形」決定", a: "音色", w: ["響度", "音調", "頻率"], exp: "音色為聲音的特色，由聲波的波形決定，不同人及樂器波形不同[cite: 2]。" }
+            ];
+            let q1 = elements[Math.floor(Math.random() * elements.length)];
+            questions.push({
+                text: `關於聲音的三要素，下列何者對應正確？\n當${q1.q}時，代表什麼？`,
+                correct: q1.a,
+                wrongs: q1.w,
+                explanation: q1.exp
+            });
+
+            // Q2. 取樣頻率換算 (隨機 Hz)
+            const hzOptions = [44.1, 48, 22.05, 96];
+            let targetHz = hzOptions[Math.floor(Math.random() * hzOptions.length)];
+            let targetTimes = targetHz * 1000;
+            questions.push({
+                text: `聲音在進行數位化時，若取樣頻率為「${targetHz} kHz」，代表什麼意思？`,
+                correct: `1秒鐘取樣 ${targetTimes} 次`,
+                wrongs: [`1秒鐘取樣 ${targetHz} 次`, `1分鐘取樣 ${targetTimes} 次`, `聲音振幅被切割成 ${targetTimes} 份`],
+                explanation: `取樣頻率單位為赫茲（Hz），代表每一秒內取樣的次數。${targetHz}kHz ＝ ${targetTimes}Hz，即 1 秒鐘取樣 ${targetTimes} 次[cite: 2]。`
+            });
+
+            // Q3. 量化位元數換算 (隨機位元)
+            const bitOptions = [{b:1, v:2}, {b:8, v:256}, {b:16, v:65536}];
+            let targetBit = bitOptions[Math.floor(Math.random() * bitOptions.length)];
+            let wrongBitVals = [targetBit.v*2, targetBit.b*2, targetBit.b*8].filter(x => x !== targetBit.v);
+            while(wrongBitVals.length < 3) wrongBitVals.push(Math.floor(Math.random()*100)); // 防呆補齊
+            questions.push({
+                text: `聲音的「量化」會將振幅高度切割成相等間距。請問若以「${targetBit.b} 位元」量化，共可劃分成幾個間距？`,
+                correct: `${targetBit.v} 個`,
+                wrongs: wrongBitVals.slice(0,3).map(x => `${x} 個`),
+                explanation: `量化的精確度取決於切割間距的位元數。以 ${targetBit.b} 位元量化，可劃分成 2的${targetBit.b}次方 ＝ ${targetBit.v} 個間距[cite: 2]。`
+            });
+
+            // Q4. 檔案大小計算 (隨機變數)
+            const randomMin = Math.floor(Math.random() * 3) + 1;
+            const isStereo = Math.random() > 0.5;
+            const randomBit = isStereo ? 16 : 24;
+            const channelText = isStereo ? "雙聲道" : "單聲道";
+            const channelNum = isStereo ? 2 : 1;
+            questions.push({
+                text: `有一首 ${randomMin} 分鐘、${channelText}的歌曲，取樣頻率 44100Hz，以 ${randomBit} 位元量化。要計算未壓縮檔案大小(Bytes)，正確算式為何？`,
+                correct: `44100 × (${randomBit}÷8) × ${channelNum} × (${randomMin}×60)`,
+                wrongs: [
+                    `44100 × ${randomBit} × ${channelNum} × ${randomMin}`, 
+                    `44100 × (${randomBit}÷8) × ${channelNum} × ${randomMin}`, 
+                    `44100 × ${randomBit} × ${channelNum} × (${randomMin}×60)`
+                ],
+                explanation: `檔案大小 ＝ 取樣頻率 × 量化的位元組(位元÷8) × 通道數(${channelNum}) × 秒數(${randomMin}×60)[cite: 2]。`
+            });
+
+            // Q5. 聲音格式 (MIDI / WAV / MP3 隨機)
+            const formats = [
+                { f: "MIDI", d: "不儲存聲音真實波形，而是記錄樂器演奏資訊（如音調），檔案很小" },
+                { f: "WAV", d: "不經過壓縮，數位化後音質不失真，但檔案相當大" },
+                { f: "MP3", d: "經過壓縮，檔案容量較小，為主流音樂檔案格式" }
+            ];
+            let q5 = formats[Math.floor(Math.random() * formats.length)];
+            let wrongFormats = formats.filter(x => x.f !== q5.f).map(x => x.f);
+            wrongFormats.push("MP4"); // 湊滿3個錯誤選項
+            questions.push({
+                text: `哪一種聲音格式的特性是：「${q5.d}」？`,
+                correct: `${q5.f}`,
+                wrongs: wrongFormats,
+                explanation: `根據簡報介紹，${q5.f} 格式的特性正是「${q5.d}」[cite: 2]。`
+            });
+
+            // Q6. 取樣 vs 量化 定義隨機測驗
+            const process = [
+                { act: "將聲波切割成數個時間間隔相等的樣本", ans: "取樣" },
+                { act: "將振幅高度切割成相等間距，歸類為相同數值", ans: "量化" }
+            ];
+            let q6 = process[Math.floor(Math.random() * process.length)];
+            questions.push({
+                text: `在聲音數位化的過程中，我們稱「${q6.act}」這個步驟為什麼？`,
+                correct: q6.ans,
+                wrongs: ["編碼", "壓縮", q6.ans === "取樣" ? "量化" : "取樣"],
+                explanation: `聲音必須經過「取樣」與「量化」才能儲存。其中「${q6.ans}」的定義為：${q6.act}[cite: 2]。`
+            });
+
+            // Q7. 取樣/量化 品質與檔案大小的影響
+            const highQuality = Math.random() > 0.5;
+            if (highQuality) {
+                questions.push({
+                    text: `如果我們希望數位化後的聲音「越接近原始聲音」，我們應該怎麼做？`,
+                    correct: "提高取樣頻率，並提高量化位元數",
+                    wrongs: ["降低取樣頻率，並降低量化位元數", "提高取樣頻率，但降低量化位元數", "降低取樣頻率，但提高量化位元數"],
+                    explanation: "單位時間內，取樣頻率越高、量化的位元數越高，聲音就會越接近原音[cite: 2]。"
+                });
+            } else {
+                questions.push({
+                    text: `若為了節省儲存空間而「降低」取樣頻率與量化位元數，會產生什麼結果？`,
+                    correct: "聲音會失真，但檔案容量變小",
+                    wrongs: ["聲音越接近原音，檔案容量變小", "聲音會失真，檔案容量反而變大", "聲音品質不變，只有檔案變小"],
+                    explanation: "取樣頻率與量化位元數越低，切割越少，雖然檔案小，但會越無法還原真實波形而失真[cite: 2]。"
+                });
+            }
+
+            // Q8. 聲道概念辨析
+            questions.push({
+                text: `關於單聲道與雙聲道的敘述，下列何者正確？`,
+                correct: "雙聲道將聲音儲存成左右聲道，可建構出空間環境感受",
+                wrongs: [
+                    "單聲道代表聲音只能從左邊喇叭出來", 
+                    "無論單聲道或雙聲道，數位化後的檔案大小都一樣", 
+                    "單聲道可以比雙聲道帶來更真實的立體空間感"
+                ],
+                explanation: "單聲道將聲音儲存在同一聲道；雙聲道儲存成左、右兩聲道，能建構空間環境感受。通道數目會直接影響檔案大小倍數[cite: 2]。"
+            });
+
+            // Q9. 聲音三要素情境應用
+            const contextQs = [
+                { q: "在樂團中，我們能閉上眼睛分辨出長笛跟鋼琴的聲音", ans: "兩者產生的聲波波形(音色)不同", w: ["兩者的音量(響度)不同", "兩者的頻率(音調)不同", "兩者的取樣頻率不同"] },
+                { q: "轉動音響的音量旋鈕把音樂開到最大聲", ans: "改變了聲波的振幅(響度)", w: ["改變了聲波的頻率(音調)", "改變了聲波的波形(音色)", "改變了聲音的取樣次數"] }
+            ];
+            let q9 = contextQs[Math.floor(Math.random() * contextQs.length)];
+            questions.push({
+                text: `情境題：${q9.q}，這主要是因為什麼原因？`,
+                correct: q9.ans,
+                wrongs: q9.w,
+                explanation: "音色由波形決定，用以分辨不同樂器；音量(響度)則是由聲波的振幅大小決定[cite: 2]。"
+            });
+
+            // Q10. 聲音格式綜合比較
+            const formatCompare = [
+                { correct: "MP3 檔因為經過壓縮，所以檔案通常比未壓縮的 WAV 檔小", w1: "WAV 檔因為有經過壓縮，所以檔案非常小", w2: "MIDI 檔記錄了最真實的聲音波形，所以檔案最大", w3: "MP3 檔沒有壓縮，音質與 WAV 完全一樣" },
+                { correct: "WAV 檔不經過壓縮，音質不失真，常作為編輯聲音時的格式", w1: "WAV 檔經過高度壓縮，音質嚴重失真", w2: "MP3 檔無法在一般電腦上播放", w3: "MIDI 檔錄製了最精準的人聲唱歌波形" }
+            ];
+            let q10 = formatCompare[Math.floor(Math.random() * formatCompare.length)];
+            questions.push({
+                text: `關於常見的聲音檔案格式比較，下列敘述何者正確？`,
+                correct: q10.correct,
+                wrongs: [q10.w1, q10.w2, q10.w3],
+                explanation: "WAV是不壓縮不失真格式(檔案大)；MP3是壓縮格式(檔案小)；MIDI不儲存波形只記錄演奏資訊(檔案極小)[cite: 2]。"
+            });
+
+            // 隨機打亂 10 題順序，並打亂各題的 4 個選項
+            return shuffleArray(questions).map(q => {
+                const options = shuffleArray([q.correct, ...q.wrongs]);
+                return { ...q, options };
+            });
+        }
+
+        function switchScreen(screenId) {
+            ['screen-start', 'screen-quiz', 'screen-result'].forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            });
+            const target = document.getElementById(screenId);
+            target.classList.remove('hidden');
+            target.classList.add('flex');
+        }
+
+        function startGame() {
+            currentQuestions = generateDynamicQuestions();
+            currentIndex = 0;
+            score = 0;
+            userRecords = [];
+            isAnswering = false;
+            switchScreen('screen-quiz');
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            isAnswering = false;
+            const q = currentQuestions[currentIndex];
+            
+            // 更新 UI
+            document.getElementById('question-counter').innerText = `Q ${currentIndex + 1} / 10`;
+            document.getElementById('score-display').innerText = `⭐ ${score}`;
+            document.getElementById('progress-bar').style.width = `${(currentIndex / 10) * 100}%`;
+            
+            // 題目文字更新並重置動畫
+            const qText = document.getElementById('question-text');
+            qText.innerText = q.text;
+            qText.classList.remove('animate-pop');
+            void qText.offsetWidth; // 觸發重繪
+            qText.classList.add('animate-pop');
+
+            // 產生 2x2 按鈕
+            const optsContainer = document.getElementById('options-container');
+            optsContainer.innerHTML = '';
+            
+            q.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = `option-btn animate-pop`;
+                btn.style.animationDelay = `${index * 0.05}s`; // 選項依序出現
+                btn.innerText = optText;
+                btn.onclick = () => handleAnswer(btn, optText, q.correct);
+                optsContainer.appendChild(btn);
+            });
+        }
+
+        function handleAnswer(clickedBtn, selected, correct) {
+            if (isAnswering) return; // 防止狂點
+            isAnswering = true;
+
+            const isCorrect = (selected === correct);
+            const allBtns = document.querySelectorAll('.option-btn');
+            
+            // 鎖定所有按鈕狀態
+            allBtns.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('btn-disabled');
+                
+                // 標示正確與錯誤動畫
+                if (btn.innerText === correct) {
+                    btn.classList.remove('btn-disabled');
+                    btn.classList.add('btn-correct');
+                } else if (btn === clickedBtn && !isCorrect) {
+                    btn.classList.remove('btn-disabled');
+                    btn.classList.add('btn-wrong');
+                }
+            });
+
+            // 計分
+            if (isCorrect) {
+                score += 10;
+                document.getElementById('score-display').innerText = `⭐ ${score}`;
+            }
+
+            // 紀錄作答供最後解析使用
+            userRecords.push({
+                q: currentQuestions[currentIndex].text,
+                selected: selected,
+                correct: correct,
+                isCorrect: isCorrect,
+                exp: currentQuestions[currentIndex].explanation
+            });
+
+            // ★ 延遲 1.5 秒後自動進入下一題 ★
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex < 10) {
+                    renderQuestion();
+                } else {
+                    showResult();
+                }
+            }, 1500);
+        }
+
+        function showResult() {
+            document.getElementById('progress-bar').style.width = `100%`;
+            
+            setTimeout(() => {
+                switchScreen('screen-result');
+                
+                document.getElementById('final-score').innerText = score;
+
+                // 產生解析列表
+                const analysisContainer = document.getElementById('analysis-container');
+                analysisContainer.innerHTML = '';
+                
+                userRecords.forEach((record, idx) => {
+                    const block = document.createElement('div');
+                    block.className = `p-4 rounded-xl shadow-sm border-l-4 ${record.isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'}`;
+                    block.innerHTML = `
+                        <p class="font-bold text-gray-800 mb-2">Q${idx + 1}. ${record.q.replace(/\n/g, '<br>')}</p>
+                        <p class="text-sm mb-1 font-bold ${record.isCorrect ? 'text-green-600' : 'text-red-600'}">
+                            你的選擇：${record.selected} ${record.isCorrect ? '✔️' : '❌'}
+                        </p>
+                        ${!record.isCorrect ? `<p class="text-sm font-bold text-green-700 mb-2">正確答案：${record.correct}</p>` : ''}
+                        <div class="mt-3 p-3 bg-white rounded-lg text-sm text-gray-600 border border-gray-200">
+                            <span class="font-extrabold text-blue-500">💡 解析：</span>${record.exp}
+                        </div>
+                    `;
+                    analysisContainer.appendChild(block);
+                });
+            }, 500);
+        }
+    </script>
+</body>
+</html>
