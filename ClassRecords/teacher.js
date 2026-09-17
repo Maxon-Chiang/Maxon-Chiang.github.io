@@ -374,6 +374,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	window.addEventListener('pageshow', async (event) => {
+		// 確保透過瀏覽器「上一頁」返回時，所有的下拉選單都不會卡在畫面上
+		document.querySelectorAll('.sys-switch-content, .dropdown-content').forEach(menu => {
+			menu.classList.remove('show');
+		});
+
 		const REFRESH_FLAG_KEY = 'teacherTimetableNeedsRefresh';
 		if (event.persisted && localStorage.getItem(REFRESH_FLAG_KEY) === 'true' && currentUser) {
 			await initialize(currentUserData, false, 1);
@@ -1581,8 +1586,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		document.getElementById('record-points').value = (Math.round(newValue * 10) / 10).toFixed(1);
 	};
 
-	scorePlusBtn.addEventListener('click', () => adjustScore(1));
-	scoreMinusBtn.addEventListener('click', () => adjustScore(-1));
+	scorePlusBtn.addEventListener('click', () => adjustScore(0.5));
+	scoreMinusBtn.addEventListener('click', () => adjustScore(-0.5));
 
 	passwordResetForm.addEventListener('submit', async (e) => { e.preventDefault(); const p1 = document.getElementById('new-password').value; const p2 = document.getElementById('confirm-password').value; document.getElementById('password-error-message').textContent = ''; if (p1.length < 6) { document.getElementById('password-error-message').textContent = '密碼至少6字元'; return; } if (p1 !== p2) { document.getElementById('password-error-message').textContent = '密碼不相符'; return; } try { await currentUser.updatePassword(p1); await db.collection('users').doc(currentUser.uid).update({ passwordNeedsReset: false }); alert('密碼修改成功，請重新登入'); auth.signOut(); } catch (err) { document.getElementById('password-error-message').textContent = '更新失敗: ' + err.message; } });
 	document.getElementById('force-logout-btn').addEventListener('click', () => { auth.signOut(); });
@@ -1737,6 +1742,15 @@ document.addEventListener('DOMContentLoaded', function() {
 			sysSwitchMenu.classList.remove('show');
 		}
 	});
+
+	// 點擊切換系統的選項時，立刻關閉選單
+	if (sysSwitchMenu) {
+		sysSwitchMenu.querySelectorAll('.sys-item, .sys-link').forEach(item => {
+			item.addEventListener('click', () => {
+				sysSwitchMenu.classList.remove('show');
+			});
+		});
+	}
 
 	window.setDefaultSystem = function(pageName, sysName) {
 		const current = localStorage.getItem('defaultSystemPage');
