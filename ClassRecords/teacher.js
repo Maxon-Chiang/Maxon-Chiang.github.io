@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	let currentEntity = null;
 	let editingRecordId = null;
 	let PERIOD_TIMES = [];
+	let ALL_SCHEDULES = []; // 儲存多組作息表
 	let allPerformanceRecords = [];
 	let studentLatestRecords = {};
 	let lastSchUpdFetch = 0;
@@ -103,19 +104,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	function checkAndTriggerDirectEntry() {
 		if (localStorage.getItem(DIRECT_ENTRY_KEY) !== 'true') return false;
-		const currentPeriodIndex = getCurrentPeriodIndex();
-		if (currentPeriodIndex === -1) return false;
+		
 		const now = new Date();
 		const dayOfWeek = now.getDay();
 		if (dayOfWeek < 1 || dayOfWeek > 5) return false;
 		const dayIndex = dayOfWeek - 1;
+		
 		const highlightWeekStart = getMonday(new Date());
 		const derivedSchedule = getDerivedCurrentUserSchedule(highlightWeekStart);
 		const periods = derivedSchedule.periods;
-		const periodData = periods[currentPeriodIndex];
-		if (periodData && periodData[dayIndex]) {
+		
+		for (let periodIndex = 0; periodIndex < 8; periodIndex++) {
+			if (!periods[periodIndex] || !periods[periodIndex][dayIndex]) continue;
+			
 			let classCode = null;
-			let cellContent = periodData[dayIndex];
+			let cellContent = periods[periodIndex][dayIndex];
+			
 			if (typeof cellContent === 'string') {
 				const parts = cellContent.split(/\s+/);
 				classCode = parts[0];
@@ -126,11 +130,15 @@ document.addEventListener('DOMContentLoaded', function() {
 					classCode = cellContent.class;
 				}
 			}
+			
 			if (classCode && allClassList.includes(classCode)) {
-				setTimeout(() => {
-					openStudentRosterModal(classCode, 'main');
-				}, 300);
-				return true;
+				// 檢查這節課的時間是否正在進行中
+				if (isClassOngoingNow(classCode, periodIndex)) {
+					setTimeout(() => {
+						openStudentRosterModal(classCode, 'main');
+					}, 300);
+					return true;
+				}
 			}
 		}
 		return false;
@@ -434,38 +442,43 @@ document.addEventListener('DOMContentLoaded', function() {
 	}
 
 	function highlightCurrentClass() {
-		if (PERIOD_TIMES.length === 0 || !scheduleDataLoaded) return;
+		if (!scheduleDataLoaded || !ALL_SCHEDULES || ALL_SCHEDULES.length === 0) return;
+		
 		document.querySelectorAll('.class-block').forEach(el => {
 			el.classList.remove('current-class-highlight');
 		});
+		
 		const now = new Date();
 		const dayOfWeek = now.getDay();
 		if (dayOfWeek < 1 || dayOfWeek > 5) return;
 		const dayIndex = dayOfWeek - 1;
-		const currentPeriodIndex = getCurrentPeriodIndex();
-		if (currentPeriodIndex === -1) return;
+		
 		const highlightWeekStart = getMonday(new Date());
 		const derivedSchedule = getDerivedCurrentUserSchedule(highlightWeekStart);
 		const periods = derivedSchedule.periods;
-		const periodData = periods[currentPeriodIndex];
-		if (periodData && periodData[dayIndex]) {
-			let cellContent = periodData[dayIndex];
+		
+		// 走訪老師今天的全部 8 節課，確認每節課的「專屬時間」是否是現在
+		for (let periodIndex = 0; periodIndex < 8; periodIndex++) {
+			if (!periods[periodIndex] || !periods[periodIndex][dayIndex]) continue;
+			
+			let cellContent = periods[periodIndex][dayIndex];
 			let classCode = null;
+			
 			if (typeof cellContent === 'string') {
 				const parts = cellContent.split(/\s+/);
 				classCode = parts[0];
 			} else if (cellContent.class) {
-				if (cellContent.isSwappedIn || cellContent.isExchangedOut || cellContent.isSubstitutedOut) {
-					return;
-				}
+				if (cellContent.isSwappedIn || cellContent.isExchangedOut || cellContent.isSubstitutedOut) continue;
 				classCode = cellContent.class;
-			} else {
-				return;
 			}
+			
 			if (classCode) {
-				const targetCard = document.querySelector(`.class-block[data-class-id="${classCode}"]`);
-				if (targetCard) {
-					targetCard.classList.add('current-class-highlight');
+				// 檢查這節課的「專屬時間」是否正在進行中
+				if (isClassOngoingNow(classCode, periodIndex)) {
+					const targetCard = document.querySelector(`.class-block[data-class-id="${classCode}"]`);
+					if (targetCard) {
+						targetCard.classList.add('current-class-highlight');
+					}
 				}
 			}
 		}
@@ -473,32 +486,74 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	async function loadPeriodTimes(schoolId, useCache) {
 		if (!schoolId) return;
-		if (useCache && PERIOD_TIMES.length > 0) {
-			PERIOD_TIMES = CACHE_DATA_STATIC.PERIOD_TIMES;
+		if (useCache && ALL_SCHEDULES && ALL_SCHEDULES.length > 0) {
+			ALL_SCHEDULES = CACHE_DATA_STATIC.ALL_SCHEDULES;
+			PERIOD_TIMES = ALL_SCHEDULES[0].times; // 預設使用第一組作備用
 			return;
 		}
+		
+		const fallbackTimes = [
+			{ period: 1, start: '08:10', duration: 50 }, { period: 2, start: '09:10', duration: 50 },
+			{ period: 3, start: '10:10', duration: 50 }, { period: 4, start: '11:10', duration: 50 },
+			{ period: 5, start: '13:10', duration: 50 }, { period: 6, start: '14:10', duration: 50 },
+			{ period: 7, start: '15:10', duration: 50 }, { period: 8, start: '16:10', duration: 50 }
+		];
+		
 		try {
 			const periodsDoc = await db.collection('schools').doc(schoolId).collection('periods').doc('current').get();
 			cloudDataUpdatedStatic = true;
-			if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
-				PERIOD_TIMES = periodsDoc.data().times.map(item => ({ period: item.period, start: item.start, duration: item.duration || 50 }));
-				PERIOD_TIMES.sort((a, b) => a.period - b.period);
+			if (periodsDoc.exists) {
+				const data = periodsDoc.data();
+				if (data.schedules && data.schedules.length > 0) {
+					ALL_SCHEDULES = data.schedules;
+				} else if (data.times && data.times.length > 0) {
+					// 相容舊版資料
+					ALL_SCHEDULES = [{ id: 0, grades: [], times: data.times }];
+				} else {
+					ALL_SCHEDULES = [{ id: 0, grades: [], times: fallbackTimes }];
+				}
 			} else {
-				PERIOD_TIMES = [
-					{ period: 1, start: '08:10', duration: 50 }, { period: 2, start: '09:10', duration: 50 },
-					{ period: 3, start: '10:10', duration: 50 }, { period: 4, start: '11:10', duration: 50 },
-					{ period: 5, start: '13:10', duration: 50 }, { period: 6, start: '14:10', duration: 50 },
-					{ period: 7, start: '15:10', duration: 50 }, { period: 8, start: '16:10', duration: 50 }
-				];
+				ALL_SCHEDULES = [{ id: 0, grades: [], times: fallbackTimes }];
 			}
+			PERIOD_TIMES = ALL_SCHEDULES[0].times; // UI 通用預設
 		} catch (error) {
-			PERIOD_TIMES = [
-				{ period: 1, start: '08:10', duration: 50 }, { period: 2, start: '09:10', duration: 50 },
-				{ period: 3, start: '10:10', duration: 50 }, { period: 4, start: '11:10', duration: 50 },
-				{ period: 5, start: '13:10', duration: 50 }, { period: 6, start: '14:10', duration: 50 },
-				{ period: 7, start: '15:10', duration: 50 }, { period: 8, start: '16:10', duration: 50 }
-			];
+			ALL_SCHEDULES = [{ id: 0, grades: [], times: fallbackTimes }];
+			PERIOD_TIMES = ALL_SCHEDULES[0].times;
 		}
+	}
+	
+	// 輔助函式：根據班級代碼找出對應的作息表陣列
+	function getScheduleTimesForClass(classCode) {
+		if (!ALL_SCHEDULES || ALL_SCHEDULES.length === 0) return PERIOD_TIMES;
+		if (!classCode) return ALL_SCHEDULES[0].times;
+		
+		const GRADE_MAP_REVERSE = { '一': '1', '二': '2', '三': '3', '四': '4', '五': '5', '六': '6', '七': '7', '八': '8', '九': '9' };
+		const firstDigit = classCode.charAt(0);
+		// 因為後台存的 grade 是 1~9，所以要轉換一下 (如果學校用中文年段的話)
+		const gradeLevel = GRADE_MAP_REVERSE[firstDigit] ? GRADE_MAP_REVERSE[firstDigit] : firstDigit;
+		
+		// 尋找包含此年段的作息表 (預設作息表1是 fallback)
+		const matchedSchedule = ALL_SCHEDULES.find(s => s.id !== 0 && s.grades && s.grades.includes(gradeLevel));
+		return matchedSchedule ? matchedSchedule.times : ALL_SCHEDULES[0].times;
+	}
+	
+	// 輔助函式：判斷給定班級的特定節次，是否在「目前現實時間」正在進行中
+	function isClassOngoingNow(classCode, periodIndex) {
+		const timesArray = getScheduleTimesForClass(classCode);
+		const period = timesArray[periodIndex];
+		if (!period) return false;
+		
+		const now = new Date();
+		const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+		const [startH, startM] = period.start.split(':').map(Number);
+		let startTimeMinutes = startH * 60 + startM;
+		let endTimeMinutes = startTimeMinutes + period.duration;
+		
+		const bufferMinutes = 5; // 提早 5 分鐘開始亮，延後 5 分鐘結束
+		startTimeMinutes = startTimeMinutes - bufferMinutes;
+		endTimeMinutes = endTimeMinutes + bufferMinutes;
+		
+		return currentTimeMinutes >= startTimeMinutes && currentTimeMinutes < endTimeMinutes;
 	}
 
 	async function fetchScheduleData(teacherName, schoolId, useCache) {
@@ -609,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	function saveCacheStatic() {
 		try {
-			const cacheData = { rosterData: studentsData, allClassList: allClassList, teacherTimetableData: teacherTimetableData, PERIOD_TIMES: PERIOD_TIMES, lastUpdated: new Date().getTime(), uid: currentUser.uid };
+			const cacheData = { rosterData: studentsData, allClassList: allClassList, teacherTimetableData: teacherTimetableData, PERIOD_TIMES: PERIOD_TIMES, ALL_SCHEDULES: ALL_SCHEDULES, lastUpdated: new Date().getTime(), uid: currentUser.uid };
 			localStorage.setItem(STATIC_CACHE_KEY, JSON.stringify(cacheData));
 		} catch (e) {}
 	}

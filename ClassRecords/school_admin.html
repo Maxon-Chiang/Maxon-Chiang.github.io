@@ -76,8 +76,23 @@
 		<p class="info-box">請將每項資料貼上/設定完成後，點擊該區塊的「上傳」按鈕獨立更新。必要資料：課程時間 → 學生名冊 → 教師課表。</p>
 		
 		<div class="data-block">
-			<h3>1. 課程時間表 (每節課起訖時間)</h3>
-			<p class="info-box">請設定每節課的開始時間和持續分鐘數。</p>
+			<h3>1. 課程時間表 (支援多組作息)</h3>
+			<p class="info-box">最多可設定 3 組不同的作息表，並指定適用年段（例如：作息表 1 給國中部、作息表 2 給高中部）。未勾選的年段預設套用「作息表 1」。</p>
+			
+			<div style="background: #f4f4f4; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #ccc;">
+				<label style="font-weight: bold; margin-right: 10px;">目前編輯：</label>
+				<select id="schedule-group-select" style="font-size: 1.1em; padding: 5px;">
+					<option value="0">作息表 1 (全校預設)</option>
+					<option value="1">作息表 2</option>
+					<option value="2">作息表 3</option>
+				</select>
+				
+				<div style="margin-top: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px;" id="schedule-grades-container">
+					<strong style="width: 100%;">本組作息適用年段 (可複選)：</strong>
+					<!-- 由 JS 動態產生 1~9 年級 Checkbox -->
+				</div>
+			</div>
+
 			<table id="periods-table">
 				<thead>
 					<tr>
@@ -209,16 +224,19 @@
 		const auth = firebase.auth();
 		let currentUser = null;
 		let schoolId = null;
-		let periodData = [
-			{ period: 1, start: '08:10', duration: 50 },
-			{ period: 2, start: '09:10', duration: 50 },
-			{ period: 3, start: '10:10', duration: 50 },
-			{ period: 4, start: '11:10', duration: 50 },
-			{ period: 5, start: '13:10', duration: 50 },
-			{ period: 6, start: '14:10', duration: 50 },
-			{ period: 7, start: '15:10', duration: 50 },
-			{ period: 8, start: '16:10', duration: 50 }
+		const DEFAULT_PERIODS = [
+			{ period: 1, start: '08:10', duration: 50 }, { period: 2, start: '09:10', duration: 50 },
+			{ period: 3, start: '10:10', duration: 50 }, { period: 4, start: '11:10', duration: 50 },
+			{ period: 5, start: '13:10', duration: 50 }, { period: 6, start: '14:10', duration: 50 },
+			{ period: 7, start: '15:10', duration: 50 }, { period: 8, start: '16:10', duration: 50 }
 		];
+		// 儲存 3 組作息表
+		let multiSchedules = [
+			{ id: 0, grades: [], times: JSON.parse(JSON.stringify(DEFAULT_PERIODS)) },
+			{ id: 1, grades: [], times: JSON.parse(JSON.stringify(DEFAULT_PERIODS)) },
+			{ id: 2, grades: [], times: JSON.parse(JSON.stringify(DEFAULT_PERIODS)) }
+		];
+		let currentEditingScheduleIndex = 0;
 		
 		auth.onAuthStateChanged(async (user) => {
 			if (user) {
@@ -267,24 +285,68 @@
 			return `${pad(endH)}:${pad(endM)}`;
 		}
 
+		function initGradeCheckboxes() {
+			const container = document.getElementById('schedule-grades-container');
+			const gradeNames = ['一', '二', '三', '四', '五', '六', '七', '八', '九'];
+			gradeNames.forEach((name, index) => {
+				const gradeLevel = (index + 1).toString();
+				const label = document.createElement('label');
+				label.style.cssText = "display: flex; align-items: center; gap: 3px; cursor: pointer; background: white; padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px;";
+				label.innerHTML = `<input type="checkbox" class="schedule-grade-cb" value="${gradeLevel}"> ${name}年級`;
+				container.appendChild(label);
+			});
+
+			container.addEventListener('change', (e) => {
+				if (e.target.classList.contains('schedule-grade-cb')) {
+					const checkedGrades = Array.from(document.querySelectorAll('.schedule-grade-cb:checked')).map(cb => cb.value);
+					multiSchedules[currentEditingScheduleIndex].grades = checkedGrades;
+				}
+			});
+
+			document.getElementById('schedule-group-select').addEventListener('change', (e) => {
+				currentEditingScheduleIndex = parseInt(e.target.value);
+				renderPeriodsTable();
+			});
+		}
+
 		async function loadPeriodsData() {
+			initGradeCheckboxes();
 			try {
 				const periodsDoc = await db.collection('schools').doc(schoolId).collection('periods').doc('current').get();
-				if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
-					periodData = periodsDoc.data().times.map(item => ({
-						period: item.period,
-						start: item.start,
-						duration: item.duration || 50
-					}));
+				if (periodsDoc.exists) {
+					const data = periodsDoc.data();
+					// 新版多組結構
+					if (data.schedules && data.schedules.length > 0) {
+						multiSchedules = data.schedules;
+						// 補齊到 3 組以防出錯
+						while(multiSchedules.length < 3) {
+							multiSchedules.push({ id: multiSchedules.length, grades: [], times: JSON.parse(JSON.stringify(DEFAULT_PERIODS)) });
+						}
+					} 
+					// 舊版單一結構相容轉換
+					else if (data.times && data.times.length > 0) {
+						multiSchedules[0].times = data.times.map(item => ({
+							period: item.period, start: item.start, duration: item.duration || 50
+						}));
+					}
 				}
 			} catch (error) {}
 		}
 
 		function renderPeriodsTable() {
+			// 更新 Checkbox 狀態
+			const currentGrades = multiSchedules[currentEditingScheduleIndex].grades || [];
+			document.querySelectorAll('.schedule-grade-cb').forEach(cb => {
+				cb.checked = currentGrades.includes(cb.value);
+				// 作息表 1 (預設) 不鎖定任何年段，因為未勾選的都會掉入作息表 1
+				cb.disabled = (currentEditingScheduleIndex === 0 && false); 
+			});
+
 			const tbody = document.getElementById('periods-tbody');
 			tbody.innerHTML = '';
-			periodData.sort((a, b) => a.period - b.period);
-			periodData.forEach((item, index) => {
+			const currentTimes = multiSchedules[currentEditingScheduleIndex].times;
+			currentTimes.sort((a, b) => a.period - b.period);
+			currentTimes.forEach((item, index) => {
 				const endTime = calculateEndTime(item.start, item.duration);
 				const row = tbody.insertRow();
 				row.dataset.index = index;
@@ -311,7 +373,7 @@
 		function updatePeriodData(e) {
 			const row = e.target.closest('tr');
 			const index = parseInt(row.dataset.index);
-			const dataItem = periodData[index];
+			const dataItem = multiSchedules[currentEditingScheduleIndex].times[index];
 			if (e.target.classList.contains('period-start')) {
 				dataItem.start = e.target.value;
 			} else if (e.target.classList.contains('period-duration')) {
@@ -328,21 +390,23 @@
 
 		function deletePeriod(e) {
 			const index = parseInt(e.target.dataset.index);
-			periodData.splice(index, 1);
-			periodData.forEach((item, i) => item.period = i + 1);
+			const currentTimes = multiSchedules[currentEditingScheduleIndex].times;
+			currentTimes.splice(index, 1);
+			currentTimes.forEach((item, i) => item.period = i + 1);
 			renderPeriodsTable();
 		}
 
 		document.getElementById('add-period-btn').addEventListener('click', () => {
-			const newPeriodNum = periodData.length > 0 ? periodData[periodData.length - 1].period + 1 : 1;
-			const lastEndTime = periodData.length > 0 ? calculateEndTime(periodData[periodData.length - 1].start, periodData[periodData.length - 1].duration) : '08:00';
+			const currentTimes = multiSchedules[currentEditingScheduleIndex].times;
+			const newPeriodNum = currentTimes.length > 0 ? currentTimes[currentTimes.length - 1].period + 1 : 1;
+			const lastEndTime = currentTimes.length > 0 ? calculateEndTime(currentTimes[currentTimes.length - 1].start, currentTimes[currentTimes.length - 1].duration) : '08:00';
 			const [lastH, lastM] = lastEndTime.split(':').map(Number);
 			const nextStartMinutes = lastH * 60 + lastM + 10;
 			const nextStartH = Math.floor(nextStartMinutes / 60) % 24;
 			const nextStartM = nextStartMinutes % 60;
 			const pad = (n) => String(n).padStart(2, '0');
 			const nextStartTime = `${pad(nextStartH)}:${pad(nextStartM)}`;
-			periodData.push({ period: newPeriodNum, start: nextStartTime, duration: 50 });
+			currentTimes.push({ period: newPeriodNum, start: nextStartTime, duration: 50 });
 			renderPeriodsTable();
 		});
 
@@ -381,22 +445,34 @@
 
 		async function uploadPeriods() {
 			try {
-				if (periodData.length === 0) return alert('請至少設定一節課的時間！');
-				const periodsToUpload = periodData.map((item, index) => ({
-					period: index + 1,
-					start: item.start,
-					duration: item.duration,
-					end: calculateEndTime(item.start, item.duration)
-				}));
-				const confirmationMessage = `確認上傳 ${periodsToUpload.length} 節課程時間表？`;
+				// 檢查每組作息表是否有效，並計算 end time
+				const sanitizedSchedules = multiSchedules.map(sch => {
+					return {
+						id: sch.id,
+						grades: sch.grades || [],
+						times: sch.times.map((item, index) => ({
+							period: index + 1,
+							start: item.start,
+							duration: item.duration,
+							end: calculateEndTime(item.start, item.duration)
+						}))
+					};
+				});
+
+				const confirmationMessage = `確認上傳多組課程時間表與年段設定？`;
 				if (!confirm(confirmationMessage)) return alert('操作已取消。');
 				
 				const schoolRef = db.collection('schools').doc(schoolId);
 				const periodsRef = schoolRef.collection('periods').doc('current');
-				// 回退使用原生 JS Date，避免安全規則誤擋
-				await periodsRef.set({ times: periodsToUpload, uploadedAt: new Date() });
 				
-				alert('課程時間表已成功上傳/更新！');
+				// 存入新的 schedules 陣列，同時保留舊版 times (取第1組) 避免舊版前端崩潰
+				await periodsRef.set({ 
+					schedules: sanitizedSchedules,
+					times: sanitizedSchedules[0].times, 
+					uploadedAt: new Date() 
+				});
+				
+				alert('課程時間表與適用年段已成功上傳更新！');
 				renderPeriodsTable();
 			} catch (error) {
 				alert('上傳課程時間表時發生錯誤：\n' + error.message);

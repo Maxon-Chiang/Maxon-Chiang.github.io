@@ -22,6 +22,7 @@ const STATIC_CACHE_KEY = 'teacher_static_cache_v6';
 const TIMETABLE_CACHE_KEY = 'timetable_static_cache_v1';
 let CACHE_DATA = {};
 let PERIOD_TIMES = [];
+let ALL_SCHEDULES = [];
 let scheduleSnapshot = null;
 let teachersDataCache = new Map();
 const SUBJECT_ORDER = ['國文', '英語', '數學', '社會', '自然', '綜合', '藝術', '健體', '科技'];
@@ -121,27 +122,56 @@ function formatDate(date, format = 'MM/DD') {
 }
 
 async function loadPeriodTimesFromFirestore(schoolId) {
-	PERIOD_TIMES = [
-		{ period: 1, start: '08:10', duration: 50 },
-		{ period: 2, start: '09:10', duration: 50 },
-		{ period: 3, start: '10:10', duration: 50 },
-		{ period: 4, start: '11:10', duration: 50 },
-		{ period: 5, start: '13:10', duration: 50 },
-		{ period: 6, start: '14:10', duration: 50 },
-		{ period: 7, start: '15:10', duration: 50 },
-		{ period: 8, start: '16:10', duration: 50 }
+	const fallbackTimes = [
+		{ period: 1, start: '08:10', duration: 50 }, { period: 2, start: '09:10', duration: 50 },
+		{ period: 3, start: '10:10', duration: 50 }, { period: 4, start: '11:10', duration: 50 },
+		{ period: 5, start: '13:10', duration: 50 }, { period: 6, start: '14:10', duration: 50 },
+		{ period: 7, start: '15:10', duration: 50 }, { period: 8, start: '16:10', duration: 50 }
 	];
 	try {
 		const periodsDoc = await db.collection('schools').doc(schoolId).collection('periods').doc('current').get();
-		if (periodsDoc.exists && periodsDoc.data().times && periodsDoc.data().times.length > 0) {
-			PERIOD_TIMES = periodsDoc.data().times.map(item => ({
-				period: item.period,
-				start: item.start,
-				duration: item.duration || 50
-			}));
-			PERIOD_TIMES.sort((a, b) => a.period - b.period);
+		if (periodsDoc.exists) {
+			const data = periodsDoc.data();
+			if (data.schedules && data.schedules.length > 0) {
+				ALL_SCHEDULES = data.schedules;
+			} else if (data.times && data.times.length > 0) {
+				ALL_SCHEDULES = [{ id: 0, grades: [], times: data.times }];
+			} else {
+				ALL_SCHEDULES = [{ id: 0, grades: [], times: fallbackTimes }];
+			}
+		} else {
+			ALL_SCHEDULES = [{ id: 0, grades: [], times: fallbackTimes }];
 		}
-	} catch (error) {}
+		PERIOD_TIMES = ALL_SCHEDULES[0].times; // UI 預設使用表1
+	} catch (error) {
+		ALL_SCHEDULES = [{ id: 0, grades: [], times: fallbackTimes }];
+		PERIOD_TIMES = ALL_SCHEDULES[0].times;
+	}
+}
+
+function getPeriodTimeInfoForClass(periodNum, classCode) {
+	let targetTimes = PERIOD_TIMES;
+	if (ALL_SCHEDULES && ALL_SCHEDULES.length > 0 && classCode) {
+		const GRADE_MAP_REVERSE = { '一': '1', '二': '2', '三': '3', '四': '4', '五': '5', '六': '6', '七': '7', '八': '8', '九': '9' };
+		const firstDigit = classCode.charAt(0);
+		const gradeLevel = GRADE_MAP_REVERSE[firstDigit] ? GRADE_MAP_REVERSE[firstDigit] : firstDigit;
+		const matchedSchedule = ALL_SCHEDULES.find(s => s.id !== 0 && s.grades && s.grades.includes(gradeLevel));
+		if (matchedSchedule) targetTimes = matchedSchedule.times;
+	}
+	
+	const info = targetTimes.find(p => p.period === periodNum);
+	if (!info) return null;
+	const [startH, startM] = info.start.split(':').map(Number);
+	const totalMinutes = startH * 60 + startM + info.duration;
+	const endH = Math.floor(totalMinutes / 60) % 24;
+	const endM = totalMinutes % 60;
+	const pad = (n) => String(n).padStart(2, '0');
+	return {
+		start: info.start,
+		duration: info.duration,
+		end: `${pad(endH)}:${pad(endM)}`,
+		endMinutes: totalMinutes
+	};
 }
 
 async function main(userData) {
@@ -981,7 +1011,7 @@ function handleTeacherCellClick(event, teacherName) {
 	const clickedLesson = teacherSchedules.get(teacherName)?.[period]?.[day];
 	if (!clickedLesson) return;
 	const cellDate = cell.dataset.date;
-	const periodInfo = getPeriodTimeInfo(period + 1);
+	const periodInfo = getPeriodTimeInfoForClass(period + 1, clickedLesson.class);
 	if (periodInfo) {
 		const now = new Date();
 		const lessonEnd = new Date(cellDate);
@@ -1161,7 +1191,7 @@ function handleTeacherCellInteraction(event, teacherName) {
 		clearTimeout(longPressTimer);
 		return;
 	}
-	const periodInfo = getPeriodTimeInfo(period + 1);
+	const periodInfo = getPeriodTimeInfoForClass(period + 1, lesson.class || lesson.className);
 	if (periodInfo) {
 		const now = new Date();
 		const lessonEnd = new Date(cellDate);
@@ -1741,7 +1771,7 @@ function showSingleEventModal(lesson, weekStart, dayIndex) {
 	const notesInput = document.getElementById('event-notes');
 	const downloadBtn = document.getElementById('download-single-ics-btn');
 	const periodNum = lesson.periodNum || (lesson.period !== undefined ? lesson.period + 1 : null);
-	const periodInfo = getPeriodTimeInfo(periodNum);
+	const periodInfo = getPeriodTimeInfoForClass(periodNum, lesson.class || lesson.className);
 	if (!periodInfo) {
 		alert('錯誤：找不到課程時間資訊，無法匯出行事曆。');
 		return;
