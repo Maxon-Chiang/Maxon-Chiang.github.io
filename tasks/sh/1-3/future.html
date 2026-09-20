@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任務一：STEAM 產品進化論 (想像未來)</title>
+    <style>
+        :root { --primary: #2980b9; --bg: #f4f7f6; --text: #333; --border: #ccc; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.6; padding: 20px; margin: 0; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary); text-align: center; border-bottom: 2px solid var(--primary); padding-bottom: 15px; margin-bottom: 20px; }
+        h2 { color: #2c3e50; font-size: 1.3em; border-left: 5px solid var(--primary); padding-left: 10px; margin-top: 0; }
+        .dynamic-title { background: #e8f4f8; color: #1c5980; padding: 10px 15px; border-radius: 6px; font-weight: bold; margin-bottom: 20px; text-align: center; font-size: 1.1em; }
+        .step { display: none; animation: fadeIn 0.4s; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .form-group { margin-bottom: 20px; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #2c3e50; }
+        .hint { font-size: 0.9em; color: #7f8c8d; margin-bottom: 8px; display: block; }
+        input[type="text"], select, textarea { width: 100%; padding: 10px; border: 1px solid #bbb; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: 1em; }
+        textarea { height: 80px; resize: vertical; }
+        .member-inputs { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .btn-group { display: flex; justify-content: space-between; margin-top: 30px; }
+        button { background: var(--primary); color: #fff; border: none; padding: 12px 25px; font-size: 16px; border-radius: 6px; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #1c5980; }
+        button.btn-prev { background: #95a5a6; }
+        button.btn-prev:hover { background: #7f8c8d; }
+        .progress-bar { display: flex; justify-content: space-between; margin-bottom: 30px; }
+        .progress-step { flex: 1; text-align: center; font-weight: bold; color: #bdc3c7; border-bottom: 3px solid #bdc3c7; padding-bottom: 10px; }
+        .progress-step.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+        #reportArea { display: none; }
+        .image-preview-container { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; }
+        .image-preview-container img { max-width: 200px; height: auto; border-radius: 8px; border: 1px solid #ddd; object-fit: cover; }
+        .report-images img { max-width: 300px; margin: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        .canva-guide { background: #fdfbf7; padding: 20px; border-radius: 8px; border-left: 5px solid #f39c12; margin-bottom: 25px; font-size: 0.95em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>任務一：STEAM 產品進化論 (想像未來)</h1>
+        
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-step active" id="ind-1">1. 基本與情境</div>
+            <div class="progress-step" id="ind-2">2. 原有解構</div>
+            <div class="progress-step" id="ind-3">3. 未來進化</div>
+            <div class="progress-step" id="ind-4">4. 視覺與圖檔</div>
+            <div class="progress-step" id="ind-5">5. 任務報告</div>
+        </div>
+
+        <form id="taskForm">
+            <!-- 第 1 頁：基本資料與情境設定 -->
+            <div class="step active" id="step-1">
+                <div class="canva-guide">
+                    <strong>🎨 Canva 共編白板使用指南：</strong><br><br>
+                    1. <strong>組長發起：</strong> 登入 Canva，點擊右上角「建立設計」，選擇「白板 (Whiteboard)」。<br>
+                    2. <strong>開啟共編：</strong> 點擊右上角「分享」，將連結存取權設為「擁有連結的任何人」，並設定為「可以編輯」。<br>
+                    3. <strong>團隊協作：</strong> 將連結傳給組員。善用左側工具列的「便利貼 (Sticky Notes)」、「形狀」與「文字」，將你們討論的產品現況與改良點貼在白板上，小組討論達成共識後，再將最終內容分類填入此表單。
+                </div>
+                <h2>第一部分：基本資料與目標設定</h2>
+                <div class="form-group">
+                    <label>班級：</label>
+                    <input type="text" id="classInfo" required placeholder="例如：高一甲班">
+                </div>
+                <div class="form-group">
+                    <label>小組成員 (座號+姓名)：</label>
+                    <div class="member-inputs">
+                        <input type="text" class="member" required placeholder="組長">
+                        <input type="text" class="member" placeholder="組員1">
+                        <input type="text" class="member" placeholder="組員2">
+                        <input type="text" class="member" placeholder="組員3">
+                        <input type="text" class="member" placeholder="組員4">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>選擇或輸入日常產品：</label>
+                    <input list="productList" id="product" required placeholder="請選擇或自行輸入產品名稱...">
+                    <datalist id="productList">
+                        <option value="書包">
+                        <option value="雨傘">
+                        <option value="保溫杯">
+                        <option value="腳踏車">
+                        <option value="外套">
+                        <option value="運動鞋">
+                    </datalist>
+                </div>
+                <div class="form-group">
+                    <label>選擇或輸入未來極端情境：</label>
+                    <input list="scenarioList" id="scenario" required placeholder="請選擇或自行輸入未來情境...">
+                    <datalist id="scenarioList">
+                        <option value="2050 全球海平面上升的水世界">
+                        <option value="均溫高達 45 度的極端沙漠城市">
+                        <option value="大氣稀薄的火星地下殖民地">
+                        <option value="終年下雪的極寒冰河時期">
+                        <option value="無重力的近地軌道太空站">
+                    </datalist>
+                </div>
+                <div class="btn-group" style="justify-content: flex-end;">
+                    <button type="button" onclick="nextStep(1)">下一步：解構現有產品 ➔</button>
+                </div>
+            </div>
+
+            <!-- 第 2 頁：解構產品的STEAM -->
+            <div class="step" id="step-2">
+                <div class="dynamic-title" id="title-step2"></div>
+                <h2>第二部分：現有產品的 STEAM 解構</h2>
+                <div class="form-group">
+                    <label>S (科學 Science)：</label>
+                    <span class="hint">這個產品原本運用了哪些自然科學原理？（例如：重力、摩擦力、光學、熱力學）</span>
+                    <textarea id="orig_S" required placeholder="請填寫原本的科學原理..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>T (科技 Technology)：</label>
+                    <span class="hint">使用了哪些現代科技或技術？（例如：感測器、藍牙、特定加工技術）</span>
+                    <textarea id="orig_T" required placeholder="請填寫原本的科技應用..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>E (工程 Engineering)：</label>
+                    <span class="hint">有哪些明顯的工程結構或機構設計？（例如：卡榫、齒輪、防水密封結構）</span>
+                    <textarea id="orig_E" required placeholder="請填寫原本的工程結構..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>A (藝術 Art/Aesthetics)：</label>
+                    <span class="hint">原本的外觀、材質色彩或人體工學設計有何特色？</span>
+                    <textarea id="orig_A" required placeholder="請填寫原本的美學設計..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>M (數學 Mathematics)：</label>
+                    <span class="hint">這個產品涉及了哪些規格參數或計算？（例如：長寬高比例、容量、承重計算）</span>
+                    <textarea id="orig_M" required placeholder="請填寫原本的數學規格..."></textarea>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn-prev" onclick="prevStep(2)">⬅ 上一步</button>
+                    <button type="button" onclick="nextStep(2)">下一步：未來進化 ➔</button>
+                </div>
+            </div>
+
+            <!-- 第 3 頁：因應未來情境的改變 -->
+            <div class="step" id="step-3">
+                <div class="dynamic-title" id="title-step3"></div>
+                <h2>第三部分：因應未來情境的 STEAM 進化</h2>
+                <div class="form-group">
+                    <label>情境應變總體描述：</label>
+                    <span class="hint">為了適應這個未來情境，這個產品最需要改變的核心方向是什麼？</span>
+                    <textarea id="future_desc" required placeholder="為了適應未來，我們必須讓它具備..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>進化版 S (科學)：</label>
+                    <textarea id="new_S" required placeholder="新加入的科學原理..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>進化版 T (科技)：</label>
+                    <textarea id="new_T" required placeholder="新加入的科技與技術..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>進化版 E (工程)：</label>
+                    <textarea id="new_E" required placeholder="改良後的工程與機構設計..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>進化版 A (藝術)：</label>
+                    <textarea id="new_A" required placeholder="未來感的美學或外觀改變..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>進化版 M (數學)：</label>
+                    <textarea id="new_M" required placeholder="新的物理極限或規格數據..."></textarea>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn-prev" onclick="prevStep(3)">⬅ 上一步</button>
+                    <button type="button" onclick="nextStep(3)">下一步：視覺化 ➔</button>
+                </div>
+            </div>
+
+            <!-- 第 4 頁：產品圖上傳 -->
+            <div class="step" id="step-4">
+                <div class="dynamic-title" id="title-step4"></div>
+                <h2>第四部分：產品概念圖上傳</h2>
+                <div class="form-group">
+                    <label>上傳產品設計圖 (可選擇多張)：</label>
+                    <span class="hint">請上傳與 AI 協作產出的圖片。可上傳不同角度、內部結構或使用情境的圖片。</span>
+                    <input type="file" id="imageUpload" accept="image/*" multiple required>
+                    <div class="image-preview-container" id="previewContainer"></div>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn-prev" onclick="prevStep(4)">⬅ 上一步</button>
+                    <button type="button" onclick="generateReport()" style="background:#27ae60;">產生最終任務報告 📄</button>
+                </div>
+            </div>
+        </form>
+
+        <div id="reportArea"></div>
+    </div>
+
+    <script>
+        let uploadedImages = [];
+
+        document.getElementById('imageUpload').addEventListener('change', function(e) {
+            const files = e.target.files;
+            const previewContainer = document.getElementById('previewContainer');
+            previewContainer.innerHTML = ''; 
+            uploadedImages = [];
+
+            if(files.length > 0) {
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        uploadedImages.push(event.target.result);
+                        const img = document.createElement('img');
+                        img.src = event.target.result;
+                        previewContainer.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+
+        function updateDynamicTitles() {
+            const product = document.getElementById('product').value || '未填寫產品';
+            const scenario = document.getElementById('scenario').value || '未填寫情境';
+            const titleText = `🎯 專案：進化版【${product}】 / 情境：【${scenario}】`;
+            document.getElementById('title-step2').innerText = titleText;
+            document.getElementById('title-step3').innerText = titleText;
+            document.getElementById('title-step4').innerText = titleText;
+        }
+
+        function validateStep(stepNum) {
+            const stepDiv = document.getElementById('step-' + stepNum);
+            const inputs = stepDiv.querySelectorAll('input[required], select[required], textarea[required]');
+            let isValid = true;
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    input.reportValidity();
+                    isValid = false;
+                }
+            });
+            if (stepNum === 4 && uploadedImages.length === 0) {
+                alert("請至少上傳一張圖片！");
+                return false;
+            }
+            return isValid;
+        }
+
+        function nextStep(currentStep) {
+            if (!validateStep(currentStep)) return;
+            if (currentStep === 1) updateDynamicTitles();
+            
+            document.getElementById('step-' + currentStep).classList.remove('active');
+            document.getElementById('step-' + (currentStep + 1)).classList.add('active');
+            updateIndicator(currentStep + 1);
+            window.scrollTo(0, 0);
+        }
+
+        function prevStep(currentStep) {
+            document.getElementById('step-' + currentStep).classList.remove('active');
+            document.getElementById('step-' + (currentStep - 1)).classList.add('active');
+            updateIndicator(currentStep - 1);
+            window.scrollTo(0, 0);
+        }
+
+        function updateIndicator(step) {
+            document.querySelectorAll('.progress-step').forEach((el, index) => {
+                if (index < step) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+        }
+
+        function editForm() {
+            document.getElementById('reportArea').style.display = 'none';
+            document.getElementById('taskForm').style.display = 'block';
+            document.getElementById('progressBar').style.display = 'flex';
+            updateIndicator(5);
+            window.scrollTo(0, 0);
+        }
+
+        function generateReport() {
+            if (!validateStep(4)) return;
+
+            const classInfo = document.getElementById('classInfo').value;
+            const members = Array.from(document.querySelectorAll('.member')).map(i => i.value).filter(v => v.trim() !== '').join('、');
+            const product = document.getElementById('product').value;
+            const scenario = document.getElementById('scenario').value;
+            
+            let imgHTML = '';
+            uploadedImages.forEach(src => {
+                imgHTML += `<img src="${src}" alt="產品圖">`;
+            });
+
+            const reportHTML = `
+                <div style="background:#fff; padding:30px; border-radius: 8px;">
+                    <h1 style="text-align:center; color: var(--primary); margin-top:0;">STEAM 產品進化論：任務報告</h1>
+                    <p style="text-align:center; font-size:1.1em;"><strong>${classInfo}</strong> | 小組成員：${members}</p>
+                    <div style="background:#e8f4f8; padding:15px; border-radius:8px; text-align:center; margin-bottom:20px;">
+                        <h3 style="margin:0; color:#2c3e50;">專案主題：因應【${scenario}】進化的【${product}】</h3>
+                    </div>
+                    
+                    <div style="display:flex; gap:20px; flex-wrap:wrap;">
+                        <div style="flex:1; min-width:300px; background:#fafafa; border:1px solid #ddd; border-radius:8px; padding:20px;">
+                            <h3 style="border-bottom:2px solid #ccc; padding-bottom:10px; margin-top:0;">🔍 原有產品 STEAM 解構</h3>
+                            <p><strong>S (科學)：</strong> ${document.getElementById('orig_S').value}</p>
+                            <p><strong>T (科技)：</strong> ${document.getElementById('orig_T').value}</p>
+                            <p><strong>E (工程)：</strong> ${document.getElementById('orig_E').value}</p>
+                            <p><strong>A (藝術)：</strong> ${document.getElementById('orig_A').value}</p>
+                            <p><strong>M (數學)：</strong> ${document.getElementById('orig_M').value}</p>
+                        </div>
+                        <div style="flex:1; min-width:300px; background:#f0f8ff; border:1px solid var(--primary); border-radius:8px; padding:20px;">
+                            <h3 style="border-bottom:2px solid var(--primary); padding-bottom:10px; margin-top:0; color:var(--primary);">🚀 未來進化 STEAM 方案</h3>
+                            <p style="color:#d35400; font-weight:bold;">【進化總目標】：${document.getElementById('future_desc').value}</p>
+                            <p><strong>S (科學)：</strong> ${document.getElementById('new_S').value}</p>
+                            <p><strong>T (科技)：</strong> ${document.getElementById('new_T').value}</p>
+                            <p><strong>E (工程)：</strong> ${document.getElementById('new_E').value}</p>
+                            <p><strong>A (藝術)：</strong> ${document.getElementById('new_A').value}</p>
+                            <p><strong>M (數學)：</strong> ${document.getElementById('new_M').value}</p>
+                        </div>
+                    </div>
+
+                    <h2 style="text-align:center; margin-top:40px;">📸 產品設計圖</h2>
+                    <div class="report-images" style="text-align:center; display:flex; justify-content:center; flex-wrap:wrap;">
+                        ${imgHTML}
+                    </div>
+                    
+                    <div style="text-align:center; margin-top:30px; padding:20px; background:#f1f2f6; border-radius:8px;">
+                        <button type="button" onclick="editForm()" style="background:#95a5a6; padding:10px 20px; color:#fff; border:none; border-radius:6px; cursor:pointer;">⬅ 返回上一頁修改內容</button>
+                        <p style="margin-top:15px; color:#e74c3c; font-weight:bold;">✅ 如果確認無誤，請將整個報告畫面截圖，或按 Ctrl+P 存成 PDF 上傳繳交。</p>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('taskForm').style.display = 'none';
+            document.getElementById('progressBar').style.display = 'none';
+            const reportArea = document.getElementById('reportArea');
+            reportArea.innerHTML = reportHTML;
+            reportArea.style.display = 'block';
+            updateIndicator(5);
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>
