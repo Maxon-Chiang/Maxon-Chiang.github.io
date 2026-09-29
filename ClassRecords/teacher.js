@@ -2773,9 +2773,33 @@ document.addEventListener('DOMContentLoaded', function() {
 			historyArea.style.display = 'none';
 			resultsArea.style.display = 'block';
 			
-			// 找出名字包含關鍵字的學生，並抽取他們的 sysId
+			// 判斷使用者的搜尋模式
+			let isSeatMode = false;
+			let seatTarget = '';
+			let isIdMode = false;
+
+			// 若符合 ---數字 或 ???數字，代表搜尋特定座號
+			if (/^[-?]{3}\d{1,2}$/.test(keyword)) {
+				isSeatMode = true;
+				// 提取數字並確保為兩碼 (例如輸入 ---2 會轉成 02)
+				seatTarget = keyword.replace(/[-?]/g, '').padStart(2, '0');
+			} 
+			// 若純輸入數字，代表從頭搜尋班級或特定學號
+			else if (/^\d+$/.test(keyword)) {
+				isIdMode = true;
+			}
+
+			// 依據模式過濾學生並抽取他們的 sysId
 			const matchedIds = studentsData
-				.filter(s => s.name.toLowerCase().includes(keyword))
+				.filter(s => {
+					if (isSeatMode) {
+						return s.id.endsWith(seatTarget);
+					} else if (isIdMode) {
+						return s.id.startsWith(keyword);
+					} else {
+						return s.name.toLowerCase().includes(keyword);
+					}
+				})
 				.map(s => s.sysId);
 				
 			renderSearchList(matchedIds, resultsList, false);

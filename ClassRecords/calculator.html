@@ -135,6 +135,17 @@
 						<div class="step-card">
 							<h4>步驟1: 特定作業加權</h4>
 							<div id="step1-assignments" class="assignment-list"></div>
+							<div style="margin-top: 10px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+								<select id="step1-adjust-type" style="padding: 2px; font-size: 0.9em; max-width: 140px;">
+									<option value="none">無基本分/加分</option>
+									<option value="base">保障基本分：</option>
+									<option value="add">直接加分：</option>
+								</select>
+								<input type="number" id="step1-adjust-val" style="width: 55px; padding: 2px; font-size: 0.9em;" value="0" step="1">
+							</div>
+							<div style="margin-top: 8px;">
+								<label style="color: #0d6efd; font-size: 0.9em; cursor: pointer;"><input type="checkbox" id="step1-sqrt"> 結算後開根號×10 (√x×10)</label>
+							</div>
 						</div>
 						<div class="step-card">
 							<h4>步驟2: 作業平均加權</h4>
@@ -142,6 +153,17 @@
 							<div class="multiplier-input">
 								<label for="step2-multiplier">平均成績乘數:</label>
 								<input type="number" class="input-decimal" id="step2-multiplier" min="0" max="1" step="0.01" value="1.0">
+							</div>
+							<div style="margin-top: 10px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+								<select id="step2-adjust-type" style="padding: 2px; font-size: 0.9em; max-width: 140px;">
+									<option value="none">無基本分/加分</option>
+									<option value="base">保障基本分：</option>
+									<option value="add">直接加分：</option>
+								</select>
+								<input type="number" id="step2-adjust-val" style="width: 55px; padding: 2px; font-size: 0.9em;" value="0" step="1">
+							</div>
+							<div style="margin-top: 8px;">
+								<label style="color: #0d6efd; font-size: 0.9em; cursor: pointer;"><input type="checkbox" id="step2-sqrt"> 結算後開根號×10 (√x×10)</label>
 							</div>
 						</div>
 						<div class="step-card">
@@ -155,6 +177,17 @@
 								<label for="step3-multiplier">平均成績乘數:</label>
 								<input type="number" class="input-decimal" id="step3-multiplier" min="0" max="1" step="0.01" value="1.0">
 							</div>
+							<div style="margin-top: 10px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+								<select id="step3-adjust-type" style="padding: 2px; font-size: 0.9em; max-width: 140px;">
+									<option value="none">無基本分/加分</option>
+									<option value="base">保障基本分：</option>
+									<option value="add">直接加分：</option>
+								</select>
+								<input type="number" id="step3-adjust-val" style="width: 55px; padding: 2px; font-size: 0.9em;" value="0" step="1">
+							</div>
+							<div style="margin-top: 8px;">
+								<label style="color: #0d6efd; font-size: 0.9em; cursor: pointer;"><input type="checkbox" id="step3-sqrt"> 結算後開根號×10 (√x×10)</label>
+							</div>
 						</div>
 						<div class="step-card">
 							<h4>步驟4: 日常表現總分加權</h4>
@@ -163,6 +196,17 @@
 								<input type="number" class="input-decimal" id="step4-multiplier" min="0" max="1" step="0.01" value="1.0">
 							</div>
 							<p style="font-size: 0.8em; color: #666; margin-top: 5px;">*扣分事件若含「兌換」二字將不倒扣</p>
+							<div style="margin-top: 10px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+								<select id="step4-adjust-type" style="padding: 2px; font-size: 0.9em; max-width: 140px;">
+									<option value="none">無基本分/加分</option>
+									<option value="base">保障基本分：</option>
+									<option value="add">直接加分：</option>
+								</select>
+								<input type="number" id="step4-adjust-val" style="width: 55px; padding: 2px; font-size: 0.9em;" value="0" step="1">
+							</div>
+							<div style="margin-top: 8px;">
+								<label style="color: #0d6efd; font-size: 0.9em; cursor: pointer;"><input type="checkbox" id="step4-sqrt"> 結算後開根號×10 (√x×10)</label>
+							</div>
 						</div>
 					</div>
 					<!-- 新增：步驟5 最後調整 -->
@@ -202,6 +246,8 @@
 		const db = firebase.firestore();
 		const auth = firebase.auth();
 		let currentUser = null, studentsData =[], allAssignments = {}, allPerformanceScores = {}, allRules =[], gradeLevels = {};
+		let cachedFormStateStr = null;
+		let lastSelectedRuleId = 'new';
 		const appContainer = document.getElementById('app-container');
 		const GRADE_MAP = { '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六', '7': '七', '8': '八', '9': '九' };
 		const USER_AUTH_KEY = 'user_auth_profile_v1';
@@ -394,7 +440,17 @@
 			const ruleSelect = document.getElementById('rule-select');
 			const ruleNameInput = document.getElementById('rule-name');
 			const ruleConfigPanel = document.getElementById('rule-config-panel');
+			ruleGradeSelect.dataset.lastValue = ruleGradeSelect.value;
 			ruleGradeSelect.addEventListener('change', (e) => {
+				if (cachedFormStateStr && getDirtyCheckState() !== cachedFormStateStr) {
+					if (!confirm("您目前編輯的規則有尚未儲存的變更。\n\n按 [確定] 放棄變更並切換\n按 [取消] 留在此畫面")) {
+						e.target.value = ruleGradeSelect.dataset.lastValue || "";
+						return;
+					}
+				}
+				ruleGradeSelect.dataset.lastValue = e.target.value;
+				lastSelectedRuleId = 'new'; // 切換年段後，規則選單會被重置，需同步更新狀態紀錄
+
 				const grade = e.target.value;[ruleSelect, ruleNameInput, document.getElementById('btn-save-rule')].forEach(el => el.disabled = !grade);
 				if (grade) {
 					populateRulesForGrade(grade);
@@ -404,9 +460,18 @@
 					ruleConfigPanel.style.display = 'none';
 					document.getElementById('btn-delete-rule').disabled = true;
 				}
+				updateFormStateCache();
 			});
 			ruleSelect.addEventListener('change', (e) => {
+				if (cachedFormStateStr && getDirtyCheckState() !== cachedFormStateStr) {
+					if (!confirm("您目前編輯的規則有尚未儲存的變更。\n\n按 [確定] 放棄變更並切換\n按 [取消] 留在此畫面")) {
+						e.target.value = lastSelectedRuleId;
+						return;
+					}
+				}
+
 				const ruleId = e.target.value;
+				lastSelectedRuleId = ruleId;
 				const deleteBtn = document.getElementById('btn-delete-rule');
 				if (ruleId === 'new') {
 					clearRuleForm();
@@ -417,6 +482,7 @@
 					if (rule) loadRuleIntoForm(rule);
 					deleteBtn.disabled = false;
 				}
+				updateFormStateCache();
 			});
 			document.getElementById('btn-save-rule').addEventListener('click', saveRule);
 			document.getElementById('btn-delete-rule').addEventListener('click', deleteRule);
@@ -444,6 +510,7 @@
 				}
 			});
 			document.getElementById('btn-calculate').addEventListener('click', calculateScores);
+			updateFormStateCache();
 		}
 		async function loadAllRules() {
 			const snapshot = await db.collection('calculationRules').where('teacherId', '==', currentUser.uid).get();
@@ -511,19 +578,39 @@
 			document.getElementById('step3-n').value = 5;
 			document.getElementById('step3-multiplier').value = 1.0;
 			document.getElementById('step4-multiplier').value = 1.0;
+			// 清除基本分/加分設定
+			[1, 2, 3, 4].forEach(i => {
+				const typeEl = document.getElementById(`step${i}-adjust-type`);
+				const valEl = document.getElementById(`step${i}-adjust-val`);
+				if (typeEl) typeEl.value = 'none';
+				if (valEl) valEl.value = 0;
+			});
 			currentStep5Rules = [];
 			renderStep5List();
 		}
+		
 		function getRuleFromForm() {
 			const ruleData = {
 				ruleName: document.getElementById('rule-name').value.trim(),
 				gradeLevel: document.getElementById('rule-grade-select').value,
 				defaultMissingScore: parseFloat(document.getElementById('rule-default-score').value),
 				step1: {},
-				step2: { assignments:[], multiplier: parseFloat(document.getElementById('step2-multiplier').value) },
-				step3: { n: parseInt(document.getElementById('step3-n').value), multiplier: parseFloat(document.getElementById('step3-multiplier').value) },
-				step4: { multiplier: parseFloat(document.getElementById('step4-multiplier').value) },
-				step5: currentStep5Rules // 存入陣列
+				step1_sqrt: document.getElementById('step1-sqrt').checked,
+				step1_adjustType: document.getElementById('step1-adjust-type').value,
+				step1_adjustVal: parseFloat(document.getElementById('step1-adjust-val').value) || 0,
+				step2: { 
+					assignments:[], multiplier: parseFloat(document.getElementById('step2-multiplier').value), sqrt: document.getElementById('step2-sqrt').checked,
+					adjustType: document.getElementById('step2-adjust-type').value, adjustVal: parseFloat(document.getElementById('step2-adjust-val').value) || 0
+				},
+				step3: { 
+					n: parseInt(document.getElementById('step3-n').value), multiplier: parseFloat(document.getElementById('step3-multiplier').value), sqrt: document.getElementById('step3-sqrt').checked,
+					adjustType: document.getElementById('step3-adjust-type').value, adjustVal: parseFloat(document.getElementById('step3-adjust-val').value) || 0
+				},
+				step4: { 
+					multiplier: parseFloat(document.getElementById('step4-multiplier').value), sqrt: document.getElementById('step4-sqrt').checked,
+					adjustType: document.getElementById('step4-adjust-type').value, adjustVal: parseFloat(document.getElementById('step4-adjust-val').value) || 0
+				},
+				step5: currentStep5Rules
 			};
 			document.querySelectorAll('#step1-assignments input:checked').forEach(cb => {
 				ruleData.step1[cb.dataset.name] = parseFloat(cb.nextElementSibling.nextElementSibling.value);
@@ -545,6 +632,10 @@
 					if(cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); cb.nextElementSibling.nextElementSibling.value = rule.step1[name]; }
 				}
 			}
+			if (rule.step1_sqrt) document.getElementById('step1-sqrt').checked = true;
+			if (rule.step1_adjustType) document.getElementById('step1-adjust-type').value = rule.step1_adjustType;
+			if (rule.step1_adjustVal !== undefined) document.getElementById('step1-adjust-val').value = rule.step1_adjustVal;
+			
 			const s2Cbs = Array.from(document.querySelectorAll('#step2-assignments input[type="checkbox"]'));
 			if(rule.step2) {
 				rule.step2.assignments.forEach(name => {
@@ -552,23 +643,73 @@
 					if(cb) { cb.checked = true; cb.dispatchEvent(new Event('change')); }
 				});
 				document.getElementById('step2-multiplier').value = rule.step2.multiplier;
+				if (rule.step2.sqrt) document.getElementById('step2-sqrt').checked = true;
+				if (rule.step2.adjustType) document.getElementById('step2-adjust-type').value = rule.step2.adjustType;
+				if (rule.step2.adjustVal !== undefined) document.getElementById('step2-adjust-val').value = rule.step2.adjustVal;
 			}
 			if(rule.step3) {
 				document.getElementById('step3-n').value = rule.step3.n;
 				document.getElementById('step3-multiplier').value = rule.step3.multiplier;
+				if (rule.step3.sqrt) document.getElementById('step3-sqrt').checked = true;
+				if (rule.step3.adjustType) document.getElementById('step3-adjust-type').value = rule.step3.adjustType;
+				if (rule.step3.adjustVal !== undefined) document.getElementById('step3-adjust-val').value = rule.step3.adjustVal;
 			}
-			if(rule.step4) document.getElementById('step4-multiplier').value = rule.step4.multiplier;
+			if(rule.step4) {
+				document.getElementById('step4-multiplier').value = rule.step4.multiplier;
+				if (rule.step4.sqrt) document.getElementById('step4-sqrt').checked = true;
+				if (rule.step4.adjustType) document.getElementById('step4-adjust-type').value = rule.step4.adjustType;
+				if (rule.step4.adjustVal !== undefined) document.getElementById('step4-adjust-val').value = rule.step4.adjustVal;
+			}
 			if(rule.step5) {
 				currentStep5Rules = [...rule.step5];
 				renderStep5List();
 			}
 		}
+		
+		function getDirtyCheckState() {
+			const data = getRuleFromForm();
+			delete data.gradeLevel; // 忽略下拉選單本身的變更
+			return JSON.stringify(data);
+		}
+
+		function updateFormStateCache() {
+			cachedFormStateStr = getDirtyCheckState();
+		}
+
 		async function saveRule() {
-			const ruleId = document.getElementById('rule-select').value;
-			const ruleName = document.getElementById('rule-name').value.trim();
+			let ruleId = document.getElementById('rule-select').value;
+			let ruleName = document.getElementById('rule-name').value.trim();
 			const gradeLevel = document.getElementById('rule-grade-select').value;
 			if (!ruleName || !gradeLevel) { alert('請填寫資訊'); return; }
+
+			// 檢查是否有同名的規則
+			const existingRule = allRules.find(r => r.gradeLevel === gradeLevel && r.ruleName === ruleName);
+			if (existingRule) {
+				if (existingRule.id === ruleId) {
+					// 存回自己：一般更新
+					if (!confirm(`確定要儲存並覆蓋原有的「${ruleName}」規則嗎？`)) return;
+				} else {
+					// 名稱撞到別人 或 新建撞名
+					if (confirm(`同一個年段中已存在名為「${ruleName}」的規則！\n\n按 [確定] 直接覆蓋它\n按 [取消] 選擇自動改名或取消儲存`)) {
+						ruleId = existingRule.id; // 指向被覆蓋的 ID
+					} else {
+						if (confirm(`要系統幫您自動改名並「另存新規則」嗎？\n\n按 [確定] 自動改名儲存\n按 [取消] 返回不儲存`)) {
+							let count = 1;
+							while(allRules.find(r => r.gradeLevel === gradeLevel && r.ruleName === `${ruleName} (${count})`)) {
+								count++;
+							}
+							ruleName = `${ruleName} (${count})`;
+							ruleId = 'new';
+							document.getElementById('rule-name').value = ruleName; // 更新畫面上名稱
+						} else {
+							return; // 取消返回
+						}
+					}
+				}
+			}
+
 			const ruleData = getRuleFromForm();
+			ruleData.ruleName = ruleName; // 確保使用最新的名稱(若有自動改名)
 			ruleData.teacherId = currentUser.uid;
 			try {
 				if (ruleId === 'new') {
@@ -582,10 +723,12 @@
 				localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify({ allRules, allAssignments, uid: currentUser.uid, lastUpdated: Date.now() }));
 				alert('儲存成功');
 				
-				// 儲存後，將選單退回「建立新規則」並清空表單
+				// 儲存後，將選單退回「建立新規則」並清空表單，同時重設快取狀態
 				document.getElementById('rule-select').value = 'new';
+				lastSelectedRuleId = 'new';
 				clearRuleForm();
 				document.getElementById('rule-name').value = '';
+				updateFormStateCache();
 				
 			} catch(e) { alert('失敗'); }
 		}
@@ -598,6 +741,8 @@
 				await loadAllRules();
 				populateRulesForGrade(gradeLevel);
 				localStorage.setItem(CALCULATOR_DYNAMIC_CACHE_KEY, JSON.stringify({ allRules, allAssignments, uid: currentUser.uid, lastUpdated: Date.now() }));
+				lastSelectedRuleId = 'new';
+				updateFormStateCache();
 			} catch(e) { alert('失敗'); }
 		}
 		function calculateScores() {
@@ -635,17 +780,38 @@
 					const sc = (a && a.scores[studentSysId]?.score !== undefined) ? a.scores[studentSysId].score : rule.defaultMissingScore;
 					s1 += sc * rule.step1[name];
 				}
+				// 步驟 1 加分/基本分
+				if (rule.step1_adjustType === 'base' && s1 < rule.step1_adjustVal) s1 = rule.step1_adjustVal;
+				else if (rule.step1_adjustType === 'add') s1 += rule.step1_adjustVal;
+				// 步驟 1 開根號
+				if (rule.step1_sqrt && s1 >= 0) s1 = Math.sqrt(s1) * 10;
+
 				rule.step2.assignments.forEach(name => {
 					const a = assigns.find(x => x.assignmentName === name);
 					s2T += (a && a.scores[studentSysId]?.score !== undefined) ? a.scores[studentSysId].score : rule.defaultMissingScore;
 					s2C++;
 				});
-				if (s2C > 0) s2 = (s2T / s2C) * rule.step2.multiplier;
+				if (s2C > 0) {
+					s2 = (s2T / s2C) * rule.step2.multiplier;
+					// 步驟 2 加分/基本分
+					if (rule.step2.adjustType === 'base' && s2 < rule.step2.adjustVal) s2 = rule.step2.adjustVal;
+					else if (rule.step2.adjustType === 'add') s2 += rule.step2.adjustVal;
+					// 步驟 2 開根號
+					if (rule.step2.sqrt && s2 >= 0) s2 = Math.sqrt(s2) * 10;
+				}
+
 				const used =[...Object.keys(rule.step1), ...rule.step2.assignments];
 				const scs = assigns.filter(x => !used.includes(x.assignmentName)).map(x => (x.scores[studentSysId]?.score !== undefined) ? x.scores[studentSysId].score : rule.defaultMissingScore).sort((a,b) => b-a);
 				let s3 = 0, s3T = 0, n = rule.step3.n;
 				for(let i=0; i < n; i++) s3T += scs[i] || rule.defaultMissingScore;
-				if (n > 0) s3 = (s3T / n) * rule.step3.multiplier;
+				if (n > 0) {
+					s3 = (s3T / n) * rule.step3.multiplier;
+					// 步驟 3 加分/基本分
+					if (rule.step3.adjustType === 'base' && s3 < rule.step3.adjustVal) s3 = rule.step3.adjustVal;
+					else if (rule.step3.adjustType === 'add') s3 += rule.step3.adjustVal;
+					// 步驟 3 開根號
+					if (rule.step3.sqrt && s3 >= 0) s3 = Math.sqrt(s3) * 10;
+				}
 				
 				// 重新計算 s4，排除含有「兌換」二字的扣分
 				let purePerformanceScore = 0;
@@ -663,7 +829,12 @@
 						}
 					});
 				}
-				const s4 = purePerformanceScore * rule.step4.multiplier;
+				let s4 = purePerformanceScore * rule.step4.multiplier;
+				// 步驟 4 加分/基本分
+				if (rule.step4.adjustType === 'base' && s4 < rule.step4.adjustVal) s4 = rule.step4.adjustVal;
+				else if (rule.step4.adjustType === 'add') s4 += rule.step4.adjustVal;
+				// 步驟 4 開根號
+				if (rule.step4.sqrt && s4 >= 0) s4 = Math.sqrt(s4) * 10;
 				
 				let final = s1 + s2 + s3 + s4;
 

@@ -878,6 +878,7 @@ body.modal-open { overflow: hidden; }
 		width: max-content !important; 
 		z-index: 9999; 
 	}
+	
 	#my-timetable-icon-btn { font-size: 1.4em !important; padding-left: 5px; }
 	#reload-cache-btn { margin-left: 5px; margin-right: 5px; }
 	.header-right-panel .user-profile, .header-right-panel .dropdown { flex-shrink: 0; }

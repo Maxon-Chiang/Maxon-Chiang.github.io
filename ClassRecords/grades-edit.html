@@ -533,16 +533,19 @@
 				className: classId,
 				assignmentName: assignmentName,
 				generalComment: generalComment,
-				scores: scoresToSave,
-				date: firebase.firestore.FieldValue.serverTimestamp()
+				scores: scoresToSave
 			};
+
 			try {
 				if (assignmentId) {
+					// 如果是「更新」現有成績，加上 updated_at 追蹤更新時間，但不覆蓋原本的 date
+					dataToSave.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
 					await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').doc(assignmentId).update(dataToSave);
 				} else {
+					// 如果是「新增」成績項目，才押上 date 作為建立日期
+					dataToSave.date = firebase.firestore.FieldValue.serverTimestamp();
 					await db.collection('gradebooks').doc(currentUser.uid).collection('assignments').add(dataToSave);
 				}
-				localStorage.removeItem(GRADES_CACHE_KEY);
 				navigateBackToList();
 			} catch (error) {
 				alert("儲存成績失敗！請檢查網路連線或聯繫技術支援。");
