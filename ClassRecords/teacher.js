@@ -2773,29 +2773,22 @@ document.addEventListener('DOMContentLoaded', function() {
 			historyArea.style.display = 'none';
 			resultsArea.style.display = 'block';
 			
-			// 判斷使用者的搜尋模式
-			let isSeatMode = false;
-			let seatTarget = '';
-			let isIdMode = false;
-
-			// 若符合 ---數字 或 ???數字，代表搜尋特定座號
-			if (/^[-?]{3}\d{1,2}$/.test(keyword)) {
-				isSeatMode = true;
-				// 提取數字並確保為兩碼 (例如輸入 ---2 會轉成 02)
-				seatTarget = keyword.replace(/[-?]/g, '').padStart(2, '0');
-			} 
-			// 若純輸入數字，代表從頭搜尋班級或特定學號
-			else if (/^\d+$/.test(keyword)) {
-				isIdMode = true;
+			// 判斷搜尋模式：是否全為數字、減號(-) 或 問號(?)
+			const isIdPatternMode = /^[0-9\-\?]+$/.test(keyword);
+			let idRegex = null;
+			
+			if (isIdPatternMode) {
+				// 將 - 或 ? 替換為正則表達式的任意單一字元 (.)
+				// 加上 ^ 確保從頭 (班級的第一碼) 開始精準對位比對
+				const patternString = '^' + keyword.replace(/[-?]/g, '.');
+				idRegex = new RegExp(patternString);
 			}
 
 			// 依據模式過濾學生並抽取他們的 sysId
 			const matchedIds = studentsData
 				.filter(s => {
-					if (isSeatMode) {
-						return s.id.endsWith(seatTarget);
-					} else if (isIdMode) {
-						return s.id.startsWith(keyword);
+					if (isIdPatternMode) {
+						return idRegex.test(s.id);
 					} else {
 						return s.name.toLowerCase().includes(keyword);
 					}
