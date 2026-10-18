@@ -12,9 +12,9 @@
    <rect class='shape ai-icon-placeholder' data-icon-type='物品名稱' x='350' y='250' width='100' height='100' fill='none' stroke='none' />
 
 =====================================================================
-第二部分：輸出模式總覽 (Output JSON / JS Object Format)
+第二部分：輸出模式總覽 (Output JSON Format)
 =====================================================================
-系統依據任務需求，預期接收一個乾淨的 JSON 物件（模式 A、B），或是純 JavaScript Object 腳本（模式 C）。
+系統預期接收一個包含 items 陣列的 JSON 物件。請只輸出一個乾淨的 JSON 物件。
 
 【模式 A：動態互動題型 (Dynamic Practice)】
 適用於：要求產生可以隨機變動數字的互動選擇題、填空題。
@@ -166,7 +166,6 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
      'rect': { x, y, width, height }
      'text': { text: 'A', x, y, color, fontSize } (不用包 $ 符號，底層會自動加)
    - 通用屬性: stroke, strokeWidth, fill, dash。
-   - ⚠️ 標註極度重要：頂點名稱、變數邊長、角度值，必須明確使用 type: 'text' 放入陣列中畫出來！直角記號等輔助圖形可用 polyline 或 line 繪製。
 
 5. 完整的物件結構範例 (必須遵照此格式)：
 {
@@ -184,11 +183,7 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
     return vars.options.map(opt => ({ text: opt })); 
   },
   drawObjects: (vars, askKey) => { 
-    return [
-      {type:'polygon', points:'0,0 100,0 50,50', stroke:'black', fill:'none'},
-      {type:'text', text:'A', x:0, y:-15, color:'black', fontSize:18},
-      {type:'text', text:vars.a, x:50, y:-15, color:'blue', fontSize:18}
-    ]; 
+    return [{type:'polygon', points:'0,0 100,0 50,50', stroke:'black', fill:'none'}]; 
   },
   explanationTpl: (vars) => { 
     return `<b>【解題步驟】</b><br>1. 根據題意計算邊長...<br>2. 故答案為 ${vars.a + vars.b}`; 
@@ -199,65 +194,3 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
     return [{type:'line', x1:0, y1:0, x2:50, y2:50, stroke:'red', dash:'5,5'}]; 
   }
 }
-
-=====================================================================
-第六部分：模式 C 的教學動畫腳本內部 API (Interactive Animation Script API)
-=====================================================================
-當被要求產生「教學動畫 (Animation)」時，請**直接輸出一個完整的 JavaScript Object**（不需要包裝在 JSON 的 items 陣列中），供系統的 `window.AnimEngine` 直接掛載執行。
-
-1. 舞台與環境規範：
-   - 畫布固定邏輯尺寸：寬 800、高 600 (`viewBox="0 0 800 600"`)。請將主圖形配置在畫面中央偏上（例如 Y 座標 150 ~ 480 之間），底部（如 Y=550）可留給步驟滑軌。
-   - 繪圖容器：`const layer = document.getElementById('shapes-layer');` 與 `const ns = "http://www.w3.org/2000/svg";`。所有動態建立的 SVG 元素都必須 `layer.appendChild(el)`。
-   - 頂部動態字幕列：透由 `document.getElementById('anim-subtitle').innerHTML = ...` 即時更新上方的教學解說文字。
-     ⚠️ 注意：因動畫每秒更新 60 次，在 `anim-subtitle` 與畫布 `<text>` 中，請直接使用 Unicode 幾何符號與 HTML 標籤（如 `∠A = 60°`、`△ABC`、`⊥`、`∥`、`<sup>2</sup>`、`<span style="text-decoration:overline;">AB</span>`），避免使用 `$LaTeX$` 包裝，以保持高頻更新時的極致流暢度！
-   - 動畫引擎控制：當使用者手動拖曳畫面上的控制點或滑軌時，請呼叫 `if(window.AnimEngine.isPlaying) window.AnimEngine.pause();` 暫停自動播放，進入手動探索模式。
-
-2. 系統內建幾何與教具輔助 API：
-   - **三角形三心計算**：`let centers = window.getTriangleCenters(A, B, C);`
-     傳入三個頂點 `{x, y}`，回傳 `{ circum: {x, y, r}, incenter: {x, y, r}, centroid: {x, y} }`（分別為外心與外接圓半徑、內心與內切圓半徑、重心）。
-   - **虛擬圓規小精靈 (尺規作圖必備)**：`this.compass = window.createCompass(layer, ns);`
-     在 `update` 中呼叫 `this.compass.update(cx, cy, px, py, showBoolean);`（`cx, cy` 為針尖圓心座標，`px, py` 為筆尖座標，`showBoolean` 為是否顯示）。
-
-3. 教學動畫的兩大設計範式（請依主題性質擇一或結合使用）：
-   - **範式一：幾何性質自由拖曳探索**（如：三心性質、四邊形性質、圓性質）
-     * 自動播放時：在 `update(t)` 利用 `Math.sin(t)` 等三角函數讓關鍵頂點平滑移動，展示連續變化。
-     * 手動探索時：提供醒目的黃橘色控制點（`r="12"`, `fill="#f1c40f"`, `stroke="#e67e22"`, `cursor:move`），綁定滑鼠與觸控事件（`mousedown`/`touchstart`, `mousemove`/`touchmove`, `mouseup`/`touchend`），透過 `svgCanvas.getScreenCTM().inverse()` 轉換精確畫布座標，即時重算幾何關係並更新 `anim-subtitle` 的狀態數據（如銳角/直角/鈍角判定）。
-   - **範式二：尺規作圖分步滑軌演示**（如：過線外一點作平行線、角平分線、中垂線作圖）
-     * 在畫面底部（如 `x: 250 ~ 550, y: 550`）建立一條水平滑軌與可左右拖拉的把手（`cursor:ew-resize`），支援手動拖拉切換作圖進度 `p (0 ~ 1)`。
-     * 自動播放時：`let localT = t % 總秒數;` 依時間推進步驟。
-     * 搭配 `this.compass.update(...)` 呈現「展圓規 -> 畫弧 -> 停頓 -> 移至下一點畫交點 -> 連線」的完整尺規作圖視覺過程，並在 `anim-subtitle` 顯示當前步驟說明（如 ①、②、③...）。
-
-4. 教學動畫 JS Object 完整結構規範與範例（請務必採用單一程式碼區塊 `Code Block` 包覆的顯示方式輸出）：
-{
-  id: 'unique_anim_id',
-  title: '動畫標題 (如：外心與外接圓)',
-  mainCat: '純幾何', // 可選：'純幾何', '幾何代數', '加強理解', '尺規作圖'
-  cat: '三心性質',   // 子分類名稱
-  desc: '簡短的一句話性質或操作說明。',
-  icon: '<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="9"/></svg>',
-  elements: {},
-  isDragging: false,
-  init: function() {
-    const layer = document.getElementById('shapes-layer');
-    const ns = "http://www.w3.org/2000/svg";
-    this.elements = {};
-    // 1. 建立所需的 SVG 元素 (polygon, line, circle, path, text) 並 appendChild 到 layer
-    // 2. 建立可拖曳的控制點或底部步驟滑軌，綁定 mousedown/mousemove/mouseup 與 touch 事件
-    // 3. 若為尺規作圖，可初始化圓規：this.compass = window.createCompass(layer, ns);
-  },
-  update: function(t) {
-    if (this.isDragging) return;
-    // 根據時間 t (秒) 計算自動演示的位置或進度，並呼叫自訂的渲染函式 (如 this.updatePositions(...))
-  },
-  updatePositions: function() {
-    // 更新所有 SVG 元素的座標屬性，並更新 document.getElementById('anim-subtitle').innerHTML
-  },
-  cleanup: function() {
-    // 務必移除綁定在 document 上的 mousemove, mouseup, touchmove, touchend 事件監聽器！
-    document.removeEventListener('mousemove', this.onMove);
-    document.removeEventListener('mouseup', this.onUp);
-    document.removeEventListener('touchmove', this.onMove);
-    document.removeEventListener('touchend', this.onUp);
-  }
-}
-
