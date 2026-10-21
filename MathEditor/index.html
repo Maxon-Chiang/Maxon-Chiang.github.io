@@ -15,8 +15,11 @@
       }
   });</script><script>const hostname = window.location.hostname;
   const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+  const urlParams = new URLSearchParams(window.location.search);
+  // 若網址帶有 s= (學生測驗分享連結) 或 export_scores (系統匯出 API)，視為作答/背景模式
+  const isTestMode = urlParams.has('s') || urlParams.has('export_scores');
 
-  if (!isLocal) {
+  if (!isLocal && !isTestMode) {
       // 載入 Google Analytics
       const gtagScript = document.createElement('script');
       gtagScript.async = true;
@@ -36,7 +39,11 @@
       'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
       })(window,document,'script','dataLayer','GTM-NM62PM39');
   } else {
-      console.log('🛑 本地開發環境 (Localhost) 已偵測：Google Analytics 與 GTM 已暫停收集數據。');
+      if (isLocal) {
+          console.log('🛑 本地開發環境 (Localhost) 已偵測：Google Analytics 與 GTM 已暫停收集數據。');
+      } else if (isTestMode) {
+          console.log('🛑 學生作答模式已偵測：Google Analytics 與 GTM 已暫停收集數據。');
+      }
       window.gtag = function() {}; // 給予防呆空函式避免其他腳本呼叫出錯
   }</script><script type="importmap">{
 		"imports": {
