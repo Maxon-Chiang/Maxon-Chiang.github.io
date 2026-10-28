@@ -7,14 +7,18 @@
 =====================================================================
 1. SVG 座標系：X 軸向右為正，Y 軸向下為正。原點 (0,0) 在左上角。
 2. 幾何精確定位：所有繪圖請務必基於嚴謹的數學計算（如三角函數、畢氏定理）給出精確坐標，切勿目測瞎猜。
-3. 數學式包裝與跳脫：所有的數學公式、英文字母、變數，必須用 $ 符號包裝（觸發 MathJax 渲染）。LaTeX 指令必須雙重跳脫，例如 \\triangle ABC 或 \\angle A。
-4. 佔位符 (Placeholder)：若遇到無法用單純幾何線條描繪的實物（如河流、車輛、樹木），嚴禁用多條線條刻畫細節，請嚴格使用以下佔位符：
-   <rect class='shape ai-icon-placeholder' data-icon-type='物品名稱' x='350' y='250' width='100' height='100' fill='none' stroke='none' />
+3. 數學式包裝與跳脫：所有的數學公式、英文字母、變數，必須用 $ 符號包裝（觸發 MathJax 渲染）。LaTeX 指令必須雙重跳脫，例如 \\triangle ABC 或 \\angle A。幾何線段必須使用 \\overline{AB} 表示，推導箭頭一律使用 \\Rightarrow（禁用 \\implies），填空底線 ______ 必須放在 $ 數學式外部。
+4. 實物配圖佔位符 (Image Placeholder)：若遇到無法用單純幾何線條描繪的實物或情境插圖（如風景、建築、實驗器材、生物等），嚴禁用多條線條硬畫細節，請輸出帶有「繁體中文生圖提示詞 (data-image-prompt)」的佔位框，系統支援右鍵複製咒語生圖並按 Ctrl+V 直接貼上替換：
+   - Canvas (SVG) 列印環境寫法：
+     <foreignObject class='shape ai-img-placeholder math-obj' data-tool='placeholder' data-image-prompt='[詳細繁體中文生圖提示詞，含指定色彩、風格、白底與長寬比例]' x='250' y='300' width='300' height='200'><div xmlns='http://www.w3.org/1999/xhtml' class='math-content' style='width:100% !important; height:100% !important; border:2px dashed #3498db !important; background:#f0f8ff !important; display:flex !important; flex-direction:column !important; align-items:center !important; justify-content:center !important; color:#2980b9 !important; font-size:14px !important; font-weight:bold !important; box-sizing:border-box !important; text-align:center !important; overflow:hidden !important; white-space:normal !important;'>🖼️ 實物配圖<br/><span style='font-size:11px; color:#e67e22; margin-top:5px; display:block;'>(右鍵複製咒語)</span><span class='prompt-text' style='display:none;'>[繁體中文生圖提示詞]</span></div></foreignObject>
+   - 若僅需簡單小圖示，亦可使用內建圖示佔位符：<rect class='shape ai-icon-placeholder' data-icon-type='物品名稱' x='350' y='250' width='100' height='100' fill='none' stroke='none' />
+5. 嚴禁引用標記與分類標籤：如有上傳參考檔案（如 PDF、講義或圖片），絕對禁止在產出的題目、選項、詳解或任務文字中加入 `[cite:xxx]`、`[cite_start]`、`[1]` 等任何引用字眼，亦禁止在題目開頭加上 `[素養題]`、`[進階題]` 等分類字眼！
+6. 網頁內嵌訊息規範（HTML 媒介專用）：若產出媒介為 HTML 互動網頁，任何提示、訊息或警告皆必須直接嵌入在網頁 DOM 內（如自製內嵌 `<div>` 提示框），絕對禁止使用瀏覽器原生的 `alert()`、`confirm()`、`prompt()` 或開啟獨立視窗，以免跳離網頁 focus 造成被系統防弊機制判定為違規！
 
 =====================================================================
-第二部分：輸出模式總覽 (Output JSON Format)
+第二部分：輸出模式總覽 (Output JSON / JS Object Format)
 =====================================================================
-系統預期接收一個包含 items 陣列的 JSON 物件。請只輸出一個乾淨的 JSON 物件。
+系統依據任務需求，預期接收一個乾淨的 JSON 物件（模式 A、B），或是純 JavaScript Object 腳本（模式 C）。
 
 【模式 A：動態互動題型 (Dynamic Practice)】
 適用於：要求產生可以隨機變動數字的互動選擇題、填空題。
@@ -69,12 +73,13 @@
    - `data-border-style`: 框線樣式 ('solid', 'dashed', 'dotted')
    - `data-border-radius`: 圓角大小 (整數，如 '8')
    
-   範例寫法：
+   範例寫法（純文字題目框）：
    <foreignObject x='50' y='100' width='694' height='350' class='shape math-obj' data-tool='text' data-font-size='16' fill='#000000' data-bg-color='#f9f9f9' data-border-color='#34495e' data-border-width='2' data-border-style='solid' data-border-radius='8'>
        <div xmlns='http://www.w3.org/1999/xhtml' class='math-content' style='font-size:16px !important; color:#000000; width:100% !important; height:100% !important; box-sizing:border-box !important; white-space:pre-wrap !important; word-break:break-word !important; line-height:1.8 !important;'>
            1. 已知直角 $\triangle ABC$ 中，$\angle B = 90^{\circ}$。求 $\overline{AC}$ 的長度。
        </div>
    </foreignObject>
+   ⚠️ 防空行與版面骨架規範：若提示語中有提供「版面視覺 HTML 骨架依據」，請 100% 忠實復刻其容器結構、配色與 inline style；且當 `<foreignObject>` 內部包含複雜 HTML（如滿版標題橫幅、Grid 子卡片、表格 `<table>`）時，務必加上 `data-is-html='true'`，並將內部 `.math-content` 的 `white-space` 設為 `normal !important; line-height: 1.35 !important;`（嚴禁在 HTML 標籤間塞入換行符號 `\n` 或連續 `<br/>`），以確保高密度緊湊排版不爆框！
 
 4. SVG 語法與引號限制：
    illustrationSvg 內的所有 SVG 屬性，強制使用單引號 (')！例如：class='shape'。
@@ -128,11 +133,13 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
 若是單純的 A, B, C 等不需 $ 包裝的頂點標籤，才允許使用 `<text>`，並確保包含 `fill='#000000'`。
 <text x='293.7' y='230.0' class='shape' data-tool='text' font-size='16' fill='#000000' font-weight='bold' font-family='Arial' text-anchor='middle' dominant-baseline='central'>A</text>
 
-弧線角度標記 (Angle Mark)：
-<path d='M 120 100 A 20 20 0 0 1 100 120' class='shape mark-path' data-tool='mark' data-owner-shape='poly-1' stroke='#c0392b' stroke-width='1.5' fill='none' />
-<text x='130' y='130' class='shape angle-label-text' data-tool='text' data-owner-shape='poly-1' font-size='14' fill='#c0392b' font-weight='bold'>60°</text>
+智慧角度標記系統 (Smart Angle Mark - 極度重要)：
+請優先使用系統專屬的智慧角標佔位標籤，系統載入畫布時會自動在最靠近該 (cx, cy) 座標的多邊形或線段交點上計算並產生完美的角標弧線（或直角記號）與度數文字，免除手動計算 `<path>` 圓弧方向的錯誤：
+<circle class='ai-angle-mark' cx='角的頂點X座標' cy='角的頂點Y座標' data-style='arc' data-text='$60^\circ$' r='5' fill='none' stroke='none' />
+（註：`data-style` 可填 `'arc'` 單弧、`'double-arc'` 雙弧、或 `'none'` 僅顯示文字；若該頂點夾角為 90°，設定 `data-style='arc'` 時系統會自動轉為標準直角方框記號！）
 
-直角符號 (Right Angle)：
+傳統手動弧線與直角符號（僅在非多邊形頂點之特殊情況備用）：
+<path d='M 120 100 A 20 20 0 0 1 100 120' class='shape mark-path' data-tool='mark' data-owner-shape='poly-1' stroke='#c0392b' stroke-width='1.5' fill='none' />
 <polyline points='100,120 120,120 120,100' class='shape mark-path right-angle-mark' data-tool='mark' data-owner-shape='poly-1' stroke='#c0392b' stroke-width='1.5' fill='none' />
 
 長度尺寸標註 (Dimension Line)：
@@ -166,6 +173,7 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
      'rect': { x, y, width, height }
      'text': { text: 'A', x, y, color, fontSize } (不用包 $ 符號，底層會自動加)
    - 通用屬性: stroke, strokeWidth, fill, dash。
+   - ⚠️ 標註極度重要：頂點名稱、變數邊長、角度值，必須明確使用 type: 'text' 放入陣列中畫出來！直角記號等輔助圖形可用 polyline 或 line 繪製。
 
 5. 完整的物件結構範例 (必須遵照此格式)：
 {
@@ -183,7 +191,11 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
     return vars.options.map(opt => ({ text: opt })); 
   },
   drawObjects: (vars, askKey) => { 
-    return [{type:'polygon', points:'0,0 100,0 50,50', stroke:'black', fill:'none'}]; 
+    return [
+      {type:'polygon', points:'0,0 100,0 50,50', stroke:'black', fill:'none'},
+      {type:'text', text:'A', x:0, y:-15, color:'black', fontSize:18},
+      {type:'text', text:vars.a, x:50, y:-15, color:'blue', fontSize:18}
+    ]; 
   },
   explanationTpl: (vars) => { 
     return `<b>【解題步驟】</b><br>1. 根據題意計算邊長...<br>2. 故答案為 ${vars.a + vars.b}`; 
@@ -194,3 +206,65 @@ ID 綁定與關聯：頂點標籤必須具備獨立 x, y 坐標，並建議綁�
     return [{type:'line', x1:0, y1:0, x2:50, y2:50, stroke:'red', dash:'5,5'}]; 
   }
 }
+
+=====================================================================
+第六部分：模式 C 的教學動畫腳本內部 API (Interactive Animation Script API)
+=====================================================================
+當被要求產生「教學動畫 (Animation)」時，請**直接輸出一個完整的 JavaScript Object**（不需要包裝在 JSON 的 items 陣列中），供系統的 `window.AnimEngine` 直接掛載執行。
+
+1. 舞台與環境規範：
+   - 畫布固定邏輯尺寸：寬 800、高 600 (`viewBox="0 0 800 600"`)。請將主圖形配置在畫面中央偏上（例如 Y 座標 150 ~ 480 之間），底部（如 Y=550）可留給步驟滑軌。
+   - 繪圖容器：`const layer = document.getElementById('shapes-layer');` 與 `const ns = "http://www.w3.org/2000/svg";`。所有動態建立的 SVG 元素都必須 `layer.appendChild(el)`。
+   - 頂部動態字幕列：透由 `document.getElementById('anim-subtitle').innerHTML = ...` 即時更新上方的教學解說文字。
+     ⚠️ 注意：因動畫每秒更新 60 次，在 `anim-subtitle` 與畫布 `<text>` 中，請直接使用 Unicode 幾何符號與 HTML 標籤（如 `∠A = 60°`、`△ABC`、`⊥`、`∥`、`<sup>2</sup>`、`<span style="text-decoration:overline;">AB</span>`），避免使用 `$LaTeX$` 包裝，以保持高頻更新時的極致流暢度！
+   - 動畫引擎控制：當使用者手動拖曳畫面上的控制點或滑軌時，請呼叫 `if(window.AnimEngine.isPlaying) window.AnimEngine.pause();` 暫停自動播放，進入手動探索模式。
+
+2. 系統內建幾何與教具輔助 API：
+   - **三角形三心計算**：`let centers = window.getTriangleCenters(A, B, C);`
+     傳入三個頂點 `{x, y}`，回傳 `{ circum: {x, y, r}, incenter: {x, y, r}, centroid: {x, y} }`（分別為外心與外接圓半徑、內心與內切圓半徑、重心）。
+   - **虛擬圓規小精靈 (尺規作圖必備)**：`this.compass = window.createCompass(layer, ns);`
+     在 `update` 中呼叫 `this.compass.update(cx, cy, px, py, showBoolean);`（`cx, cy` 為針尖圓心座標，`px, py` 為筆尖座標，`showBoolean` 為是否顯示）。
+
+3. 教學動畫的兩大設計範式（請依主題性質擇一或結合使用）：
+   - **範式一：幾何性質自由拖曳探索**（如：三心性質、四邊形性質、圓性質）
+     * 自動播放時：在 `update(t)` 利用 `Math.sin(t)` 等三角函數讓關鍵頂點平滑移動，展示連續變化。
+     * 手動探索時：提供醒目的黃橘色控制點（`r="12"`, `fill="#f1c40f"`, `stroke="#e67e22"`, `cursor:move`），綁定滑鼠與觸控事件（`mousedown`/`touchstart`, `mousemove`/`touchmove`, `mouseup`/`touchend`），透過 `svgCanvas.getScreenCTM().inverse()` 轉換精確畫布座標，即時重算幾何關係並更新 `anim-subtitle` 的狀態數據（如銳角/直角/鈍角判定）。
+   - **範式二：尺規作圖分步滑軌演示**（如：過線外一點作平行線、角平分線、中垂線作圖）
+     * 在畫面底部（如 `x: 250 ~ 550, y: 550`）建立一條水平滑軌與可左右拖拉的把手（`cursor:ew-resize`），支援手動拖拉切換作圖進度 `p (0 ~ 1)`。
+     * 自動播放時：`let localT = t % 總秒數;` 依時間推進步驟。
+     * 搭配 `this.compass.update(...)` 呈現「展圓規 -> 畫弧 -> 停頓 -> 移至下一點畫交點 -> 連線」的完整尺規作圖視覺過程，並在 `anim-subtitle` 顯示當前步驟說明（如 ①、②、③...）。
+
+4. 教學動畫 JS Object 完整結構規範與範例（請務必採用單一程式碼區塊 `Code Block` 包覆的顯示方式輸出）：
+{
+  id: 'unique_anim_id',
+  title: '動畫標題 (如：外心與外接圓)',
+  mainCat: '純幾何', // 可選：'純幾何', '幾何代數', '加強理解', '尺規作圖'
+  cat: '三心性質',   // 子分類名稱
+  desc: '簡短的一句話性質或操作說明。',
+  icon: '<svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="9"/></svg>',
+  elements: {},
+  isDragging: false,
+  init: function() {
+    const layer = document.getElementById('shapes-layer');
+    const ns = "http://www.w3.org/2000/svg";
+    this.elements = {};
+    // 1. 建立所需的 SVG 元素 (polygon, line, circle, path, text) 並 appendChild 到 layer
+    // 2. 建立可拖曳的控制點或底部步驟滑軌，綁定 mousedown/mousemove/mouseup 與 touch 事件
+    // 3. 若為尺規作圖，可初始化圓規：this.compass = window.createCompass(layer, ns);
+  },
+  update: function(t) {
+    if (this.isDragging) return;
+    // 根據時間 t (秒) 計算自動演示的位置或進度，並呼叫自訂的渲染函式 (如 this.updatePositions(...))
+  },
+  updatePositions: function() {
+    // 更新所有 SVG 元素的座標屬性，並更新 document.getElementById('anim-subtitle').innerHTML
+  },
+  cleanup: function() {
+    // 務必移除綁定在 document 上的 mousemove, mouseup, touchmove, touchend 事件監聽器！
+    document.removeEventListener('mousemove', this.onMove);
+    document.removeEventListener('mouseup', this.onUp);
+    document.removeEventListener('touchmove', this.onMove);
+    document.removeEventListener('touchend', this.onUp);
+  }
+}
+
