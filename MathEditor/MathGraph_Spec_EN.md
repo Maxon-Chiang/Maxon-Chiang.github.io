@@ -112,8 +112,39 @@ Default geometry style: `fill='none' stroke='black' stroke-width='2'`.
         <path class='visible-line' stroke='black' stroke-width='2' d='M 299.0 247.7 L 409.1 425.6'/>
      </g>
 
-2. [SHARED_EDGE_POLYGON]:
-   <polygon class='shape' data-tool='polygon' data-sub-tool='shared_4gon' data-owner-shape='poly-1' data-dependency-type='shared_edge_shape' data-edge-index='2' data-side='-1' id='poly-shared-1' stroke='black' stroke-width='2' fill='none' points='...' />
+2. [DEPENDENT_GEOMETRY_COMPONENTS (CRITICAL FOR KINEMATICS)]:
+   To allow users to drag vertices without breaking geometric properties, ALWAYS use dependent groups instead of raw lines for these mathematical features. They require an `id` on the parent `<polygon id='poly-1'>` or `<circle id='circ-1'>`.
+   - **Altitude (高/垂線)**: 
+     <g class='shape group' data-tool='line' data-owner-shape='poly-1' data-dependency-type='altitude' data-edge-index='0' data-vertex-index='2' data-line-id='alt-1'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+     <polyline class='shape right-angle-mark' data-tool='mark' data-owner-shape='poly-1' data-dependency-type='altitude_mark' data-edge-index='0' data-vertex-index='2' data-line-id='alt-1' />
+   - **Median Line (中線)**:
+     <g class='shape group' data-tool='line' data-owner-shape='poly-1' data-dependency-type='median_line' data-edge-index='0' data-start-vertex-index='2'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Angle Bisector (角平分線)**:
+     <g class='shape group' data-tool='line' data-owner-shape='poly-1' data-dependency-type='divide_angle_line' data-vertex-index='1' data-divide-ratio='0.5'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Perpendicular Bisector (中垂線)**:
+     <g class='shape group' data-tool='line' data-owner-shape='poly-1' data-dependency-type='perpendicular' data-edge-index='0' data-len1='100' data-len2='100'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Midpoint (中點)**:
+     <ellipse cx='...' cy='...' rx='4' ry='4' class='shape' data-tool='point' data-owner-shape='poly-1' data-dependency-type='midpoint' data-edge-index='0' fill='#e74c3c' />
+   - **Polygon Diagonal (多邊形對角線)**:
+     <g class='shape group' data-tool='line' data-owner-shape='poly-1' data-dependency-type='polygon_diagonal' data-vertex-indices='0,2'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Parallel on Base (底邊平行線)**:
+     <g class='shape group' data-tool='line' data-owner-shape='poly-1' data-dependency-type='base_parallel_line' data-edge-index='0' data-h='50'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Arbitrary Perpendicular (任意垂線)**:
+     <g class='shape group' data-tool='line' data-owner-shape='poly-1' data-dependency-type='arbitrary_perpendicular' data-edge-index='0' data-t='0.5' data-side='1' data-len='100'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Parallel Line (平行線)**:
+     <g class='shape group' data-tool='line' data-owner-shape='poly-1' data-dependency-type='parallel_line' data-edge-index='0' data-t='0' data-n='50' data-len='150'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Radius/Diameter/Chord (圓半徑/直徑/弦)**:
+     <g class='shape group' data-tool='line' data-owner-shape='circ-1' data-dependency-type='radius' data-angle='0'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Tangents (切線系統)**: Requires an external control point `<circle id='pt-1' class='shape' data-tool='point'>`.
+     <g class='shape group' data-tool='line' data-owner-shape='circ-1' data-tangent-ctrl='pt-1' data-dependency-type='tangent_line_segment' data-tangent-index='1' data-ext-over-dist='40'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Inscribed/Circumscribed Regular Polygon (圓內外接正多邊形)**:
+     <polygon class='shape linked-polygon' data-tool='polygon' data-sub-tool='polygon-regular' data-owner-circle='circ-1' data-polygon-type='inscribed' data-polygon-sides='5' points='...' />
+   - **Shared Edge Polygon & Semicircle (共邊多邊形與半圓)**:
+     <polygon class='shape' data-tool='polygon' data-sub-tool='shared_4gon' data-owner-shape='poly-1' data-dependency-type='shared_edge_shape' data-edge-index='2' data-side='-1' points='...' />
+     <g class='shape group' data-tool='ellipse' data-sub-tool='arch' data-owner-shape='poly-1' data-dependency-type='shared_edge_arch' data-edge-index='0' data-side='1'><path class='hit-line' d='...'/><path class='visible-line' d='...'/></g>
+   - **Triangle Centers (外心/內心/重心)**: (Only output the point and circle; the system computes the rest)
+     <circle class='shape' data-tool='point' data-owner-shape='tri-1' data-dependency-type='circumcenter_point' />
+     <ellipse class='shape' data-tool='ellipse' data-sub-tool='circle' data-owner-shape='tri-1' data-dependency-type='circumcircle' />
 
 3. [HIGH_LEVEL_SYSTEM_COMPONENTS (3D Solids, Axes, Functions)]:
    NEVER manually draw 3D solids or coordinate grids with raw lines; MUST invoke system components:
@@ -139,6 +170,9 @@ Default geometry style: `fill='none' stroke='black' stroke-width='2'`.
    - **Manual Arc & Right-Angle Fallback (only for non-polygon intersections)**:
      <path d='M 120 100 A 20 20 0 0 1 100 120' class='shape mark-path' data-tool='mark' data-owner-shape='poly-1' stroke='#c0392b' stroke-width='1.5' fill='none' />
      <polyline points='100,120 120,120 120,100' class='shape mark-path right-angle-mark' data-tool='mark' data-owner-shape='poly-1' stroke='#c0392b' stroke-width='1.5' fill='none' />
+   - **Edge Mark (等長/平行邊標記)**:
+     <path class='shape mark-path' data-tool='mark-edge-symbol' data-owner='poly-1' data-edge-index='0' data-edge-style='1' d='M 0 -5 L 0 5' transform='translate(x, y) rotate(deg)' stroke='#c0392b' stroke-width='2' fill='none' />
+     (`data-edge-style`: `'1'`, `'2'`, `'3'`, `'tick'`, `'x'`, `'o'`, `'parallel'`)
    - **Dimension Line (Length Marker)**:
      <g class='shape group dimension' data-tool='group' data-sub-tool='dimension' data-owner='poly-1' data-dim-style='curve' data-p1-x='100' data-p1-y='100' data-p2-x='300' data-p2-y='100' data-offset='20'><text x='200' y='70' class='shape dimension-text' data-tool='text' font-size='16' fill='#2980b9' font-weight='bold'>10</text></g>
 
