@@ -6,6 +6,9 @@
 =====================================================================
 [PART 1: GLOBAL_STRICT_RULES]
 =====================================================================
+0. [CRITICAL_DEPENDENT_GEOMETRY_RULE (HIGHEST PRIORITY)]:
+   - When generating SVG from images (Image-to-SVG) or creating new math questions, if the image/figure contains dependent geometric features such as Altitudes (高), Medians (中線), Perpendicular Bisectors (中垂線), Angle Bisectors (角平分線), Tangents (切線), Polygon Diagonals (多邊形對角線), Base Parallel lines (底邊平行線), Concentric circles (同心圓), or Inscribed/Circumscribed polygons (圓內外接多邊形), you STRICTLY MUST NOT draw them using ordinary `<line>`, `<circle>`, or `<path>`!
+   - You MUST use the dependent geometry tags defined in [DEPENDENT_GEOMETRY_COMPONENTS] with their exact `data-dependency-type` linkage attributes. Otherwise, the graphic will break apart and collapse when dragged on the canvas!
 1. [SVG_COORDINATE_SYSTEM]:
    - Origin `(0,0)` is at top-left. X-axis increases right (`+X`); Y-axis increases down (`+Y`).
 2. [GEOMETRIC_PRECISION]:
