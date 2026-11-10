@@ -1,16 +1,15 @@
 # MathGraph Educational Game Engine & Custom Stage API Specification (v2.0)
 
-## 1. Architecture Overview & 4 Golden Principles
+## 1. Architecture Overview
 The MathGraph Game Escape System uses a **Master Shell + Modular Stage Renderer** architecture (`window.GameAPI`).
-- **4 Golden Principles of Game Escape (MANDATORY)**:
-  1. **Dynamic Gameplay**: Every game must be real-time and dynamic (`requestAnimationFrame` / physics / continuous motion).
-  2. **Moving Options in a Dynamic Environment**: Candidate options/characters MUST move dynamically within the arena (popping moles, scrolling conveyor belts, falling capsules, smooth-falling tetrominoes, scrolling LED marquees, rotating Ferris wheel cabins, orbiting cargo docks). Static option buttons are strictly forbidden.
-  3. **Per-Stage Game Rules Intro Before Question 1**: In addition to Page 0 (Course Keypoint Guide), the beginning of **every stage (before Question 1)** automatically displays a dedicated **Stage Gameplay Instructions Card**.
-  4. **Per-Question Floating "Start Game" Gate**: To prevent moving elements from distracting students while reading the math stem, **every question starts in a paused reading state** with a floating button right below the question banner (`▶️ 我讀完題目了，開始本題挑戰！`). Dynamic motion only begins after the student clicks this button.
+- **Core Game Escape Principles (MANDATORY)**:
+  1. **Dynamic Option Interaction**: Every game MUST feature dynamic motion—either selecting/hitting moving options in a dynamic environment, or placing options into a moving animation (e.g., conveyor belt + robotic claw, smooth-falling tetrominoes, rotating Ferris wheel, moving train, scrolling LED doors). Static plain-button clicking is strictly forbidden.
+  2. **Per-Stage Gameplay Guide on Question 1**: In addition to Page 0's course keypoint guide, Question 1 of EVERY stage MUST display a clear gameplay instruction card (`🕹️ 本關遊戲玩法說明`).
+  3. **Read-First Floating Start Button per Question**: To prevent moving animations from distracting students while reading/calculating the question, every question MUST initially pause/hide the dynamic arena and display a floating **`▶️ 看完題目，開始本題挑戰！`** button right below the question stem. The dynamic animation & timers only start after clicking this button!
 
 - **Master Shell Responsibilities (Handled Automatically by System)**:
   - Page 0 Course Keypoint Guide & Game Rules (`🚀 我讀懂了，開始闖關！`)
-  - Per-Stage Gameplay Intro Card before Question 1 & Per-Question Floating Start Button Gate
+  - Per-Stage Gameplay Instructions on Question 1 & Per-Question Read-First Floating Start Button
   - Dual-Color Indicator Lights HUD (`🟣 關卡進度燈號` + `🔵 本關題號燈號`)
   - 3 Hearts (`❤️❤️❤️`) per stage & Anti-Brute-Force 2x Question Pool Reshuffling
   - Immediate Question Swapping from the reserve pool whenever a player makes a mistake
@@ -47,18 +46,18 @@ If a stage uses one of the 7 built-in `gameType`s, the Master Shell renders the 
    `{ "q": "Stem ($LaTeX$)", "options": ["Ans", "D1", "D2", "D3", "D4", "D5", "D6", "D7"], "ans": "Ans", "exp": "Step-by-step solution" }`
 2. **`space_shooter`** (3D 星際戰機射擊 - 單選題, 8 options per question):
    `{ "q": "Stem ($LaTeX$)", "options": ["Ans", "D1", "D2", "D3", "D4", "D5", "D6", "D7"], "ans": "Ans", "exp": "Step-by-step solution" }`
-3. **`safe_cracker`** (3D 工廠輸送帶機械手臂字元組裝 - 填充/計算題, N slots + moving conveyor belt `charPool`):
+3. **`safe_cracker`** (3D 工廠輸送帶機械手臂字元組裝 - 填充/計算題, N slots + moving conveyor belt items from `charPool`):
    `{ "q": "Stem ($LaTeX$)", "ans": "ExactAnswer", "charPool": ["14_to_16_single_chars_including_ans_and_distractors"], "hint": "Brief hint", "exp": "Step-by-step solution" }`
-4. **`balance_scale`** (3D 分岔迷宮之門 - 是非題, scrolling LED marquees, boolean answer):
+4. **`tetris_fill`** (3D 俄羅斯方塊字元矩陣 - 填充/計算題, `ans` MUST be the exact pure answer >= 3 chars with NO prefix like `x=` or `B=` and NO `hint`, compact borderless grid width = `ans.length + 4` & height = 16 rows, continuous smooth vertical falling + discrete 1-col horizontal step, 2~4 cells per piece where every cell's character is independently drawn from `charPool` including digits/symbols/distractors, upright non-rotating characters):
+   `{ "q": "Fill-in stem ($LaTeX$)", "ans": "125", "charPool": ["1", "2", "5", "0", "3", "4", "6", "7", "8", "9", "+", "-", "=", "."], "exp": "Step-by-step solution" }`
+5. **`balance_scale`** (3D 分岔迷宮之門 - 是非題, boolean answer + scrolling LED marquee):
    `{ "q": "True/False statement ($LaTeX$)", "ans": true, "exp": "Explanation" }`
-5. **`wire_connect`** (3D 摩天輪幸福配對 - 配合題, rotating cabins + 3~4 pairs + distractors):
+6. **`wire_connect`** (3D 摩天輪幸福配對 - 配合題, 3~4 pairs + distractors in rotating cabins):
    `{ "q": "Matching prompt", "pairs": [{"left": "L1", "right": "R1"}, {"left": "L2", "right": "R2"}, {"left": "L3", "right": "R3"}], "distractors": ["W1", "W2"], "exp": "Explanation" }`
-6. **`escape_order`** (3D 環狀鐵道貨運列車與動態軌道貨棧 - 排序題, 3~4 ordered steps):
+7. **`escape_order`** (3D 環狀鐵道貨運列車 - 排序題, 3~4 ordered steps loaded onto moving train carriages):
    `{ "q": "Ordering prompt", "steps": ["Step 1", "Step 2", "Step 3", "Step 4"], "exp": "Explanation" }`
-7. **`balloon_pop`** (3D 星際隕石射擊 - 多選題, >=8 options, 4~5 correct in `ans`, `reqAnsCount: 3`):
+8. **`balloon_pop`** (3D 星際隕石射擊 - 多選題, >=8 options, 4~5 correct in `ans`, `reqAnsCount: 3`):
    `{ "q": "Multi-select stem", "options": ["C1", "C2", "C3", "C4", "W1", "W2", "W3", "W4"], "ans": ["C1", "C2", "C3", "C4"], "reqAnsCount": 3, "exp": "Explanation" }`
-8. **`tetris_fill`** (3D 俄羅斯方塊字元矩陣 - 填充/計算題, `ans` MUST be >= 3 chars, gridless high-buffer well width = `ans.length + 4`, continuous smooth vertical fall + 1-cell horizontal step, progressive speed per question, upright non-rotating characters):
-   `{ "q": "Fill-in stem ($LaTeX$)", "ans": "x=5", "charPool": ["x", "=", "5", "-", "+", "1", "2", "3", "4", "6", "7", "8", "9", "0"], "hint": "Brief hint (e.g. 請拼出 x=5)", "exp": "Step-by-step solution" }`
 
 ---
 
