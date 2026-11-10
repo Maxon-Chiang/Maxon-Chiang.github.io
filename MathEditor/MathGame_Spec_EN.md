@@ -47,17 +47,17 @@ If a stage uses one of the 7 built-in `gameType`s, the Master Shell renders the 
    `{ "q": "Stem ($LaTeX$)", "options": ["Ans", "D1", "D2", "D3", "D4", "D5", "D6", "D7"], "ans": "Ans", "exp": "Step-by-step solution" }`
 2. **`space_shooter`** (3D 星際戰機射擊 - 單選題, 8 options per question):
    `{ "q": "Stem ($LaTeX$)", "options": ["Ans", "D1", "D2", "D3", "D4", "D5", "D6", "D7"], "ans": "Ans", "exp": "Step-by-step solution" }`
-3. **`safe_cracker`** (3D 滾輪金庫鎖 - 填充/計算題, N reels + 14~16 charPool):
+3. **`safe_cracker`** (3D 工廠輸送帶機械手臂字元組裝 - 填充/計算題, N slots + moving conveyor belt `charPool`):
    `{ "q": "Stem ($LaTeX$)", "ans": "ExactAnswer", "charPool": ["14_to_16_single_chars_including_ans_and_distractors"], "hint": "Brief hint", "exp": "Step-by-step solution" }`
-4. **`balance_scale`** (3D 分岔迷宮之門 - 是非題, boolean answer):
+4. **`balance_scale`** (3D 分岔迷宮之門 - 是非題, scrolling LED marquees, boolean answer):
    `{ "q": "True/False statement ($LaTeX$)", "ans": true, "exp": "Explanation" }`
-5. **`wire_connect`** (3D 雷射稜鏡配對 - 配合題, 3~4 pairs + distractors):
+5. **`wire_connect`** (3D 摩天輪幸福配對 - 配合題, rotating cabins + 3~4 pairs + distractors):
    `{ "q": "Matching prompt", "pairs": [{"left": "L1", "right": "R1"}, {"left": "L2", "right": "R2"}, {"left": "L3", "right": "R3"}], "distractors": ["W1", "W2"], "exp": "Explanation" }`
-6. **`escape_order`** (3D 神殿浮空斷橋 - 排序題, 3~4 ordered steps):
+6. **`escape_order`** (3D 環狀鐵道貨運列車與動態軌道貨棧 - 排序題, 3~4 ordered steps):
    `{ "q": "Ordering prompt", "steps": ["Step 1", "Step 2", "Step 3", "Step 4"], "exp": "Explanation" }`
 7. **`balloon_pop`** (3D 星際隕石射擊 - 多選題, >=8 options, 4~5 correct in `ans`, `reqAnsCount: 3`):
    `{ "q": "Multi-select stem", "options": ["C1", "C2", "C3", "C4", "W1", "W2", "W3", "W4"], "ans": ["C1", "C2", "C3", "C4"], "reqAnsCount": 3, "exp": "Explanation" }`
-8. **`tetris_fill`** (3D 俄羅斯方塊字元矩陣 - 填充/計算題, `ans` MUST be >= 3 chars, dynamic grid width = `ans.length + 4`, 2~4 cells per falling piece, upright non-rotating characters):
+8. **`tetris_fill`** (3D 俄羅斯方塊字元矩陣 - 填充/計算題, `ans` MUST be >= 3 chars, gridless high-buffer well width = `ans.length + 4`, continuous smooth vertical fall + 1-cell horizontal step, progressive speed per question, upright non-rotating characters):
    `{ "q": "Fill-in stem ($LaTeX$)", "ans": "x=5", "charPool": ["x", "=", "5", "-", "+", "1", "2", "3", "4", "6", "7", "8", "9", "0"], "hint": "Brief hint (e.g. 請拼出 x=5)", "exp": "Step-by-step solution" }`
 
 ---
