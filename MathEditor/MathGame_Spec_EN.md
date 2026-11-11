@@ -10,7 +10,7 @@ The MathGraph Game Escape System uses a **Master Shell + Modular Stage Renderer*
 - **Master Shell Responsibilities (Handled Automatically by System)**:
   - Page 0 Course Keypoint Guide & Game Rules (`🚀 我讀懂了，開始闖關！`)
   - Per-Stage Gameplay Instructions on Question 1 & Per-Question Read-First Floating Start Button
-  - Dual-Color Indicator Lights HUD (`🟣 關卡進度燈號` + `🔵 本關題號燈號`)
+  - Dual-Color Indicator Lights HUD (`🟣 關卡進度燈號` + `🔵 本關題號燈號`) + **Global Dynamic Speed Switcher Tab (`⚡ 1x / 1.5x / 2x`)**
   - 3 Hearts (`❤️❤️❤️`) per stage & Anti-Brute-Force 2x Question Pool Reshuffling
   - Immediate Question Swapping from the reserve pool whenever a player makes a mistake
   - 1.4-second Per-Question Celebration Splash Screen & Stage-Clear Confirmation Pause
@@ -30,6 +30,7 @@ When `window.CustomStageRenderers[gameType](container, qData, api)` is invoked:
 - `api.questionIndex` (`Number`): 0-based index of the current question within this stage (`0` to `requiredCount - 1`). Use this to scale difficulty (e.g., speed or number of targets).
 - `api.requiredCount` (`Number`): Total questions required to clear this stage.
 - `api.hp` (`Number`): Current remaining hearts (`1` to `3`).
+- `api.getSpeed()` (`Function` -> `Number`): Returns current global speed multiplier (`1`, `1.5`, or `2`) selected by the student in the top HUD tab. Multiply frame velocities by `api.getSpeed()` and divide spawn intervals by `api.getSpeed()`.
 - `api.submit(isCorrect, customExp)`:
   - Call `api.submit(true)` when the student solves the current question.
   - Call `api.submit(false)` when the student makes a mistake (the engine automatically deducts 1 HP, displays feedback, and swaps in a new question from `pool`).
