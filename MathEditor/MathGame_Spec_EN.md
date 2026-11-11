@@ -50,8 +50,8 @@ If a stage uses one of the 7 built-in `gameType`s, the Master Shell renders the 
    `{ "q": "Stem ($LaTeX$)", "ans": "ExactAnswer", "charPool": ["14_to_16_single_chars_including_ans_and_distractors"], "hint": "Brief hint", "exp": "Step-by-step solution" }`
 4. **`tetris_fill`** (3D 俄羅斯方塊字元矩陣 - 填充/計算題, `ans` MUST be the exact pure answer >= 3 chars with NO prefix like `x=` or `B=` and NO `hint`, compact borderless grid width = `ans.length + 4` & height = 16 rows, continuous smooth vertical falling + discrete 1-col horizontal step, 2~4 cells per piece where every cell's character is independently drawn from `charPool` including digits/symbols/distractors, upright non-rotating characters, and supports clicking/tapping individual cells on the falling piece to prune unwanted cells down to a minimum of 2 cells):
    `{ "q": "Fill-in stem ($LaTeX$)", "ans": "125", "charPool": ["1", "2", "5", "0", "3", "4", "6", "7", "8", "9", "+", "-", "=", "."], "exp": "Step-by-step solution" }`
-5. **`balance_scale`** (3D 分岔迷宮之門 - 是非題, boolean answer + scrolling LED marquee):
-   `{ "q": "True/False statement ($LaTeX$)", "ans": true, "exp": "Explanation" }`
+5. **`balance_scale`** (3D 分岔迷宮之門 - 是非判斷與理由題, 4 doors with scrolling LED marquee, only 1 correct reason):
+   `{ "q": "Statement to judge ($LaTeX$)", "options": ["⭕正確：正確理由", "❌錯誤：錯誤理由", "⭕正確：錯誤理由", "❌錯誤：正確理由"], "ans": "⭕正確：正確理由", "exp": "Detailed explanation" }`
 6. **`wire_connect`** (3D 摩天輪幸福配對 - 配合題, 3~4 pairs + distractors in rotating cabins):
    `{ "q": "Matching prompt", "pairs": [{"left": "L1", "right": "R1"}, {"left": "L2", "right": "R2"}, {"left": "L3", "right": "R3"}], "distractors": ["W1", "W2"], "exp": "Explanation" }`
 7. **`escape_order`** (3D 環狀鐵道貨運列車 - 排序題, 3~4 ordered steps loaded onto moving train carriages):
